@@ -1,0 +1,877 @@
+<!-- Copyright (C) 2023 by VIZ Interactive Media Inc. <contact@vizinteractive.io> | Licensed under MIT license (see LICENSE.md for details) -->
+
+<!DOCTYPE html>
+<html lang="en-us" style="height:100%; width:100%">
+
+    <head>
+	    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+	    <script src="Build/{{{ LOADER_FILENAME }}}"></script>
+
+	    <link rel="stylesheet" href="demo.css" />
+	    <script src="depiction_engine_api.js"></script>
+    </head>
+
+	<body style="margin: 0px; width: 100%; height: 100%;">
+        <div style="width:100%; height:100%; display: flex; flex-direction: row">
+            <script>
+                const $STAR_EXIST_ERROR_MSG = "A Star is already present in the Scene";
+
+                const $MATERIAL_BASE_PATH = "Material/";
+
+                const $IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent);
+
+                const $GUID_EMPTY = "00000000-0000-0000-0000-000000000000";
+                const $VECTOR2INT_ZERO = { x: 0, y: 0 };
+
+                function getConfig()
+                {
+                    var config =
+                    {
+                        dataUrl: "Build/{{{ DATA_FILENAME }}}",
+                        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+#if MEMORY_FILENAME
+                        memoryUrl: "Build/{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+                        symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}",
+#endif
+                        streamingAssetsUrl: "StreamingAssets",
+                        companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+                        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+                        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}}
+                        // matchWebGLToCanvasSize: false, // Uncomment this to separately control WebGL canvas render size and DOM element size.
+                        // devicePixelRatio: 1, // Uncomment this to override low DPI rendering on high DPI displays.
+                    };
+
+#if USE_WASM
+                    if (!$IS_MOBILE)
+                        config.codeUrl = "Build/{{{ CODE_FILENAME }}}";
+#endif
+
+                    return config;
+                }
+
+                function createCamera(instance, parent, name = "Camera", targetCamera = true, distance = 1000.0, skyboxMaterialPath = $MATERIAL_BASE_PATH + "Skybox/Star-Skybox")
+                {
+                    var operations = [];
+
+                    var targetId = instance.newGuid();
+                    if (targetCamera) {
+                        operations.push(instance.createOperation({ id: targetId, type: $NAMESPACE + ".VisualObject", name: "Target", transform: { parent: parent } }));
+                        operations.push(instance.createOperation({ type: $NAMESPACE + ".GeoCoordinateController" }, targetId));
+                        operations.push(instance.createOperation({ type: $NAMESPACE + ".TransformAnimator" }, targetId));
+                    }
+
+                    var cameraId = instance.newGuid();
+                    operations.push(instance.createOperation({ id: cameraId, type: $NAMESPACE + ".Camera", name: name, tag: "MainCamera", skyboxMaterialPath: skyboxMaterialPath, transform: { parent: parent } }));
+                    if (targetCamera) {
+                        operations.push(instance.createOperation({ type: $NAMESPACE + ".CameraController", targetId: targetId, distance: distance }, cameraId));
+                        operations.push(instance.createOperation({ type: $NAMESPACE + ".TargetControllerAnimator", targetId: targetId }, cameraId));
+                    }
+
+                    return instance.sendMessage(operations);
+                }
+
+                function createMarker(instance, parent, name = "Marker", color = "#faa855", icon = 0, screenSpace = true, iconOffset = 10.0)
+                {
+                    return instance.create({
+                        type: $NAMESPACE + ".Marker",
+                        name: name,
+                        color: color,
+                        icon: icon,
+                        screenSpace: screenSpace,
+                        iconOffset: iconOffset,
+                        transform: { parent: parent }
+                    });
+                }
+
+                function createLabel(instance, parent, name = "Label", text = "My text")
+                {
+                    return instance.create({
+                        type: $NAMESPACE + ".Marker",
+                        name: name,
+                        text: text,
+                        transform: { parent: parent }
+                    });
+                }
+
+                function createStarSystem(instance, parent, name = "StarSystem")
+                {
+                    var operations = [];
+
+                    var starSystemId = instance.newGuid();
+                    operations.push(instance.createOperation({ id: starSystemId, type: $NAMESPACE + ".StarSystem", name: name, transform: { parent: parent } }));
+                    operations.push(instance.createOperation({ type: $NAMESPACE + ".StarSystemAnimator" }, starSystemId));
+
+                    return instance.sendMessage(operations);
+                }
+
+                function createStar(instance, parent, name = "Star")
+                {
+                    if (instance.starExists())
+                        return $STAR_EXIST_ERROR_MSG;
+
+                    var createdComponents = instance.create({
+                        type: $NAMESPACE + ".Star",
+                        name: name,
+                        transform:
+                        {
+                            localRotation: { x: -0.707106781186548, y: 0.0, z: 0.0, w: -0.707106781186548 },
+                            localPosition: { x: -100000000000.0, y: 100000000000.0, z: 0.0 },
+                            parent: parent
+                        }
+                    });
+
+                    var star = createdComponents[0];
+                    instance.callInstanceMethod(star.id, "SetPreset", [{ type: $NAMESPACE + ".AstroObjectType", value: "Sun" }]);
+
+                    return createdComponents;
+                }
+
+                function createEmptyPlanet(instance, parent, name, spherical, size, mass, sizeMultiplier, sphericalSubdivision, flatSubdivision, minMaxZoom, colorTextureLoaderDatasourceId = $GUID_EMPTY, colorTextureLoadEndpoint = "", colorTextureMinMaxZoom = $VECTOR2INT_ZERO, additionalTextureLoaderDatasourceId = $GUID_EMPTY, additionalTextureLoadEndpoint = "", additionalTextureMinMaxZoom = $VECTOR2INT_ZERO, elevationLoaderDatasourceId = $GUID_EMPTY, elevationLoadEndpoint = "", elevationMinMaxZoom = $VECTOR2INT_ZERO, elevationMultiplier = 1.0, xFlip = false, yFlip = false, elevationDataType = "ElevationMapboxTerrainRGBPngRaw", surfaceTypeTextureLoaderDatasourceId = $GUID_EMPTY, surfaceTypeTextureLoadEndpoint = "", surfaceTypeTextureMinMaxZoom = $VECTOR2INT_ZERO)
+                {
+                    var operations = [];
+
+                    var planetId = instance.newGuid();
+                    var planetTransformId = instance.newGuid();
+                    var localRotation = { x: 0.0, y: 0.0, z: 0.0, w: 1.0 };
+
+                    if (spherical)
+                        localRotation = { x: -0.707106781186548, y: 0.0, z: 0.0, w: 0.707106781186548 };
+
+                    operations.push(instance.createOperation({
+                        id: planetId,
+                        type: $NAMESPACE + ".Planet",
+                        name: name,
+                        transform: { id: planetTransformId, parent: parent, localRotation: localRotation },
+                        spherical: spherical,
+                        size: size,
+                        mass: mass
+                    }));
+
+                    //Add Planet -> Color Texture Index2DLoader
+                    var colorTextureLoaderId = $GUID_EMPTY;
+                    if (colorTextureLoadEndpoint)
+                    {
+                        var colorTextureFallbackValuesId = instance.newGuid();
+
+                        var colorTextureLoaderId =  instance.newGuid();
+                        operations.push(instance.createOperation({
+                            type: $NAMESPACE + ".Index2DLoader",
+                            id: colorTextureLoaderId,
+                            dataType: "TexturePngJpg",
+                            fallbackValuesId: [ colorTextureFallbackValuesId ],
+                            minMaxZoom: colorTextureMinMaxZoom,
+                            datasourceId: colorTextureLoaderDatasourceId,
+                            loadEndpoint: colorTextureLoadEndpoint,
+                        }, planetId));
+
+                        operations = operations.concat(createFallbackValues(instance, colorTextureFallbackValuesId, planetId, $NAMESPACE + ".Texture"));
+                    }
+
+                    //Add Planet -> Additional Texture Index2DLoader
+                    var additionalTextureLoaderId = $GUID_EMPTY;
+                    if (additionalTextureLoadEndpoint)
+                    { 
+                        var additionalTextureFallbackValuesId = instance.newGuid();
+
+                        var additionalTextureLoaderId = instance.newGuid();
+                        operations.push(instance.createOperation({
+                            type: $NAMESPACE + ".Index2DLoader",
+                            id: additionalTextureLoaderId,
+                            dataType: "TexturePngJpg",
+                            fallbackValuesId: [ additionalTextureFallbackValuesId ],
+                            minMaxZoom: additionalTextureMinMaxZoom,
+                            datasourceId: additionalTextureLoaderDatasourceId,
+                            loadEndpoint: additionalTextureLoadEndpoint,
+                        }, planetId));
+
+                        operations = operations.concat(createFallbackValues(instance, additionalTextureFallbackValuesId, planetId, $NAMESPACE + ".Texture"));
+                    }
+
+                    //Add Planet -> Elevation Index2DLoader
+                    var elevationLoaderId = $GUID_EMPTY;
+                    if (elevationLoadEndpoint)
+                    {
+                        var elevationFallbackValuesId = instance.newGuid();
+
+                        var elevationLoaderId = instance.newGuid();
+                        operations.push(instance.createOperation({
+                            type: $NAMESPACE + ".Index2DLoader",
+                            id: elevationLoaderId,
+                            dataType: elevationDataType,
+                            fallbackValuesId: [ elevationFallbackValuesId ],
+                            minMaxZoom: elevationMinMaxZoom,
+                            datasourceId: elevationLoaderDatasourceId,
+                            loadEndpoint: elevationLoadEndpoint,
+                        }, planetId));
+
+                        operations = operations.concat(createFallbackValues(instance, elevationFallbackValuesId, planetId, $NAMESPACE + ".Elevation"));
+                        operations.push(setFallbackValuesProperty(instance, elevationFallbackValuesId, "elevationMultiplier", "float", elevationMultiplier));
+                        operations.push(setFallbackValuesProperty(instance, elevationFallbackValuesId, "xFlip", "bool", xFlip));
+                        operations.push(setFallbackValuesProperty(instance, elevationFallbackValuesId, "yFlip", "bool", yFlip));
+                    }
+
+                    //Add Planet -> Surface Type Texture Index2DLoader
+                    var surfaceTypeTextureLoaderId = $GUID_EMPTY;
+                    if (surfaceTypeTextureLoadEndpoint)
+                    {
+                        var surfaceTypeTextureFallbackValuesId = instance.newGuid();
+
+                        var surfaceTypeTextureLoaderId = instance.newGuid();
+                        operations.push(instance.createOperation({
+                            type: $NAMESPACE + ".Index2DLoader",
+                            id: surfaceTypeTextureLoaderId,
+                            dataType: "TexturePngJpg",
+                            fallbackValuesId: [ surfaceTypeTextureFallbackValuesId ],
+                            minMaxZoom: surfaceTypeTextureMinMaxZoom,
+                            datasourceId: surfaceTypeTextureLoaderDatasourceId,
+                            loadEndpoint: surfaceTypeTextureLoadEndpoint,
+                        }, planetId));
+
+                        operations = operations.concat(createFallbackValues(instance, surfaceTypeTextureFallbackValuesId, planetId, $NAMESPACE + ".Texture"));
+                    }
+
+                    //Add TerrainRoot
+                    var terrainRootId = instance.newGuid();
+                    operations.push(instance.createOperation({
+                        id: terrainRootId,
+                        type: $NAMESPACE + ".DatasourceRoot",
+                        name: "Terrain",
+                        transform: { parent: planetTransformId }
+                    }));
+
+
+                    //Add TerrainRoot -> TerrainGridMeshObject CameraGrid2DLoader
+                    var terrainGridMeshObjectFallbackValuesId = instance.newGuid();
+                    operations.push(instance.createOperation({
+                        type: $NAMESPACE + ".CameraGrid2DLoader",
+                        sizeMultiplier: sizeMultiplier,
+                        sphericalSubdivision: sphericalSubdivision,
+                        flatSubdivision: flatSubdivision,
+                        fallbackValuesId: [ terrainGridMeshObjectFallbackValuesId ],
+                        minMaxZoom: minMaxZoom,
+                        loadInterval: 0.0
+                    }, terrainRootId));
+
+                    var terrainGridMeshObjectAssetReferencesFallbackValuesId = [ instance.newGuid(), instance.newGuid(), instance.newGuid(), instance.newGuid() ];
+
+                    operations = operations.concat(createFallbackValues(instance, terrainGridMeshObjectFallbackValuesId, terrainRootId, $NAMESPACE + ".TerrainGridMeshObject"));
+                    operations.push(setFallbackValuesProperty(instance, terrainGridMeshObjectFallbackValuesId, "referencesId", "System.Collections.Generic.List`1[" + $NAMESPACE +".SerializableGuid]", terrainGridMeshObjectAssetReferencesFallbackValuesId));
+
+                    operations = operations.concat(createFallbackValues(instance, terrainGridMeshObjectAssetReferencesFallbackValuesId[0], terrainRootId, $NAMESPACE + ".AssetReference"));
+                    operations.push(setFallbackValuesProperty(instance, terrainGridMeshObjectAssetReferencesFallbackValuesId[0], "loaderId", $NAMESPACE + ".SerializableGuid", elevationLoaderId));
+
+                    operations = operations.concat(createFallbackValues(instance, terrainGridMeshObjectAssetReferencesFallbackValuesId[1], terrainRootId, $NAMESPACE + ".AssetReference"));
+                    operations.push(setFallbackValuesProperty(instance, terrainGridMeshObjectAssetReferencesFallbackValuesId[1], "loaderId", $NAMESPACE + ".SerializableGuid", colorTextureLoaderId));
+
+                    operations = operations.concat(createFallbackValues(instance, terrainGridMeshObjectAssetReferencesFallbackValuesId[2], terrainRootId, $NAMESPACE + ".AssetReference"));
+                    operations.push(setFallbackValuesProperty(instance, terrainGridMeshObjectAssetReferencesFallbackValuesId[2], "loaderId", $NAMESPACE + ".SerializableGuid", additionalTextureLoaderId));
+
+                    operations = operations.concat(createFallbackValues(instance, terrainGridMeshObjectAssetReferencesFallbackValuesId[3], terrainRootId, $NAMESPACE + ".AssetReference"));
+                    operations.push(setFallbackValuesProperty(instance, terrainGridMeshObjectAssetReferencesFallbackValuesId[3], "loaderId", $NAMESPACE + ".SerializableGuid", surfaceTypeTextureLoaderId));
+
+                    return instance.sendMessage(operations);
+                }
+
+                function createFallbackValues(instance, id, parentId, type)
+                {
+                    var operations = [];
+
+                    operations.push(instance.createOperation({
+                        type: $NAMESPACE + ".FallbackValues",
+                        id: id,
+                    }, parentId));
+
+                    operations.push(instance.methodOperation(id, null, "SetFallbackJsonFromType", [{ type: "string", value: type }]));
+
+                    return operations;
+                }
+
+                function setFallbackValuesProperty(instance, fallbackValuesId, name, type, value)
+                {
+                    return instance.methodOperation(fallbackValuesId, null, "SetProperty", [{ type: "string", value: name }, { type: type, value: value }])
+                }
+
+                function wait(ms) {
+                    return new Promise(resolve => setTimeout(resolve, ms));
+                }
+            </script>
+
+            <div id="container">
+                <script>
+                    var instance = JsonInterface.createInstance(container, getConfig());
+                    var camera;
+                    var earthLoaders;
+                    var moonLoaders;
+
+                    container.addEventListener("initialized", containerInitialized);
+
+                    function containerInitialized()
+                    {
+                        container.removeEventListener("initialized", containerInitialized);
+
+                        let spherical = true;
+
+                        instance.set({
+                            id: instance.renderingManager.id,
+                            depthOfFieldActive: true,
+                            motionBlurActive: true,
+                            ambientOcclusionActive: true,
+                            bloomActive: true,
+                            depthOfFieldActive: true,
+                            chromaticAberrationActive: true,
+                            vignetteActive: true,
+                            colorAdjustmentsActive: true,
+                            toneMappingActive: true,
+                            fogActive: false
+                        });
+
+                        //Create Star System----------------------------------------------------
+
+                        var starSystem = createStarSystem(instance);
+
+                        var starSystemTransform = starSystem[0].transform;
+
+                        //Create Star-----------------------------------------------------------
+
+                        var star = createStar(instance, starSystemTransform.id, "Sun");
+                        var starObject = star[0];
+
+                        instance.create({ type: $NAMESPACE + ".OrbitController", orbit: "Sun" }, starObject.id);
+
+                        //Create Earth----------------------------------------------------------
+
+                        earthLoaders = [];
+
+                        var mapboxDatasource = instance.getRestDatasource("https://api.mapbox.com/");
+                        var createdComponents = createEmptyPlanet(
+                            instance,
+                            starSystemTransform.id,
+                            "Earth",
+                            spherical,
+                            40075016.685578,
+                            5.972e+24,
+                            2.0,
+                            2,
+                            2,
+                            { x: 0, y: 19 },
+
+                            mapboxDatasource.id,
+                            "v4/mapbox.satellite/{0}/{1}/{2}@2x.jpg90?access_token=" + $MAPBOX_KEY,
+                            { x: 0, y: 15 },
+
+                            $GUID_EMPTY,
+                            null,
+                            $VECTOR2INT_ZERO,
+
+                            mapboxDatasource.id,
+                            //"raster/v1/mapbox.mapbox-terrain-dem-v1/{0}/{1}/{2}.webp?sku=101WQxhVS07ft&access_token=" + MAPBOX_KEY,
+                            "v4/mapbox.terrain-rgb/{0}/{1}/{2}.pngraw?access_token=" + $MAPBOX_KEY,
+                            { x: 0, y: 15 },
+                            1.0,
+                            false,
+                            false,
+                            //"ElevationMapboxTerrainRGBWebP",
+                            "ElevationMapboxTerrainRGBPngRaw",
+
+                            mapboxDatasource.id,
+                            "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=" + $MAPBOX_KEY,
+                            { x: 0, y: 14 });
+
+                        addLoaders(earthLoaders, createdComponents);
+
+                        var earthObject = createdComponents[0];
+                        var colorTextureLoader = createdComponents[1];
+                        var elevationLoader = createdComponents[3];
+
+                        var operations = [];
+
+                        //Add Earth => BuildingFeature Index2DLoader
+                        var buildingFeatureFallbackValuesId = instance.newGuid();
+                        var buildingFeatureDatasource = instance.getRestDatasource(
+                            "https://a-data.3dbuildings.com/",
+                            "https://b-data.3dbuildings.com/",
+                            "https://c-data.3dbuildings.com/",
+                            "https://d-data.3dbuildings.com/");
+                        var buildingFeatureDataLoaderId = instance.newGuid();
+                        operations.push(instance.createOperation({
+                            id: buildingFeatureDataLoaderId,
+                            type: $NAMESPACE + ".Index2DLoader",
+                            dataType: "Json",
+                            fallbackValuesId: [ buildingFeatureFallbackValuesId ],
+                            datasourceId: buildingFeatureDatasource.id,
+                            loadEndpoint: "tile/{0}/{1}/{2}.json?token=dixw8kmb"
+                        }, earthObject.id));
+
+                        operations = operations.concat(createFallbackValues(instance, buildingFeatureFallbackValuesId, earthObject.id, $NAMESPACE + ".BuildingFeature"));
+
+                        //Add Earth -> BuildingsRoot
+                        var buildingsRootId = instance.newGuid();
+
+                        var buildingMeshObjectFallbackValuesId = instance.newGuid();
+                        operations.push(instance.createOperation({
+                            id: buildingsRootId,
+                            type: $NAMESPACE + ".DatasourceRoot",
+                            name: "Buildings",
+                            transform: { parent: earthObject.transform.id }
+                        }));
+
+                        //Add BuildingsRoot -> BuildingsMeshObject CameraGrid2DLoader
+                        operations.push(instance.createOperation({
+                            type: $NAMESPACE + ".CameraGrid2DLoader",
+                            fallbackValuesId: [ buildingMeshObjectFallbackValuesId ],
+                            minMaxZoom: { x: 14, y: 14 },
+                            cascades: $VECTOR2INT_ZERO,
+                            sizeMultiplier: 1.0,
+                            loadInterval: 0.0
+                        }, buildingsRootId));
+
+                        var buildingGridMeshObjectAssetReferencesFallbackValuesId = [ instance.newGuid(), instance.newGuid(), instance.newGuid(), instance.newGuid() ];
+
+                        operations = operations.concat(createFallbackValues(instance, buildingMeshObjectFallbackValuesId, buildingsRootId, $NAMESPACE + ".BuildingGridMeshObject"));
+                        operations.push(setFallbackValuesProperty(instance, buildingMeshObjectFallbackValuesId, "referencesId", "System.Collections.Generic.List`1[" + $NAMESPACE + ".SerializableGuid]", buildingGridMeshObjectAssetReferencesFallbackValuesId));
+
+                        //Add BuildingsGridMeshObject CameraGrid2DLoader -> Asset References
+                        operations = operations.concat(createFallbackValues(instance, buildingGridMeshObjectAssetReferencesFallbackValuesId[0], buildingsRootId, $NAMESPACE + ".AssetReference"));
+                        operations.push(setFallbackValuesProperty(instance, buildingGridMeshObjectAssetReferencesFallbackValuesId[0], "loaderId", $NAMESPACE + ".SerializableGuid", elevationLoader.id));
+
+                        operations = operations.concat(createFallbackValues(instance, buildingGridMeshObjectAssetReferencesFallbackValuesId[1], buildingsRootId, $NAMESPACE + ".AssetReference"));
+                        operations.push(setFallbackValuesProperty(instance, buildingGridMeshObjectAssetReferencesFallbackValuesId[1], "loaderId", $NAMESPACE + ".SerializableGuid", buildingFeatureDataLoaderId));
+
+                        operations = operations.concat(createFallbackValues(instance, buildingGridMeshObjectAssetReferencesFallbackValuesId[2], buildingsRootId, $NAMESPACE + ".AssetReference"));
+                        operations.push(setFallbackValuesProperty(instance, buildingGridMeshObjectAssetReferencesFallbackValuesId[2], "loaderId", $NAMESPACE + ".SerializableGuid", colorTextureLoader.id));
+
+                        operations = operations.concat(createFallbackValues(instance, buildingGridMeshObjectAssetReferencesFallbackValuesId[3], buildingsRootId, $NAMESPACE + ".AssetReference"));
+
+                        //Add Earth -> MarkerRoot
+                        var vizDatasourceMarkers = instance.getRestDatasource("https://www.vizmedia.ca/markerBackend/");
+                        operations.push(instance.setOperation({
+                            id: vizDatasourceMarkers.id,
+                            saveEndpoint: "rest/markers/?id={0}",
+                            synchronizeEndpoint: "rest/markers/",
+                            deleteEndpoint: "rest/markers/deleteMarker/",
+                        }, earthObject.id));
+
+                        var markerRootId = instance.newGuid();
+                        operations.push(instance.createOperation({
+                            id: markerRootId,
+                            type: $NAMESPACE + ".DatasourceRoot",
+                            name: "Marker",
+                            transform: { parent: earthObject.transform.id }
+                        }));
+
+                        //Add MarkerRoot -> Marker CameraGrid2DLoader
+                        var markerFallbackValuesId = instance.newGuid();
+                        operations.push(instance.createOperation({
+                            type: $NAMESPACE + ".CameraGrid2DLoader",
+                            datasourceId: vizDatasourceMarkers.id,
+                            loadEndpoint: "rest/markers/inBound/{0},{1},{2},{3}?query=*",
+                            dataType: "Json",
+                            fallbackValuesId: [ markerFallbackValuesId ],
+                            indexUrlParamType: "GeoBoundaries",
+                            minMaxZoom: { x: 8, y: 8 },
+                            cascades: $VECTOR2INT_ZERO,
+                            loadInterval: 0.0
+                        }, markerRootId));
+
+                        var markerControllerFallbackValuesId = instance.newGuid();
+                        operations = operations.concat(createFallbackValues(instance, markerFallbackValuesId, markerRootId, $NAMESPACE + ".Marker"));
+                        operations.push(setFallbackValuesProperty(instance, markerFallbackValuesId, "controllerId", $NAMESPACE + ".SerializableGuid", markerControllerFallbackValuesId));
+
+                        operations = operations.concat(createFallbackValues(instance, markerControllerFallbackValuesId, markerRootId, $NAMESPACE + ".GeoCoordinateController"));
+
+                        //Add Earth -> Reflection
+                        operations.push(instance.createOperation({
+                            type: $NAMESPACE + ".TerrainSurfaceReflectionEffect"
+                        }, earthObject.id));
+
+                        //Add Earth -> Atmosphere
+                        operations.push(instance.createOperation({
+                            type: $NAMESPACE + ".AtmosphereEffect"
+                        }, earthObject.id));
+
+                        //Add Earth -> Building Root
+                        var buildingRootId = instance.newGuid();
+                        operations.push(instance.createOperation({
+                            id: buildingRootId,
+                            type: $NAMESPACE + ".DatasourceRoot",
+                            name: "Building",
+                            transform: { parent: earthObject.transform.id }
+                        }));
+
+                        var vizDatasource = instance.getRestDatasource("https://www.vizmedia.ca/");
+
+                        //Add Building Root -> Building IdLoader
+                        var buildingFallbackValuesId = instance.newGuid();
+                        var levelFallbackValuesId = instance.newGuid();
+                        var levelMeshObjectFallbackValuesId = instance.newGuid();
+
+                        operations.push(instance.createOperation({
+                            type: $NAMESPACE + ".IdLoader",
+                            datasourceId: vizDatasource.id,
+                            dataType: "Json",
+                            fallbackValuesId: [ buildingFallbackValuesId, levelFallbackValuesId, levelMeshObjectFallbackValuesId ],
+                            loadEndpoint: "vizbackend/rest/bcs/getBuildingModel/{0}",
+                            ids: ["a9a865e0-92bb-3bac-1bbe-2af17ce36071", "4cbd0bdb-ed87-4c47-9da7-1ba5450e82c7", "84009af9-1c46-3360-fd86-de4e7e0a0e66"]
+                        }, buildingRootId));
+
+                        operations = operations.concat(createFallbackValues(instance, buildingFallbackValuesId, buildingRootId, $NAMESPACE + ".Building"));
+                        operations = operations.concat(createFallbackValues(instance, levelFallbackValuesId, buildingRootId, $NAMESPACE + ".Level"));
+                        operations = operations.concat(createFallbackValues(instance, levelMeshObjectFallbackValuesId, buildingRootId, $NAMESPACE + ".LevelMeshObject"));
+
+                        createdComponents = instance.sendMessage(operations);
+                        
+                        addLoaders(earthLoaders, createdComponents);
+
+                        instance.create({ type: $NAMESPACE + ".OrbitController", orbit: "Earth" }, earthObject.id);
+
+                        //Create Moon--------------------------------------------------------------
+
+                        moonLoaders = [];
+
+                        var arcGISDatasource = instance.getRestDatasource("https://tiles.arcgis.com/");
+                        createdComponents = createEmptyPlanet(
+                            instance,
+
+                            starSystemTransform.id,
+                            name,
+                            spherical,
+                            10921000.0,
+                            7.34767309e+22,
+                            3.0,
+                            1,
+                            1,
+                            { x: 0, y: 7 },
+
+                            arcGISDatasource.id,
+                            "tiles/WQ9KVmV6xGGMnCiQ/arcgis/rest/services/Moon_Basemap_Tile0to9/MapServer/tile/{0}/{2}/{1}",
+                            { x: 0, y: 7 },
+
+                            //Esri LERC .dll does not work in WebGL so we omit the Elevation for the moment.
+                        );
+
+                        addLoaders(moonLoaders, createdComponents);
+
+                        var moonObject = createdComponents[0];
+
+                        instance.create({ type: $NAMESPACE + ".OrbitController", orbit: "Moon" }, moonObject.id);
+
+                        //Create Camera---------------------------------------------------------
+
+                        camera = createCamera(instance, earthObject.transform.id, "Camera", true, 10000000.0);
+                        instance.set({ id: camera[0].transform.id, geoCoordinate: { latitude: 40.71030760095461, longitude: -74.00914355419624 } });
+                        instance.set({ id: camera[4].id, preventMeshPenetration: true });
+
+                        //Force Start Loading---------------------------------------------------
+
+                        for (var i in earthLoaders)
+                        {
+                            var earthLoader = earthLoaders[i];
+                            if (earthLoader.type == $NAMESPACE + ".CameraGrid2DLoader")
+                                instance.callInstanceMethod(earthLoader.id, "LoadAll");
+                        }
+
+                        for (var i in moonLoaders)
+                        {
+                            var moonLoader = moonLoaders[i];
+                            if (moonLoader.type == $NAMESPACE + ".CameraGrid2DLoader")
+                                instance.callInstanceMethod(moonLoader.id, "LoadAll");
+                        }
+                    }
+
+                    container.addEventListener("postHierarchicalUpdate", containerPostHierarchicalUpdate);
+
+                    function containerPostHierarchicalUpdate()
+                    {
+                        if (instance.getTotalLoadingCount() == 0)
+                        {
+                            container.removeEventListener("postHierarchicalUpdate", containerPostHierarchicalUpdate);
+
+                            wait(1000).then(() => { instanceReady(); });
+                        }
+                    }
+
+                    function instanceReady()
+                    {
+                        containerLoader.classList.toggle('fade');
+                        containerLoader.ontransitionend = () => {
+                            container.removeChild(containerLoader);
+                        };
+
+                        for (var i in earthLoaders)
+                        {
+                            var earthLoader = earthLoaders[i];
+                            if (earthLoader.type == $NAMESPACE + ".CameraGrid2DLoader")
+                            {
+                                var fallbackType = instance.callInstanceMethod(earthLoader.fallbackValuesId[0], "GetFallbackValuesType");
+                                if (fallbackType == $NAMESPACE + ".TerrainGridMeshObject")
+                                    instance.set({ id: earthLoader.id, loadInterval: 1.0 });
+                                if (fallbackType == $NAMESPACE + ".Marker")
+                                    instance.set({ id: earthLoader.id, loadInterval: 0.3 });
+                                if (fallbackType == $NAMESPACE + ".BuildingGridMeshObject")
+                                    instance.set({ id: earthLoader.id, loadInterval: 1.0 });
+                            }
+                        }
+
+                        for (var i in moonLoaders)
+                        {
+                            var moonLoader = moonLoaders[i];
+                            if (moonLoader.type == $NAMESPACE + ".CameraGrid2DLoader")
+                            {
+                                var fallbackType = instance.callInstanceMethod(moonLoader.fallbackValuesId[0], "GetFallbackValuesType");
+                                if (fallbackType == $NAMESPACE + ".TerrainGridMeshObject")
+                                    instance.set({ id: moonLoader.id, loadInterval: 1.0 });
+                            }
+                        }
+                    }
+                </script>
+
+                <div class="attribution">
+                    <a href="https://mapbox.com">© Mapbox</a> | <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> | <a href="https://3dbuildings.com">© 3dBuildings</a> | <a href="https://vizmedia.ca">VIZMedia</a>
+                </div>
+
+                <div id="containerLoader" class="loaderGrp">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+
+            <div id="container2">
+                <script>
+                    var instance2 = JsonInterface.createInstance(container2, getConfig());
+                    var camera2;
+                    var mapLoaders;
+                    var marker;
+                    var marker2;
+
+                    container2.addEventListener("initialized", container2Initialized);
+
+                    function container2Initialized()
+                    {
+                        container2.removeEventListener("initialized", container2Initialized);
+
+                        let spherical = false;
+
+                        instance2.set({
+                            id: instance2.renderingManager.id,
+                            environmentUpdateFrequency: 4.0,
+                            depthOfFieldActive: true,
+                            motionBlurActive: true,
+                            ambientOcclusionActive: true,
+                            bloomActive: false,
+                            chromaticAberrationActive: false,
+                            vignetteActive: false,
+                            colorAdjustmentsActive: false,
+                            toneMappingActive: false,
+                            fogActive: false
+                        });
+
+                        //Create Star-----------------------------------------------------------
+
+                        var star = createStar(instance2, null, "Sun");
+                        var starObject = star[0];
+                        instance2.set({ id: starObject.id, intensity: 1.0 });
+   
+                        //Create Map----------------------------------------------------------
+
+                        mapLoaders = [];
+
+                        var mapboxDatasource = instance2.getRestDatasource("https://api.mapbox.com/");
+                        var createdComponents = createEmptyPlanet(
+                            instance2,
+                            null,
+                            "Map",
+                            spherical,
+                            40075016.685578,
+                            5.972e+24,
+                            2.0,
+                            1,
+                            1,
+                            { x: 0, y: 19 },
+
+                            mapboxDatasource.id,
+                            "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=" + $MAPBOX_KEY,
+                            { x: 0, y: 15 });
+
+                        addLoaders(mapLoaders, createdComponents);
+
+                        var mapObject = createdComponents[0];
+
+                        var operations = [];
+
+                        //Add Map => BuildingFeature Index2DLoader
+                        var buildingFeatureFallbackValuesId = instance2.newGuid();
+                        var buildingFeatureDatasource = instance2.getRestDatasource(
+                            "https://a-data.3dbuildings.com/",
+                            "https://b-data.3dbuildings.com/",
+                            "https://c-data.3dbuildings.com/",
+                            "https://d-data.3dbuildings.com/");
+                        var buildingFeatureDataLoaderId = instance2.newGuid();
+                        operations.push(instance2.createOperation({
+                            id: buildingFeatureDataLoaderId,
+                            type: $NAMESPACE + ".Index2DLoader",
+                            dataType: "Json",
+                            fallbackValuesId: [ buildingFeatureFallbackValuesId ],
+                            datasourceId: buildingFeatureDatasource.id,
+                            loadEndpoint: "tile/{0}/{1}/{2}.json?token=dixw8kmb"
+                        }, mapObject.id));
+
+                        operations = operations.concat(createFallbackValues(instance2, buildingFeatureFallbackValuesId, mapObject.id, $NAMESPACE + ".BuildingFeature"));
+
+                        //Add Map -> BuildingsRoot
+                        var buildingsRootId = instance2.newGuid();
+
+                        var buildingMeshObjectFallbackValuesId = instance2.newGuid();
+                        operations.push(instance2.createOperation({
+                            id: buildingsRootId,
+                            type: $NAMESPACE + ".DatasourceRoot",
+                            name: "Buildings",
+                            transform: { parent: mapObject.transform.id }
+                        }));
+
+                        //Add BuildingsRoot -> BuildingsMeshObject CameraGrid2DLoader
+                        operations.push(instance2.createOperation({
+                            type: $NAMESPACE + ".CameraGrid2DLoader",
+                            transform: { parent: mapObject.transform.id },
+                            fallbackValuesId: [ buildingMeshObjectFallbackValuesId ],
+                            minMaxZoom: { x: 14, y: 14 },
+                            cascades: $VECTOR2INT_ZERO,
+                            sizeMultiplier: 1.0,
+                            loadInterval: 0.0,
+                        }, buildingsRootId));
+
+                        var buildingGridMeshObjectAssetReferencesFallbackValuesId = [instance2.newGuid(), instance2.newGuid(), instance2.newGuid(), instance2.newGuid()];
+
+                        operations = operations.concat(createFallbackValues(instance2, buildingMeshObjectFallbackValuesId, buildingsRootId, $NAMESPACE + ".BuildingGridMeshObject"));
+                        operations.push(setFallbackValuesProperty(instance2, buildingMeshObjectFallbackValuesId, "referencesId", "System.Collections.Generic.List`1[" + $NAMESPACE + ".SerializableGuid]", buildingGridMeshObjectAssetReferencesFallbackValuesId));
+                        operations.push(setFallbackValuesProperty(instance2, buildingMeshObjectFallbackValuesId, "color", "Color", { r: 1.0, g: 1.0, b: 1.0, a: 1.0 }));
+
+                        //Add BuildingsGridMeshObject CameraGrid2DLoader -> Asset References
+                        operations = operations.concat(createFallbackValues(instance2, buildingGridMeshObjectAssetReferencesFallbackValuesId[0], buildingsRootId, $NAMESPACE + ".AssetReference"));
+
+                        operations = operations.concat(createFallbackValues(instance2, buildingGridMeshObjectAssetReferencesFallbackValuesId[1], buildingsRootId, $NAMESPACE + ".AssetReference"));
+                        operations.push(setFallbackValuesProperty(instance2, buildingGridMeshObjectAssetReferencesFallbackValuesId[1], "loaderId", $NAMESPACE + ".SerializableGuid", buildingFeatureDataLoaderId));
+
+                        operations = operations.concat(createFallbackValues(instance2, buildingGridMeshObjectAssetReferencesFallbackValuesId[2], buildingsRootId, $NAMESPACE + ".AssetReference"));
+
+                        operations = operations.concat(createFallbackValues(instance2, buildingGridMeshObjectAssetReferencesFallbackValuesId[3], buildingsRootId, $NAMESPACE + ".AssetReference"));
+
+                        createdComponents = instance2.sendMessage(operations);
+                        addLoaders(mapLoaders, createdComponents);
+
+                        //Create Camera---------------------------------------------------------
+
+                        camera2 = createCamera(instance2, mapObject.transform.id, "Camera", true, 10000.0, $MATERIAL_BASE_PATH + "Skybox/Atmosphere-Skybox");
+                        var cameraTargetObject = camera2[0];
+                        instance2.set({ id: cameraTargetObject.transform.id, geoCoordinate: { latitude: 40.71030760095461, longitude: -74.00914355419624 } });
+                   
+                        //Force Start Loading---------------------------------------------------
+
+                        for (var i in mapLoaders)
+                        {
+                            var mapLoader = mapLoaders[i];
+                            if (mapLoader)
+                                instance2.callInstanceMethod(mapLoader.id, "LoadAll");
+                        }
+
+                        marker = createMarker(instance2, mapObject.id, "Marker", "#ff0000", "UNIVERSEPIN", true, 30.0);
+                        instance2.bindElementToTransformPosition(popup, marker[0].transform.id);
+
+                        marker2 = createMarker(instance2, mapObject.id, "Marker2", "#00ff00", "UNIVERSEPIN");
+                        instance2.set({
+                            id: marker2[0].transform.id,
+                            geoCoordinate: { latitude: 40.71463488432494, longitude: -74.00376079165244 }
+                        });
+                        instance2.bindElementToTransformPosition(popup2, marker2[0].transform.id);
+                    }
+
+                    function addLoaders(loaders, components)
+                    {
+                        for (var i in components)
+                        {
+                            var component = components[i];
+                            if (component.type == $NAMESPACE + ".CameraGrid2DLoader" || component.type == $NAMESPACE + ".Index2DLoader")
+                                loaders.push(component);
+                        }
+                    }
+
+                    container2.addEventListener("postHierarchicalUpdate", container2PostHierarchicalUpdate);
+
+                    function container2PostHierarchicalUpdate()
+                    {
+                        if (instance2.getTotalLoadingCount() == 0)
+                        {
+                            container2.removeEventListener("postHierarchicalUpdate", container2PostHierarchicalUpdate);
+
+                            wait(1000).then(() => { instance2Ready(); });
+                        }
+                    }
+
+                    function instance2Ready()
+                    {
+                        container2Loader.classList.toggle('fade');
+                        container2Loader.ontransitionend = () => {
+                            container2.removeChild(container2Loader);
+                        };
+
+                        for (var i in mapLoaders)
+                        {
+                            var mapLoader = mapLoaders[i];
+                            if (mapLoader.type == $NAMESPACE + ".CameraGrid2DLoader")
+                            {
+                                var fallbackType = instance2.callInstanceMethod(mapLoader.fallbackValuesId[0], "GetFallbackValuesType");
+                                if (fallbackType == $NAMESPACE + ".TerrainGridMeshObject")
+                                    instance2.set({ id: mapLoader.id, loadInterval: 0.3 });
+                                if (fallbackType == $NAMESPACE + ".BuildingGridMeshObject")
+                                    instance2.set({ id: mapLoader.id, loadInterval: 1.0 });
+                            }
+                        }
+
+                        instance2.callInstanceMethod(camera2[5].id, "SetDistance", [{ type: "System.Double", value: 1000.0 }, { type: "System.Int32", value: 6.0 }, { type: $NAMESPACE + ".EasingType", value: "QuartEaseOut" }]);
+                    }
+
+                    container2.addEventListener("hierarchicalUpdate", hierarchicalUpdate);
+
+                    function hierarchicalUpdate()
+                    {
+                        var markerObject = marker[0];
+                        var cameraObject = camera[3];
+                        if (markerObject != null && instance2 != null)
+                        {
+                            if (cameraObject != null && instance != null)
+                            {
+                                let geoCoordinate = instance.getId(cameraObject.id, { transform: { geoCoordinate: "true" } })[0].transform.geoCoordinate;
+                                geoCoordinate.altitude = 0.0;
+                                instance2.set({ id: markerObject.transform.id, geoCoordinate: geoCoordinate });
+                            }
+                        }
+                    }
+
+                    container2.addEventListener("mouseClicked", container2MouseClicked);
+
+                    function container2MouseClicked(event)
+                    {
+                        var hit = event.detail;
+                        if (hit != null && hit.visualObject != null && hit.visualObject.type == $NAMESPACE + ".Marker")
+                            instance2.callInstanceMethod(instance2.mainCamera.controller.id, "MoveTo", [{ type: $NAMESPACE + ".Vector3Double", value: instance2.getInstancePropertyValue(hit.transform.id, "position")[0] }, { type: "System.Double", value: 200.0 }]);
+                    }
+                </script>
+
+                <div id="popup" class="popup"></div>
+                <div id="popup2" class="popup2"></div>
+
+                <div class="attribution">
+                    <a href="https://mapbox.com">© Mapbox</a> | <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> | <a href="https://3dbuildings.com">© 3dBuildings</a> | <a href="https://vizmedia.ca">VIZMedia</a>
+                </div>
+
+                <div id="container2Loader" class="loaderGrp">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+
+        </div>
+	</body>
+
+</html>

@@ -1,0 +1,98 @@
+/* Copyright (C) 2023 by VIZ Interactive Media Inc. <contact@vizinteractive.io> | Licensed under MIT license (see LICENSE.md for details) */
+
+body {
+    background: {{{ BACKGROUND_COLOR }}};
+}
+
+.unity-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+}
+
+.unity-canvas {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Attribution */
+.attribution {
+    z-index: 9999998;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    padding: 1px 3px;
+    background: rgba(255,255,255,0.5);
+    font: 11px sans-serif;
+}
+
+.attribution a {
+    text-decoration: none;
+    color: #000000;
+}
+
+.attribution a:visited {
+    text-decoration: none;
+    color: #000000;
+}
+
+.attribution a:hover {
+    text-decoration: underline;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+/* Loader */
+.loaderGrp {
+    z-index: 9999999;
+    opacity: 1;
+    transition: opacity 1s;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    display: flex;
+    background-color: {{{ BACKGROUND_COLOR }}};
+}
+
+.loaderGrp.fade {
+    opacity: 0;
+}
+
+.spinner {
+    border: 5px solid #f3f3f3; /* Light grey */
+    border-top: 5px solid #5f6269; /* Grey */
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    margin-top: -25px; /* Half the height */
+    margin-left: -25px; /* Half the width */
+    animation: spin 2s linear infinite;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+}
+
+@keyframes spin 
+{
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.popup {
+    width: 150px;
+    height: 150px;
+    background-color: red;
+}
+.popup2 {
+    width: 100px;
+    height: 100px;
+    background-color: blue;
+}

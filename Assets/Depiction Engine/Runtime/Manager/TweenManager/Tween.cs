@@ -1,0 +1,146 @@
+﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
+
+using System;
+using UnityEngine;
+
+namespace DepictionEngine
+{
+    public class Tween : ScriptableObjectBase
+    {
+        private float _from;
+        private float _to;
+        private float _progress;
+        private float _duration;
+        private EasingType _easing;
+
+        private float _currentLerpTime;
+        private bool _playing;
+
+        private Action<float> _onUpdateCallback;
+        private Action _onCompleteCallback;
+        private Action _onKillCallback;
+
+        public override void Recycle()
+        {
+            base.Recycle();
+
+            _progress = 0.0f;
+
+            _currentLerpTime = 0.0f;
+            _playing = false;
+        }
+
+        public Tween Init(float from, float to, float duration, Action<float> onUpdate, Action onComplete, Action onKill, EasingType easing = EasingType.Linear)
+        {
+            _to = to;
+            _from = from;
+            _duration = duration;
+            _easing = easing;
+
+            _onUpdateCallback = onUpdate;
+            _onCompleteCallback = onComplete;
+            _onKillCallback = onKill;
+
+            return this;
+        }
+
+        public float from
+        {
+            get { return _from; }
+        }
+
+        public float to
+        {
+            get { return _to; }
+        }
+
+        public float progress
+        {
+            get { return _progress; }
+            private set
+            {
+                if (_progress == value)
+                    return;
+
+                _progress = value;
+
+                if (_onUpdateCallback != null)
+                    _onUpdateCallback(currentValue);
+
+                if (IsDisposing())
+                    return;
+
+                if (_progress == 1.0f)
+                    Completed();
+            }
+        }
+
+
+        public float currentValue
+        {
+            get { return _from + (_to - _from) * _progress; }
+        }
+
+        public float duration
+        {
+            get { return _duration; }
+        }
+
+        public bool playing
+        {
+            get { return _playing; }
+        }
+
+        public Tween Play()
+        {
+            _playing = true;
+            UpdateProgress();
+            return this;
+        }
+
+        public Tween Pause()
+        {
+            _playing = false;
+            return this;
+        }
+
+        public void Update()
+        {
+            if (IsDisposing())
+                return;
+
+            if (_playing)
+            {
+                _currentLerpTime += Time.deltaTime;
+                UpdateProgress();
+            }
+        }
+
+        public void UpdateProgress()
+        {
+            progress = _duration == 0.0f ? 1.0f : Easing.Ease(_easing, Mathf.Clamp01(_currentLerpTime / _duration), 0.0f, 1.0f, 1.0f);
+        }
+
+        private void Completed()
+        {
+            _playing = false;
+
+            if (_onCompleteCallback != null)
+                _onCompleteCallback();
+
+            DisposeManager.Dispose(this);
+        }
+
+        public override bool OnDisposing()
+        {
+            if (base.OnDisposing())
+            {
+                if (_onKillCallback != null)
+                    _onKillCallback();
+
+                return true;
+            }
+            return false;
+        }
+    }
+}

@@ -1,0 +1,223 @@
+/**
+ * @mainpage
+ *
+ * # Support
+ *
+ * - __Unity (Windows, Android, WebGL)__ \n 
+ * \n 
+ *   + 2022.x.
+ *   @note Only Universal Rendering Pipeline(URP) projects are officially supported for the moment.
+ * .
+ *
+ *
+ * # Installation {#installationId}
+ *
+ * - __Download__ \n 
+ * \n 
+ *   + Download the package from GitHub and move it to your "/Assets/" folder OR Install through the `Unity Package Manager` if available.
+ *   @warning The package is currently not available in the `Unity Package Manager`.
+ * .
+ *
+ * - __Dependencies__ \n 
+ * \n 
+ *   + `TexMeshPro` is required and can be installed through the `Unity Package Manager` if missing.
+ * .
+ *
+ * - __Creating a Project__ \n 
+ * \n 
+ *   + A series of `DepictionEngine.ManagerBase`'s are required in the Scene and will automatically be created the moment an `DepictionEngine.Object` is first introduced to the Scene. To easily create `DepictionEngine.Object`'s in the Editor see the '_New Hierarchy Window Context Menu items_' point of the @ref editorIntegrationId "Editor Integration" section.
+ * . 
+ *
+ * - __Patching Universal Rendering Pipeline__ \n 
+ * \n 
+ *   + Some important `ShaderGraph` nodes require the rendering pipeline to be modified to function properly. The patching should be performed automatically upon launch of the Editor however you can also trigger it manually in your Scene `DepictionEngine.RenderingManager` by pressing the `Patch Universal Rendering Pipeline` button.
+ * .
+ *
+ *
+ * # Build
+ *
+ *
+ * - __Javascript API__ \n 
+ * \n 
+ *   + To build the Javascript API, you will have to move the `WebGLTemplates` folder to "/Assets/". You should now be able to select the "Depiction Engine - Demo" WebGL Template under "Resolution and Presentation" tab of the "Project Settings" window under the "Player" category. \n 
+ * \n 
+ *   + To handle the communication with Javascript you will need to add a `DepictionEngine.JsonInterface` component in the "Managers" GameObject. \n 
+ * \n 
+ *   + If you want to control Post processing effect from Javascript make sure to read the '_Scripting_' point of the @ref postProcessingId "Post Processing" section. \n
+ * \n 
+ *   + Before you build for WebGL make sure that all the managers have been created in your Scene, read the '_Creating a Project_' point of the @ref installationId "Installation" section to find out how to create them.
+ * .
+ *
+ *
+ * # Overview
+ *
+ * ## Editor integration {#editorIntegrationId}
+ *
+ * - __New GameObject Menu items__ \n 
+ * \n 
+ *   + `Align View to Selected GeoAstroObject`: \n 
+ *    When enabled, the current Scene Camera will always be perpendicular to the selected GeoAstroObject surface. \n 
+ * \n 
+ *   + `Auto Snap View to Terrain`: \n 
+ *    When Enabled, the current Scene Camera will always have its target snap to the terrain. \n 
+ * \n 
+ *   + `Move View to GeoCoordinate`: \n 
+ *    When triggered, a popup will be displayed allowing you to enter a GeoCoordinate you want the current Scene Camera target to quickly navigate to.
+ * .
+ * 
+ * - __New Hierarchy Window Context Menu items__ \n 
+ * \n 
+ *   + When right clicking the _Hierarchy Window_ the _Context Menu_ will now contain a new item called "Depiction Engine" where all kinds of new objects and components can be created. Look for the "Depiction Engine -> Astro" items for different planet and map presets to help get you started. 
+ * .
+ *
+ *
+ * ## Order of execution
+ *
+ * - __Initialization__ \n 
+ * \n 
+ *   + Constructor Initialize(initializecontext).
+ * .
+ *
+ * - __Update__ \n 
+ * \n 
+ *   + Origin Shifting allows for the positioning of objects and rendering on a very large scale. It can be enabled under `DepictionEngine.RenderingManager.originShifting` and will be `true` by default.
+ * .
+ *
+ * - __Disposing__ \n 
+ * \n 
+ *   + OnDisposing. OnDisposed. OnDestroy.
+ * .
+ * <b><see cref="LateInitialize"/>:</b>
+ * Objects that were not initialized are automatically initialized. 
+ *  <b><see cref="PreHierarchicalUpdate"/>:</b>
+ *  The hierarchy is traversed and values are prepared for the update. <br/><br/>
+ *        /// <b><see cref="HierarchicalUpdate"/>:</b> <br/>
+ *        /// The hierarchy is traversed and the update code is executed. <br/><br/>
+ *        /// <b><see cref="PostHierarchicalUpdate"/>:</b> <br/>
+ *        /// The hierarchy is traversed and code that required updated values is executed. <br/><br/>
+ *        /// <b><see cref="HierarchicalClearDirtyFlags"/>:</b> <br/>
+ *        /// The hierarchy is traversed and dirty flags are cleared. <br/><br/>
+ *        /// <b><see cref="HierarchicalActivate"/>:</b> <br/>
+ *        /// The hierarchy is traversed and gameObjects that have never been active are temporarly activated and deactivated to allow for their Awake to be called. <br/><br/>
+ *        /// <b><see cref="UnityInitialized"/>:</b> <br/>
+ *        /// Marks all newly initialized objects as 'UnityInitialized'. <br/><br/>
+ *        /// <b><see cref="DelayedOnDestroy"/>:</b> <br/>
+ *        /// Objects that were waiting to be destroyed are destroyed. <br/><br/>
+ *        /// <b><see cref="DelayedDispose"/>:</b> <br/>
+ *        /// Objects that were waiting to be disposed are disposed. <br/><br/>
+ *        /// <b><see cref="DelayedDisposeLate"/>:</b> <br/>
+ *
+ *
+ * ## Disposing and Pooling
+ *
+ * - __Disposing__ \n 
+ * \n 
+ *   + Objects implementing `DepictionEngine.IDisposable` need to be disposed with the `DepictionEngine.DisposeManager`. If `DepictionEngine.PoolManager.enablePooling` is true `DepictionEngine.IDisposable` objects will be automatically added back to the pool unless a destroyContext is provided. \n 
+ *	 ~~~~~~~~~~~~~{.cs}
+ *	 DisposeManager.Dispose(object, destroyContext);
+ *	 ~~~~~~~~~~~~~
+ * \n 
+ *   + Objects which do not implement `DepictionEngine.IDisposable` can be destroyed with the `DepictionEngine.DisposeManager`. Destroying using the `DepictionEngine.DisposeManager` is preferable over calling `GameObject.Destroy` or `GameObject.DestroyImmediate` directly.
+ *	 ~~~~~~~~~~~~~{.cs}
+ *	 DisposeManager.Destroy(object);
+ *	 ~~~~~~~~~~~~~
+ * .
+ * 
+ * 
+ * ## Double precision
+ *
+ * - __Origin Shifting__ \n 
+ * \n 
+ *   + Origin Shifting allows for the positioning of objects and rendering on a very large scale. It can be enabled under `DepictionEngine.RenderingManager.originShifting` and will be `true` by default. \n 
+ * \n 
+ *   + For performance reason empty `DepictionEngine.Object`'s will be automatically origin shifted only while they are selected in the Editor to allow for the manipulation tools(Move, Rotate, Scale...) to be displayed correctly while `DepictionEngine.VisualObject`'s will always be origin shifted as they are expected to have rendered visuals as childs. `DepictionEngine.Object`'s that do not require positioning will always be positioned at zero(origin) with no rotation(identity). If required this behaviour can be modified by any class which extends `DepictionEngine.Object` and overrides its `DepictionEngine.Object.RequiresPositioning` method to return `true`.
+ * .
+ * 
+ *
+ * ## Datasource
+ *
+ * - __Saving__ \n 
+ * \n 
+ *   + Only properties that have been marked as 'Out of Synch' will be pushed to the `DepictionEngine.Datasource` when a save operation is performed. Properties modified through the Editor should be automatically marked as 'Out of Synch' however, if need be, properties can also be marked manually using the `DepictionEngine.IScriptableBehaviour.IsUserChange` method. For properties to be persisted they need to have the `DepictionEngine.JsonAttribute`.
+ *   ~~~~~~~~~~~~~{.cs}
+ *   object.IsUserChange(
+ * 		() => { 
+ * 			//Perform property assignment. 
+ * 		});
+ *   ~~~~~~~~~~~~~
+ * .
+ *
+ *
+ * ## Post Processing {#postProcessingId}
+ *
+ * - __Scripting__ \n 
+ * \n 
+ *   + If you use a Global `Volume` for Post Processing effects and you want to control it from a script make sure to drag or assign your Volume into the `DepictionEngine.RenderingManager.postProcessVolume` property. Do the same for `UniversalRendererData` containing custom features such as Ambient Occlusion that you would like to control from script by dragging or assigning the renderer to the `DepictionEngine.RenderingManager.rendererData` property.
+ *.
+ *
+ *
+ * ## Procedural generation
+ *
+ * - __Configuration__ \n 
+ * \n 
+ *   + Any class extending `DepictionEngine.GeneratorBase` can be used to spawn procedurally generated objects provided you set its `DepictionEngine.GeneratorBase.seed` property to something other then -1. 
+ * . 
+ *
+ * - __Code__ \n 
+ * \n 
+ *   + The type of procedural object to spawn, specified by the `DepictionEngine.FallbackValues`, will need to implement the following method. \n 
+ *   ~~~~~~~~~~~~~{.cs}
+ *   private static PropertyModifier GetProceduralPropertyModifier(PropertyModifierParameters parameters)
+ *   ~~~~~~~~~~~~~
+ *   Here is an example of a `DepictionEngine.Texture` object populating a `DepictionEngine.TextureModifier`: \n 
+ *   ~~~~~~~~~~~~~{.cs}
+ *       private static PropertyModifier GetProceduralPropertyModifier(PropertyModifierParameters parameters)
+ *       {
+ *           TextureModifier textureModifier = ProcessingFunctions.CreatePropertyModifier<TextureModifier>();
+ *
+ *           int textureSize = 256;
+ *           textureModifier.Init(PopulateProceduralPixels(parameters, textureSize, textureSize, GetPixel), true, textureSize, textureSize, TextureFormat.RGBA32, false);
+ *
+ *           return textureModifier;
+ *       }
+ *
+ *       protected delegate void GetPixelDelegate(PropertyModifierParameters parameters, float x, float y, out byte r, out byte g, out byte b, out byte a);
+ *
+ *       protected static byte[] PopulateProceduralPixels(PropertyModifierParameters parameters, int width, int height, GetPixelDelegate pixelCallback)
+ *       {
+ *           byte[] pixels = new byte[width * height * 4];
+ *
+ *          if (pixelCallback != null)
+ *           {
+ *               for (int y = 0; y < height; y++)
+ *               {
+ *                  for (int x = 0; x < width; x++)
+ *                   {
+ *                       pixelCallback(parameters, (x + 0.5f) / width, (y + 0.5f) / height, out byte r, out byte g, out byte b, out byte a);
+ *
+ *                       int startIndex = (y * width + x) * 4;
+ *                       pixels[startIndex] = r;
+ *                       pixels[startIndex + 1] = g;
+ *                       pixels[startIndex + 2] = b;
+ *                       pixels[startIndex + 3] = a;
+ *                   }
+ *               }
+ *           }
+ *
+ *           return pixels;
+ *       }
+ *
+ *       protected static void GetPixel(PropertyModifierParameters parameters, float x, float y, out byte r, out byte g, out byte b, out byte a)
+ *       {
+ *           //Add Procedural Algorithm here
+             //Seed can be found in parameters.seed
+ *           r = (byte)(x * 255);
+ *           g = (byte)(y * 255);
+ *           b = 0;
+ *           a = 255;
+ *       }
+ *   ~~~~~~~~~~~~~
+ *.
+ *
+ *
+ */
