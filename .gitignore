@@ -352,3 +352,7 @@ healthchecksdb
 /UIElementsSchema
 /UserSettings
 /Temp
+
+# Asset Folders
+/Assets/Settings
+/Assets/TextMeshPro
