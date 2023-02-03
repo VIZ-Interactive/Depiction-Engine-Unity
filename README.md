@@ -2,7 +2,7 @@
 
 ![Presentation]()
 
-# Release
+# Releases
 
 [UnityPackage](https://github.com/VIZ-Interactive/Depiction-Engine-Unity/releases/download/2022.0a/DepictionEngine.unitypackage)
 
