@@ -8,7 +8,7 @@
 
 # Documentation
 
-[2022.0 (Alpha)](https://vizinteractive.io/docs/2022.0/depiction-engine-unity/)
+[Documentation](https://vizinteractive.io/docs/2022.0/depiction-engine-unity/)
 
 
 ## License
