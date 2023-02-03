@@ -35,6 +35,7 @@ bld/
 # Visual Studio 2017 auto generated files
 Generated\ Files/
 
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
@@ -42,7 +43,6 @@ Generated\ Files/
 # NUNIT
 *.VisualState.xml
 TestResult.xml
-
 
 # Build Results of an ATL Project
 [Dd]ebugPS/
