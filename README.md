@@ -2,6 +2,10 @@
 
 ![Presentation]()
 
+# Release
+
+[UnityPackage](https://github.com/VIZ-Interactive/Depiction-Engine-Unity/releases/download/2022.0a/DepictionEngine.unitypackage)
+
 # Documentation
 
 [2022.0 (Alpha)](https://vizinteractive.io/docs/2022.0/depiction-engine-unity/)
