@@ -23,7 +23,7 @@ namespace DepictionEngine
 {
     public class LercDecode
     {
-        const string lercDll = "Assets/DepictionEngine/Library/Lerc64.dll";
+        const string lercDll = "Assets/Depiction Engine/Library/Lerc64.dll";
 
         // from Lerc_c_api.h :
         // 

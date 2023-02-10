@@ -15,6 +15,7 @@ namespace DepictionEngine
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(RenderingManager))]
     [RequireComponent(typeof(SceneManager))]
+    [DisallowMultipleComponent]
     public class RenderingManager : ManagerBase
     {
         /// <summary>

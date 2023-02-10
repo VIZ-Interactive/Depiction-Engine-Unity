@@ -13,6 +13,7 @@ namespace DepictionEngine
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(InputManager))]
     [RequireComponent(typeof(SceneManager))]
+    [DisallowMultipleComponent]
     public class InputManager : ManagerBase
     {
         [BeginFoldout("WebGL")]

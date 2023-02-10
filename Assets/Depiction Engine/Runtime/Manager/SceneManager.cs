@@ -19,6 +19,7 @@ namespace DepictionEngine
     /// </summary>
     [DefaultExecutionOrder(-3)]
     [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(SceneManager))]
+    [DisallowMultipleComponent]
     public class SceneManager : ManagerBase, IHasChildren
     {
         /// <summary>
@@ -847,13 +848,6 @@ namespace DepictionEngine
         public static void ActivateAll()
         {
             _activateAll = true;
-        }
-
-        public override void ExplicitAwake()
-        {
-            base.ExplicitAwake();
-          
-            Initialize();
         }
 
         public override void ExplicitOnEnable()

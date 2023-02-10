@@ -366,7 +366,7 @@ namespace DepictionEngine
             JSONNode newValue = null;
 
             JSONNode idJson = fallbackJson[key];
-            if (idJson != null && fallbackJson[createIfMissingKey].AsBool)
+            if (idJson != null && fallbackJson[createIfMissingKey] != null && fallbackJson[createIfMissingKey].AsBool)
             {
                 if (idJson.IsArray)
                 {

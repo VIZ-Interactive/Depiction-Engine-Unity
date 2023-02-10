@@ -12,6 +12,7 @@ namespace DepictionEngine
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(PoolManager))]
     [RequireComponent(typeof(SceneManager))]
+    [DisallowMultipleComponent]
     public class PoolManager : ManagerBase
     {
         [Serializable]

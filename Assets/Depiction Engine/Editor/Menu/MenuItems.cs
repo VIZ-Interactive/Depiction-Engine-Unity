@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using static UnityEditor.Rendering.ShadowCascadeGUI;
 
 namespace DepictionEngine.Editor
 {
@@ -74,9 +75,7 @@ namespace DepictionEngine.Editor
             bool spherical = true;
             InitializeSceneCameraSkybox(!spherical);
 
-            List<JsonMonoBehaviour> createdComponents = CreatePlanet(GetContextTransform(menuCommand), "Planet", spherical);
-            GeoAstroObject geoAstroObject = createdComponents[0] as Planet;
-            SetAlignViewToGeoAstroObject(geoAstroObject);
+            SetAlignViewToGeoAstroObject(CreatePlanetEmpty(GetContextTransform(menuCommand), "Planet", spherical));
         }
 
         [MenuItem("GameObject/Depiction Engine/Astro/Planet/Earth (Realistic)", false, 38)]
@@ -85,9 +84,7 @@ namespace DepictionEngine.Editor
             bool spherical = true;
             InitializeSceneCameraSkybox(!spherical);
 
-            List<JsonMonoBehaviour> createdComponents = CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical);
-            GeoAstroObject geoAstroObject = createdComponents[0] as Planet;
-            SetAlignViewToGeoAstroObject(geoAstroObject);
+            SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical));
         }
 
 
@@ -97,9 +94,7 @@ namespace DepictionEngine.Editor
             bool spherical = true;
             InitializeSceneCameraSkybox(!spherical);
 
-            List<JsonMonoBehaviour> createdComponents = CreateEarthBasic(GetContextTransform(menuCommand), "Earth", spherical);
-            GeoAstroObject geoAstroObject = createdComponents[0] as Planet;
-            SetAlignViewToGeoAstroObject(geoAstroObject);
+            SetAlignViewToGeoAstroObject(CreateEarthBasic(GetContextTransform(menuCommand), "Earth", spherical));
         }
 
         [MenuItem("GameObject/Depiction Engine/Astro/Planet/Moon (Realistic)", false, 39)]
@@ -108,9 +103,7 @@ namespace DepictionEngine.Editor
             bool spherical = true;
             InitializeSceneCameraSkybox(!spherical);
 
-            List<JsonMonoBehaviour> createdComponents = CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical);
-            GeoAstroObject geoAstroObject = createdComponents[0] as Planet;
-            SetAlignViewToGeoAstroObject(geoAstroObject);
+            SetAlignViewToGeoAstroObject(CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical));
         }
 
         [MenuItem("GameObject/Depiction Engine/Astro/Map/Map (Empty)", false, 40)]
@@ -119,9 +112,7 @@ namespace DepictionEngine.Editor
             bool spherical = false;
             InitializeSceneCameraSkybox(!spherical);
 
-            List<JsonMonoBehaviour> createdComponents = CreatePlanet(GetContextTransform(menuCommand), "Map", spherical);
-            GeoAstroObject geoAstroObject = createdComponents[0] as Planet;
-            SetAlignViewToGeoAstroObject(geoAstroObject);
+            SetAlignViewToGeoAstroObject(CreatePlanetEmpty(GetContextTransform(menuCommand), "Map", spherical));
         }
 
         [MenuItem("GameObject/Depiction Engine/Astro/Map/Earth (Realistic)", false, 41)]
@@ -130,9 +121,7 @@ namespace DepictionEngine.Editor
             bool spherical = false;
             InitializeSceneCameraSkybox(!spherical);
 
-            List<JsonMonoBehaviour> createdComponents = CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical);
-            GeoAstroObject geoAstroObject = createdComponents[0] as Planet;
-            SetAlignViewToGeoAstroObject(geoAstroObject);
+            SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical));
         }
 
         [MenuItem("GameObject/Depiction Engine/Astro/Map/Earth (Basic)", false, 41)]
@@ -141,9 +130,7 @@ namespace DepictionEngine.Editor
             bool spherical = false;
             InitializeSceneCameraSkybox(!spherical);
 
-            List<JsonMonoBehaviour> createdComponents = CreateEarthBasic(GetContextTransform(menuCommand), "Earth", spherical);
-            GeoAstroObject geoAstroObject = createdComponents[0] as Planet;
-            SetAlignViewToGeoAstroObject(geoAstroObject);
+            SetAlignViewToGeoAstroObject(CreateEarthBasic(GetContextTransform(menuCommand), "Earth", spherical));
         }
 
         [MenuItem("GameObject/Depiction Engine/Astro/Map/Moon (Realistic)", false, 42)]
@@ -152,9 +139,7 @@ namespace DepictionEngine.Editor
             bool spherical = false;
             InitializeSceneCameraSkybox(!spherical);
 
-            List <JsonMonoBehaviour> createdComponents = CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical);
-            GeoAstroObject geoAstroObject = createdComponents[0] as Planet;
-            SetAlignViewToGeoAstroObject(geoAstroObject);
+            SetAlignViewToGeoAstroObject(CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical));
         }
 
         private static void InitializeSceneCameraSkybox(bool atmosphere = false)
@@ -249,291 +234,305 @@ namespace DepictionEngine.Editor
             CreateScript<FileSystemDatasource>(datasourceObject);
         }
 
-        private static List<JsonMonoBehaviour> CreatePlanet(Transform parent, string name, bool spherical)
+        private static Planet CreatePlanetEmpty(Transform parent, string name, bool spherical)
         {
             UndoManager.CreateNewGroup("Create " + name);
 
             CreateStarIfMissing(parent);
 
-            return CreateEmptyPlanet(
-                parent, 
-                name, 
-                spherical,
-                GeoAstroObject.DEFAULT_SIZE,
-                AstroObject.DEFAULT_MASS,
-                2.0f,
-                2,
-                2,
-                new Vector2Int(0, 19),
-                
-                SerializableGuid.Empty, 
-                "my/terrain/tile/service/endpoint/{0}/{1}/{2}",
-                new Vector2Int(0, 19),
-                
-                SerializableGuid.Empty,
-                null,
-                Vector2Int.zero,
+            //Planet
+            JSONObject planetJson = new JSONObject();
 
-                SerializableGuid.Empty, 
-                "my/elevation/tile/service/endpoint/{0}/{1}/{2}",
-                new Vector2Int(0, 19));
+            //Add Planet -> Color Texture Index2DLoader
+            JSONArray colorTextureLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
+            string colorTextureLoaderId = colorTextureLoaderJson[0][nameof(Index2DLoader.id)];
+            colorTextureLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 19));
+            colorTextureLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
+            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "my/terrain/tile/service/endpoint/{0}/{1}/{2}";
+
+            InstanceUtility.MergeComponentsToObjectInitializationJson(colorTextureLoaderJson, planetJson);
+
+            //Add Planet -> Elevation Index2DLoader
+            JSONArray elevationLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Elevation));
+            string elevationLoaderId = elevationLoaderJson[0][nameof(Index2DLoader.id)];
+            elevationLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 19));
+            elevationLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw);
+            elevationLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "my/elevation/tile/service/endpoint/{0}/{1}/{2}";
+
+            InstanceUtility.MergeComponentsToObjectInitializationJson(elevationLoaderJson, planetJson);
+
+            Planet planet = CreatePlanet(parent, name, spherical, GeoAstroObject.DEFAULT_SIZE, AstroObject.DEFAULT_MASS, planetJson);
+
+            //Add TerrainRoot -> TerrainGridMeshObject CameraGrid2DLoader
+            JSONObject terrainJson = new JSONObject();
+
+            JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 19));
+           
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 2;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 2;
+            
+            terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
+            
+            terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
+
+            InstanceUtility.MergeComponentsToObjectInitializationJson(terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
+
+            CreateLayer(planet, "Terrain", terrainJson);
+
+            return planet;
         }
 
-        private static List<JsonMonoBehaviour> CreateEarthBasic(Transform parent, string name, bool spherical)
+        private static Planet CreateEarthBasic(Transform parent, string name, bool spherical)
         {
             UndoManager.CreateNewGroup("Create " + name);
 
             CreateStarIfMissing(parent);
 
-            //Add Earth
             DatasourceBase mapboxDatasource = GetRestDatasource("https://api.mapbox.com/");
-            List<JsonMonoBehaviour> createdComponents = CreateEmptyPlanet(
-                parent,
-                name,
-                spherical,
-                GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Earth),
-                GeoAstroObject.GetPlanetMass(AstroObject.PlanetType.Earth),
-                2.0f,
-                1,
-                1,
-                new Vector2Int(0, 17),
 
-                mapboxDatasource.id,
-                "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=" + MAPBOX_KEY,
-                new Vector2Int(0, 30));
+            DatasourceBase buildingFeatureDatasource = GetRestDatasource(
+            "https://a-data.3dbuildings.com/",
+            "https://b-data.3dbuildings.com/",
+            "https://c-data.3dbuildings.com/",
+            "https://d-data.3dbuildings.com/");
 
-            Planet earth = createdComponents[0] as Planet;
+            //Add Earth
+            JSONObject earthJson = new JSONObject();
 
-            CameraGrid2DLoader terrainCameraGrid2DLoader = createdComponents[4] as CameraGrid2DLoader;
-            UndoManager.RecordObject(terrainCameraGrid2DLoader);
-            terrainCameraGrid2DLoader.cascades = new Vector2Int(0, 4);
+            //Add Earth -> Color Texture Index2DLoader
+            JSONArray colorTextureLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
+            string colorTextureLoaderId = colorTextureLoaderJson[0][nameof(Index2DLoader.id)];
+            colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
+            colorTextureLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 30));
+            colorTextureLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
+            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=" + MAPBOX_KEY;
 
-            FallbackValues terrainFallbackValues = createdComponents[5] as FallbackValues;
-            UndoManager.RecordObject(terrainFallbackValues);
+            InstanceUtility.MergeComponentsToObjectInitializationJson(colorTextureLoaderJson, earthJson);
+
+            //Add Earth -> Elevation Index2DLoader
+            JSONArray elevationLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Elevation));
+            string elevationLoaderId = elevationLoaderJson[0][nameof(Index2DLoader.id)];
+            elevationLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 19));
+            elevationLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
+            elevationLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "my/elevation/tile/service/endpoint/{0}/{1}/{2}";
+
+            InstanceUtility.MergeComponentsToObjectInitializationJson(elevationLoaderJson, earthJson);
+
+            //Add Earth => BuildingFeature Index2DLoader
+            JSONArray buildingFeatureDataLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(BuildingFeature));
+            string buildingFeatureDataLoaderId = buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.id)];
+            buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(buildingFeatureDatasource.id);
+            buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tile/{0}/{1}/{2}.json?token=dixw8kmb";
+
+            InstanceUtility.MergeComponentsToObjectInitializationJson(buildingFeatureDataLoaderJson, earthJson);
+
+            Planet earth = CreatePlanet(parent, name, spherical, GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Earth), GeoAstroObject.GetPlanetMass(AstroObject.PlanetType.Earth), earthJson);
+
+            //Add TerrainRoot -> TerrainGridMeshObject CameraGrid2DLoader
+            JSONObject terrainJson = new JSONObject();
+
+            JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 17));
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(new Vector2Int(0, 4));
+
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 1;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 1;
             if (!spherical)
-                terrainFallbackValues.SetProperty(nameof(TerrainGridMeshObject.subdivisionZoomFactor), 1.0f);
-            terrainFallbackValues.SetProperty(nameof(TerrainGridMeshObject.edgeDepth), 0.0f);
-            terrainFallbackValues.SetProperty(nameof(TerrainGridMeshObject.normalsType), TerrainGridMeshObject.NormalsType.SurfaceUp);
+                terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.subdivisionZoomFactor)] = 1.0f;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.edgeDepth)] = 0.0f;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.normalsType)] = JsonUtility.ToJson(TerrainGridMeshObject.NormalsType.SurfaceUp);
 
-            //Add Earth => BuildingFeature Index2DLoader
-            SerializableGuid buildingFeatureFallbackValuesId = SerializableGuid.NewGuid();
-            DatasourceBase buildingFeatureDatasource = GetRestDatasource(
-                "https://a-data.3dbuildings.com/",
-                "https://b-data.3dbuildings.com/",
-                "https://c-data.3dbuildings.com/",
-                "https://d-data.3dbuildings.com/");
-            Index2DLoader buildingFeatureDataLoader = CreateScript<Index2DLoader>(earth);
-            buildingFeatureDataLoader.dataType = LoaderBase.DataType.Json;
-            buildingFeatureDataLoader.fallbackValuesId = new List<SerializableGuid> { buildingFeatureFallbackValuesId };
-            buildingFeatureDataLoader.datasourceId = buildingFeatureDatasource.id;
-            buildingFeatureDataLoader.loadEndpoint = "tile/{0}/{1}/{2}.json?token=dixw8kmb";
-            UndoManager.RegisterCompleteObjectUndo(buildingFeatureDataLoader);
-            createdComponents.Add(buildingFeatureDataLoader);
+            terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
 
-            JSONObject buildingFeatureFallbackValuesJson = new JSONObject();
-            buildingFeatureFallbackValuesJson[nameof(IPersistent.id)] = JsonUtility.ToJson(buildingFeatureFallbackValuesId);
-            FallbackValues buildingFeatureFallbackValues = CreateFallbackValues<BuildingFeature>(earth, buildingFeatureFallbackValuesJson);
-            createdComponents.Add(buildingFeatureFallbackValues);
+            terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
 
-            //Add Earth -> BuildingsRoot
-            SerializableGuid buildingMeshObjectFallbackValuesId = SerializableGuid.NewGuid();
-            DatasourceRoot buildingsRoot = CreateObject<DatasourceRoot>(earth.gameObject.transform, "Buildings", false, false, false);
-            createdComponents.Add(buildingsRoot);
+            InstanceUtility.MergeComponentsToObjectInitializationJson(terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
 
-            //Add BuildingsRoot -> BuildingsMeshObject CameraGrid2DLoader
-            CameraGrid2DLoader buildingMeshObjectLoader = CreateScript<CameraGrid2DLoader>(buildingsRoot);
-            buildingMeshObjectLoader.fallbackValuesId = new List<SerializableGuid> { buildingMeshObjectFallbackValuesId };
-            buildingMeshObjectLoader.minMaxZoom = new Vector2Int(14, 14);
-            buildingMeshObjectLoader.cascades = Vector2Int.zero;
-            buildingMeshObjectLoader.sizeMultiplier = 2.0f;
-            UndoManager.RegisterCompleteObjectUndo(buildingMeshObjectLoader);
-            createdComponents.Add(buildingMeshObjectLoader);
+            CreateLayer(earth, "Terrain", terrainJson);
 
-            List<SerializableGuid> buildingGridMeshObjectAssetReferencesFallbackValuesId = new List<SerializableGuid>() { SerializableGuid.NewGuid(), SerializableGuid.NewGuid() };
+            //Add BuildingsRoot -> BuildingGridMeshObject CameraGrid2DLoader
+            JSONObject buildingsJson = new JSONObject();
 
-            JSONObject buildingGridMeshObjectFallbackValuesJson = new JSONObject();
-            buildingGridMeshObjectFallbackValuesJson[nameof(IPersistent.id)] = JsonUtility.ToJson(buildingMeshObjectFallbackValuesId);
-            FallbackValues buildingGridMeshObjectFallbackValues = CreateFallbackValues<BuildingGridMeshObject>(buildingsRoot, buildingGridMeshObjectFallbackValuesJson);
-            buildingGridMeshObjectFallbackValues.SetProperty(nameof(Object.referencesId), buildingGridMeshObjectAssetReferencesFallbackValuesId);
-            buildingGridMeshObjectFallbackValues.SetProperty(nameof(BuildingGridMeshObject.color), Color.white);
-            UndoManager.RegisterCompleteObjectUndo(buildingGridMeshObjectFallbackValues);
-            createdComponents.Add(buildingGridMeshObjectFallbackValues);
+            JSONArray buildingMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(BuildingGridMeshObject));
+            buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
+            buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(14, 14));
+            buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(Vector2Int.zero);
 
-            //Add BuildingsGridMeshObject CameraGrid2DLoader -> Asset References
-            JSONObject elevationAssetReferenceFallbackValuesJson = new JSONObject();
-            elevationAssetReferenceFallbackValuesJson[nameof(IPersistent.id)] = JsonUtility.ToJson(buildingGridMeshObjectAssetReferencesFallbackValuesId[0]);
-            FallbackValues elevationAssetReferenceFallbackValues = buildingsRoot.CreateFallbackValues<AssetReference>(elevationAssetReferenceFallbackValuesJson);
-            elevationAssetReferenceFallbackValues.SetProperty(nameof(AssetReference.loaderId), SerializableGuid.Empty);
-            UndoManager.RegisterCompleteObjectUndo(elevationAssetReferenceFallbackValues);
-            createdComponents.Add(elevationAssetReferenceFallbackValues);
+            buildingMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(BuildingGridMeshObject.color)] = JsonUtility.ToJson(Color.white);
 
-            JSONObject buildingFeatureAssetReferenceFallbackValuesJson = new JSONObject();
-            buildingFeatureAssetReferenceFallbackValuesJson[nameof(IPersistent.id)] = JsonUtility.ToJson(buildingGridMeshObjectAssetReferencesFallbackValuesId[1]);
-            FallbackValues buildingFeatureAssetReferenceFallbackValues = buildingsRoot.CreateFallbackValues<AssetReference>(buildingFeatureAssetReferenceFallbackValuesJson);
-            buildingFeatureAssetReferenceFallbackValues.SetProperty(nameof(AssetReference.loaderId), buildingFeatureDataLoader.id);
-            UndoManager.RegisterCompleteObjectUndo(buildingFeatureAssetReferenceFallbackValues);
-            createdComponents.Add(buildingFeatureAssetReferenceFallbackValues);
+            buildingMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = buildingFeatureDataLoaderId;
 
-            return createdComponents;
+            InstanceUtility.MergeComponentsToObjectInitializationJson(buildingMeshObjectCameraGrid2DLoaderJson, buildingsJson);
+
+            CreateLayer(earth, "Buildings", buildingsJson);
+
+            return earth;
         }
 
-        private static List<JsonMonoBehaviour> CreateEarthRealistic(Transform parent, string name, bool spherical)
+        private static Planet CreateEarthRealistic(Transform parent, string name, bool spherical)
         {
             UndoManager.CreateNewGroup("Create " + name);
 
             CreateStarIfMissing(parent);
 
-            //Add Earth
             DatasourceBase mapboxDatasource = GetRestDatasource("https://api.mapbox.com/");
-            List<JsonMonoBehaviour> createdComponents = CreateEmptyPlanet(
-                parent,
-                name,
-                spherical,
-                GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Earth),
-                GeoAstroObject.GetPlanetMass(AstroObject.PlanetType.Earth),
-                2.0f,
-                2,
-                2,
-                new Vector2Int(0, 19),
 
-                mapboxDatasource.id,
-                "v4/mapbox.satellite/{0}/{1}/{2}@2x.jpg90?access_token=" + MAPBOX_KEY,
-                new Vector2Int(0, 30),
+            DatasourceBase buildingFeatureDatasource = GetRestDatasource(
+            "https://a-data.3dbuildings.com/",
+            "https://b-data.3dbuildings.com/",
+            "https://c-data.3dbuildings.com/",
+            "https://d-data.3dbuildings.com/");
 
-                SerializableGuid.Empty,
-                null,
-                Vector2Int.zero,
+            //Add Earth
+            JSONObject earthJson = new JSONObject();
 
-                mapboxDatasource.id,
-                //"raster/v1/mapbox.mapbox-terrain-dem-v1/{0}/{1}/{2}.webp?sku=101WQxhVS07ft&access_token=" + MAPBOX_KEY,
-                "v4/mapbox.terrain-rgb/{0}/{1}/{2}.pngraw?access_token=" + MAPBOX_KEY,
-                new Vector2Int(0, 13),
-                1.0f,
-                false,
-                false,
-                //DataType.ElevationMapboxTerrainRGBWebP,
-                LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw,
+            //Add Earth -> Color Texture Index2DLoader
+            JSONArray colorTextureLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
+            string colorTextureLoaderId = colorTextureLoaderJson[0][nameof(Index2DLoader.id)];
+            colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
+            colorTextureLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 30));
+            colorTextureLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
+            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "v4/mapbox.satellite/{0}/{1}/{2}@2x.jpg90?access_token=" + MAPBOX_KEY;
 
-                mapboxDatasource.id,
-                "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=" + MAPBOX_KEY,
-                new Vector2Int(0, 14));
+            InstanceUtility.MergeComponentsToObjectInitializationJson(colorTextureLoaderJson, earthJson);
 
-            Planet earth = createdComponents[0] as Planet;
-            Index2DLoader colorTextureLoader = createdComponents[1] as Index2DLoader;
-            Index2DLoader elevationLoader = createdComponents[3] as Index2DLoader;
+            //Add Earth -> Elevation Index2DLoader
+            JSONArray elevationLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Elevation));
+            string elevationLoaderId = elevationLoaderJson[0][nameof(Index2DLoader.id)];
+            elevationLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
+            elevationLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 13));
+            //LoaderBase.DataType.ElevationMapboxTerrainRGBWebP
+            elevationLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw);
+            //"raster/v1/mapbox.mapbox-terrain-dem-v1/{0}/{1}/{2}.webp?sku=101WQxhVS07ft&access_token=" + MAPBOX_KEY
+            elevationLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "v4/mapbox.terrain-rgb/{0}/{1}/{2}.pngraw?access_token=" + MAPBOX_KEY;
+
+            InstanceUtility.MergeComponentsToObjectInitializationJson(elevationLoaderJson, earthJson);
+
+            //Add Earth -> Surface Texture Index2DLoader
+            JSONArray surfaceLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
+            string surfaceLoaderId = surfaceLoaderJson[0][nameof(Index2DLoader.id)];
+            surfaceLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
+            surfaceLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 14));
+            surfaceLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
+            surfaceLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=" + MAPBOX_KEY;
+
+            InstanceUtility.MergeComponentsToObjectInitializationJson(surfaceLoaderJson, earthJson);
 
             //Add Earth => BuildingFeature Index2DLoader
-            SerializableGuid buildingFeatureFallbackValuesId = SerializableGuid.NewGuid();
-            DatasourceBase buildingFeatureDatasource = GetRestDatasource(
-                "https://a-data.3dbuildings.com/", 
-                "https://b-data.3dbuildings.com/", 
-                "https://c-data.3dbuildings.com/", 
-                "https://d-data.3dbuildings.com/");
-            Index2DLoader buildingFeatureDataLoader = CreateScript<Index2DLoader>(earth);
-            buildingFeatureDataLoader.dataType = LoaderBase.DataType.Json;
-            buildingFeatureDataLoader.fallbackValuesId = new List<SerializableGuid> { buildingFeatureFallbackValuesId };
-            buildingFeatureDataLoader.datasourceId = buildingFeatureDatasource.id;
-            buildingFeatureDataLoader.loadEndpoint = "tile/{0}/{1}/{2}.json?token=dixw8kmb";
-            UndoManager.RegisterCompleteObjectUndo(buildingFeatureDataLoader);
-            createdComponents.Add(buildingFeatureDataLoader);
+            JSONArray buildingFeatureDataLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(BuildingFeature));
+            string buildingFeatureDataLoaderId = buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.id)];
+            buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(buildingFeatureDatasource.id);
+            buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tile/{0}/{1}/{2}.json?token=dixw8kmb";
 
-            JSONObject buildingFeatureFallbackValuesJson = new JSONObject();
-            buildingFeatureFallbackValuesJson[nameof(IPersistent.id)] = JsonUtility.ToJson(buildingFeatureFallbackValuesId);
-            FallbackValues buildingFeatureFallbackValues = CreateFallbackValues<BuildingFeature>(earth, buildingFeatureFallbackValuesJson);
-            createdComponents.Add(buildingFeatureFallbackValues);
-
-            //Add Earth -> BuildingsRoot
-            SerializableGuid buildingMeshObjectFallbackValuesId = SerializableGuid.NewGuid();
-            DatasourceRoot buildingsRoot = CreateObject<DatasourceRoot>(earth.gameObject.transform, "Buildings", false, false, false);
-            createdComponents.Add(buildingsRoot);
-
-            //Add BuildingsRoot -> BuildingsMeshObject CameraGrid2DLoader
-            CameraGrid2DLoader buildingMeshObjectLoader = CreateScript<CameraGrid2DLoader>(buildingsRoot);
-            buildingMeshObjectLoader.fallbackValuesId = new List<SerializableGuid> { buildingMeshObjectFallbackValuesId };
-            buildingMeshObjectLoader.minMaxZoom = new Vector2Int(14, 14);
-            buildingMeshObjectLoader.cascades = Vector2Int.zero;
-            buildingMeshObjectLoader.sizeMultiplier = 5.0f;
-            UndoManager.RegisterCompleteObjectUndo(buildingMeshObjectLoader);
-            createdComponents.Add(buildingMeshObjectLoader);
-
-            List<SerializableGuid> buildingGridMeshObjectAssetReferencesFallbackValuesId = new List<SerializableGuid>() { SerializableGuid.NewGuid(), SerializableGuid.NewGuid(), SerializableGuid.NewGuid(), SerializableGuid.NewGuid() };
-
-            JSONObject buildingGridMeshObjectFallbackValuesJson = new JSONObject();
-            buildingGridMeshObjectFallbackValuesJson[nameof(IPersistent.id)] = JsonUtility.ToJson(buildingMeshObjectFallbackValuesId);
-            FallbackValues buildingGridMeshObjectFallbackValues = CreateFallbackValues<BuildingGridMeshObject>(buildingsRoot, buildingGridMeshObjectFallbackValuesJson);
-            buildingGridMeshObjectFallbackValues.SetProperty(nameof(Object.referencesId), buildingGridMeshObjectAssetReferencesFallbackValuesId);
-            UndoManager.RegisterCompleteObjectUndo(buildingGridMeshObjectFallbackValues);
-            createdComponents.Add(buildingGridMeshObjectFallbackValues);
-
-            //Add BuildingsGridMeshObject CameraGrid2DLoader -> Asset References
-            JSONObject elevationAssetReferenceFallbackValuesJson = new JSONObject();
-            elevationAssetReferenceFallbackValuesJson[nameof(IPersistent.id)] = JsonUtility.ToJson(buildingGridMeshObjectAssetReferencesFallbackValuesId[0]);
-            FallbackValues elevationAssetReferenceFallbackValues = buildingsRoot.CreateFallbackValues<AssetReference>(elevationAssetReferenceFallbackValuesJson);
-            elevationAssetReferenceFallbackValues.SetProperty(nameof(AssetReference.loaderId), elevationLoader.id);
-            UndoManager.RegisterCompleteObjectUndo(elevationAssetReferenceFallbackValues);
-            createdComponents.Add(elevationAssetReferenceFallbackValues);
-
-            JSONObject buildingFeatureAssetReferenceFallbackValuesJson = new JSONObject();
-            buildingFeatureAssetReferenceFallbackValuesJson[nameof(IPersistent.id)] = JsonUtility.ToJson(buildingGridMeshObjectAssetReferencesFallbackValuesId[1]);
-            FallbackValues buildingFeatureAssetReferenceFallbackValues = buildingsRoot.CreateFallbackValues<AssetReference>(buildingFeatureAssetReferenceFallbackValuesJson);
-            buildingFeatureAssetReferenceFallbackValues.SetProperty(nameof(AssetReference.loaderId), buildingFeatureDataLoader.id);
-            UndoManager.RegisterCompleteObjectUndo(buildingFeatureAssetReferenceFallbackValues);
-            createdComponents.Add(buildingFeatureAssetReferenceFallbackValues);
-
-            JSONObject colorTextureAssetReferenceFallbackValuesJson = new JSONObject();
-            colorTextureAssetReferenceFallbackValuesJson[nameof(IPersistent.id)] = JsonUtility.ToJson(buildingGridMeshObjectAssetReferencesFallbackValuesId[2]);
-            FallbackValues colorTextureAssetReferenceFallbackValues = buildingsRoot.CreateFallbackValues<AssetReference>(colorTextureAssetReferenceFallbackValuesJson);
-            colorTextureAssetReferenceFallbackValues.SetProperty(nameof(AssetReference.loaderId), colorTextureLoader.id);
-            UndoManager.RegisterCompleteObjectUndo(colorTextureAssetReferenceFallbackValues);
-            createdComponents.Add(colorTextureAssetReferenceFallbackValues);
-
-            JSONObject additionalTextureAssetReferenceFallbackValuesJson = new JSONObject();
-            additionalTextureAssetReferenceFallbackValuesJson[nameof(IPersistent.id)] = JsonUtility.ToJson(buildingGridMeshObjectAssetReferencesFallbackValuesId[3]);
-            FallbackValues additionalTextureAssetReferenceFallbackValues = buildingsRoot.CreateFallbackValues<AssetReference>(additionalTextureAssetReferenceFallbackValuesJson);
-            createdComponents.Add(additionalTextureAssetReferenceFallbackValues);
+            InstanceUtility.MergeComponentsToObjectInitializationJson(buildingFeatureDataLoaderJson, earthJson);
 
             //Add Earth -> Reflection
-            createdComponents.Add(CreateScript<TerrainSurfaceReflectionEffect>(earth));
+            InstanceUtility.MergeComponentsToObjectInitializationJson(InstanceUtility.GetComponentJson(typeof(TerrainSurfaceReflectionEffect)), earthJson);
 
             //Add Earth -> Atmosphere
-            createdComponents.Add(CreateScript<AtmosphereEffect>(earth));
+            InstanceUtility.MergeComponentsToObjectInitializationJson(InstanceUtility.GetComponentJson(typeof(AtmosphereEffect)), earthJson);
 
-            return createdComponents;
+            Planet earth = CreatePlanet(parent, name, spherical, GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Earth), GeoAstroObject.GetPlanetMass(AstroObject.PlanetType.Earth), earthJson);
+
+            //Add TerrainRoot -> TerrainGridMeshObject CameraGrid2DLoader
+            JSONObject terrainJson = new JSONObject();
+
+            JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 19));
+
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 2;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 2;
+            if (!spherical)
+                terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.subdivisionZoomFactor)] = 1.0f;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.normalsType)] = JsonUtility.ToJson(TerrainGridMeshObject.NormalsType.SurfaceUp);
+
+            terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
+
+            terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
+
+            InstanceUtility.MergeComponentsToObjectInitializationJson(terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
+
+            CreateLayer(earth, "Terrain", terrainJson);
+
+            //Add BuildingsRoot -> BuildingGridMeshObject CameraGrid2DLoader
+            JSONObject buildingsJson = new JSONObject();
+
+            JSONArray buildingMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(BuildingGridMeshObject));
+            buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 5.0f;
+            buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(14, 14));
+            buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(Vector2Int.zero);
+
+            buildingMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
+
+            buildingMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = buildingFeatureDataLoaderId;
+
+            buildingMeshObjectCameraGrid2DLoaderJson[4][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
+
+            InstanceUtility.MergeComponentsToObjectInitializationJson(buildingMeshObjectCameraGrid2DLoaderJson, buildingsJson);
+
+            CreateLayer(earth, "Buildings", buildingsJson);
+
+            return earth;
         }
 
-        private static List<JsonMonoBehaviour> CreateMoonRealistic(Transform parent, string name, bool spherical)
+        private static Planet CreateMoonRealistic(Transform parent, string name, bool spherical)
         {
             UndoManager.CreateNewGroup("Create " + name);
 
             CreateStarIfMissing(parent);
 
             RestDatasource arcGISDatasource = GetRestDatasource("https://tiles.arcgis.com/");
-            return CreateEmptyPlanet(
-                parent, 
-                name, 
-                spherical,
-                GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Moon),
-                GeoAstroObject.GetPlanetMass(AstroObject.PlanetType.Moon),
-                3.0f,
-                1,
-                1,
-                new Vector2Int(0, 7),
 
-                arcGISDatasource.id,
-                "tiles/WQ9KVmV6xGGMnCiQ/arcgis/rest/services/Moon_Basemap_Tile0to9/MapServer/tile/{0}/{2}/{1}",
-                new Vector2Int(0, 7),
-                
-                SerializableGuid.Empty,
-                null,
-                Vector2Int.zero,
+            //Planet
+            JSONObject planetJson = new JSONObject();
 
-                arcGISDatasource.id, 
-                "tiles/WQ9KVmV6xGGMnCiQ/arcgis/rest/services/Moon_Elevation_Surface/ImageServer/tile/{0}/{2}/{1}?blankTile=false",
-                new Vector2Int(0, 7),
-                0.2f,
-                false,
-                false,
-                LoaderBase.DataType.ElevationEsriLimitedErrorRasterCompression);
+            //Add Planet -> Color Texture Index2DLoader
+            JSONArray colorTextureLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
+            string colorTextureLoaderId = colorTextureLoaderJson[0][nameof(Index2DLoader.id)];
+            colorTextureLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 7));
+            colorTextureLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
+            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tiles/WQ9KVmV6xGGMnCiQ/arcgis/rest/services/Moon_Basemap_Tile0to9/MapServer/tile/{0}/{2}/{1}";
+            colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(arcGISDatasource.id);
+
+            InstanceUtility.MergeComponentsToObjectInitializationJson(colorTextureLoaderJson, planetJson);
+
+            //Add Planet -> Elevation Index2DLoader
+            JSONArray elevationLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Elevation));
+            string elevationLoaderId = elevationLoaderJson[0][nameof(Index2DLoader.id)];
+            elevationLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 7));
+            elevationLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.ElevationEsriLimitedErrorRasterCompression);
+            elevationLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tiles/WQ9KVmV6xGGMnCiQ/arcgis/rest/services/Moon_Elevation_Surface/ImageServer/tile/{0}/{2}/{1}?blankTile=false";
+            elevationLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(arcGISDatasource.id);
+            
+            elevationLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(Elevation.elevationMultiplier)] = 0.2f;
+
+            InstanceUtility.MergeComponentsToObjectInitializationJson(elevationLoaderJson, planetJson);
+
+            Planet planet = CreatePlanet(parent, name, spherical, GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Moon), GeoAstroObject.GetPlanetMass(AstroObject.PlanetType.Moon), planetJson);
+
+            //Add TerrainRoot -> TerrainGridMeshObject CameraGrid2DLoader
+            JSONObject terrainJson = new JSONObject();
+
+            JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 3.0f;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 7));
+
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 1;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 1;
+
+            terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
+
+            terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
+
+            InstanceUtility.MergeComponentsToObjectInitializationJson(terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
+
+            CreateLayer(planet, "Terrain", terrainJson);
+
+            return planet;
         }
 
         private static Star CreateStarIfMissing(Transform parent)
@@ -574,48 +573,28 @@ namespace DepictionEngine.Editor
             return menuCommand.context != null ? (menuCommand.context as GameObject).transform : null;
         }
 
-        private static List<JsonMonoBehaviour> CreateEmptyPlanet(Transform parent, string name, bool spherical, double size, double mass, float sizeMultiplier, int sphericalSubdivision, int flatSubdivision, Vector2Int minMaxZoom, SerializableGuid colorTextureLoaderDatasourceId = new SerializableGuid(), string colorTextureLoadEndpoint = "", Vector2Int colorTextureMinMaxZoom = new Vector2Int(), SerializableGuid additionalTextureLoaderDatasourceId = new SerializableGuid(), string additionalTextureLoadEndpoint = "", Vector2Int additionalTextureMinMaxZoom = new Vector2Int(), SerializableGuid elevationLoaderDatasourceId = new SerializableGuid(), string elevationLoadEndpoint = "", Vector2Int elevationMinMaxZoom = new Vector2Int(), float elevationMultiplier = 1.0f, bool xFlip = false, bool yFlip = false, LoaderBase.DataType elevationDataType = LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw, SerializableGuid surfaceTypeTextureLoaderDatasourceId = new SerializableGuid(), string surfaceTypeTextureLoadEndpoint = "", Vector2Int surfaceTypeTextureMinMaxZoom = new Vector2Int(), bool setParentAndAlign = true, bool moveToView = true, bool selectGameObject = true)
+        private static Planet CreatePlanet(Transform parent, string name, bool spherical, double size, double mass, JSONNode scriptsJson, bool setParentAndAlign = true, bool moveToView = true, bool selectGameObject = true)
         {
-            List<JsonMonoBehaviour> createdComponents = InstanceUtility.CreatePlanet(
-                parent, 
-                name, 
+            Planet planet = InstanceUtility.CreatePlanet(
+                parent,
+                name,
                 spherical,
                 size,
                 mass,
-                sizeMultiplier,
-                sphericalSubdivision,
-                flatSubdivision,
-                minMaxZoom, 
-
-                colorTextureLoaderDatasourceId, 
-                colorTextureLoadEndpoint,
-                colorTextureMinMaxZoom,
-
-                additionalTextureLoaderDatasourceId,
-                additionalTextureLoadEndpoint,
-                additionalTextureMinMaxZoom,
-
-                elevationLoaderDatasourceId, 
-                elevationLoadEndpoint,
-                elevationMinMaxZoom,
-                elevationMultiplier,
-                elevationDataType,
-                xFlip,
-                yFlip,
-
-                surfaceTypeTextureLoaderDatasourceId,
-                surfaceTypeTextureLoadEndpoint,
-                surfaceTypeTextureMinMaxZoom,
-
+                scriptsJson,
                 InstanceManager.InitializationContext.Editor, 
                 setParentAndAlign, 
                 moveToView);
-            Planet planet = createdComponents[0] as Planet;
 
             if (selectGameObject)
                 SelectObject(planet);
 
-            return createdComponents;
+            return planet;
+        }
+
+        private static DatasourceRoot CreateLayer(Planet planet, string name, JSONNode json)
+        {
+            return InstanceUtility.CreateLayer(planet, name, json, InstanceManager.InitializationContext.Editor);
         }
 
         private static T CreateObject<T>(Transform parent, string name = "", bool setParentAndAlign = true, bool moveToView = true, bool selectGameObject = true) where T : Object
@@ -626,11 +605,6 @@ namespace DepictionEngine.Editor
                 SelectObject(objectBase);
 
             return objectBase;
-        }
-
-        private static FallbackValues CreateFallbackValues<T>(Object objectBase, JSONObject json = null)
-        {
-            return objectBase.CreateFallbackValues<T>(json, InstanceManager.InitializationContext.Editor);
         }
 
         private static T CreateScript<T>(Object objectBase, JSONObject json = null) where T : Script

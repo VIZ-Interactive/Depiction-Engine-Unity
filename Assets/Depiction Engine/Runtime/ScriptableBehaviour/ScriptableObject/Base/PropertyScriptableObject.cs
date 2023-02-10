@@ -175,7 +175,7 @@ namespace DepictionEngine
         {
             if (base.OnDisposed(destroyState))
             {
-                if (initialized && AddInstanceToManager())
+                if (instanceAdded && AddInstanceToManager())
                 {
                     InstanceManager instanceManager = InstanceManager.Instance(false);
                     if (instanceManager != Disposable.NULL)

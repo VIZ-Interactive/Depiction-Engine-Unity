@@ -9,6 +9,7 @@ namespace DepictionEngine
         bool initialized { get; }
 
         bool disposedComplete { get; set; }
+        Action InitializedEvent { get; set; }
         Action<IDisposable> DisposingEvent { get; set; }
         Action<IDisposable> DisposedEvent { get; set; }
         DisposeManager.DestroyContext destroyingState { get; }
@@ -34,6 +35,7 @@ namespace DepictionEngine
         /// </summary>
         /// <returns>True if the object is being disposed / destroyed or as already been disposed / destroyed.</returns>
         bool IsDisposing();
+
         /// <summary>
         /// Has the object been disposed?
         /// </summary>

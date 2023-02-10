@@ -11,6 +11,8 @@ namespace DepictionEngine
         bool dontSaveToScene { get; set; }
         bool containsCopyrightedMaterial { get; }
 
+        bool createPersistentIfMissing { get; }
+
         Action<IJson, PropertyInfo> UserPropertyAssignedEvent { get; set; }
         Action<IPersistent, Action> PersistenceSaveOperationEvent { get; set; }
         Action<IPersistent, Action> PersistenceSynchronizeOperationEvent { get; set; }

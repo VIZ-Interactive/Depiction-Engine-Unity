@@ -12,6 +12,7 @@ namespace DepictionEngine
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(DatasourceManager))]
     [RequireComponent(typeof(SceneManager))]
+    [DisallowMultipleComponent]
     public class DatasourceManager : ManagerBase, ILoadDatasource
     {
         [SerializeField]

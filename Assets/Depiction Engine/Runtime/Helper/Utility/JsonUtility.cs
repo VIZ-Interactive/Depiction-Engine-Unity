@@ -67,7 +67,7 @@ namespace DepictionEngine
         {
             if (FromJson(out object parsedValue, json, typeof(T)))
             {
-               value = (T)parsedValue;
+                value = (T)parsedValue;
                 return true;
             }
             else
@@ -152,7 +152,7 @@ namespace DepictionEngine
                                 if (parsedValue == null)
                                     parsedValue = Type.GetType(typeof(JsonUtility).Namespace + "." + jsonStr);
                                 if (parsedValue == null)
-                                    parsedValue = Type.GetType("UnityEngine."+ jsonStr + ", UnityEngine");
+                                    parsedValue = Type.GetType("UnityEngine." + jsonStr + ", UnityEngine");
                                 if (parsedValue == null)
                                 {
                                     switch (jsonStr)
@@ -240,14 +240,16 @@ namespace DepictionEngine
                             success = false;
                     }
                 }
+                else
+                    success = false;
             }
             catch (Exception)
             {
                 success = false;
             }
 
-            if (!success)
-               Debug.LogWarning("Json: '"+ (json != null ? json.ToString() : "") +"', not successfully parsed to '" + (type != null ? type.Name : "Null") + "'");
+            if (!success && json != null)
+               Debug.LogWarning("Json: '"+ json.ToString() +"', not successfully parsed to '" + (type != null ? type.Name : "Null") + "'");
 
             value = parsedValue;
 

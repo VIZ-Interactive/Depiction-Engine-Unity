@@ -22,7 +22,7 @@ namespace DepictionEngine
         };
 
         private TextMeshProWarp _textMeshWarpPro;
-        public TextMeshProWarp GetTextMeshWarpPro()
+        public void GetTextMeshProWarpIfAvailable(Action<TextMeshProWarp> callback)
         {
             if (_textMeshWarpPro == null)
             {
@@ -31,7 +31,9 @@ namespace DepictionEngine
                 if (_textMeshWarpPro == null)
                     _textMeshWarpPro = gameObject.AddComponent<TextMeshProWarp>();
             }
-            return _textMeshWarpPro;
+
+            if (callback != null && _textMeshWarpPro != null)
+                callback(_textMeshWarpPro);
         }
 
         private RectTransform _rectTransform;
@@ -44,8 +46,13 @@ namespace DepictionEngine
 
         public int maxVisibleLines
         {
-            get { return GetTextMeshWarpPro().maxVisibleLines; }
-            set { GetTextMeshWarpPro().maxVisibleLines = value; }
+            get 
+            {
+                int maxVisibleLines = 0;
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) => { maxVisibleLines = textMeshProWarp.maxVisibleLines; });
+                return maxVisibleLines;
+            }
+            set { GetTextMeshProWarpIfAvailable((textMeshProWarp) => { textMeshProWarp.maxVisibleLines = value; }); }
         }
 
         private Vector2 pivot
@@ -79,115 +86,177 @@ namespace DepictionEngine
 
         public string text
         {
-            get { return GetTextMeshWarpPro().text; }
+            get 
+            {
+                string text = string.Empty;
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) => { text = textMeshProWarp.text; });
+                return text;
+            }
             set
             {
-                TextMeshProWarp textMeshProWarp = GetTextMeshWarpPro();
-                if (textMeshProWarp.text == value)
-                    return;
-                textMeshProWarp.text = value;
-                PropertiesChanged();
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) =>
+                {
+                    if (textMeshProWarp.text == value)
+                        return;
+                    textMeshProWarp.text = value;
+                    PropertiesChanged();
+                });
             }
         }
 
         public float fontSize
         {
-            get { return GetTextMeshWarpPro().fontSize; }
+            get 
+            {
+                float fontSize = 0.0f;
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) => { fontSize = textMeshProWarp.fontSize; });
+                return fontSize;
+            }
             set
             {
-                TextMeshProWarp textMeshProWarp = GetTextMeshWarpPro();
-                if (textMeshProWarp.fontSize == value)
-                    return;
-                textMeshProWarp.fontSize = value;
-                PropertiesChanged();
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) =>
+                {
+                    if (textMeshProWarp.fontSize == value)
+                        return;
+                    textMeshProWarp.fontSize = value;
+                    PropertiesChanged();
+                });
             }
         }
 
         public TextAlignmentOptions alignment
         {
-            get { return GetTextMeshWarpPro().alignment; }
+            get 
+            {
+                TextAlignmentOptions alignment = default(TextAlignmentOptions);
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) => { alignment = textMeshProWarp.alignment; });
+                return alignment;
+            }
             set
             {
-                TextMeshProWarp textMeshProWarp = GetTextMeshWarpPro();
-                if (textMeshProWarp.alignment == value)
-                    return;
-                textMeshProWarp.alignment = value;
-                PropertiesChanged();
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) =>
+                {
+                    if (textMeshProWarp.alignment == value)
+                        return;
+                    textMeshProWarp.alignment = value;
+                    PropertiesChanged();
+                });
             }
         }
 
         public Color color
         {
-            get { return GetTextMeshWarpPro().color; }
+            get 
+            {
+                Color color = default(Color);
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) => { color = textMeshProWarp.color; });
+                return color;
+            }
             set
             {
-                TextMeshProWarp textMeshProWarp = GetTextMeshWarpPro();
-                if (textMeshProWarp.color == value)
-                    return;
-                textMeshProWarp.color = value;
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) =>
+                {
+                    if (textMeshProWarp.color == value)
+                        return;
+                    textMeshProWarp.color = value;
+                });
             }
         }
 
         public float fontSharedMaterialOutlineWidth
         {
-            get { return GetTextMeshWarpPro().fontSharedMaterial.GetFloat(ShaderUtilities.ID_OutlineWidth); }
-            set { GetTextMeshWarpPro().fontSharedMaterial.SetFloat(ShaderUtilities.ID_OutlineWidth, value); }
+            get
+            {
+                float fontSharedMaterialOutlineWidth = 0.0f;
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) => 
+                {
+                    if (textMeshProWarp.fontSharedMaterial != null)
+                        fontSharedMaterialOutlineWidth = textMeshProWarp.fontSharedMaterial.GetFloat(ShaderUtilities.ID_OutlineWidth); 
+                });
+                return fontSharedMaterialOutlineWidth;
+            }
+            set
+            {
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) =>
+                {
+                    if (textMeshProWarp.fontSharedMaterial != null)
+                        textMeshProWarp.fontSharedMaterial.SetFloat(ShaderUtilities.ID_OutlineWidth, value);
+                });
+            }
         }
 
         public Color fontSharedMaterialOutlineColor
         {
-            get { return GetTextMeshWarpPro().fontSharedMaterial.GetColor(ShaderUtilities.ID_OutlineColor); }
-            set { GetTextMeshWarpPro().fontSharedMaterial.SetColor(ShaderUtilities.ID_OutlineColor, value); }
+            get
+            {
+                Color fontSharedMaterialOutlineColor = default(Color);
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) => 
+                {
+                    if (textMeshProWarp.fontSharedMaterial != null)
+                        fontSharedMaterialOutlineColor = textMeshProWarp.fontSharedMaterial.GetColor(ShaderUtilities.ID_OutlineColor); 
+                });
+                return fontSharedMaterialOutlineColor;
+            }
+            set
+            {
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) =>
+                {
+                    if (textMeshProWarp.fontSharedMaterial != null)
+                        textMeshProWarp.fontSharedMaterial.SetColor(ShaderUtilities.ID_OutlineColor, value);
+                });
+            }
         }
 
         private const float KEY_THRESHOLD = 0.1f; 
         private void SetKeys(List<float> keys)
         {
-            TextMeshProWarp textMeshProWarp = GetTextMeshWarpPro();
-
-            if (textMeshProWarp.vertexCurve == null)
-                textMeshProWarp.vertexCurve = new AnimationCurve();
-
-            int keysCount = keys.Count / KEYFRAME_PROPERTY_COUNT;
-
-            bool changed = keysCount != textMeshProWarp.vertexCurve.keys.Length;
-            if (!changed)
+            GetTextMeshProWarpIfAvailable((textMeshProWarp) =>
             {
-                for (int i = 0; i < textMeshProWarp.vertexCurve.keys.Length; i++)
+                if (textMeshProWarp.vertexCurve == null)
+                    textMeshProWarp.vertexCurve = new AnimationCurve();
+
+                int keysCount = keys.Count / KEYFRAME_PROPERTY_COUNT;
+
+                bool changed = keysCount != textMeshProWarp.vertexCurve.keys.Length;
+                if (!changed)
                 {
-                    Keyframe key = textMeshProWarp.vertexCurve.keys[i];
-                    if (!MathPlus.Approximately(key.time, GetKeyProperty(keys, i, KeyframeProperties.Time), KEY_THRESHOLD) || !MathPlus.Approximately(key.value, GetKeyProperty(keys, i, KeyframeProperties.Value), KEY_THRESHOLD) || !MathPlus.Approximately(key.inTangent, GetKeyProperty(keys, i, KeyframeProperties.InTangent), KEY_THRESHOLD) || !MathPlus.Approximately(key.outTangent, GetKeyProperty(keys, i, KeyframeProperties.OutTangent), KEY_THRESHOLD))
+                    for (int i = 0; i < textMeshProWarp.vertexCurve.keys.Length; i++)
                     {
-                        changed = true;
-                        break;
+                        Keyframe key = textMeshProWarp.vertexCurve.keys[i];
+                        if (!MathPlus.Approximately(key.time, GetKeyProperty(keys, i, KeyframeProperties.Time), KEY_THRESHOLD) || !MathPlus.Approximately(key.value, GetKeyProperty(keys, i, KeyframeProperties.Value), KEY_THRESHOLD) || !MathPlus.Approximately(key.inTangent, GetKeyProperty(keys, i, KeyframeProperties.InTangent), KEY_THRESHOLD) || !MathPlus.Approximately(key.outTangent, GetKeyProperty(keys, i, KeyframeProperties.OutTangent), KEY_THRESHOLD))
+                        {
+                            changed = true;
+                            break;
+                        }
                     }
                 }
-            }
 
-            if (changed)
-            {
-                ClearKeys();
-
-                for (int i = 0; i < keysCount; i++)
+                if (changed)
                 {
-                    Keyframe key = new Keyframe(GetKeyProperty(keys, i, KeyframeProperties.Time), GetKeyProperty(keys, i, KeyframeProperties.Value), GetKeyProperty(keys, i, KeyframeProperties.InTangent), GetKeyProperty(keys, i, KeyframeProperties.OutTangent));
-                    key.weightedMode = WeightedMode.None;
-                    textMeshProWarp.vertexCurve.AddKey(key);
-                }
+                    ClearKeys();
 
-                PropertiesChanged();
-            }
+                    for (int i = 0; i < keysCount; i++)
+                    {
+                        Keyframe key = new Keyframe(GetKeyProperty(keys, i, KeyframeProperties.Time), GetKeyProperty(keys, i, KeyframeProperties.Value), GetKeyProperty(keys, i, KeyframeProperties.InTangent), GetKeyProperty(keys, i, KeyframeProperties.OutTangent));
+                        key.weightedMode = WeightedMode.None;
+                        textMeshProWarp.vertexCurve.AddKey(key);
+                    }
+
+                    PropertiesChanged();
+                }
+            });
         }
 
         private void ClearKeys()
         {
-            TextMeshProWarp textMeshProWarp = GetTextMeshWarpPro();
-
-            if (textMeshProWarp.vertexCurve != null && textMeshProWarp.vertexCurve.keys != null)
+            GetTextMeshProWarpIfAvailable((textMeshProWarp) =>
             {
-                for (int i = textMeshProWarp.vertexCurve.keys.Length; i > 0; i--)
-                    textMeshProWarp.vertexCurve.RemoveKey(i - 1);
-            }
+                if (textMeshProWarp.vertexCurve != null && textMeshProWarp.vertexCurve.keys != null)
+                {
+                    for (int i = textMeshProWarp.vertexCurve.keys.Length; i > 0; i--)
+                        textMeshProWarp.vertexCurve.RemoveKey(i - 1);
+                }
+            });
         }
 
         private float _textMeshMinX;
@@ -328,14 +397,21 @@ namespace DepictionEngine
 
         private void GetMeshBoundMinMaxX(out float minX, out float maxX)
         {
-            UnityEngine.Mesh mesh = GetTextMeshWarpPro().textInfo.meshInfo[0].mesh;
-            if (mesh != null)
+            float meshMinX = 0.0f;
+            float meshMaxX = 0.0f;
+
+            GetTextMeshProWarpIfAvailable((textMeshProWarp) =>
             {
-                minX = (float)Math.Round(mesh.bounds.min.x, 1);
-                maxX = (float)Math.Round(mesh.bounds.max.x, 1);
-            }
-            else
-                maxX = minX = 0.0f;
+                UnityEngine.Mesh mesh = textMeshProWarp.textInfo.meshInfo[0].mesh;
+                if (mesh != null)
+                {
+                    meshMinX = (float)Math.Round(mesh.bounds.min.x, 1);
+                    meshMaxX = (float)Math.Round(mesh.bounds.max.x, 1);
+                }
+            });
+
+            minX = meshMinX;
+            maxX = meshMaxX;
         }
 
         private static float GetKeyProperty(List<float> keys, int index, KeyframeProperties property)
@@ -379,22 +455,26 @@ namespace DepictionEngine
         private bool _propertiesChanged;
         private void PropertiesChanged()
         {
-            _propertiesChanged = GetTextMeshWarpPro().havePropertiesChanged = true;
+            GetTextMeshProWarpIfAvailable((textMeshProWarp) => { textMeshProWarp.havePropertiesChanged = true; });
+            _propertiesChanged = true;
         }
 
         private bool ForceMeshUpdateIfPropertiesChanged(bool preventTextWarp = false)
         {
-            TextMeshProWarp textMeshProWarp = GetTextMeshWarpPro();
+            bool hasChanged = false;
 
-            if (_propertiesChanged || textMeshProWarp.havePropertiesChanged)
+            GetTextMeshProWarpIfAvailable((textMeshProWarp) => 
             {
-                textMeshProWarp.ForceMeshUpdate(preventTextWarp);
-                _propertiesChanged = textMeshProWarp.havePropertiesChanged = false;
+                if (_propertiesChanged || textMeshProWarp.havePropertiesChanged)
+                {
+                    textMeshProWarp.ForceMeshUpdate(preventTextWarp);
+                    _propertiesChanged = textMeshProWarp.havePropertiesChanged = false;
 
-                return true;
-            }
+                    hasChanged = true;
+                }
+            });
 
-            return false;
+            return hasChanged;
         }
     }
 }

@@ -190,32 +190,7 @@ namespace DepictionEngine
 
         public void GetRequiredComponentTypes(ref List<Type> types)
         {
-            types.Clear();
-
-            IEnumerable<RequireComponent> requiredComponents = MemberUtility.GetAllAttributes<RequireComponent>(this, false);
-            foreach (RequireComponent requiredComponent in requiredComponents)
-            {
-                if (requiredComponent.m_Type0 != null)
-                    types.Add(requiredComponent.m_Type0);
-                if (requiredComponent.m_Type1 != null)
-                    types.Add(requiredComponent.m_Type1);
-                if (requiredComponent.m_Type2 != null)
-                    types.Add(requiredComponent.m_Type2);
-            }
-
-            if (!isFallbackValues)
-            {
-                IEnumerable<RequireScriptAttribute> requiredScripts = MemberUtility.GetAllAttributes<RequireScriptAttribute>(this, false);
-                foreach (RequireScriptAttribute requiredScript in requiredScripts)
-                {
-                    if (requiredScript.requiredScript != null)
-                        types.Add(requiredScript.requiredScript);
-                    if (requiredScript.requiredScript2 != null)
-                        types.Add(requiredScript.requiredScript2);
-                    if (requiredScript.requiredScript3 != null)
-                        types.Add(requiredScript.requiredScript3);
-                }
-            }
+            MemberUtility.GetRequiredComponentTypes(ref types, GetType(), !isFallbackValues);
         }
 
         protected override void DetectChanges()

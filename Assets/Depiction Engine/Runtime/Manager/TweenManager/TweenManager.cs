@@ -12,6 +12,7 @@ namespace DepictionEngine
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(TweenManager))]
     [RequireComponent(typeof(SceneManager))]
+    [DisallowMultipleComponent]
     public class TweenManager : ManagerBase
     {
         private List<Tween> _tweens;

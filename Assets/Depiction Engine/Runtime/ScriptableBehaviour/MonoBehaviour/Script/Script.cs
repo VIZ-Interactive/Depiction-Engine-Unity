@@ -30,6 +30,7 @@ namespace DepictionEngine
         {
             if (!Object.ReferenceEquals(objectBase, null))
             {
+                objectBase.InitializedEvent -= ObjectInitializedHandler;
                 objectBase.PropertyAssignedEvent -= ObjectBasePropertyAssignedHandler;
                 objectBase.TransformPropertyAssignedEvent -= TransformPropertyAssignedHandler;
                 objectBase.TransformChangedEvent -= TransformChangedHandler;
@@ -43,6 +44,7 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && objectBase != Disposable.NULL)
             {
+                objectBase.InitializedEvent += ObjectInitializedHandler;
                 objectBase.PropertyAssignedEvent += ObjectBasePropertyAssignedHandler;
                 objectBase.TransformPropertyAssignedEvent += TransformPropertyAssignedHandler;
                 objectBase.TransformChangedEvent += TransformChangedHandler;
@@ -52,7 +54,12 @@ namespace DepictionEngine
             return false;
         }
 
-        protected void ObjectBasePropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
+        private void ObjectInitializedHandler()
+        {
+            UpdateParentGeoAstroObject();
+        }
+
+        private void ObjectBasePropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             if (name == nameof(Object.parentGeoAstroObject))
                 UpdateParentGeoAstroObject();

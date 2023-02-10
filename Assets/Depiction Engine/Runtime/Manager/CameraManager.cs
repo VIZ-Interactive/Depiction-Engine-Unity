@@ -12,6 +12,7 @@ namespace DepictionEngine
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(CameraManager))]
     [RequireComponent(typeof(SceneManager))]
+    [DisallowMultipleComponent]
     public class CameraManager : ManagerBase
     {
         public static readonly string IGNORE_RENDER_LAYER_NAME = "Ignore Render";

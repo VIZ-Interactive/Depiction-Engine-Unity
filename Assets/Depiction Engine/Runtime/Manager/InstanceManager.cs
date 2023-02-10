@@ -12,6 +12,7 @@ namespace DepictionEngine
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(InstanceManager))]
     [RequireComponent(typeof(SceneManager))]
+    [DisallowMultipleComponent]
     public class InstanceManager : ManagerBase
     {
         //Editor_Duplicate can be a Copy Paste / Duplicate Menu Item / Draging Droping Component
@@ -867,8 +868,24 @@ namespace DepictionEngine
             {
                 if (!managers.ContainsKey(id))
                 {
-                    added = true;
-                    managers[id] = property as ManagerBase;
+                    bool managerExist = false;
+
+                    Type managerType = property.GetType();
+                    foreach (ManagerBase manager in managers.Values)
+                    {
+                        if (manager.GetType() == managerType)
+                        {
+                            managerExist = true;
+                            errorMsg = "You can only have one '"+ managerType.Name+ "' instance per Scene.";
+                            break;
+                        }
+                    }
+
+                    if (!managerExist)
+                    {
+                        added = true;
+                        managers[id] = property as ManagerBase;
+                    }
                 }
             }
 
@@ -883,7 +900,7 @@ namespace DepictionEngine
                 if (property is Editor.SceneCamera)
                     property = null;
 #endif
-                if (property is IPersistent)
+                if (property is IPersistent || property is ManagerBase)
                 {
                     UnityEngine.Object unityObject = property as UnityEngine.Object;
                     if (property is PersistentMonoBehaviour)
@@ -1022,15 +1039,15 @@ namespace DepictionEngine
         /// <summary>
         /// Create an instance.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="parent"></param>
-        /// <param name="json"></param>
-        /// <param name="propertyModifiers"></param>
+        /// <typeparam name="T">The type of instance to create.</typeparam>
+        /// <param name="parent">The parent <see cref="Transform"/> under which the instance should be created.</param>
+        /// <param name="json">Values to initialize the instance with.</param>
+        /// <param name="propertyModifiers">A list of <see cref="PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
         /// <param name="initializingState"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
         /// <param name="isFallbackValues">If true a <see cref="FallbackValues"/> will be created and the instance type will be passed to the <see cref="FallbackValues.SetFallbackJsonFromType"/> function.</param>
-        /// <returns></returns>
+        /// <returns>The newly created instance.</returns>
         public T CreateInstance<T>(Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingState = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false) where T : IDisposable
         {
             return (T)CreateInstance(typeof(T), parent, json, propertyModifiers, initializingState, setParentAndAlign, moveToView, isFallbackValues);
@@ -1039,15 +1056,15 @@ namespace DepictionEngine
         /// <summary>
         /// Create an instance.
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="parent"></param>
-        /// <param name="json"></param>
-        /// <param name="propertyModifiers"></param>
+        /// <param name="type">The type of instance to create.</param>
+        /// <param name="parent">The parent <see cref="Transform"/> under which the instance should be created.</param>
+        /// <param name="json">Values to initialize the instance with.</param>
+        /// <param name="propertyModifiers">A list of <see cref="PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
         /// <param name="initializingState"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
         /// <param name="isFallbackValues">If true a <see cref="FallbackValues"/> will be created and the instance type will be passed to the <see cref="FallbackValues.SetFallbackJsonFromType"/> function.</param>
-        /// <returns></returns>
+        /// <returns>The newly created instance.</returns>
         public IDisposable CreateInstance(Type type, Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingState = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false)
         {
             if (type == null)
@@ -1180,8 +1197,8 @@ namespace DepictionEngine
         /// <summary>
         /// Duplicate an existing object.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="objectToDuplicate"></param>
+        /// <typeparam name="T">The type of the UnityEngine.Object to duplicate.</typeparam>
+        /// <param name="objectToDuplicate">The UnityEngine.Object instance to duplicate.</param>
         /// <param name="initializationState"></param>
         /// <returns>The duplicated object</returns>
         public static T Duplicate<T>(T objectToDuplicate, InitializationContext initializationState) where T : UnityEngine.Object
@@ -1209,12 +1226,12 @@ namespace DepictionEngine
         /// <summary>
         /// Initialize an object.
         /// </summary>
-        /// <param name="disposable"></param>
+        /// <param name="disposable">The object to initialize.</param>
         /// <param name="initializationState"></param>
-        /// <param name="json"></param>
-        /// <param name="propertyModifiers"></param>
+        /// <param name="json">Values to initialize the instance with.</param>
+        /// <param name="propertyModifiers">A list of <see cref="PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
         /// <param name="isFallbackValues">If true a <see cref="FallbackValues"/> will be created and the instance type will be passed to the <see cref="FallbackValues.SetFallbackJsonFromType"/> function.</param>
-        /// <returns></returns>
+        /// <returns>The object that was initialized.</returns>
         public static IDisposable Initialize(IDisposable disposable, InitializationContext initializationState = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
             InitializingState(() =>

@@ -5,8 +5,8 @@
  *
  * - __Unity (Windows, Android, WebGL)__ \n 
  * \n 
- *   + 2022.x.
- *   @note Only Universal Rendering Pipeline(URP) projects are officially supported for the moment.
+ *   + 2022.x
+ *   + 2023.x
  * .
  *
  *
@@ -14,8 +14,7 @@
  *
  * - __Download__ \n 
  * \n 
- *   + Download the package from GitHub and move it to your "/Assets/" folder OR Install through the `Unity Package Manager` if available.
- *   @warning The package is currently not available in the `Unity Package Manager`.
+ *   + Download the package from GitHub and move it to your "/Assets/" folder OR Install through the `Unity Package Manager`.
  * .
  *
  * - __Dependencies__ \n 
@@ -25,7 +24,10 @@
  *
  * - __Creating a Project__ \n 
  * \n 
+ *   + Under "Project Settings -> Player -> Other Settings", set 'Api Compatibility Level*' to '.NET Framework' and enable 'Allow unsafe Code'.
+ * \n 
  *   + A series of `DepictionEngine.ManagerBase`'s are required in the Scene and will automatically be created the moment an `DepictionEngine.Object` is first introduced to the Scene. To easily create `DepictionEngine.Object`'s in the Editor see the '_New Hierarchy Window Context Menu items_' point of the @ref editorIntegrationId "Editor Integration" section.
+ *   @note Only Universal Rendering Pipeline(URP) projects are officially supported for the moment.
  * . 
  *
  * - __Patching Universal Rendering Pipeline__ \n 

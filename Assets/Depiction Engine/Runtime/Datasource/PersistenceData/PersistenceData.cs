@@ -383,16 +383,6 @@ namespace DepictionEngine
             else
                 outOfSyncKeys[key] = allowAutoDispose;
 
-            if (outOfSynchChanged)
-            {
-                Debug.LogError("OutofSynch!!!");
-                MemberUtility.IterateOverJsonAttribute(iJson, (iJson, accessor, name, jsonAttribute, propertyInfo) =>
-                {
-                    if (key == PropertyMonoBehaviour.GetPropertyKey(propertyInfo.Name))
-                        Debug.Log(propertyInfo.Name);
-                });
-            }
-
             return outOfSynchChanged;
         }
 

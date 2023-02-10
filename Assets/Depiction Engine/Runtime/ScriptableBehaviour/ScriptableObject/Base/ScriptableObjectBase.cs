@@ -27,6 +27,7 @@ namespace DepictionEngine
         private bool _awake;
         private bool _initializing;
         private bool _initialized;
+        private bool _instanceAdded;
         private bool _disposing;
         private bool _dispose;
         private bool _disposed;
@@ -37,6 +38,7 @@ namespace DepictionEngine
         private IScriptableBehaviour _originator;
         private bool _isUserChange;
 
+        private Action _initializedEvent;
         private Action<IDisposable> _disposingEvent;
         private Action<IDisposable> _disposedEvent;
 
@@ -57,7 +59,7 @@ namespace DepictionEngine
 
             _instanceID = 0;
             _isFallbackValues = false;
-            _awake = _initializing = _initialized = _disposing = _dispose = _disposed = _disposedComplete = false;
+            _awake = _initializing = _initialized = _instanceAdded = _disposing = _dispose = _disposed = _disposedComplete = false;
             _destroyingState = DisposeManager.DestroyContext.Unknown;
             _initializingState = InstanceManager.InitializationContext.Unknown;
 
@@ -99,7 +101,8 @@ namespace DepictionEngine
                 RegisterInitializeObjectUndo(initializingState);
 #endif
 
-                return AddToInstanceManager();
+                _instanceAdded = AddToInstanceManager();
+                return _instanceAdded;
             }
 
             return false;
@@ -416,6 +419,11 @@ namespace DepictionEngine
             get { return _initialized; }
         }
 
+        protected bool instanceAdded
+        {
+            get { return _instanceAdded; }
+        }
+
         protected bool IsFallbackValues()
         {
             return isFallbackValues;
@@ -530,6 +538,12 @@ namespace DepictionEngine
             _lastHasEditorUndoRedo = _hasEditorUndoRedo = true;
         }
 #endif
+
+        public Action InitializedEvent
+        {
+            get { return _initializedEvent; }
+            set { _initializedEvent = value; }
+        }
 
         public Action<IDisposable> DisposingEvent
         {

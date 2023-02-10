@@ -65,6 +65,7 @@ using UnityEngine;
 namespace DepictionEngine
 {
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/AstroObject/Grid/" + nameof(BuildingGridMeshObject))]
+    [RequireScript(typeof(AssetReference), typeof(AssetReference))]
     public class BuildingGridMeshObject : FeatureGridMeshObjectBase
     {
         [BeginFoldout("Building")]

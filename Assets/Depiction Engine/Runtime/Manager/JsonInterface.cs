@@ -12,6 +12,7 @@ namespace DepictionEngine
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/" + nameof(JsonInterface))]
     [RequireComponent(typeof(SceneManager))]
+    [DisallowMultipleComponent]
     public class JsonInterface : ManagerBase
     {
         //Error Msg

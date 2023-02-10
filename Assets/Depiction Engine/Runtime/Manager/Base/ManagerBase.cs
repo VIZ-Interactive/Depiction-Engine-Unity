@@ -88,5 +88,12 @@ namespace DepictionEngine
                 }
             }
         }
+
+        public override void ExplicitAwake()
+        {
+            base.ExplicitAwake();
+
+            Initialize();
+        }
     }
 }

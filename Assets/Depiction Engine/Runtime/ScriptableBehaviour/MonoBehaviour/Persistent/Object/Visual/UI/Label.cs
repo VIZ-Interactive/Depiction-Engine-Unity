@@ -109,7 +109,10 @@ namespace DepictionEngine
 
             transform.IterateOverRootChildren<UILabel>((uiLabel) =>
             {
-                textMeshPros.Add(uiLabel.GetTextMeshWarpPro());
+                uiLabel.GetTextMeshProWarpIfAvailable((textMeshProWarp) =>
+                {
+                    textMeshPros.Add(textMeshProWarp);
+                });
 
                 return true;
             });

@@ -64,7 +64,7 @@ namespace DepictionEngine.Editor
                         persistentTypes.AddRange(GetAllTypeThatInheritType(typeof(PersistentScriptableObject)));
                         persistentTypes.AddRange(GetAllTypeThatInheritType(typeof(Script)));
 
-                        List<string> instanceTypes = new List<string>() { "Select" };
+                        List<string> instanceTypes = new List<string>();
 
                         foreach (Type type in persistentTypes)
                         {
@@ -72,7 +72,10 @@ namespace DepictionEngine.Editor
                                 instanceTypes.Add(type.FullName);
                         }
 
-                        _instanceTypes = instanceTypes.OrderBy(x => x).ToArray();
+                        instanceTypes.OrderBy(x => x);
+                        instanceTypes.Insert(0, "Select");
+
+                        _instanceTypes = instanceTypes.ToArray();
                     }
 
                     int currentIndex = EditorGUILayout.Popup(0, _instanceTypes);

@@ -1627,18 +1627,6 @@ namespace DepictionEngine
             }
         }
 
-        public FallbackValues CreateFallbackValues<T>(JSONNode json, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
-        {
-            FallbackValues fallbackValues = CreateScript(typeof(FallbackValues), json, initializingState) as FallbackValues;
-            fallbackValues.SetFallbackJsonFromType(typeof(T).FullName);
-
-#if UNITY_EDITOR
-            Editor.UndoManager.RegisterCompleteObjectUndo(fallbackValues, initializingState);
-#endif
-
-            return fallbackValues;
-        }
-
         public T CreateScript<T>(InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically) where T : Script
         {
             return CreateScript(typeof(T), null, initializingState) as T;

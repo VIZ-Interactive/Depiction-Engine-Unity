@@ -20,6 +20,7 @@ namespace DepictionEngine
 
         private DisposeManager.DestroyContext _destroyingState;
 
+        private Action _initializedEvent;
         private Action<IDisposable> _disposingEvent;
         private Action<IDisposable> _disposedEvent;
 
@@ -105,6 +106,12 @@ namespace DepictionEngine
         public bool hasEditorUndoRedo
         {
             get { return false; }
+        }
+
+        public Action InitializedEvent
+        {
+            get { return _initializedEvent; }
+            set { _initializedEvent = value; }
         }
 
         public Action<IDisposable> DisposingEvent
