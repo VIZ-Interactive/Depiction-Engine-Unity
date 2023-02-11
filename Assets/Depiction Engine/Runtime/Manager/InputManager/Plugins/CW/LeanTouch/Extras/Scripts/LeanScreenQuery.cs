@@ -276,7 +276,11 @@ namespace Lean.Common
 
 			if (currentEventSystem == null)
 			{
-				currentEventSystem = Object.FindObjectOfType<EventSystem>();
+#if UNITY_2023_1_OR_NEWER
+				currentEventSystem = Object.FindFirstObjectByType<EventSystem>();
+#else
+                currentEventSystem = Object.FindObjectOfType< EventSystem>();
+#endif
 			}
 
 			if (currentEventSystem != null)

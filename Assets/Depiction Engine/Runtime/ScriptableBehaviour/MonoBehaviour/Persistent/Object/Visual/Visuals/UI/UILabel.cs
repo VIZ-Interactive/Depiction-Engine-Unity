@@ -163,6 +163,18 @@ namespace DepictionEngine
             }
         }
 
+        public bool fontSharedMaterialEnableOutline
+        {
+            set
+            {
+                GetTextMeshProWarpIfAvailable((textMeshProWarp) =>
+                {
+                    if (textMeshProWarp.fontSharedMaterial != null)
+                        textMeshProWarp.fontSharedMaterial.SetKeyword(RenderingManager.outlineOnLocalKeyword, value);
+                });
+            }
+        }
+
         public float fontSharedMaterialOutlineWidth
         {
             get
@@ -171,7 +183,7 @@ namespace DepictionEngine
                 GetTextMeshProWarpIfAvailable((textMeshProWarp) => 
                 {
                     if (textMeshProWarp.fontSharedMaterial != null)
-                        fontSharedMaterialOutlineWidth = textMeshProWarp.fontSharedMaterial.GetFloat(ShaderUtilities.ID_OutlineWidth); 
+                        fontSharedMaterialOutlineWidth = textMeshProWarp.fontSharedMaterial.GetFloat(ShaderUtilities.ID_OutlineWidth);
                 });
                 return fontSharedMaterialOutlineWidth;
             }

@@ -186,7 +186,7 @@ namespace DepictionEngine
             return transform.GetGeoCoordinate();
         }
 
-        public static T CreateGrid<T>() where T : Grid
+        public static T CreateGrid<T>() where T : GridBase
         {
             return ScriptableObject.CreateInstance<T>().Init() as T;
         }

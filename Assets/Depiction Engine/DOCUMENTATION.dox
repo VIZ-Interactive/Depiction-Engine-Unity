@@ -12,27 +12,28 @@
  *
  * # Installation {#installationId}
  *
- * - __Download__ \n 
- * \n 
- *   + Download the package from GitHub and move it to your "/Assets/" folder OR Install through the `Unity Package Manager`.
- * .
+ * - __Creating a Project__ \n
  *
- * - __Dependencies__ \n 
  * \n 
- *   + `TexMeshPro` is required and can be installed through the `Unity Package Manager` if missing.
- * .
- *
- * - __Creating a Project__ \n 
+ *   + Import `Universal RP` from the `Package Manager` under "Windows -> Package Manager". \n 
+ *     Create and assign a `Universal Render Pipeline Asset` to "Edit -> Project Settings -> Quality -> Render Pipeline Asset". \n 
+ *    @note Only Universal Rendering Pipeline(URP) projects are officially supported for the moment.
+ * \n  
+ *   + Under "Edit -> Project Settings -> Player -> Other Settings" set the following values: \n 
+ *    `Color Space*` = Linear \n 
+ *	  `Api Compatibility Level*` = .NET Framework \n 
+ *	  `Allow unsafe Code` = true \n 
  * \n 
- *   + Under "Project Settings -> Player -> Other Settings", set 'Api Compatibility Level*' to '.NET Framework' and enable 'Allow unsafe Code'.
+ *   + Import `TexMeshPro` from the `Package Manager` under "Windows -> Package Manager". \n 
  * \n 
- *   + A series of `DepictionEngine.ManagerBase`'s are required in the Scene and will automatically be created the moment an `DepictionEngine.Object` is first introduced to the Scene. To easily create `DepictionEngine.Object`'s in the Editor see the '_New Hierarchy Window Context Menu items_' point of the @ref editorIntegrationId "Editor Integration" section.
- *   @note Only Universal Rendering Pipeline(URP) projects are officially supported for the moment.
+ *   + Import `Depiction Engine` from GitHub. \n
+ *    @note A series of `DepictionEngine.ManagerBase`'s are required in the Scene and will automatically be created the moment an `DepictionEngine.Object` is first introduced to the Scene. To easily create `DepictionEngine.Object`'s in the Editor see the '_New Hierarchy Window Context Menu items_' point of the @ref editorIntegrationId "Editor Integration" section.
  * . 
  *
  * - __Patching Universal Rendering Pipeline__ \n 
  * \n 
- *   + Some important `ShaderGraph` nodes require the rendering pipeline to be modified to function properly. The patching should be performed automatically upon launch of the Editor however you can also trigger it manually in your Scene `DepictionEngine.RenderingManager` by pressing the `Patch Universal Rendering Pipeline` button.
+ *   + Some important `ShaderGraph` nodes require the rendering pipeline to be modified to function properly. The patching should be performed automatically when the `DepictionEngine.RenderingManager` is created however you can also trigger it manually in your Scene `DepictionEngine.RenderingManager` by pressing the `Patch Universal Rendering Pipeline` button.
+ *    @warning You might have to restart Unity after the Universal Rendering Pipeline as been patched.
  * .
  *
  *

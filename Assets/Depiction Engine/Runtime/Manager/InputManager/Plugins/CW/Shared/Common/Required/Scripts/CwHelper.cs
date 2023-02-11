@@ -508,7 +508,11 @@ namespace CW.Common
 			// Auto attach to canvas?
 			if (parent == null || parent.GetComponentInParent<Canvas>() == null)
 			{
-				var canvas = Object.FindObjectOfType<Canvas>();
+#if UNITY_2023_1_OR_NEWER
+				var canvas = Object.FindFirstObjectByType<Canvas>();
+#else
+                var canvas = Object.FindObjectOfType<Canvas>();
+#endif
 
 				if (canvas == null)
 				{

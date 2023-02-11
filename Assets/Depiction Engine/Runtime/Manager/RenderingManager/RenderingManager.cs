@@ -1108,6 +1108,17 @@ namespace DepictionEngine
             }
         }
 
+        private static LocalKeyword _outlineOnLocalKeyword;
+        public static LocalKeyword outlineOnLocalKeyword
+        {
+            get
+            {
+                if (_outlineOnLocalKeyword == default(LocalKeyword))
+                    _outlineOnLocalKeyword = new LocalKeyword(Shader.Find("TextMeshPro/Mobile/Distance Field"), "OUTLINE_ON");
+                return _outlineOnLocalKeyword;
+            }
+        }
+
         private Font GetFont(string fontName)
         {
             foreach (Font font in fonts)

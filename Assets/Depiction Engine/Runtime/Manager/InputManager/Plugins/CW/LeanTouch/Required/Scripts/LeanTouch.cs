@@ -265,7 +265,11 @@ namespace Lean.Touch
 
 			if (currentEventSystem == null)
 			{
-				currentEventSystem = FindObjectOfType<EventSystem>();
+#if UNITY_2023_1_OR_NEWER
+				currentEventSystem = Object.FindFirstObjectByType<EventSystem>();
+#else
+                currentEventSystem = Object.FindObjectOfType<EventSystem>();
+#endif
 			}
 
 			return currentEventSystem;

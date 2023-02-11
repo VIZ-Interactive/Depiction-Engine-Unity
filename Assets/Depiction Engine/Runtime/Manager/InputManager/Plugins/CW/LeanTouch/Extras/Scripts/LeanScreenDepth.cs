@@ -246,8 +246,12 @@ namespace Lean.Touch
 				return true;
 			}
 
-			// Exists in scene?
-			Object = instance = Object.FindObjectOfType<T>();
+            // Exists in scene?
+#if UNITY_2023_1_OR_NEWER
+			Object = instance = Object.FindFirstObjectByType<T>();
+#else
+            Object = instance = Object.FindObjectOfType<T>();
+#endif
 
 			if (instance != null)
 			{

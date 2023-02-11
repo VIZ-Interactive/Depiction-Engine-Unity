@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.Networking;
 
 namespace DepictionEngine
@@ -117,7 +118,11 @@ namespace DepictionEngine
                 request = UnityWebRequest.Put(uri, bodyData);
             else if (httpMethod == HTTPMethod.Post || httpMethod == HTTPMethod.Delete)
             {
+#if UNITY_2023_1_OR_NEWER
+				request = UnityWebRequest.Post(uri, "", "application/json");
+#else
                 request = UnityWebRequest.Post(uri, "");
+#endif
                 request.uploadHandler = new UploadHandlerRaw(bodyData);
             }
 

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    public class Grid2D : Grid, IGrid2D
+    public class Grid2D : GridBase, IGrid2D
     {
         [Serializable]
         private class RowDictionary : SerializableDictionary<int, Row> { };

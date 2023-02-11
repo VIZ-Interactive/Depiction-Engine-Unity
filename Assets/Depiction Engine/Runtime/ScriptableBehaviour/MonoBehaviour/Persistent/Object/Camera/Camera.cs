@@ -981,7 +981,7 @@ namespace DepictionEngine
 
         public void IterateOverCameraStack(Action<UnityEngine.Camera, int, Stack> callback)
         {
-            if (callback != null && additionalData != null && additionalData.cameraStack != null)
+            if (callback != null && additionalData != null && additionalData.scriptableRenderer != null && additionalData.cameraStack != null)
             {
                 if (_stacks != null)
                 {

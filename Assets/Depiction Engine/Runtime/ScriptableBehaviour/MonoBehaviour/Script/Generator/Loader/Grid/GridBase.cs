@@ -1,11 +1,10 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
-using System;
 using UnityEngine;
 
 namespace DepictionEngine
 {
-    public class Grid : ScriptableObject, IGrid
+    public class GridBase : ScriptableObject, IGrid
     {
         private int _cascade;
 
@@ -13,7 +12,7 @@ namespace DepictionEngine
 
         private bool _enabled;
 
-        public virtual Grid Init()
+        public virtual GridBase Init()
         {
             _enabled = true;
             return this;

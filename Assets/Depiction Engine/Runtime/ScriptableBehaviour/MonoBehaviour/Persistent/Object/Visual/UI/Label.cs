@@ -405,6 +405,8 @@ namespace DepictionEngine
 
             transform.IterateOverRootChildren<UILabel>((uiLabel) =>
             {
+                if (renderingManager.labelOutlineWidth > 0.0f)
+                    uiLabel.fontSharedMaterialEnableOutline = true;
                 uiLabel.fontSharedMaterialOutlineWidth = renderingManager.labelOutlineWidth;
                 uiLabel.fontSharedMaterialOutlineColor = renderingManager.labelOutlineColor;
 
