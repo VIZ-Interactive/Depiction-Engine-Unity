@@ -5,8 +5,11 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/VolumeMask/" + nameof(RectangleVolumeMask))]
-    public class RectangleVolumeMask : VolumeMaskBase
+    /// <summary>
+    /// Hide the geometry that lies inside its rectangular volume.
+    /// </summary>
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/VolumeMask/" + nameof(RectangularVolumeMask))]
+    public class RectangularVolumeMask : VolumeMaskBase
     {
         public override int GetCusomtEffectComputeBufferDataSize()
         {

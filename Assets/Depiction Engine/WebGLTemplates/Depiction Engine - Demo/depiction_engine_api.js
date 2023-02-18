@@ -1,7 +1,7 @@
 // Copyright (C) 2023 by VIZ Interactive Media Inc. <contact@vizinteractive.io> | Licensed under MIT license (see LICENSE.md for details)
 
 const $OPERATION_TYPE_NAME = "operationType";
-const $NAMESPACE = "Depiction Engine";
+const $NAMESPACE = "DepictionEngine";
 const $MAPBOX_KEY = "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA";
 
 var $instances = {};
@@ -118,11 +118,11 @@ class Instance
 
     getTotalLoadingCount()
     {
-        return this.callStaticMethod($NAMESPACE + ".LoaderBase", "GetTotalLoadingCount")[0];
+        return this.callStaticMethod($NAMESPACE + ".GeneratorBase", "GetTotalLoadingCount")[0];
     }
 
     getTotalLoadedCount() {
-        return this.callStaticMethod($NAMESPACE + ".LoaderBase", "GetTotalLoadedCount")[0];
+        return this.callStaticMethod($NAMESPACE + ".GeneratorBase", "GetTotalLoadedCount")[0];
     }
 
     getStar()
@@ -145,12 +145,12 @@ class Instance
 
     getRestDatasource(baseAddress, baseAddress2, baseAddress3, baseAddress4)
     {
-        return this.callStaticMethod($NAMESPACE + ".DatasourceManager", "GetRestDatasource", [{ type: "System.String", value: baseAddress }, { type: "System.String", value: baseAddress2 }, { type: "System.String", value: baseAddress3 }, { type: "System.String", value: baseAddress4 }, { type: $NAMESPACE + ".InitializationState", value: "Programmatically"}])[0];
+        return this.callStaticMethod($NAMESPACE + ".DatasourceManager", "GetRestDatasource", [{ type: "System.String", value: baseAddress }, { type: "System.String", value: baseAddress2 }, { type: "System.String", value: baseAddress3 }, { type: "System.String", value: baseAddress4 }, { type: $NAMESPACE + ".InstanceManager+InitializationContext", value: "Programmatically"}])[0];
     }
 
     getFileSystemDatasource(baseAddress, baseAddress2, baseAddress3, baseAddress4)
     {
-        return this.callStaticMethod($NAMESPACE + ".DatasourceManager", "GetFileSystemDatasource", [{ type: "System.String", value: baseAddress }, { type: "System.String", value: baseAddress2 }, { type: "System.String", value: baseAddress3 }, { type: "System.String", value: baseAddress4 }, { type: $NAMESPACE + ".InitializationState", value: "Programmatically" }])[0];
+        return this.callStaticMethod($NAMESPACE + ".DatasourceManager", "GetFileSystemDatasource", [{ type: "System.String", value: baseAddress }, { type: "System.String", value: baseAddress2 }, { type: "System.String", value: baseAddress3 }, { type: "System.String", value: baseAddress4 }, { type: $NAMESPACE + ".InstanceManager+InitializationContext", value: "Programmatically" }])[0];
     }
 
     bindElementToTransformPosition(element, transform)
@@ -324,6 +324,7 @@ class Instance
             this.returnResults = null;
             if (!Array.isArray(operations))
                 operations = [operations];
+
             this.unityInstance.SendMessage("Managers (Required)", "ReceiveExternalMessage", JSON.stringify(operations));
             return this.returnResults;
         }

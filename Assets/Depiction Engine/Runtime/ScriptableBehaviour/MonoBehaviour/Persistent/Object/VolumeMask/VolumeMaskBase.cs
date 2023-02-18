@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// Hide the geometry that lies inside its volume.
+    /// </summary>
     public class VolumeMaskBase : Object, ICustomEffect
     {
         [BeginFoldout("Mask")]

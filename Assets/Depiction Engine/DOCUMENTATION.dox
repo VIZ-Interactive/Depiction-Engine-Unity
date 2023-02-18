@@ -27,7 +27,7 @@
  *   + Import `TexMeshPro` from the `Package Manager` under "Windows -> Package Manager". \n 
  * \n 
  *   + Import `Depiction Engine` from GitHub. \n
- *    @note A series of `DepictionEngine.ManagerBase`'s are required in the Scene and will automatically be created the moment an `DepictionEngine.Object` is first introduced to the Scene. To easily create `DepictionEngine.Object`'s in the Editor see the '_New Hierarchy Window Context Menu items_' point of the @ref editorIntegrationId "Editor Integration" section.
+ *    @note A series of `DepictionEngine.ManagerBase`'s are required in the Scene and will automatically be created the moment an `DepictionEngine.Object` is first introduced to the Scene. Managers can also be created manually by right clicking the _Hierarchy Window_ and selecting "Managers" in the _Context Menu_.
  * . 
  *
  * - __Patching Universal Rendering Pipeline__ \n 
@@ -40,15 +40,13 @@
  * # Build
  *
  *
- * - __Javascript API__ \n 
+ * - __WebGL / Javascript API__ \n 
  * \n 
- *   + To build the Javascript API, you will have to move the `WebGLTemplates` folder to "/Assets/". You should now be able to select the "Depiction Engine - Demo" WebGL Template under "Resolution and Presentation" tab of the "Project Settings" window under the "Player" category. \n 
+ *   + To build the Javascript API, you will have to move the `WebGLTemplates` folder to "/Assets/". You should now be able to select the "Depiction Engine - Demo" WebGL Template under "Edit -> Project Settings -> Player -> Resolution and Presentation". \n 
  * \n 
- *   + To handle the communication with Javascript you will need to add a `DepictionEngine.JsonInterface` component in the "Managers" GameObject. \n 
+ *   + Before you build for WebGL make sure all the managers are present in your Scene, if missing you can create them by right clicking the _Hierarchy Window_ and selecting "Managers" in the _Context Menu_. To handle the communication with Javascript you will also need to add a `DepictionEngine.JsonInterface` component in the "Managers" GameObject. You will also have to save your project and make sure it is included in your build under "File -> Build Settings -> Scenes in Build". \n 
  * \n 
- *   + If you want to control Post processing effect from Javascript make sure to read the '_Scripting_' point of the @ref postProcessingId "Post Processing" section. \n
- * \n 
- *   + Before you build for WebGL make sure that all the managers have been created in your Scene, read the '_Creating a Project_' point of the @ref installationId "Installation" section to find out how to create them.
+ *   + If you want to control Post processing effects from Javascript make sure to read the '_Scripting_' point of the @ref postProcessingId "Post Processing" section. \n
  * .
  *
  *

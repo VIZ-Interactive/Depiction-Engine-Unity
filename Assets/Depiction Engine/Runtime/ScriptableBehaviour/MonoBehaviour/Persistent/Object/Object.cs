@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -16,7 +17,7 @@ namespace DepictionEngine
     public class Object : PersistentMonoBehaviour
     {
         [Serializable]
-        private class VisibleCamerasDictionary : SerializableDictionary<int, int[]> { };
+        private class VisibleCamerasDictionary : SerializableDictionary<int, VisibleCameras> { };
 
         [SerializeField, ConditionalShow(nameof(IsFallbackValues))]
         private ObjectAdditionalFallbackValues _objectAdditionalFallbackValues;
@@ -1888,13 +1889,13 @@ namespace DepictionEngine
             return scriptableBehaviour;
         }
 
-        public void SetGridProperties(int loadScopeInstanceId, int[] visibleCamerasInstanceId)
+        public void SetGridProperties(int loadScopeInstanceId, VisibleCameras visibleCamerasInstanceId)
         {
             bool visibleCamerasChanged = false;
 
             if (visibleCamerasInstanceId != null)
             {
-                if (!visibleCameras.TryGetValue(loadScopeInstanceId, out int[] currentVisibleCamerasInstanceId) || currentVisibleCamerasInstanceId != visibleCamerasInstanceId)
+                if (!visibleCameras.TryGetValue(loadScopeInstanceId, out VisibleCameras currentVisibleCamerasInstanceId) || currentVisibleCamerasInstanceId != visibleCamerasInstanceId)
                 {
                     visibleCameras[loadScopeInstanceId] = visibleCamerasInstanceId;
                     visibleCamerasChanged = true;
@@ -1920,9 +1921,9 @@ namespace DepictionEngine
             {
                 masked = visibleCameras.Count > 0;
 
-                foreach (int[] visibleCamera in visibleCameras.Values)
+                foreach (VisibleCameras visibleCamera in visibleCameras.Values)
                 {
-                    if (visibleCamera != null && Array.Exists(visibleCamera, cameraInstanceId => cameraInstanceId == camera.GetCameraInstanceId()))
+                    if (visibleCamera != null && visibleCamera.CameraVisible(camera))
                     {
                         masked = false;
                         break;
@@ -1932,6 +1933,7 @@ namespace DepictionEngine
 
             return masked;
         }
+
 
         private void UpdateGeoController()
         {
@@ -2176,4 +2178,31 @@ namespace DepictionEngine
             return false;
         }
     }
+
+    [Serializable]
+    public class VisibleCameras
+    {
+        [SerializeField]
+        private List<int> _values;
+
+        public VisibleCameras(int[] values)
+        {
+            _values = new List<int>(values);
+        }
+
+        public bool CameraVisible(Camera camera)
+        {
+            return _values.Contains(camera.GetCameraInstanceId());
+        }
+
+        public bool SequenceEqual(List<int> other)
+        {
+            return Enumerable.SequenceEqual(_values, other);
+        }
+
+        public static implicit operator VisibleCameras(int[] d) 
+        {
+            return new VisibleCameras(d);
+        }
+    };
 }

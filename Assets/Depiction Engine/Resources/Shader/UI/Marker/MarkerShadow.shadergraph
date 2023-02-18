@@ -218,7 +218,7 @@
         },
         "preventRotation": false
     },
-    "m_Path": "VIZ/UI",
+    "m_Path": "DepictionEngine/UI",
     "m_GraphPrecision": 0,
     "m_PreviewMode": 2,
     "m_OutputNode": {

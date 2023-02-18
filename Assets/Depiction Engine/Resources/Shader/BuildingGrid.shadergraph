@@ -103,6 +103,9 @@
         },
         {
             "m_Id": "dbb53c0984374ee6a16ad6b1d29902a2"
+        },
+        {
+            "m_Id": "aeb16a59dda74067ab9550061a13c1cf"
         }
     ],
     "m_Dropdowns": [],
@@ -127,6 +130,9 @@
         },
         {
             "m_Id": "cfa187e98dd34e029d760a2a9d6f52c6"
+        },
+        {
+            "m_Id": "6e4bcb08d6504b90ba0d70bc91ff28b0"
         }
     ],
     "m_Nodes": [
@@ -434,6 +440,9 @@
         },
         {
             "m_Id": "afb25368bfa54fbb9260e352694b97b0"
+        },
+        {
+            "m_Id": "f99006b469184c99826ac8e89795b1c5"
         }
     ],
     "m_StickyNoteDatas": [],
@@ -1800,7 +1809,7 @@
         },
         "preventRotation": false
     },
-    "m_Path": "VIZ",
+    "m_Path": "DepictionEngine",
     "m_GraphPrecision": 1,
     "m_PreviewMode": 2,
     "m_OutputNode": {
@@ -3089,7 +3098,7 @@
     "m_Type": "UnityEditor.ShaderGraph.SubGraphNode",
     "m_ObjectId": "1871399a89be4ee4bb081614e234dd09",
     "m_Group": {
-        "m_Id": ""
+        "m_Id": "f99006b469184c99826ac8e89795b1c5"
     },
     "m_Name": "CustomEffects",
     "m_DrawState": {
@@ -6100,6 +6109,18 @@
 
 {
     "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.CategoryData",
+    "m_ObjectId": "6e4bcb08d6504b90ba0d70bc91ff28b0",
+    "m_Name": "CustomEffects",
+    "m_ChildObjectList": [
+        {
+            "m_Id": "aeb16a59dda74067ab9550061a13c1cf"
+        }
+    ]
+}
+
+{
+    "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Vector4MaterialSlot",
     "m_ObjectId": "6f3943e556bb4e4e9db109088a51a342",
     "m_Id": 0,
@@ -8185,6 +8206,31 @@
 }
 
 {
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.ShaderKeyword",
+    "m_ObjectId": "aeb16a59dda74067ab9550061a13c1cf",
+    "m_Guid": {
+        "m_GuidSerialized": "fd7fc164-1486-4dc1-ac0b-a1f356c8949d"
+    },
+    "m_Name": "ENABLE_COMPUTE_BUFFER",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "ENABLE_COMPUTE_BUFFER",
+    "m_DefaultReferenceName": "_ENABLE_COMPUTE_BUFFER",
+    "m_OverrideReferenceName": "ENABLE_COMPUTE_BUFFER",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_KeywordType": 0,
+    "m_KeywordDefinition": 1,
+    "m_KeywordScope": 0,
+    "m_KeywordStages": 63,
+    "m_Entries": [],
+    "m_Value": 1,
+    "m_IsEditable": true
+}
+
+{
     "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Vector2MaterialSlot",
     "m_ObjectId": "aefa4762a61c452980ae800d7eeab5f7",
@@ -8826,7 +8872,7 @@
     "m_Type": "UnityEditor.ShaderGraph.PositionNode",
     "m_ObjectId": "c23a742da9e146cda2cfa45e12a09cea",
     "m_Group": {
-        "m_Id": ""
+        "m_Id": "f99006b469184c99826ac8e89795b1c5"
     },
     "m_Name": "Position",
     "m_DrawState": {
@@ -11663,6 +11709,17 @@
     "m_RangeValues": {
         "x": 0.0,
         "y": 1.0
+    }
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.GroupData",
+    "m_ObjectId": "f99006b469184c99826ac8e89795b1c5",
+    "m_Title": "Custom Effects",
+    "m_Position": {
+        "x": 10.0,
+        "y": 10.0
     }
 }
 

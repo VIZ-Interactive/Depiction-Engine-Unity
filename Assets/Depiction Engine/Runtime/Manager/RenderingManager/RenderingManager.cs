@@ -117,6 +117,8 @@ namespace DepictionEngine
 
         private QuadMesh _quadMesh;
 
+        public static bool COMPUTE_BUFFER_SUPPORTED;
+
 #if UNITY_EDITOR
         private enum PatchResult
         {
@@ -316,6 +318,8 @@ namespace DepictionEngine
         {
             base.InitializeFields(initializingState);
 
+            UpdateComputeBufferSupported();
+
 #if UNITY_EDITOR
             StartURPPatching();
 #endif
@@ -355,9 +359,22 @@ namespace DepictionEngine
         {
             base.UpdateFields();
 
+#if UNITY_EDITOR
+            UpdateComputeBufferSupported();
+#endif
+
             InitRendererFeatures();
 
             InitPostProcessEffects();
+        }
+
+        private void UpdateComputeBufferSupported()
+        {
+#if UNITY_WEBGL
+            COMPUTE_BUFFER_SUPPORTED = false;
+#else
+            COMPUTE_BUFFER_SUPPORTED = true;
+#endif
         }
 
         protected override bool UpdateAllDelegates()
@@ -1423,7 +1440,16 @@ namespace DepictionEngine
                 {
                     visualObject.IterateOverMaterials((material, materialPropertyBlock, meshRenderer) =>
                     {
-                        material.SetBuffer("_CustomEffectsBuffer", layersCustomEffectComputeBuffer[visualObject.layer]);
+                        if (COMPUTE_BUFFER_SUPPORTED)
+                        {
+                            ComputeBuffer layerCustomEffectComputeBuffer = layersCustomEffectComputeBuffer[visualObject.layer];
+                            material.SetBuffer("_CustomEffectsBuffer", layerCustomEffectComputeBuffer);
+                            material.SetInteger("_CustomEffectsBufferDimensions", layerCustomEffectComputeBuffer.count);
+
+                            material.EnableKeyword("ENABLE_COMPUTE_BUFFER");
+                        }
+                        else
+                            material.DisableKeyword("ENABLE_COMPUTE_BUFFER");
                     });
 
                     return true;
@@ -1462,7 +1488,7 @@ namespace DepictionEngine
             }
             return false;
         }
-      
+
         private void UpdateCameraEnvironmentCubemap(Camera camera)
         {
             float lastAmbientIntensity = RenderSettings.ambientIntensity;

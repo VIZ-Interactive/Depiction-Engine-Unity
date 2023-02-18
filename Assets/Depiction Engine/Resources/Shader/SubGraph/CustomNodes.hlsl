@@ -167,15 +167,13 @@ float GetRectangleVolumeMask(StructuredBuffer<float> customEffectBuffer, float4 
 }
 
 StructuredBuffer<float> _CustomEffectsBuffer;
+uint _CustomEffectsBufferDimensions;
 void CustomEffects_float(float4 worldPosition, out float4 color, out float alpha)
 {
 	color = float4(1.0, 1.0, 1.0, 1.0);
 	alpha = 1.0;
 
-	uint num, stride;
-    _CustomEffectsBuffer.GetDimensions(num, stride);
-	
-	for (uint index = 0 ; index < num ;)
+	for (uint index = 0 ; index < _CustomEffectsBufferDimensions ;)
 	{
 		int customEffectType = _CustomEffectsBuffer[index];
 		index++;
@@ -191,10 +189,7 @@ void CustomEffects_half(float4 worldPosition, out float4 color, out float alpha)
 	color = float4(1.0, 1.0, 1.0, 1.0);
 	alpha = 1.0;
 
-	uint num, stride;
-    _CustomEffectsBuffer.GetDimensions(num, stride);
-	
-	for (uint index = 0 ; index < num ;)
+	for (uint index = 0 ; index < _CustomEffectsBufferDimensions ;)
 	{
 		int customEffectType = _CustomEffectsBuffer[index];
 		index++;

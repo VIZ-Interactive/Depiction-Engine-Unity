@@ -1,9 +1,7 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using static UnityEditor.Rendering.ShadowCascadeGUI;
 
 namespace DepictionEngine.Editor
 {
@@ -234,6 +232,21 @@ namespace DepictionEngine.Editor
             CreateScript<FileSystemDatasource>(datasourceObject);
         }
 
+        [MenuItem("GameObject/Depiction Engine/VolumeMask/Rectangular", false, 90)]
+        private static void CreateRectangularVolumeMask(MenuCommand menuCommand)
+        {
+            string name = nameof(RectangularVolumeMask);
+            UndoManager.CreateNewGroup("Create " + name);
+
+            CreateObject<RectangularVolumeMask>(GetContextTransform(menuCommand), name);
+        }
+
+        [MenuItem("GameObject/Depiction Engine/Managers", false, 101)]
+        private static void CreateManagers(MenuCommand menuCommand)
+        {
+            SceneManager.Instance();
+        }
+
         private static Planet CreatePlanetEmpty(Transform parent, string name, bool spherical)
         {
             UndoManager.CreateNewGroup("Create " + name);
@@ -269,12 +282,9 @@ namespace DepictionEngine.Editor
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 19));
-           
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 2;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 2;
-            
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
-            
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
@@ -337,16 +347,13 @@ namespace DepictionEngine.Editor
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 17));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(new Vector2Int(0, 4));
-
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 1;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 1;
             if (!spherical)
                 terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.subdivisionZoomFactor)] = 1.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.edgeDepth)] = 0.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.normalsType)] = JsonUtility.ToJson(TerrainGridMeshObject.NormalsType.SurfaceUp);
-
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
-
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
@@ -360,9 +367,7 @@ namespace DepictionEngine.Editor
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(14, 14));
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(Vector2Int.zero);
-
             buildingMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(BuildingGridMeshObject.color)] = JsonUtility.ToJson(Color.white);
-
             buildingMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = buildingFeatureDataLoaderId;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(buildingMeshObjectCameraGrid2DLoaderJson, buildingsJson);
@@ -443,16 +448,14 @@ namespace DepictionEngine.Editor
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 19));
-
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 2;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 2;
             if (!spherical)
                 terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.subdivisionZoomFactor)] = 1.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.normalsType)] = JsonUtility.ToJson(TerrainGridMeshObject.NormalsType.SurfaceUp);
-
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
-
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[5][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = surfaceLoaderId;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
 
@@ -465,11 +468,8 @@ namespace DepictionEngine.Editor
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 5.0f;
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(14, 14));
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(Vector2Int.zero);
-
             buildingMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
-
             buildingMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = buildingFeatureDataLoaderId;
-
             buildingMeshObjectCameraGrid2DLoaderJson[4][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(buildingMeshObjectCameraGrid2DLoaderJson, buildingsJson);
@@ -520,12 +520,9 @@ namespace DepictionEngine.Editor
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 3.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 7));
-
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 1;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 1;
-
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
-
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
@@ -573,7 +570,16 @@ namespace DepictionEngine.Editor
             return menuCommand.context != null ? (menuCommand.context as GameObject).transform : null;
         }
 
-        private static Planet CreatePlanet(Transform parent, string name, bool spherical, double size, double mass, JSONNode scriptsJson, bool setParentAndAlign = true, bool moveToView = true, bool selectGameObject = true)
+        private static Planet CreatePlanet(
+            Transform parent, 
+            string name, 
+            bool spherical, 
+            double size, 
+            double mass, 
+            JSONNode scriptsJson, 
+            bool setParentAndAlign = true, 
+            bool moveToView = true, 
+            bool selectGameObject = true)
         {
             Planet planet = InstanceUtility.CreatePlanet(
                 parent,
@@ -619,7 +625,7 @@ namespace DepictionEngine.Editor
         }
 
         private const string ALIGN_VIEW_TO_SELECTED_GEOASTROOBJECT_MENU_ITEM = "GameObject/Align View to Selected GeoAstroObject";
-        [MenuItem(ALIGN_VIEW_TO_SELECTED_GEOASTROOBJECT_MENU_ITEM, false, 90)]
+        [MenuItem(ALIGN_VIEW_TO_SELECTED_GEOASTROOBJECT_MENU_ITEM, false, 112)]
         private static void AlignViewToSelectedGeoAstroObject(MenuCommand menuCommand)
         {
             SceneViewDouble sceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
@@ -657,7 +663,7 @@ namespace DepictionEngine.Editor
         }
 
         private const string AUTO_SNAP_VIEW_TO_TERRAIN_MENU_ITEM = "GameObject/Auto Snap View to Terrain";
-        [MenuItem(AUTO_SNAP_VIEW_TO_TERRAIN_MENU_ITEM, false, 91)]
+        [MenuItem(AUTO_SNAP_VIEW_TO_TERRAIN_MENU_ITEM, false, 113)]
         private static void AutoSnapViewToTerrain(MenuCommand menuCommand)
         {
             SceneViewDouble sceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
@@ -707,7 +713,7 @@ namespace DepictionEngine.Editor
             return IsAlignedToGeoAstroObject();
         }
 
-        [MenuItem("GameObject/Move View to GeoCoordinate", false, 92)]
+        [MenuItem("GameObject/Move View to GeoCoordinate", false, 114)]
         private static void MoveViewToGeoCoordinate(MenuCommand menuCommand)
         {
             GeoCoordinatePopup geoCoordiantePopup = ScriptableObject.CreateInstance<GeoCoordinatePopup>();

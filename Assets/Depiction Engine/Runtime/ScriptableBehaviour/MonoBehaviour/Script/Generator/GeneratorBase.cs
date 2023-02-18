@@ -81,10 +81,7 @@ namespace DepictionEngine
             SetValue(nameof(fallbackValues), GetComponentFromId<FallbackValues>(fallbackValuesId), ref _fallbackValues);
         }
 
-        /// <summary>
-        /// Returns the total number of loadScopes currently loading in the scene.
-        /// </summary>
-        /// <returns></returns>
+        /// <returns>The total number of loadScopes currently loading in the scene.</returns>
         public static int GetTotalLoadingCount()
         {
             int loadingCount = 0;
@@ -106,10 +103,7 @@ namespace DepictionEngine
             return loadingCount;
         }
 
-        /// <summary>
-        /// Returns the total number of loadScopes currently loaded in the scene.
-        /// </summary>
-        /// <returns></returns>
+        /// <returns>The total number of loadScopes currently loaded in the scene.</returns>
         public static int GetTotalLoadedCount()
         {
             int loadedCount = 0;

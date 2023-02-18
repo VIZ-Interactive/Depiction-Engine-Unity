@@ -47,7 +47,7 @@ namespace DepictionEngine
         /// <summary>
         /// Create a new planet.
         /// </summary>
-        /// <param name="parent">The parent <see cref="Transform"/> under which we will create the <see cref="Camera"/>.</param>
+        /// <param name="parentId">The id of the parent <see cref="Transform"/> under which we will create the <see cref="Planet"/>.</param>
         /// <param name="name">The name of the planet.</param>
         /// <param name="spherical">Display as a sphere (true) or flat (false)?</param>
         /// <param name="size">The size (radius in spherical mode or width in flat mode), in world units.</param>
@@ -58,7 +58,7 @@ namespace DepictionEngine
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
         /// <returns>The newly created <see cref="Planet"/> instance.</returns>
         public static Planet CreatePlanet(
-            Transform parent,
+            SerializableGuid parentId,
             string name,
             bool spherical,
             double size,
@@ -67,6 +67,38 @@ namespace DepictionEngine
             InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically,
             bool setParentAndAlign = false,
             bool moveToView = false)
+        {
+            Component component = null;
+            
+            if (parentId != SerializableGuid.Empty)
+                component = InstanceManager.Instance().GetIJson(parentId) as Component;
+
+            return CreatePlanet(component != null ? component.transform : null, name, spherical, size, mass, json, initializingState, setParentAndAlign, moveToView);
+        }
+
+        /// <summary>
+        /// Create a new planet.
+        /// </summary>
+        /// <param name="parent">The parent <see cref="Transform"/> under which we will create the <see cref="Planet"/>.</param>
+        /// <param name="name">The name of the planet.</param>
+        /// <param name="spherical">Display as a sphere (true) or flat (false)?</param>
+        /// <param name="size">The size (radius in spherical mode or width in flat mode), in world units.</param>
+        /// <param name="mass">Used to determine the amount of gravitational force to apply when <see cref="Object.useGravity"/> is enabled.</param>
+        /// <param name="json">Optional initialization values.</param>
+        /// <param name="initializingState"></param>
+        /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
+        /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
+        /// <returns>The newly created <see cref="Planet"/> instance.</returns>
+        public static Planet CreatePlanet(
+        Transform parent,
+        string name,
+        bool spherical,
+        double size,
+        double mass,
+        JSONNode json = null,
+        InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically,
+        bool setParentAndAlign = false,
+        bool moveToView = false)
         {
             if (json == null)
                 json = new JSONObject();
@@ -83,11 +115,25 @@ namespace DepictionEngine
 
             planet.size = size;
             planet.mass = mass;
+
 #if UNITY_EDITOR
             Editor.UndoManager.RegisterCompleteObjectUndo(planet, initializingState);
 #endif
 
             return planet;
+        }
+
+        /// <summary>
+        /// Create a new <see cref="DatasourceRoot"/>.
+        /// </summary>
+        /// <param name="planetId">The id of the parent <see cref="Planet"/> under which we will create the <see cref="DatasourceRoot"/>.</param>
+        /// <param name="name">The name of the layer.</param>
+        /// <param name="json">Optional initialization values.</param>
+        /// <param name="initializingState">.</param>
+        /// <returns>The newly created <see cref="DatasourceRoot"/> instance.</returns>
+        public static DatasourceRoot CreateLayer(SerializableGuid planetId, string name, JSONNode json = null, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        {
+            return CreateLayer(InstanceManager.Instance().GetAstroObject(planetId) as Planet, name, json, initializingState);
         }
 
         /// <summary>
@@ -100,6 +146,9 @@ namespace DepictionEngine
         /// <returns>The newly created <see cref="DatasourceRoot"/> instance.</returns>
         public static DatasourceRoot CreateLayer(Planet planet, string name, JSONNode json = null, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
         {
+            if (planet == Disposable.NULL)
+                return null;
+
             if (json == null)
                 json = new JSONObject();
             json[nameof(DatasourceRoot.name)] = name;
@@ -181,8 +230,8 @@ namespace DepictionEngine
         /// </summary>
         /// <param name="componentsJson">A <see cref="JSONObject"/> or <see cref="JSONArray"/> composed of component(s) initialization values.</param>
         /// <param name="objectInitializationJson">The json to merge the component(s) values into.</param>
-        /// <returns></returns>
-        public static void MergeComponentsToObjectInitializationJson(JSONNode componentsJson, JSONObject objectInitializationJson)
+        /// <returns>The objectInitialization json.</returns>
+        public static JSONNode MergeComponentsToObjectInitializationJson(JSONNode componentsJson, JSONObject objectInitializationJson)
         {
             if (componentsJson.IsArray)
             {
@@ -191,6 +240,8 @@ namespace DepictionEngine
             }
             else if (componentsJson.IsObject)
                 MergeComponentToObjectInitializationJson(componentsJson.AsObject, objectInitializationJson);
+
+            return objectInitializationJson;
         }
 
         private static void MergeComponentToObjectInitializationJson(JSONObject componentJson, JSONObject objectInitializationJson)

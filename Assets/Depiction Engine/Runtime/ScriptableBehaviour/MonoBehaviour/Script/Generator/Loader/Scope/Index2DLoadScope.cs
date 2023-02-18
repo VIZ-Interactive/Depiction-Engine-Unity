@@ -1,5 +1,6 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -32,7 +33,7 @@ namespace DepictionEngine
         [SerializeField]
         private URLParametersType _indexUrlParamType;
         [SerializeField]
-        private int[] _visibleCameras;
+        private VisibleCameras _visibleCameras;
 
         public override void Recycle()
         {
@@ -194,7 +195,7 @@ namespace DepictionEngine
             return "(Zoom:" + GetZoom() + ", XYTilesRatio: " + MathPlus.GetXYTileRatioFromGrid2DDimensions(scopeDimensions) + ", X: " + scopeIndex.x + ", Y: " + scopeIndex.y + ")";
         }
 
-        public int[] visibleCameras
+        public VisibleCameras visibleCameras
         {
             get { return _visibleCameras; }
             set
@@ -237,8 +238,9 @@ namespace DepictionEngine
             return false;
         }
 
-        private void UpdateObjectGridProperties(IPersistent persistent, int[] visibleCameras = null)
+        private void UpdateObjectGridProperties(IPersistent persistent, VisibleCameras visibleCameras = null)
         {
+
             if (persistent is Object)
                 (persistent as Object).SetGridProperties(GetInstanceID(), visibleCameras);
         }

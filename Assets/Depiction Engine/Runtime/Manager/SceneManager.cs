@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection;
+using HarmonyLib;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Microsoft.Design", "IDE1006",
@@ -949,7 +950,16 @@ namespace DepictionEngine
                         {
                             IScriptableBehaviour targetObject = queuedPropertyValue.Item1;
                             if (!Disposable.IsDisposed(targetObject))
-                                targetObject.IsUserChange(() => { queuedPropertyValue.Item2.SetValue(targetObject, queuedPropertyValue.Item3); });
+                            {
+                                try 
+                                {
+                                    targetObject.IsUserChange(() => { queuedPropertyValue.Item2.SetValue(targetObject, queuedPropertyValue.Item3); });
+                                }
+                                catch(Exception)
+                                {
+
+                                }
+                            }
                         }
 
                         _queuedPropertyValueChanges.Clear();

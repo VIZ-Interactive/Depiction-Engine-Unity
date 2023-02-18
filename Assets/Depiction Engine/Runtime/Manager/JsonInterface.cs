@@ -99,73 +99,58 @@ namespace DepictionEngine
                     InputManager.OnMouseDownEvent += InputManagerOnMouseDownHandler;
                     InputManager.OnMouseClickedEvent += InputManagerOnMouseClickedHandler;
                 }
-
+                
                 return true;
             }
             return false;
         }
-
         protected override void InstanceAddedHandler(IProperty property)
         {
             base.InstanceAddedHandler(property);
-
             SentExternalEventMessage(INSTANCE_ADDED_EVENT, GetInstanceEventJSON(property));
         }
-
         protected override void InstanceRemovedHandler(IProperty property)
         {
             base.InstanceRemovedHandler(property);
-
             SentExternalEventMessage(INSTANCE_REMOVED_EVENT, GetInstanceEventJSON(property));
         }
-
         private JSONObject _instanceEventJson;
         private JSONObject GetInstanceEventJSON(IProperty property)
         {
             if (_instanceEventJson == null)
                 _instanceEventJson = new JSONObject();
-
             _instanceEventJson[ID] = JsonUtility.ToJson(property.id);
             _instanceEventJson[TYPE] = JsonUtility.ToJson(property.GetType());
-
             return _instanceEventJson;
         }
-
         private void InputManagerOnMouseMoveHandler(RaycastHitDouble raycastHitDouble)
         {
             SentExternalEventMessage(MOUSE_MOVE_EVENT, GetMouseEventJSON(raycastHitDouble));
         }
-
         private void InputManagerOnMouseEnterHandler(RaycastHitDouble raycastHitDouble)
         {
             SentExternalEventMessage(MOUSE_ENTER_EVENT, GetMouseEventJSON(raycastHitDouble));
         }
-
         private void InputManagerOnMouseExitHandler(RaycastHitDouble raycastHitDouble)
         {
             SentExternalEventMessage(MOUSE_EXIT_EVENT, GetMouseEventJSON(raycastHitDouble));
         }
-
         private void InputManagerOnMouseUpHandler(RaycastHitDouble raycastHitDouble)
         {
             SentExternalEventMessage(MOUSE_UP_EVENT, GetMouseEventJSON(raycastHitDouble));
         }
-
         private void InputManagerOnMouseDownHandler(RaycastHitDouble raycastHitDouble)
         {
             SentExternalEventMessage(MOUSE_DOWN_EVENT, GetMouseEventJSON(raycastHitDouble));
         }
-
         private void InputManagerOnMouseClickedHandler(RaycastHitDouble raycastHitDouble)
         {
             SentExternalEventMessage(MOUSE_CLICKED_EVENT, GetMouseEventJSON(raycastHitDouble));
         }
-
         public static string NewGuid()
         {
             return SerializableGuid.NewGuid().ToString();
         }
-
         private JSONObject _mouseEventJson;
         private JSONObject _mouseEventVisualObjectJson;
         private JSONObject GetMouseEventJSON(RaycastHitDouble raycastHitDouble)
@@ -174,49 +159,38 @@ namespace DepictionEngine
             {
                 if (_mouseEventJson == null)
                     _mouseEventJson = new JSONObject();
-
                 _mouseEventJson[POINT] = JsonUtility.ToJson(raycastHitDouble.point);
-
                 JSONObject transformJson = new JSONObject();
                 transformJson[ID] = raycastHitDouble.transform.id.ToString();
                 _mouseEventJson[TRANSFORM] = transformJson;
-
                 _mouseEventJson[MESHRENDERER_VISUAL] = raycastHitDouble.meshRendererVisual.id.ToString();
-  
                 if (_mouseEventVisualObjectJson == null)
                 {
                     _mouseEventVisualObjectJson = new JSONObject();
                     _mouseEventJson[VISUAL_OBJECT] = _mouseEventVisualObjectJson;
                 }
-
                 _mouseEventVisualObjectJson[ID] = JsonUtility.ToJson(raycastHitDouble.meshRendererVisual.visualObject.id);
                 _mouseEventVisualObjectJson[NAME] = raycastHitDouble.meshRendererVisual.visualObject.name;
                 _mouseEventVisualObjectJson[TYPE] = JsonUtility.ToJson(raycastHitDouble.meshRendererVisual.visualObject.GetType());
-
                 return _mouseEventJson;
             }
             return null;
         }
-
         private IJson GetIJSONFromId(string id)
         {
             if (!string.IsNullOrEmpty(id) && SerializableGuid.TryParse(id, out SerializableGuid guid))
                 return instanceManager.GetIJson(guid);
-
             return null;
         }
-
         public override bool PreHierarchicalUpdate()
         {
             if (base.PreHierarchicalUpdate())
             {
                 SentExternalEventMessage(PRE_HIERARCHICAL_UPDATE_EVENT);
-
                 return true;
             }
             return false;
         }
-
         public override bool HierarchicalUpdate()
         {
             if (base.HierarchicalUpdate())
@@ -226,7 +200,6 @@ namespace DepictionEngine
             }
             return false;
         }
-
         public override bool PostHierarchicalUpdate()
         {
             if (base.PostHierarchicalUpdate())
@@ -236,14 +209,11 @@ namespace DepictionEngine
             }
             return false;
         }
-
         public override void HierarchicalFixedUpdate()
         {
             base.HierarchicalFixedUpdate();
-                
             SentExternalEventMessage(HIERARCHICAL_FIXED_UPDATE_EVENT);
         }
-
         private JSONObject _hierarchicalBeginCameraRenderingarameters;
         public override bool HierarchicalBeginCameraRendering(Camera camera)
         {
@@ -251,16 +221,12 @@ namespace DepictionEngine
             {
                 if (_hierarchicalBeginCameraRenderingarameters == null)
                     _hierarchicalBeginCameraRenderingarameters = new JSONObject();
-
                 _hierarchicalBeginCameraRenderingarameters[CAMERA] = camera.id.ToString();
-
                 SentExternalEventMessage(HIERARCHICAL_BEGIN_CAMERA_RENDERING_EVENT, _hierarchicalBeginCameraRenderingarameters);
-
                 return true;
             }
             return false;
         }
-
         private JSONObject _hierarchicalEndCameraRenderingarameters;
         public override bool HierarchicalEndCameraRendering(Camera camera)
         {
@@ -268,22 +234,16 @@ namespace DepictionEngine
             {
                 if (_hierarchicalEndCameraRenderingarameters == null)
                     _hierarchicalEndCameraRenderingarameters = new JSONObject();
-
                 _hierarchicalEndCameraRenderingarameters[CAMERA] = camera.id.ToString();
-
                 SentExternalEventMessage(HIERARCHICAL_END_CAMERA_RENDERING_EVENT, _hierarchicalEndCameraRenderingarameters);
-
                 return true;
             }
             return false;
         }
-
         public void ReceiveExternalMessage(string jsonStr)
         {
             JSONArray results = null;
-
             JSONNode operations = JSON.Parse(jsonStr);
-
             if (operations is JSONArray && operations.Count > 0)
             {
                 foreach (JSONNode operation in operations.AsArray)
@@ -297,29 +257,22 @@ namespace DepictionEngine
                     }
                 }
             }
-
             if (results != null)
                 SendExternalMessage(results);
         }
-
         private JSONNode ProcessOperation(JSONNode operation)
         {
             JSONNode result = null;
-
             IJson iJson;
             JSONNode jsonParameters;
-
             string operationType = operation[OPERATION_TYPE];
             switch (operationType)
             {
                 case INIT_OPERATION:
-
                     _instanceId = NewGuid();
                     result = new JSONString(_instanceId);
-
                     break;
                 case SET_OPERATION:
-
                     JSONNode jsonValues = operation[VALUES];
                     iJson = GetIJSONFromId(jsonValues[ID]);
                     if (!Disposable.IsDisposed(iJson))
@@ -330,15 +283,12 @@ namespace DepictionEngine
                     }
                     else
                         result = ID_NOT_FOUND_ERROR_MSG;
-
                     break;
                 case GET_OPERATION:
-
                     JSONNode operationFields = operation[FIELDS];
                     if (operation[GET_ID] != null)
                     {
                         string id = operation[GET_ID];
-
                         iJson = GetIJSONFromId(id);
                         if (!Disposable.IsDisposed(iJson))
                             result = iJson.GetJson(null, operationFields);
@@ -348,7 +298,6 @@ namespace DepictionEngine
                     else if (operation[GET_NAME] != null)
                     {
                         string name = operation[GET_NAME];
-
                         GameObject go = GameObject.Find(name);
                         if (go != null)
                         {
@@ -364,7 +313,6 @@ namespace DepictionEngine
                     else if (operation[GET_TYPE] != null)
                     {
                         Type type = Type.GetType(operation[GET_TYPE]);
-
                         if (type != null)
                         {
                             if (operation[OBJECT_ID] != null)
@@ -375,17 +323,13 @@ namespace DepictionEngine
                                     if (iJson is MonoBehaviour)
                                     {
                                         MonoBehaviour iJsonMonoBehaviour = iJson as MonoBehaviour;
-
                                         if (result == null)
                                             result = new JSONArray();
-                                       
                                         Component[] components;
-
                                         if (operation[FIND_IN_CHILDREN] != null && operation[FIND_IN_CHILDREN].AsBool)
                                             components = iJsonMonoBehaviour.GetComponentsInChildren(type);
                                         else
                                             components = iJsonMonoBehaviour.GetComponents(type);
-
                                         foreach (Component component in components)
                                         {
                                             if (component is IJson)
@@ -401,58 +345,50 @@ namespace DepictionEngine
                                 if (typeof(IJson).IsAssignableFrom(type))
                                 {
                                     instanceManager.IterateOverInstances(type,
-                                        (iProperty) =>
+                                    (iProperty) =>
+                                    {
+                                        IJson iJson = (IJson)iProperty;
+                                        if (!Disposable.IsDisposed(iJson))
                                         {
-                                            IJson iJson = (IJson)iProperty;
-                                            if (!Disposable.IsDisposed(iJson))
-                                            {
-                                                bool validIJson = true;
+                                            bool validIJson = true;
 #if UNITY_EDITOR
                                                 validIJson = !SceneManager.IsEditorNamespace(iJson.GetType());
 #endif
                                                 if (validIJson)
-                                                {
-                                                    if (result == null)
-                                                        result = new JSONArray();
-                                                    result.Add(iJson.GetJson(null, operationFields));
-                                                }
+                                            {
+                                                if (result == null)
+                                                    result = new JSONArray();
+                                                result.Add(iJson.GetJson(null, operationFields));
                                             }
-
-                                            return true;
-                                        });
+                                        }
+                                        return true;
+                                    });
                                 }
                             }
-
                             if (result == null)
                                 result = NOTHING_FOUND_ERROR_MSG;
                         }
                         else
                             result = INVALID_TYPE_ERROR_MSG;
                     }
-
                     break;
                 case REFLECTION_OPERATION:
-
                     try
                     {
                         Type type = null;
-
                         iJson = GetIJSONFromId(operation[ID]);
                         if (!Disposable.IsDisposed(iJson))
                             type = iJson.GetType();
                         else
                             JsonUtility.FromJson(out type, operation[TYPE]);
-
                         if (type != null)
                         {
                             object reflectionResult = null;
                             string reflectionName = operation[NAME];
-
                             string reflectionType = operation[REFLECTION_TYPE];
                             switch (reflectionType)
                             {
                                 case METHOD:
-
                                     object[] parameters = null;
                                     Type[] parameterTypes = null;
                                     jsonParameters = operation[PARAMETERS];
@@ -464,50 +400,48 @@ namespace DepictionEngine
                                         for (int i = 0; i < jsonParametersArr.Count; i++)
                                         {
                                             JSONNode parameter = jsonParametersArr[i];
-                                            JsonUtility.FromJson(out Type parameterType, parameter[TYPE]);
-                                            if (JsonUtility.FromJson(out object parameterValue, parameter[VALUE], parameterType))
+                                            if (JsonUtility.FromJson(out Type parameterType, parameter[TYPE]))
                                             {
-                                                parameters[i] = parameterValue;
                                                 parameterTypes[i] = parameterType;
+                                                JsonUtility.FromJson(out object parameterValue, parameter[VALUE], parameterType);
+                                                parameters[i] = parameterValue;
                                             }
                                         }
                                     }
                                     else
                                         parameterTypes = new Type[0];
-
                                     MethodInfo methodInfo = type.GetMethod(reflectionName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static, null, parameterTypes, null);
                                     if (methodInfo != null)
                                         reflectionResult = methodInfo.Invoke(iJson, parameters);
                                     else
                                         result = METHOD_NOT_FOUND_ERROR_MSG;
-
                                     break;
                                 case PROPERTY:
-
                                     PropertyInfo propertyInfo = type.GetProperty(reflectionName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                                     if (propertyInfo != null)
                                         reflectionResult = propertyInfo.GetValue(iJson);
                                     else
                                         result = PROPERTY_NOT_FOUND_ERROR_MSG;
-
                                     break;
                                 case FIELD:
-
                                     FieldInfo fieldInfo = type.GetField(reflectionName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                                     if (fieldInfo != null)
                                         reflectionResult = fieldInfo.GetValue(iJson);
                                     else
                                         result = FIELD_NOT_FOUND_ERROR_MSG;
-
                                     break;
                             }
-
                             if (reflectionResult != null)
                             {
                                 if (reflectionResult is IJson)
                                     result = (reflectionResult as IJson).GetJson();
                                 else
-                                    result = JsonUtility.ToJson(reflectionResult);
+                                {
+                                    if (reflectionResult is JSONNode)
+                                        result = reflectionResult as JSONNode;
+                                    else
+                                        result = JsonUtility.ToJson(reflectionResult);
+                                }
                             }
                         }
                         else
@@ -517,12 +451,9 @@ namespace DepictionEngine
                     {
                         result = e.Message;
                     }
-
                     break;
                 case CREATE_OPERATION:
-
                     jsonParameters = operation[PARAMETERS];
-
                     JsonUtility.FromJson(out Type instanceType, jsonParameters[TYPE]);
                     if (instanceType != null)
                     {
@@ -537,7 +468,6 @@ namespace DepictionEngine
                             }
                             else
                                 iJson = instanceManager.CreateInstance(instanceType, json: jsonParameters) as IJson;
-
                             if (!Disposable.IsDisposed(iJson))
                                 result = iJson.GetJson();
                             else
@@ -548,25 +478,17 @@ namespace DepictionEngine
                     }
                     else
                         result = INVALID_TYPE_ERROR_MSG;
-
                     break;
                 case DISPOSE_OPERATION:
-
                     object obj = GetIJSONFromId(operation[ID]);
-
                     if (obj is MonoBehaviour && operation[GAME_OBJECT] != null && operation[GAME_OBJECT].AsBool)
                         obj = (obj as MonoBehaviour).gameObject;
-
                     DisposeManager.Dispose(obj);
-
                     result = !Object.ReferenceEquals(obj, null) ? operation[ID] : ID_NOT_FOUND_ERROR_MSG;
-
                     break;
             }
-
             return result;
         }
-
         private void SentExternalEventMessage(string type, JSONNode parameters = null)
         {
             JSONNode json = parameters;
@@ -585,8 +507,11 @@ namespace DepictionEngine
         private void SendExternalMessage(JSONNode json)
         {
 #if UNITY_WEBGL
-            if (isActiveAndEnabled && Application.isPlaying && !string.IsNullOrEmpty(_instanceId) && JsonUtility.FromJson(out string jsonStr, json))
+            if (isActiveAndEnabled && Application.isPlaying && !string.IsNullOrEmpty(_instanceId))
+            {
+                JsonUtility.FromJson(out string jsonStr, json);
                 SendExternalMessageInternal(_instanceId, jsonStr);
+            }
 #endif
         }
     }

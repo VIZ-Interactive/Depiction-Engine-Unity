@@ -88,7 +88,7 @@ namespace DepictionEngine
             InitValue(value => orthographicSize = value, 5.0f, initializingState);
             InitValue(value => fieldOfView = value, 60.0f, initializingState);
             InitValue(value => nearClipPlane = value, 0.3f, initializingState);
-            InitValue(value => farClipPlane = value, 1000.0f, initializingState);
+            InitValue(value => farClipPlane = value, 5000.0f, initializingState);
 
             InitValue(value => postProcessing = value, GetDefaultPostProcessing(), initializingState);
             InitValue(value => depthTextureMode = value, DepthTextureMode.None, initializingState);

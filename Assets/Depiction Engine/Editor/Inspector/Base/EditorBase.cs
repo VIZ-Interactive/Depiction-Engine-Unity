@@ -587,6 +587,11 @@ namespace DepictionEngine.Editor
                 if (controller != Disposable.NULL && controller.objectBase != Disposable.NULL && controller.objectBase.transform != Disposable.NULL && controller.objectBase.transform.isGeoCoordinateTransform)
                     helpBoxes.Add(("Requires XYZ Transform", MessageType.Warning));
             }
+            else if (targetObject is VolumeMaskBase)
+            {
+                if (!RenderingManager.COMPUTE_BUFFER_SUPPORTED)
+                    helpBoxes.Add(("VolumeMask's are not currently supported for the current build platform.", MessageType.Error));
+            }
 
             foreach ((string, MessageType) helpBoxData in helpBoxes)
                 EditorGUILayout.HelpBox(helpBoxData.Item1, helpBoxData.Item2);

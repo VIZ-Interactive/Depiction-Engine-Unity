@@ -83,6 +83,7 @@ namespace DepictionEngine
 
             object parsedValue = null;
 
+
             try
             {
                 if (type.IsSubclassOf(typeof(JSONNode)) || type == typeof(JSONNode))
@@ -92,7 +93,9 @@ namespace DepictionEngine
                     if (json.IsArray)
                     {
                         JSONArray jsonArr = json.AsArray;
-                        if (type.IsArray)
+                        if (type == typeof(string))
+                            parsedValue = jsonArr.ToString();
+                        else if (type.IsArray)
                         {
                             Type itemType = type.GetElementType();
                             Array arr = Array.CreateInstance(itemType, jsonArr.Count);
@@ -121,7 +124,9 @@ namespace DepictionEngine
                         parsedValue = json.AsBool;
                     else if (json.IsNumber)
                     {
-                        if (type == typeof(int))
+                        if (type == typeof(string))
+                            parsedValue = json.ToString();
+                        else if (type == typeof(int))
                             parsedValue = json.AsInt;
                         else if (type == typeof(uint))
                             parsedValue = (uint)json.AsInt;

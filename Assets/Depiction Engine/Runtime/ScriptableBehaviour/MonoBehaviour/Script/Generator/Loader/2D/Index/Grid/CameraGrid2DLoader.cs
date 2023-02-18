@@ -406,7 +406,7 @@ namespace DepictionEngine
                 }
             }
 
-            if (indexLoadScope.visibleCameras == null || !Enumerable.SequenceEqual(indexLoadScope.visibleCameras, _visibleCameras))
+            if (indexLoadScope.visibleCameras == null || !indexLoadScope.visibleCameras.SequenceEqual(_visibleCameras))
                 indexLoadScope.visibleCameras = _visibleCameras.ToArray();
         }
 
