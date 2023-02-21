@@ -81,7 +81,7 @@ namespace DepictionEngine
         {
             base.ApplyPropertiesToVisual(visualsChanged, meshRendererVisualDirtyFlags);
 
-            transform.IterateOverRootChildren<MeshRendererVisual>((meshRendererVisual) =>
+            transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
             {
                 if (visualsChanged || PropertyDirty(nameof(sphericalRatio)))
                     meshRendererVisual.gameObject.SetActive(IsSpherical());

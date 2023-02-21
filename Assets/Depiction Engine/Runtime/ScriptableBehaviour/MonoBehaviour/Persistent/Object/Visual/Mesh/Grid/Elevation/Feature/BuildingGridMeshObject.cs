@@ -64,7 +64,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/AstroObject/Grid/" + nameof(BuildingGridMeshObject))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/Grid/" + nameof(BuildingGridMeshObject))]
     [RequireScript(typeof(AssetReference), typeof(AssetReference))]
     public class BuildingGridMeshObject : FeatureGridMeshObjectBase
     {
@@ -325,7 +325,7 @@ namespace DepictionEngine
         {
             base.ApplyPropertiesToVisual(visualsChanged, meshRendererVisualDirtyFlags);
 
-            transform.IterateOverRootChildren<MeshRendererVisual>((meshRendererVisual) =>
+            transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
             {
                 if (visualsChanged)
                     meshRendererVisual.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);

@@ -4,10 +4,13 @@ using System;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// Supports having children.
+    /// </summary>
     interface IHasChildren
     {
         int childCount { get; }
 
-        void IterateOverRootChildren<T>(Func<T, bool> callback) where T : PropertyMonoBehaviour;
+        void IterateOverChildren<T>(Func<T, bool> callback) where T : PropertyMonoBehaviour;
     }
 }

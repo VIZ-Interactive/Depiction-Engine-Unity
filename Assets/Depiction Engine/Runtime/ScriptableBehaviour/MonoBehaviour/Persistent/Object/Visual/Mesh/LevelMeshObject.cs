@@ -200,9 +200,9 @@ namespace DepictionEngine
             }
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 DisposeManager.Dispose(meshObjectProcessorOutput);
 

@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-	[AddComponentMenu(SceneManager.NAMESPACE + "/Animator/" + nameof(TransformAnimator))]
+	[AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Animator/" + nameof(TransformAnimator))]
     [RequireComponent(typeof(TransformDouble))]
 	public class TransformAnimator : AnimatorBase
     {

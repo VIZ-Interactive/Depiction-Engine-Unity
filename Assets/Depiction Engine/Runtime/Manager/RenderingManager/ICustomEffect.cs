@@ -2,6 +2,9 @@
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// A <see cref="RenderingManager"/> compatible shader based custom visual effect that can be applied to specific layers.
+    /// </summary>
     public interface ICustomEffect : IPersistent
     {
         int maskedLayers { get; set; }

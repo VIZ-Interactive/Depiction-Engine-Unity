@@ -9,7 +9,7 @@ namespace DepictionEngine
     /// <summary>
     /// File system based datasource
     /// </summary>
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Communication/" + nameof(FileSystemDatasource))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Datasource/" + nameof(FileSystemDatasource))]
     public class FileSystemDatasource : DatasourceBase
     {
         [BeginFoldout("Namespace")]

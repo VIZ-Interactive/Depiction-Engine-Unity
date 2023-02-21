@@ -2,7 +2,7 @@
 
 namespace DepictionEngine
 {
-    public class MultithreadSafeScriptableObject : ScriptableObjectBase, IMultithreadSafe
+    public class MultithreadSafeScriptableObject : ScriptableObjectDisposable, IMultithreadSafe
     {
         private bool _locked;
         public bool locked
@@ -33,9 +33,9 @@ namespace DepictionEngine
             return !_locked && IsDisposing();
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 OnDisposedLocked();
 

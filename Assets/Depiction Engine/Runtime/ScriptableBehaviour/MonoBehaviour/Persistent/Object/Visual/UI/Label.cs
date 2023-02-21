@@ -107,7 +107,7 @@ namespace DepictionEngine
         {
             List<UnityEngine.Object> textMeshPros = new List<UnityEngine.Object>();
 
-            transform.IterateOverRootChildren<UILabel>((uiLabel) =>
+            transform.IterateOverChildren<UILabel>((uiLabel) =>
             {
                 uiLabel.GetTextMeshProWarpIfAvailable((textMeshProWarp) =>
                 {
@@ -403,7 +403,7 @@ namespace DepictionEngine
                 UpdateUILabelAlignment();
             }
 
-            transform.IterateOverRootChildren<UILabel>((uiLabel) =>
+            transform.IterateOverChildren<UILabel>((uiLabel) =>
             {
                 if (renderingManager.labelOutlineWidth > 0.0f)
                     uiLabel.fontSharedMaterialEnableOutline = true;
@@ -418,7 +418,7 @@ namespace DepictionEngine
         {
             if (initialized)
             {
-                transform.IterateOverRootChildren<UILabel>((uiLabel) =>
+                transform.IterateOverChildren<UILabel>((uiLabel) =>
                 {
                     uiLabel.color = color.SetAlpha(GetCurrentAlpha());
 
@@ -431,7 +431,7 @@ namespace DepictionEngine
         {
             if (initialized)
             {
-                transform.IterateOverRootChildren<UILabel>((uiLabel) =>
+                transform.IterateOverChildren<UILabel>((uiLabel) =>
                 {
                     string repeatedText = text;
                     for (int i = 0; i < repeatCount; i++)
@@ -447,7 +447,7 @@ namespace DepictionEngine
         {
             if (initialized)
             {
-                transform.IterateOverRootChildren<UILabel>((uiLabel) =>
+                transform.IterateOverChildren<UILabel>((uiLabel) =>
                 {
                     //TestMesh Pro requires 10x font size magnification to look right, why?
                     uiLabel.fontSize = fontSize * 10.0f;
@@ -461,7 +461,7 @@ namespace DepictionEngine
         {
             if (initialized)
             {
-                transform.IterateOverRootChildren<UILabel>((uiLabel) =>
+                transform.IterateOverChildren<UILabel>((uiLabel) =>
                 {
                     uiLabel.maxVisibleLines = maxVisibleLines;
 
@@ -474,7 +474,7 @@ namespace DepictionEngine
         {
             if (initialized)
             {
-                transform.IterateOverRootChildren<UILabel>((uiLabel) =>
+                transform.IterateOverChildren<UILabel>((uiLabel) =>
                 {
                     uiLabel.alignment = alignment;
 
@@ -487,7 +487,7 @@ namespace DepictionEngine
         {
             if (base.HierarchicalBeginCameraRendering(camera))
             {
-                transform.IterateOverRootChildren<UILabel>((uiLabel) =>
+                transform.IterateOverChildren<UILabel>((uiLabel) =>
                 {
                     uiLabel.SetTextCurve(textCurve, useEndCoordinate, endCoordinate, width, height, camera);
 

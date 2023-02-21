@@ -4,6 +4,9 @@ using System;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// Implements 
+    /// </summary>
     internal interface IUnityMeshAsset
     {
         void IterateOverUnityMesh(Action<UnityEngine.Mesh> callback);

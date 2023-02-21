@@ -8,7 +8,7 @@ using UnityEngine.Rendering;
 
 namespace DepictionEngine
 { 
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/AstroObject/Grid/" + nameof(TerrainGridMeshObject))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/Grid/" + nameof(TerrainGridMeshObject))]
     [RequireScript(typeof(AssetReference), typeof(AssetReference), typeof(AssetReference))]
     public class TerrainGridMeshObject : ElevationGridMeshObjectBase
     {
@@ -735,9 +735,9 @@ namespace DepictionEngine
                 get { return _normalsDirty; }
             }
 
-            protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+            protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
             {
-                if (base.OnDisposed(destroyState))
+                if (base.OnDisposed(destroyContext))
                 {
                     _subdivision = 0;
                     _subdivisionSize = 0.0f;

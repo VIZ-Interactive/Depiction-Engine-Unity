@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Animator/" + nameof(TargetControllerAnimator))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Animator/" + nameof(TargetControllerAnimator))]
     [RequireComponent(typeof(TargetController))]
     public class TargetControllerAnimator : AnimatorBase
     {

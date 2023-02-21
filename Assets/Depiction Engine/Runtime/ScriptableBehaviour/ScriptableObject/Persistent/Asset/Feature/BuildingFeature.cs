@@ -641,57 +641,53 @@ namespace DepictionEngine
             _levels.Clear();
         }
 
-        public override bool Initialize()
+        public override void Initializing()
         {
-            if (base.Initialize())
-            {
-                if (_geoCoordinateGeometries == null)
-                    _geoCoordinateGeometries = new List<GeoCoordinateGeometries>();
+            base.Initializing();
 
-                if (_hasRoofColor == null)
-                    _hasRoofColor = new List<bool>();
-                if (_hasWallColor == null)
-                    _hasWallColor = new List<bool>();
-                if (_hasRoofDirection == null)
-                    _hasRoofDirection = new List<bool>();
-                if (_hasHeight == null)
-                    _hasHeight = new List<bool>();
-                if (_hasMinLevel == null)
-                    _hasMinLevel = new List<bool>();
-                if (_hasLevels == null)
-                    _hasLevels = new List<bool>();
+            if (_geoCoordinateGeometries == null)
+                _geoCoordinateGeometries = new List<GeoCoordinateGeometries>();
 
-                if (_materialIsGlass == null)
-                    _materialIsGlass = new List<bool>();
+            if (_hasRoofColor == null)
+                _hasRoofColor = new List<bool>();
+            if (_hasWallColor == null)
+                _hasWallColor = new List<bool>();
+            if (_hasRoofDirection == null)
+                _hasRoofDirection = new List<bool>();
+            if (_hasHeight == null)
+                _hasHeight = new List<bool>();
+            if (_hasMinLevel == null)
+                _hasMinLevel = new List<bool>();
+            if (_hasLevels == null)
+                _hasLevels = new List<bool>();
 
-                if (_roofColor == null)
-                    _roofColor = new List<Color>();
-                if (_wallColor == null)
-                    _wallColor = new List<Color>();
+            if (_materialIsGlass == null)
+                _materialIsGlass = new List<bool>();
 
-                if (_shape == null)
-                    _shape = new List<BuildingFeature.Shape>();
-                if (_roofShape == null)
-                    _roofShape = new List<BuildingFeature.RoofShape>();
-                if (_roofHeight == null)
-                    _roofHeight = new List<float>();
-                if (_roofLevels == null)
-                    _roofLevels = new List<int>();
-                if (_roofDirection == null)
-                    _roofDirection = new List<float>();
+            if (_roofColor == null)
+                _roofColor = new List<Color>();
+            if (_wallColor == null)
+                _wallColor = new List<Color>();
 
-                if (_minHeight == null)
-                    _minHeight = new List<float>();
-                if (_height == null)
-                    _height = new List<float>();
-                if (_minLevel == null)
-                    _minLevel = new List<int>();
-                if (_levels == null)
-                    _levels = new List<int>();
+            if (_shape == null)
+                _shape = new List<BuildingFeature.Shape>();
+            if (_roofShape == null)
+                _roofShape = new List<BuildingFeature.RoofShape>();
+            if (_roofHeight == null)
+                _roofHeight = new List<float>();
+            if (_roofLevels == null)
+                _roofLevels = new List<int>();
+            if (_roofDirection == null)
+                _roofDirection = new List<float>();
 
-                return true;
-            }
-            return false;
+            if (_minHeight == null)
+                _minHeight = new List<float>();
+            if (_height == null)
+                _height = new List<float>();
+            if (_minLevel == null)
+                _minLevel = new List<int>();
+            if (_levels == null)
+                _levels = new List<int>();
         }
 
         public override FeatureModifier Init(int featureCount)

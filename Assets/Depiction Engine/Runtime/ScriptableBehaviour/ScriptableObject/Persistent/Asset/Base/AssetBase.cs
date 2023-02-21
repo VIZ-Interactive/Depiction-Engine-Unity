@@ -267,12 +267,12 @@ namespace DepictionEngine
         {
             if (newData != oldData)
             {
-                DisposeManager.DestroyContext destroyState = DisposeManager.DestroyContext.Unknown;
+                DisposeManager.DestroyContext destroyContext = DisposeManager.DestroyContext.Unknown;
 #if UNITY_EDITOR
                 if (initializingState == InstanceManager.InitializationContext.Editor)
-                    destroyState = DisposeManager.DestroyContext.Editor;
+                    destroyContext = DisposeManager.DestroyContext.Editor;
 #endif
-                Dispose(oldData, DisposeManager.DestroyDelay.None, destroyState);
+                Dispose(oldData, DisposeManager.DestroyDelay.None, destroyContext);
 
 #if UNITY_EDITOR
                 Editor.UndoManager.RegisterCreatedObjectUndo(newData, initializingState);

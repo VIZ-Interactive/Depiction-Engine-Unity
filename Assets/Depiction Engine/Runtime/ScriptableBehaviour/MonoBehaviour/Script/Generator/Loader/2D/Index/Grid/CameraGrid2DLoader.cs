@@ -10,7 +10,7 @@ namespace DepictionEngine
     /// <summary>
     /// Loader used to display Camera centric data.
     /// </summary>
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Communication/Loader/2D/Index/Grid/" + nameof(CameraGrid2DLoader))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Generator/Loader/2D/Index/Grid/" + nameof(CameraGrid2DLoader))]
     public class CameraGrid2DLoader : Grid2DLoaderBase
     {
         /// <summary>

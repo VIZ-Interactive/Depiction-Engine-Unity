@@ -230,9 +230,9 @@ namespace DepictionEngine
             this.propertyModifier = propertyModifier;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 DisposeManager.Dispose(propertyModifier);
 
@@ -269,9 +269,9 @@ namespace DepictionEngine
             this.grid2DDimensions = grid2DDimensions;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 grid2DIndex = Vector2Int.zero;
                 grid2DDimensions = Vector2Int.zero;

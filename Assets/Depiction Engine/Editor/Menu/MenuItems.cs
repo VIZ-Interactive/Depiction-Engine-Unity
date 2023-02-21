@@ -30,8 +30,113 @@ namespace DepictionEngine.Editor
             CreateObject<VisualObject>(GetContextTransform(menuCommand), name);
         }
 
-        //Depiction Engine Light
-        [MenuItem("GameObject/Depiction Engine/Light/Star", false, 24)]
+        [MenuItem("GameObject/Depiction Engine/Instantiator VisualObject", false, 14)]
+        private static void CreateInstantiatorVisualObject(MenuCommand menuCommand)
+        {
+            string name = nameof(InstantiatorVisualObject);
+            UndoManager.CreateNewGroup("Create " + name);
+
+            CreateObject<InstantiatorVisualObject>(GetContextTransform(menuCommand), name);
+        }
+
+        [MenuItem("GameObject/Depiction Engine/Reflection Probe", false, 15)]
+        private static void CreateReflectionProbe(MenuCommand menuCommand)
+        {
+            string name = nameof(ReflectionProbe);
+            UndoManager.CreateNewGroup("Create " + name);
+
+            CreateObject<ReflectionProbe>(GetContextTransform(menuCommand), name);
+        }
+
+        [MenuItem("GameObject/Depiction Engine/VolumeMask/Rectangular", false, 16)]
+        private static void CreateRectangularVolumeMask(MenuCommand menuCommand)
+        {
+            string name = nameof(RectangularVolumeMask);
+            UndoManager.CreateNewGroup("Create " + name);
+
+            CreateObject<RectangularVolumeMask>(GetContextTransform(menuCommand), name);
+        }
+
+        //Depiction Engine Astro
+        [MenuItem("GameObject/Depiction Engine/Astro/Planet/Planet (Empty)", false, 27)]
+        private static void CreatePlanet(MenuCommand menuCommand)
+        {
+            bool spherical = true;
+            InitializeSceneCameraSkybox(!spherical);
+
+            SetAlignViewToGeoAstroObject(CreatePlanetEmpty(GetContextTransform(menuCommand), "Planet", spherical));
+        }
+
+        [MenuItem("GameObject/Depiction Engine/Astro/Planet/Earth (Realistic)", false, 28)]
+        private static void CreatePlanetEarthRealistic(MenuCommand menuCommand)
+        {
+            bool spherical = true;
+            InitializeSceneCameraSkybox(!spherical);
+
+            SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical));
+        }
+
+        [MenuItem("GameObject/Depiction Engine/Astro/Planet/Earth (Basic)", false, 29)]
+        private static void CreatePlanetEarthBasic(MenuCommand menuCommand)
+        {
+            bool spherical = true;
+            InitializeSceneCameraSkybox(!spherical);
+
+            SetAlignViewToGeoAstroObject(CreateEarthBasic(GetContextTransform(menuCommand), "Earth", spherical));
+        }
+
+        [MenuItem("GameObject/Depiction Engine/Astro/Planet/Moon (Realistic)", false, 30)]
+        private static void CreatePlanetMoonRealistic(MenuCommand menuCommand)
+        {
+            bool spherical = true;
+            InitializeSceneCameraSkybox(!spherical);
+
+            SetAlignViewToGeoAstroObject(CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical));
+        }
+
+        [MenuItem("GameObject/Depiction Engine/Astro/Map/Map (Empty)", false, 31)]
+        private static void CreateMap(MenuCommand menuCommand)
+        {
+            bool spherical = false;
+            InitializeSceneCameraSkybox(!spherical);
+
+            SetAlignViewToGeoAstroObject(CreatePlanetEmpty(GetContextTransform(menuCommand), "Map", spherical));
+        }
+
+        [MenuItem("GameObject/Depiction Engine/Astro/Map/Earth (Realistic)", false, 32)]
+        private static void CreateMapEarthRealistic(MenuCommand menuCommand)
+        {
+            bool spherical = false;
+            InitializeSceneCameraSkybox(!spherical);
+
+            SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical));
+        }
+
+        [MenuItem("GameObject/Depiction Engine/Astro/Map/Earth (Basic)", false, 33)]
+        private static void CreateMapEarthBasic(MenuCommand menuCommand)
+        {
+            bool spherical = false;
+            InitializeSceneCameraSkybox(!spherical);
+
+            SetAlignViewToGeoAstroObject(CreateEarthBasic(GetContextTransform(menuCommand), "Earth", spherical));
+        }
+
+        [MenuItem("GameObject/Depiction Engine/Astro/Map/Moon (Realistic)", false, 34)]
+        private static void CreateMapMoonRealistic(MenuCommand menuCommand)
+        {
+            bool spherical = false;
+            InitializeSceneCameraSkybox(!spherical);
+
+            SetAlignViewToGeoAstroObject(CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical));
+        }
+
+        private static void InitializeSceneCameraSkybox(bool atmosphere = false)
+        {
+            if (atmosphere && SceneManager.Instance(false) == Disposable.NULL)
+                CameraManager.Instance().skyboxMaterialPath = RenderingManager.MATERIAL_BASE_PATH + (atmosphere ? "Skybox/Atmosphere-Skybox" : "Skybox/Star-Skybox");
+        }
+
+        [MenuItem("GameObject/Depiction Engine/Astro/Star", false, 35)]
         private static void CreateStar(MenuCommand menuCommand)
         {
             InstanceManager instanceManager = InstanceManager.Instance(false);
@@ -47,16 +152,6 @@ namespace DepictionEngine.Editor
             CreateStar(GetContextTransform(menuCommand), name);
         }
 
-        [MenuItem("GameObject/Depiction Engine/Light/Reflection Probe", false, 25)]
-        private static void CreateReflectionProbe(MenuCommand menuCommand)
-        {
-            string name = nameof(ReflectionProbe);
-            UndoManager.CreateNewGroup("Create " + name);
-
-            CreateObject<ReflectionProbe>(GetContextTransform(menuCommand), name);
-        }
-
-        //Depiction Engine Astro
         [MenuItem("GameObject/Depiction Engine/Astro/Star System", false, 36)]
         private static void CreateStarSystem(MenuCommand menuCommand)
         {
@@ -67,87 +162,8 @@ namespace DepictionEngine.Editor
             CreateScript<StarSystemAnimator>(starSystem);
         }
 
-        [MenuItem("GameObject/Depiction Engine/Astro/Planet/Planet (Empty)", false, 37)]
-        private static void CreatePlanet(MenuCommand menuCommand)
-        {
-            bool spherical = true;
-            InitializeSceneCameraSkybox(!spherical);
-
-            SetAlignViewToGeoAstroObject(CreatePlanetEmpty(GetContextTransform(menuCommand), "Planet", spherical));
-        }
-
-        [MenuItem("GameObject/Depiction Engine/Astro/Planet/Earth (Realistic)", false, 38)]
-        private static void CreatePlanetEarthRealistic(MenuCommand menuCommand)
-        {
-            bool spherical = true;
-            InitializeSceneCameraSkybox(!spherical);
-
-            SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical));
-        }
-
-
-        [MenuItem("GameObject/Depiction Engine/Astro/Planet/Earth (Basic)", false, 38)]
-        private static void CreatePlanetEarthBasic(MenuCommand menuCommand)
-        {
-            bool spherical = true;
-            InitializeSceneCameraSkybox(!spherical);
-
-            SetAlignViewToGeoAstroObject(CreateEarthBasic(GetContextTransform(menuCommand), "Earth", spherical));
-        }
-
-        [MenuItem("GameObject/Depiction Engine/Astro/Planet/Moon (Realistic)", false, 39)]
-        private static void CreatePlanetMoonRealistic(MenuCommand menuCommand)
-        {
-            bool spherical = true;
-            InitializeSceneCameraSkybox(!spherical);
-
-            SetAlignViewToGeoAstroObject(CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical));
-        }
-
-        [MenuItem("GameObject/Depiction Engine/Astro/Map/Map (Empty)", false, 40)]
-        private static void CreateMap(MenuCommand menuCommand)
-        {
-            bool spherical = false;
-            InitializeSceneCameraSkybox(!spherical);
-
-            SetAlignViewToGeoAstroObject(CreatePlanetEmpty(GetContextTransform(menuCommand), "Map", spherical));
-        }
-
-        [MenuItem("GameObject/Depiction Engine/Astro/Map/Earth (Realistic)", false, 41)]
-        private static void CreateMapEarthRealistic(MenuCommand menuCommand)
-        {
-            bool spherical = false;
-            InitializeSceneCameraSkybox(!spherical);
-
-            SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical));
-        }
-
-        [MenuItem("GameObject/Depiction Engine/Astro/Map/Earth (Basic)", false, 41)]
-        private static void CreateMapEarthBasic(MenuCommand menuCommand)
-        {
-            bool spherical = false;
-            InitializeSceneCameraSkybox(!spherical);
-
-            SetAlignViewToGeoAstroObject(CreateEarthBasic(GetContextTransform(menuCommand), "Earth", spherical));
-        }
-
-        [MenuItem("GameObject/Depiction Engine/Astro/Map/Moon (Realistic)", false, 42)]
-        private static void CreateMapMoonRealistic(MenuCommand menuCommand)
-        {
-            bool spherical = false;
-            InitializeSceneCameraSkybox(!spherical);
-
-            SetAlignViewToGeoAstroObject(CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical));
-        }
-
-        private static void InitializeSceneCameraSkybox(bool atmosphere = false)
-        {
-            if (atmosphere && SceneManager.Instance(false) == Disposable.NULL)
-                CameraManager.Instance().skyboxMaterialPath = RenderingManager.MATERIAL_BASE_PATH + (atmosphere ? "Skybox/Atmosphere-Skybox" : "Skybox/Star-Skybox");
-        }
-
         //Depiction Engine Camera
-        [MenuItem("GameObject/Depiction Engine/Camera/Camera", false, 53)]
+        [MenuItem("GameObject/Depiction Engine/Camera/Camera", false, 47)]
         private static void CreateCamera(MenuCommand menuCommand)
         {
             string name = "Camera";
@@ -160,7 +176,7 @@ namespace DepictionEngine.Editor
             camera.PreventCameraStackBug();
         }
 
-        [MenuItem("GameObject/Depiction Engine/Camera/Target Camera", false, 54)]
+        [MenuItem("GameObject/Depiction Engine/Camera/Target Camera", false, 48)]
         private static void CreateTargetCamera(MenuCommand menuCommand)
         {
             UndoManager.CreateNewGroup("Create Camera Target");
@@ -184,7 +200,7 @@ namespace DepictionEngine.Editor
         }
 
         //Depiction Engine UI
-        [MenuItem("GameObject/Depiction Engine/UI/label", false, 65)]
+        [MenuItem("GameObject/Depiction Engine/UI/label", false, 59)]
         private static void CreateLabel(MenuCommand menuCommand) 
         {
             string name = "Label";
@@ -193,7 +209,7 @@ namespace DepictionEngine.Editor
             CreateObject<Label>(GetContextTransform(menuCommand), name);
         }
 
-        [MenuItem("GameObject/Depiction Engine/UI/Marker", false, 66)]
+        [MenuItem("GameObject/Depiction Engine/UI/Marker", false, 60)]
         private static void CreateMarker(MenuCommand menuCommand) 
         {
             string name = "Marker";
@@ -203,7 +219,7 @@ namespace DepictionEngine.Editor
         }
 
         //Depiction Engine Datasource
-        [MenuItem("GameObject/Depiction Engine/DatasourceRoot", false, 77)]
+        [MenuItem("GameObject/Depiction Engine/DatasourceRoot", false, 71)]
         private static void CreateDatasourceRoot(MenuCommand menuCommand)
         {
             string name = nameof(DatasourceRoot);
@@ -212,17 +228,7 @@ namespace DepictionEngine.Editor
             CreateObject<DatasourceRoot>(GetContextTransform(menuCommand), name);
         }
 
-        [MenuItem("GameObject/Depiction Engine/Datasource/RestDatasource", false, 78)]
-        private static void CreateRestDatasource(MenuCommand menuCommand)
-        {
-            string name = "RestDatasource";
-            UndoManager.CreateNewGroup("Create " + name);
-
-            Object datasourceObject = CreateObject<Object>(GetContextTransform(menuCommand), name);
-            CreateScript<RestDatasource>(datasourceObject);
-        }
-
-        [MenuItem("GameObject/Depiction Engine/Datasource/FileSystemDatasource", false, 79)]
+        [MenuItem("GameObject/Depiction Engine/Datasource/FileSystemDatasource", false, 72)]
         private static void CreateFileSystemDatasource(MenuCommand menuCommand)
         {
             string name = "FileSystemDatasource";
@@ -232,16 +238,18 @@ namespace DepictionEngine.Editor
             CreateScript<FileSystemDatasource>(datasourceObject);
         }
 
-        [MenuItem("GameObject/Depiction Engine/VolumeMask/Rectangular", false, 90)]
-        private static void CreateRectangularVolumeMask(MenuCommand menuCommand)
+        [MenuItem("GameObject/Depiction Engine/Datasource/RestDatasource", false, 73)]
+        private static void CreateRestDatasource(MenuCommand menuCommand)
         {
-            string name = nameof(RectangularVolumeMask);
+            string name = "RestDatasource";
             UndoManager.CreateNewGroup("Create " + name);
 
-            CreateObject<RectangularVolumeMask>(GetContextTransform(menuCommand), name);
+            Object datasourceObject = CreateObject<Object>(GetContextTransform(menuCommand), name);
+            CreateScript<RestDatasource>(datasourceObject);
         }
 
-        [MenuItem("GameObject/Depiction Engine/Managers", false, 101)]
+        //Depiction Engine Managers
+        [MenuItem("GameObject/Depiction Engine/Managers", false, 84)]
         private static void CreateManagers(MenuCommand menuCommand)
         {
             SceneManager.Instance();
@@ -625,7 +633,7 @@ namespace DepictionEngine.Editor
         }
 
         private const string ALIGN_VIEW_TO_SELECTED_GEOASTROOBJECT_MENU_ITEM = "GameObject/Align View to Selected GeoAstroObject";
-        [MenuItem(ALIGN_VIEW_TO_SELECTED_GEOASTROOBJECT_MENU_ITEM, false, 112)]
+        [MenuItem(ALIGN_VIEW_TO_SELECTED_GEOASTROOBJECT_MENU_ITEM, false, 95)]
         private static void AlignViewToSelectedGeoAstroObject(MenuCommand menuCommand)
         {
             SceneViewDouble sceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
@@ -663,7 +671,7 @@ namespace DepictionEngine.Editor
         }
 
         private const string AUTO_SNAP_VIEW_TO_TERRAIN_MENU_ITEM = "GameObject/Auto Snap View to Terrain";
-        [MenuItem(AUTO_SNAP_VIEW_TO_TERRAIN_MENU_ITEM, false, 113)]
+        [MenuItem(AUTO_SNAP_VIEW_TO_TERRAIN_MENU_ITEM, false, 96)]
         private static void AutoSnapViewToTerrain(MenuCommand menuCommand)
         {
             SceneViewDouble sceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
@@ -713,7 +721,7 @@ namespace DepictionEngine.Editor
             return IsAlignedToGeoAstroObject();
         }
 
-        [MenuItem("GameObject/Move View to GeoCoordinate", false, 114)]
+        [MenuItem("GameObject/Move View to GeoCoordinate", false, 97)]
         private static void MoveViewToGeoCoordinate(MenuCommand menuCommand)
         {
             GeoCoordinatePopup geoCoordiantePopup = ScriptableObject.CreateInstance<GeoCoordinatePopup>();

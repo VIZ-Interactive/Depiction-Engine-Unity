@@ -193,13 +193,13 @@ namespace DepictionEngine
             UpdateData();
         }
 
-        private void RemoveDataDelegates(ScriptableObjectBase data)
+        private void RemoveDataDelegates(ScriptableObjectDisposable data)
         {
             if (!Object.ReferenceEquals(data, null))
                 data.DisposingEvent -= DataDisposingHandler;
         }
 
-        private void AddDataDelegates(ScriptableObjectBase data)
+        private void AddDataDelegates(ScriptableObjectDisposable data)
         {
             if (!IsDisposing() && data != Disposable.NULL)
                 data.DisposingEvent += DataDisposingHandler;

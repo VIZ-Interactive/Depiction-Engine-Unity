@@ -99,16 +99,12 @@ namespace DepictionEngine
             _geoCoordinates.Clear();
         }
 
-        public override bool Initialize()
+        public override void Initializing()
         {
-            if (base.Initialize())
-            {
-                if (_geoCoordinates == null)
-                    _geoCoordinates = new List<GeoCoordinate3Double>();
-
-                return true;
-            }
-            return false;
+            base.Initializing();
+          
+            if (_geoCoordinates == null)
+                _geoCoordinates = new List<GeoCoordinate3Double>();
         }
 
         public override FeatureModifier Init(int featureCount)

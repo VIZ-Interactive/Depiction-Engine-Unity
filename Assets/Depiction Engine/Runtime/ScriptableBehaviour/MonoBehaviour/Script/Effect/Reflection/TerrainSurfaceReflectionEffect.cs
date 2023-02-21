@@ -7,7 +7,7 @@ using UnityEngine;
 namespace DepictionEngine
 {
     [DisallowMultipleComponent]
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Effect/" + nameof(TerrainSurfaceReflectionEffect))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Effect/" + nameof(TerrainSurfaceReflectionEffect))]
     [RequireComponent(typeof(GeoAstroObject))]
     public class TerrainSurfaceReflectionEffect : ReflectionEffectBase
     {
@@ -215,9 +215,9 @@ namespace DepictionEngine
             return cameraSmoothElevation.GetSmoothElevation();
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 if (_camerasSmoothElevation != null)
                 {

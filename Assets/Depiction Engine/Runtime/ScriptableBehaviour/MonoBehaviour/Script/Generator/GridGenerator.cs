@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Generator/" + nameof(GridGenerator))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Generator/" + nameof(GridGenerator))]
     public class GridGenerator : GeneratorBase
     {
         /// <summary>

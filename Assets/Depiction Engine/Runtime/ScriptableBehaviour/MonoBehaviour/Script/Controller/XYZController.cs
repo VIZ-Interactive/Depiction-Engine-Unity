@@ -7,7 +7,7 @@ namespace DepictionEngine
 	/// <summary>
 	/// Controls the XYZ components of the object transform.
 	/// </summary>
-	[AddComponentMenu(SceneManager.NAMESPACE + "/Controller/" + nameof(XYZController))]
+	[AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Controller/" + nameof(XYZController))]
 	public class XYZController : ControllerBase
 	{
 		[BeginFoldout("Position")]

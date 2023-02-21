@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Visual/" + nameof(TerrainEdgeMeshRendererVisual))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/MeshRendererVisual/" + nameof(TerrainEdgeMeshRendererVisual))]
     public class TerrainEdgeMeshRendererVisual : MeshRendererVisualNoCollider
     {
         private static int _terrainEdgeMeshRendererVisualLayer;

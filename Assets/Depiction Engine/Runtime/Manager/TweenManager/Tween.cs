@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    public class Tween : ScriptableObjectBase
+    public class Tween : ScriptableObjectDisposable
     {
         private float _from;
         private float _to;

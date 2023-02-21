@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Communication/Loader/2D/Index/Grid/" + nameof(FillGrid2DLoader))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Generator/Loader/2D/Index/Grid/" + nameof(FillGrid2DLoader))]
     public class FillGrid2DLoader : Grid2DLoaderBase
     {
         [BeginFoldout("Fill")]

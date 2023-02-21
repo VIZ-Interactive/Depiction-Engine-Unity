@@ -4,6 +4,7 @@ using System;
 
 namespace DepictionEngine
 {
+
     public interface IGrid2D : IGrid
     {
         GeoCoordinate2Double geoCenter { get; }

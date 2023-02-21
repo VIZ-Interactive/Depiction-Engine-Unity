@@ -56,7 +56,7 @@ namespace DepictionEngine
         {
             List<UnityEngine.Object> uiVisuals = new List<UnityEngine.Object>();
 
-            transform.IterateOverRootChildren<UIVisual>((uiVisual) =>
+            transform.IterateOverChildren<UIVisual>((uiVisual) =>
             {
                 uiVisuals.Add(uiVisual);
 
@@ -206,7 +206,7 @@ namespace DepictionEngine
         {
             UIVisual matchingUIVisual = null;
 
-            transform.IterateOverRootChildren<UIVisual>((uiVisual) =>
+            transform.IterateOverChildren<UIVisual>((uiVisual) =>
             {
                 if (uiVisual.cameras.Contains(camera.GetInstanceID()))
                 {
@@ -223,7 +223,7 @@ namespace DepictionEngine
         {
             if (base.HierarchicalBeginCameraRendering(camera))
             {
-                transform.IterateOverRootChildren<UIVisual>((uiVisual) =>
+                transform.IterateOverChildren<UIVisual>((uiVisual) =>
                 {
                     if (!uiVisual.IsIgnoredInRender())
                     {

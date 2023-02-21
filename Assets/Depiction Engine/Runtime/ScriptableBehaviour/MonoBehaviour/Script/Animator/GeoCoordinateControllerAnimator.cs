@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Animator/" + nameof(GeoCoordinateControllerAnimator))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Animator/" + nameof(GeoCoordinateControllerAnimator))]
     [RequireComponent(typeof(GeoCoordinateController))]
     public class GeoCoordinateControllerAnimator : AnimatorBase
     {

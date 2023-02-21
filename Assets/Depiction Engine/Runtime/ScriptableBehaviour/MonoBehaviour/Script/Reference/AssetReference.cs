@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Reference/" + nameof(AssetReference))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Reference/" + nameof(AssetReference))]
     public class AssetReference : ReferenceBase
     {
         private AssetBase _asset;

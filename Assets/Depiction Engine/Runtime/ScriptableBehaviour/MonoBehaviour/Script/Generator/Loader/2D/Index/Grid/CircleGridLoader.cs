@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Communication/Loader/2D/Index/Grid/" + nameof(CircleGridLoader))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Generator/Loader/2D/Index/Grid/" + nameof(CircleGridLoader))]
     public class CircleGridLoader : Grid2DLoaderBase
     {
         [BeginFoldout("Circle")]

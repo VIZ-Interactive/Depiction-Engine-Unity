@@ -68,7 +68,7 @@ namespace DepictionEngine.Editor
             }
         }
 
-        protected override DisposeManager.DestroyContext OverrideDestroyingState(DisposeManager.DestroyContext destroyingState)
+        protected override DisposeManager.DestroyContext OverrideDestroyingContext(DisposeManager.DestroyContext destroyingContext)
         {
             return DisposeManager.DestroyContext.Programmatically;
         }

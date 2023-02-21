@@ -6,7 +6,7 @@ using UnityEngine;
 namespace DepictionEngine
 {
     [DisallowMultipleComponent]
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Effect/" + nameof(AtmosphereEffect))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Effect/" + nameof(AtmosphereEffect))]
     [RequireComponent(typeof(GeoAstroObject))]
     public class AtmosphereEffect : EffectBase
     {

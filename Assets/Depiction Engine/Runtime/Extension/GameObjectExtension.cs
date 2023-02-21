@@ -31,11 +31,11 @@ namespace DepictionEngine
             }, initializingState, json, propertyModifiers, isFallbackValues);
 
             //The Null check is because Unity sometimes prevent component creation if a component of similar type already exists
-            if (component is MonoBehaviourBase && !DisposeManager.IsNullOrDisposing(component))
+            if (component is MonoBehaviourDisposable && !DisposeManager.IsNullOrDisposing(component))
             {
-                MonoBehaviourBase monoBehaviourBase = component as MonoBehaviourBase;
-                TransformExtension.InitializeComponent(monoBehaviourBase, initializingState, json, propertyModifiers, isFallbackValues);
-                monoBehaviourBase.ExplicitOnEnable();
+                MonoBehaviourDisposable monoBehaviourDisposable = component as MonoBehaviourDisposable;
+                TransformExtension.InitializeComponent(monoBehaviourDisposable, initializingState, json, propertyModifiers, isFallbackValues);
+                monoBehaviourDisposable.ExplicitOnEnable();
             }
 
             return component;

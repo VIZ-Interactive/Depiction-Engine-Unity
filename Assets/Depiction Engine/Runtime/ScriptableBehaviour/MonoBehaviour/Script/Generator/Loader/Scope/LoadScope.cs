@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    public class LoadScope : ScriptableObjectBase
+    public class LoadScope : ScriptableObjectDisposable
     {
         [SerializeField]
         private DatasourceOperationBase.LoadingState _loadingState;

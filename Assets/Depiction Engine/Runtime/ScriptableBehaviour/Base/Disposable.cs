@@ -18,7 +18,7 @@ namespace DepictionEngine
         private bool _disposed;
         private bool _disposedComplete;
 
-        private DisposeManager.DestroyContext _destroyingState;
+        private DisposeManager.DestroyContext _destroyingContext;
 
         private Action _initializedEvent;
         private Action<IDisposable> _disposingEvent;
@@ -27,10 +27,10 @@ namespace DepictionEngine
         public virtual void Recycle()
         {
             _initializing = _initialized = _disposing = _dispose = _disposed = _disposedComplete = false;
-            _destroyingState = DisposeManager.DestroyContext.Unknown;
+            _destroyingContext = DisposeManager.DestroyContext.Unknown;
         }
 
-        public virtual bool Initialize()
+        public bool Initialize()
         {
             if (!_initializing)
             {
@@ -67,6 +67,9 @@ namespace DepictionEngine
            
         }
 
+        /// <summary>
+        /// Acts as a reliable constructor and will always by called unlike Awake which is sometimes skipped.
+        /// </summary>
         public virtual void Initialized()
         {
             _initialized = true;
@@ -95,12 +98,12 @@ namespace DepictionEngine
 
         public bool IsDestroying()
         {
-            return _disposing && _destroyingState != DisposeManager.DestroyContext.Unknown;
+            return _disposing && _destroyingContext != DisposeManager.DestroyContext.Unknown;
         }
 
-        public DisposeManager.DestroyContext destroyingState
+        public DisposeManager.DestroyContext destroyingContext
         {
-            get { return _destroyingState; }
+            get { return _destroyingContext; }
         }
 
         public bool hasEditorUndoRedo
@@ -126,9 +129,9 @@ namespace DepictionEngine
             set { _disposedEvent = value; }
         }
 
-        protected virtual DisposeManager.DestroyContext GetDestroyingState(DisposeManager.DestroyContext destroyingState)
+        protected virtual DisposeManager.DestroyContext GetDestroyingContext(DisposeManager.DestroyContext destroyingContext)
         {
-            return _destroyingState != DisposeManager.DestroyContext.Unknown ? _destroyingState : destroyingState;
+            return _destroyingContext != DisposeManager.DestroyContext.Unknown ? _destroyingContext : destroyingContext;
         }
 
         public static bool IsDisposed(object disposable)
@@ -168,7 +171,7 @@ namespace DepictionEngine
             {
                 _dispose = true;
 
-                _destroyingState = GetDestroyingState(DisposeManager.destroyingState);
+                _destroyingContext = GetDestroyingContext(DisposeManager.destroyingContext);
 
                 if (DisposingEvent != null)
                     DisposingEvent(this);
@@ -179,12 +182,17 @@ namespace DepictionEngine
             return false;
         }
 
-        public void OnDisposedInternal(DisposeManager.DestroyContext destroyState)
+        public void OnDisposedInternal(DisposeManager.DestroyContext destroyContext)
         {
-            OnDisposed(destroyingState);
+            OnDisposed(destroyingContext);
         }
 
-        protected virtual bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        /// <summary>
+        /// This is the last chance to clear or dipose any remaining references. It will be called immediately after the <see cref="OnDispose"/> unless a <see cref="DisposeManager.DestroyDelay"/> was passed to the <see cref="DisposeManager.Dispose"/> call.
+        /// </summary>
+        /// <param name="destroyContext">The context under which the object is being destroyed.</param>
+        /// <returns>False if the object was already disposed otherwise True.</returns>
+        protected virtual bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
             if (!_disposed)
             {

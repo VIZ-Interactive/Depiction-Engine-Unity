@@ -1195,7 +1195,7 @@ namespace DepictionEngine
 
             if (unityObject is Object || unityObject is Visual || unityObject is ManagerBase)
             {
-                unityObject = (unityObject as MonoBehaviourBase).gameObject;
+                unityObject = (unityObject as MonoBehaviourDisposable).gameObject;
                 RenderingManager renderingManager = RenderingManager.Instance(false);
                 if (renderingManager != Disposable.NULL)
                 {

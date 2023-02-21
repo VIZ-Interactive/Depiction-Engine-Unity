@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-	[AddComponentMenu(SceneManager.NAMESPACE + "/Controller/" + nameof(GeoCoordinateController))]
+	[AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Controller/" + nameof(GeoCoordinateController))]
 	public class GeoCoordinateController : ControllerBase
 	{
         /// <summary>

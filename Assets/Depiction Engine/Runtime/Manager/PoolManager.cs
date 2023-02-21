@@ -308,9 +308,9 @@ namespace DepictionEngine
                                     if (disposable is MonoBehaviour)
                                     {
                                         GameObject go = (disposable as MonoBehaviour).gameObject;
-                                        MonoBehaviourBase[] monoBehaviourBases = go.GetComponents<MonoBehaviourBase>();
-                                        foreach (MonoBehaviourBase monoBehaviourBase in monoBehaviourBases)
-                                            monoBehaviourBase.Recycle();
+                                        MonoBehaviourDisposable[] monoBehaviourDisposables = go.GetComponents<MonoBehaviourDisposable>();
+                                        foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
+                                            monoBehaviourDisposable.Recycle();
                                     }
                                     else
                                         disposable.Recycle();

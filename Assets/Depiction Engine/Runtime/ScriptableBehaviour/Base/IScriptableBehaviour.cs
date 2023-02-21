@@ -4,9 +4,15 @@ using System;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// An abstract interface for both MonoBehaviour and ScriptableObject.
+    /// </summary>
     public interface IScriptableBehaviour : IDisposable
     {
 #if UNITY_EDITOR
+        /// <summary>
+        /// Resets all serialized fields to their default value.
+        /// </summary>
         void InspectorReset();
         string inspectorComponentNameOverride { set; get; }
 #endif
@@ -17,13 +23,13 @@ namespace DepictionEngine
         bool isFallbackValues { get; }
 
         IScriptableBehaviour originator { get; }
+
         void Originator(Action callback, IScriptableBehaviour originator);
 
         void ExplicitAwake();
         int GetInstanceID();
         void ExplicitOnEnable();
         void ExplicitOnDisable();
-        void OnDestroy();
 
         bool IsUserChangeContext();
 
@@ -34,6 +40,11 @@ namespace DepictionEngine
         /// <param name="isUserChange"></param>
         void IsUserChange(Action callback, bool isUserChange = true);
 
-        DisposeManager.DestroyContext GetDestroyState();
+        DisposeManager.DestroyContext GetDestroyContext();
+
+        /// <summary>
+        /// This is where you destroy any remaining dependencies.
+        /// </summary>
+        void OnDestroy();
     }
 }

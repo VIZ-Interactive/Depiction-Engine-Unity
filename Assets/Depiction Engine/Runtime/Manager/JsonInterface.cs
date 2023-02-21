@@ -10,7 +10,7 @@ namespace DepictionEngine
     /// <summary>
     /// JSON Interface exposing engine functionalities to an external source.
     /// </summary>
-    [AddComponentMenu(SceneManager.NAMESPACE + "/" + nameof(JsonInterface))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(JsonInterface))]
     [RequireComponent(typeof(SceneManager))]
     [DisallowMultipleComponent]
     public class JsonInterface : ManagerBase

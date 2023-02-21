@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace DepictionEngine.Editor
 {
-    public class Selection : ScriptableObjectBase
+    public class Selection : ScriptableObjectDisposable
     {
         public const string PERSISTENT_PREFIX = "#id:";
 

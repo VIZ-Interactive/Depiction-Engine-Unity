@@ -106,10 +106,10 @@ namespace DepictionEngine
         public static Component InitializeComponent(Component component, InstanceManager.InitializationContext initializationState, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
             //Call Initialize to make sure even if the Object is disabled the script will still be initialized properly
-            if (component is MonoBehaviourBase)
+            if (component is MonoBehaviourDisposable)
             {
-                MonoBehaviourBase monoBehaviourBase = component as MonoBehaviourBase;
-                InstanceManager.Initialize(monoBehaviourBase, initializationState, json, propertyModifiers, isFallbackValues);
+                MonoBehaviourDisposable monoBehaviourDisposable = component as MonoBehaviourDisposable;
+                InstanceManager.Initialize(monoBehaviourDisposable, initializationState, json, propertyModifiers, isFallbackValues);
             }
             return component;
         }

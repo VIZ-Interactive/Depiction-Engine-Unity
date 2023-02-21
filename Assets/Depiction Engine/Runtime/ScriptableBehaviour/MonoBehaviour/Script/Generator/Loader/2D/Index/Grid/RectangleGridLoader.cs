@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Communication/Loader/2D/Index/Grid/" + nameof(RectangleGridLoader))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Generator/Loader/2D/Index/Grid/" + nameof(RectangleGridLoader))]
     public class RectangleGridLoader : Grid2DLoaderBase
     {
         [BeginFoldout("Rectangle")]

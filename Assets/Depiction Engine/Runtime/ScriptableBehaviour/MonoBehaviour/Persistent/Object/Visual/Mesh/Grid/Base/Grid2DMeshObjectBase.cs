@@ -418,7 +418,7 @@ namespace DepictionEngine
 
             if (visualsChanged || PropertyDirty(nameof(size)) || PropertyDirty(nameof(meshRendererVisualLocalScale)) || PropertyDirty(nameof(popupT)))
             {
-                transform.IterateOverRootChildren<MeshRendererVisual>((meshRendererVisual) =>
+                transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
                 { 
                     Vector3 meshRendererVisualLocalScale = GetMeshRendererVisualLocalScale();
                     if (meshRendererVisualLocalScale != Vector3.zero)

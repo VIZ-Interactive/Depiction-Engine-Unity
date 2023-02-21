@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Communication/Loader/" + nameof(IdLoader))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Generator/Loader/" + nameof(IdLoader))]
     public class IdLoader : LoaderBase
     {
         [Serializable]

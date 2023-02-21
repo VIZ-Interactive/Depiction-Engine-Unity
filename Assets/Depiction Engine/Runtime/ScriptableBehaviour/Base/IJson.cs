@@ -4,6 +4,9 @@ using System.Reflection;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// Supports reading or writing properties in Json format.
+    /// </summary>
     public interface IJson : IProperty
     {
         void SetJson(JSONNode json);

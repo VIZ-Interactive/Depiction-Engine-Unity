@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-	[AddComponentMenu(SceneManager.NAMESPACE + "/Animator/" + nameof(StarSystemAnimator))]
+	[AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Animator/" + nameof(StarSystemAnimator))]
 	[RequireComponent(typeof(StarSystem))]
     public class StarSystemAnimator : AnimatorBase
     {

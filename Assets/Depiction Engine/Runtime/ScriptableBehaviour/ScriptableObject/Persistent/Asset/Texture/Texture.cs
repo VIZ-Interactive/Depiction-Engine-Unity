@@ -379,9 +379,9 @@ namespace DepictionEngine
             }
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 DisposeManager.Dispose(textureModifier);
 
@@ -453,9 +453,9 @@ namespace DepictionEngine
                 texture.SetData(_textureBytes, _isRawTextureBytes, _width, _height, _format, _mipChain, _linear);
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 DisposeManager.Destroy(_texture2D);
 

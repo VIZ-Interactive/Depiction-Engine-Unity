@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace DepictionEngine
 {
-    public class PropertyMonoBehaviour : MonoBehaviourBase , IProperty
+    public class PropertyMonoBehaviour : MonoBehaviourDisposable, IProperty
     {
         [SerializeField, HideInInspector]
         private SerializableGuid _id;
@@ -612,17 +612,11 @@ namespace DepictionEngine
             IterateOverChildren(HierarchicalApplyOriginShiftingChild);
         }
 
-        //Capture changes happening in Unity(Inspector, Transform etc...) such as:
-        //Name
-        //Index
-        //Layer
-        //Tag
-        //MeshRenderer Material
-        //Enabled
-        //GameObjectActive
-        //Transform in the sceneview(localPosition, localRotation, localScale)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void HierarchicalDetectChangesChild(PropertyMonoBehaviour child) { child.HierarchicalDetectChanges(); }
+        /// <summary>
+        /// Capture changes happening in Unity(Inspector, Transform etc...) such as: Name, Index, Layer, Tag, MeshRenderer Material, Enabled, GameObjectActive, Transform in the sceneview(localPosition, localRotation, localScale)
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void HierarchicalDetectChanges()
         {
@@ -660,6 +654,9 @@ namespace DepictionEngine
         private Camera _cameraParam;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void HierarchicalBeginCameraRenderingChild(PropertyMonoBehaviour child) { child.HierarchicalBeginCameraRendering(_cameraParam); }
+        /// <summary>
+        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the RenderPipelineManager.beginCameraRendering.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool HierarchicalBeginCameraRendering(Camera camera)
         {
@@ -684,6 +681,9 @@ namespace DepictionEngine
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void HierarchicalEndCameraRenderingChild(PropertyMonoBehaviour child) { child.HierarchicalEndCameraRendering(_cameraParam); }
+        /// <summary>
+        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the RenderPipelineManager.endCameraRendering.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool HierarchicalEndCameraRendering(Camera camera)
         {
@@ -693,6 +693,9 @@ namespace DepictionEngine
             return initialized;
         }
 
+        /// <summary>
+        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the UnityEngine FixedUpdate.
+        /// </summary>
         public virtual void HierarchicalFixedUpdate()
         {
             IterateOverChildrenAndSiblings((child) => { child.HierarchicalFixedUpdate(); });
@@ -700,6 +703,10 @@ namespace DepictionEngine
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void LateInitializeChild(PropertyMonoBehaviour child) { child.LateInitialize(); }
+        /// <summary>
+        /// Objects that were not initialized are automatically initialized.
+        /// </summary>
+        /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool LateInitialize()
         {
@@ -718,6 +725,9 @@ namespace DepictionEngine
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PreHierarchicalUpdateChild(PropertyMonoBehaviour child) { child.PreHierarchicalUpdate(); }
+        /// <summary>
+        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the UnityEngine Update. It is called before the <see cref="HierarchicalUpdate"/>.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool PreHierarchicalUpdate()
         {
@@ -745,6 +755,9 @@ namespace DepictionEngine
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void HierarchicalUpdateChild(PropertyMonoBehaviour child) { child.HierarchicalUpdate(); }
+        /// <summary>
+        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the UnityEngine Update. It is called after the <see cref="PreHierarchicalUpdate"/> and before the <see cref="PostHierarchicalUpdate"/>.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool HierarchicalUpdate()
         {
@@ -758,6 +771,9 @@ namespace DepictionEngine
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PostHierarchicalUpdateChild(PropertyMonoBehaviour child) { child.PostHierarchicalUpdate(); }
+        /// <summary>
+        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the UnityEngine Update. It is called after the <see cref="HierarchicalUpdate"/>.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool PostHierarchicalUpdate()
         {
@@ -771,6 +787,9 @@ namespace DepictionEngine
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void HierarchicalActivateChild(PropertyMonoBehaviour child) { child.HierarchicalActivate(); }
+        /// <summary>
+        /// The hierarchy is traversed and gameObjects that have never been active are temporarly activated and deactivated to allow for their Awake to be called.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual void HierarchicalActivate()
         {
@@ -869,6 +888,9 @@ namespace DepictionEngine
             return false;
         }
 
+        /// <summary>
+        /// The hierarchy is traversed and dirty flags are cleared.
+        /// </summary>
         public virtual void HierarchicalClearDirtyFlags()
         {
             ClearDirtyFlags();
@@ -886,9 +908,9 @@ namespace DepictionEngine
             }
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 if (instanceAdded && AddInstanceToManager())
                 {

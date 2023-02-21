@@ -89,6 +89,13 @@ namespace DepictionEngine
             }
         }
 
+        protected override bool UpdateHideFlags()
+        {
+            gameObject.hideFlags = hideFlags = HideFlags.None;
+
+            return true;
+        }
+
         public override void ExplicitAwake()
         {
             base.ExplicitAwake();

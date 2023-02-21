@@ -1139,23 +1139,23 @@ namespace DepictionEngine
                     }, initializingState, json, propertyModifiers, isFallbackValues);
                 }
             }
-            else if (disposable is MonoBehaviourBase)
+            else if (disposable is MonoBehaviourDisposable)
             {
-                GameObject go = (disposable as MonoBehaviourBase).gameObject;
+                GameObject go = (disposable as MonoBehaviourDisposable).gameObject;
                 InitializeGameObject(go, parent, setParentAndAlign, moveToView);
 
-                MonoBehaviourBase[] components = go.GetComponents<MonoBehaviourBase>();
+                MonoBehaviourDisposable[] components = go.GetComponents<MonoBehaviourDisposable>();
 
-                foreach (MonoBehaviourBase component in components)
+                foreach (MonoBehaviourDisposable component in components)
                     component.InhibitExplicitOnEnableDisable();
 
                 go.SetActive(true);
                 disposable = go.GetSafeComponent(type, initializingState, json, propertyModifiers, isFallbackValues) as IDisposable;
 
-                foreach (MonoBehaviourBase component in components)
+                foreach (MonoBehaviourDisposable component in components)
                     component.UninhibitExplicitOnEnableDisable();
 
-                foreach (MonoBehaviourBase component in components)
+                foreach (MonoBehaviourDisposable component in components)
                 {
                     if (!Object.ReferenceEquals(disposable, component))
                         component.ExplicitOnEnable();

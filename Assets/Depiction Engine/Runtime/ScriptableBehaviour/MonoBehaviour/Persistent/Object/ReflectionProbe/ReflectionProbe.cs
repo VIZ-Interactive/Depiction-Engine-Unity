@@ -7,7 +7,7 @@ namespace DepictionEngine
     /// <summary>
     /// Wrapper class for 'UnityEngine.ReflectionProbe' introducing better integrated functionality.
     /// </summary>
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Light/" + nameof(ReflectionProbe))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/" + nameof(ReflectionProbe))]
     public class ReflectionProbe : Object
     {
         [BeginFoldout("ReflectionProbe")]

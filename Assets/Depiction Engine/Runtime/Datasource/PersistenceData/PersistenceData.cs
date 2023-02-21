@@ -8,9 +8,9 @@ using UnityEngine;
 namespace DepictionEngine
 {
     /// <summary>
-    /// Class containing information about an <see cref="IPersistent"/> object's relationship with a datasource.
+    /// Class containing information about an <see cref="IPersistent"/> object's relationship with a <see cref="DatasourceBase"/>.
     /// </summary>
-    public class PersistenceData : ScriptableObjectBase
+    public class PersistenceData : ScriptableObjectDisposable
     {
         [Serializable]
         private class OutOfSyncDictionary : SerializableDictionary<SerializableGuid, OutOfSyncKeysDictionary> { };

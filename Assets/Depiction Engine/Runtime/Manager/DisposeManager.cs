@@ -50,11 +50,17 @@ namespace DepictionEngine
             Editor_Unknown,
         };
 
-        public static DestroyContext destroyingState = DestroyContext.Editor_Unknown;
+        public static DestroyContext destroyingContext = DestroyContext.Editor_Unknown;
 
         public static LinkedList<Tuple<object, DestroyContext>> DelayedDispose;
         public static LinkedList<Tuple<object, DestroyContext>> DelayedDisposeLate;
 
+        /// <summary>
+        /// Will dispose of an object by sending it to the pool if pooling is enabled, it implements <see cref="IDisposable"/> and no <see cref="DestroyContext"/> is specified. Otherwise it will be destroyed.
+        /// </summary>
+        /// <param name="obj">The object to dispose.</param>
+        /// <param name="destroyContext">The context under which the object is being destroyed.</param>
+        /// <param name="destroyDelay">Specify whether the destroy part of the dispose should happen immediatly or later.</param>
         public static void Dispose(object obj, DestroyContext destroyContext = DestroyContext.Unknown, DestroyDelay destroyDelay = DestroyDelay.None)
         {
             if (Object.ReferenceEquals(obj, null) || obj.Equals(null) || SceneManager.IsSceneBeingDestroyed())
@@ -76,25 +82,25 @@ namespace DepictionEngine
 
             IterateOverAllDisposable(obj, (obj) =>
             {
-                DestroyContext destroyingState = destroyContext;
+                DestroyContext destroyingContext = destroyContext;
                 if (obj is GameObject)
                 {
                     GameObject go = obj as GameObject;
 
-                    if (destroyingState == DestroyContext.Unknown)
+                    if (destroyingContext == DestroyContext.Unknown)
                     {
                         Component[] components = go.GetComponents<Component>();
                         IDisposable disposable = go.GetDisposableInComponents(components);
 
-                        if (!IsNullOrDisposed(disposable) && disposable.destroyingState == DestroyContext.Unknown)
+                        if (!IsNullOrDisposed(disposable) && disposable.destroyingContext == DestroyContext.Unknown)
                         {
                             foreach (Component component in components)
                             {
                                 bool invalidForPool = false;
-                                if (component is MonoBehaviourBase)
+                                if (component is MonoBehaviourDisposable)
                                 {
 #if UNITY_EDITOR
-                                    invalidForPool = (component as MonoBehaviourBase).hasEditorUndoRedo;
+                                    invalidForPool = (component as MonoBehaviourDisposable).hasEditorUndoRedo;
 #endif
                                 }
                                 else if (!((disposable is Object && component is Transform) || (disposable is Visual && (component is Transform || component is MeshFilter || component is MeshRenderer || component is Collider))))
@@ -102,32 +108,32 @@ namespace DepictionEngine
 
                                 if (invalidForPool)
                                 {
-                                    destroyingState = DestroyContext.Programmatically;
+                                    destroyingContext = DestroyContext.Programmatically;
                                     break;
                                 }
                             }
                         }
                         else
-                            destroyingState = DestroyContext.Programmatically;
+                            destroyingContext = DestroyContext.Programmatically;
                     }
 
-                    bool monoBehaviourBaseDisposing = false;
-                    MonoBehaviourBase[] monoBehaviourBases = go.GetComponents<MonoBehaviourBase>();
-                    if (monoBehaviourBases.Length != 0)
+                    bool monoBehaviourDisposableDisposing = false;
+                    MonoBehaviourDisposable[] monoBehaviourDisposables = go.GetComponents<MonoBehaviourDisposable>();
+                    if (monoBehaviourDisposables.Length != 0)
                     {
-                        foreach (MonoBehaviourBase monoBehaviourBase in monoBehaviourBases)
+                        foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
                         {
-                            DestroyingState(() =>
+                            DestroyingContext(() =>
                             {
-                                if (monoBehaviourBase.OnDisposing() && monoBehaviourBase.OnDispose())
-                                    monoBehaviourBaseDisposing = true;
-                            }, destroyingState);
+                                if (monoBehaviourDisposable.OnDisposing() && monoBehaviourDisposable.OnDispose())
+                                    monoBehaviourDisposableDisposing = true;
+                            }, destroyingContext);
                         }
                     }
                     else
-                        monoBehaviourBaseDisposing = true;
+                        monoBehaviourDisposableDisposing = true;
 
-                    if (monoBehaviourBaseDisposing)
+                    if (monoBehaviourDisposableDisposing)
                         disposing.Add(obj);
                 }
                 else if (obj is IDisposable)
@@ -135,18 +141,18 @@ namespace DepictionEngine
                     IDisposable disposable = obj as IDisposable;
 
 #if UNITY_EDITOR
-                    if (destroyingState == DestroyContext.Unknown)
+                    if (destroyingContext == DestroyContext.Unknown)
                     {
                         if(disposable is IScriptableBehaviour && (disposable as IScriptableBehaviour).hasEditorUndoRedo)
-                            destroyingState = DestroyContext.Programmatically;
+                            destroyingContext = DestroyContext.Programmatically;
                     }
 #endif
 
-                    DestroyingState(() => 
+                    DestroyingContext(() => 
                     {
                         if (disposable.OnDisposing() && disposable.OnDispose())
                             disposing.Add(obj);
-                    }, destroyingState);
+                    }, destroyingContext);
                 }
                 else
                     disposing.Add(obj);
@@ -161,7 +167,7 @@ namespace DepictionEngine
             }
         }
 
-        private static void Dispose(object obj, DestroyContext defaultDestroyState)
+        private static void Dispose(object obj, DestroyContext defaultDestroyContext)
         {
             if (IsNullOrDisposed(obj))
                 return;
@@ -172,21 +178,21 @@ namespace DepictionEngine
             else if (obj is IDisposable)
                 disposable = obj as IDisposable;
 
-            DestroyContext destroyState = defaultDestroyState;
+            DestroyContext destroyContext = defaultDestroyContext;
             if (!IsNullOrDisposed(disposable))
-                destroyState = disposable.destroyingState;
+                destroyContext = disposable.destroyingContext;
             else if (obj is UnityEngine.Object)
             {
-                if (destroyState == DestroyContext.Unknown)
-                    destroyState = DestroyContext.Programmatically;
+                if (destroyContext == DestroyContext.Unknown)
+                    destroyContext = DestroyContext.Programmatically;
             }
 
-            if (destroyState != DestroyContext.Unknown)
+            if (destroyContext != DestroyContext.Unknown)
             {
                 if (obj is UnityEngine.Object)
-                    Destroy(obj as UnityEngine.Object, destroyState);
+                    Destroy(obj as UnityEngine.Object, destroyContext);
                 else if (!IsNullOrDisposed(disposable))
-                    disposable.OnDisposedInternal(destroyState);
+                    disposable.OnDisposedInternal(destroyContext);
             }
             else if (!IsNullOrDisposed(disposable))
             {
@@ -195,39 +201,44 @@ namespace DepictionEngine
                     poolManager.AddToPool(disposable);
 
                 if (obj is GameObject)
-                    IterateOverAllMonoBehaviourBase(obj as GameObject, (monoBehaviourBase) => { monoBehaviourBase.OnDisposedInternal(destroyState); });
+                    IterateOverAllMonoBehaviourDisposable(obj as GameObject, (monoBehaviourDisposable) => { monoBehaviourDisposable.OnDisposedInternal(destroyContext); });
                 else
-                    disposable.OnDisposedInternal(destroyState);
+                    disposable.OnDisposedInternal(destroyContext);
 
                 disposable.disposedComplete = true;
             } 
         }
-      
-        public static void Destroy(UnityEngine.Object unityObject, DestroyContext destroyState = DestroyContext.Programmatically)
+
+        /// <summary>
+        /// Destroy any UnityEngine.Object.
+        /// </summary>
+        /// <param name="unityObject">The UnityEngine.Object.</param>
+        /// <param name="destroyContext">The context under which the object is being destroyed.</param>
+        public static void Destroy(UnityEngine.Object unityObject, DestroyContext destroyContext = DestroyContext.Programmatically)
         {
             if (unityObject == null)
                 return;
 
-            if (destroyState == DestroyContext.Unknown)
-                destroyState = DestroyContext.Programmatically;
+            if (destroyContext == DestroyContext.Unknown)
+                destroyContext = DestroyContext.Programmatically;
 
-            DestroyingState(() =>
+            DestroyingContext(() =>
             {
 #if UNITY_EDITOR
-                if (destroyState != DestroyContext.Editor || !Editor.UndoManager.DestroyObjectImmediate(unityObject))
+                if (destroyContext != DestroyContext.Editor || !Editor.UndoManager.DestroyObjectImmediate(unityObject))
                     GameObject.DestroyImmediate(unityObject, true);
 #else
                 GameObject.Destroy(unityObject);
 #endif
 
-                //MonoBehaviourBase who have not been activated yet will not trigger OnDestroy so we do it manually
+                //MonoBehaviourDisposable who have not been activated yet will not trigger OnDestroy so we do it manually
                 IterateOverAllDisposable(unityObject, 
                     (obj) => 
                     { 
-                        IterateOverAllMonoBehaviourBase(obj as UnityEngine.Object, (monoBehaviourBase) => { monoBehaviourBase.OnDestroy(); }); 
+                        IterateOverAllMonoBehaviourDisposable(obj as UnityEngine.Object, (monoBehaviourDisposable) => { monoBehaviourDisposable.OnDestroy(); }); 
                     });
             
-            }, destroyState);
+            }, destroyContext);
 
 #if UNITY_EDITOR
             //Force refresh the hierarchy window to remove the Destroyed objects
@@ -288,12 +299,12 @@ namespace DepictionEngine
             return obj is UnityEngine.Object && (obj as UnityEngine.Object) == null;
         }
 
-        private static void DestroyingState(Action callback, DestroyContext destroyingState)
+        private static void DestroyingContext(Action callback, DestroyContext destroyingContext)
         {
-            DestroyContext lastDestroyingType = DisposeManager.destroyingState;
-            DisposeManager.destroyingState = destroyingState;
+            DestroyContext lastDestroyingType = DisposeManager.destroyingContext;
+            DisposeManager.destroyingContext = destroyingContext;
             callback();
-            DisposeManager.destroyingState = lastDestroyingType;
+            DisposeManager.destroyingContext = lastDestroyingType;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -301,7 +312,7 @@ namespace DepictionEngine
         {
             if (!Object.ReferenceEquals(scriptableBehaviour, null) && (scriptableBehaviour as UnityEngine.Object) == null)
             {
-                DestroyingState(() => { scriptableBehaviour.OnDestroy(); }, DestroyContext.Editor_UndoRedo);
+                DestroyingContext(() => { scriptableBehaviour.OnDestroy(); }, DestroyContext.Editor_UndoRedo);
                 return true;
             }
             return false;
@@ -327,19 +338,19 @@ namespace DepictionEngine
             }
         }
 
-        private static void IterateOverAllMonoBehaviourBase(UnityEngine.Object obj, Action<MonoBehaviourBase> callback)
+        private static void IterateOverAllMonoBehaviourDisposable(UnityEngine.Object obj, Action<MonoBehaviourDisposable> callback)
         {
             if (obj is GameObject)
-                IterateOverAllMonoBehaviourBase(obj as GameObject, callback);
-            else if (obj is MonoBehaviourBase)
-                callback(obj as MonoBehaviourBase);
+                IterateOverAllMonoBehaviourDisposable(obj as GameObject, callback);
+            else if (obj is MonoBehaviourDisposable)
+                callback(obj as MonoBehaviourDisposable);
         }
 
-        private static void IterateOverAllMonoBehaviourBase(GameObject go, Action<MonoBehaviourBase> callback)
+        private static void IterateOverAllMonoBehaviourDisposable(GameObject go, Action<MonoBehaviourDisposable> callback)
         {
-            MonoBehaviourBase[] monoBehaviourBases = go.GetComponents<MonoBehaviourBase>();
-            foreach (MonoBehaviourBase monoBehaviourBase in monoBehaviourBases)
-                callback(monoBehaviourBase);
+            MonoBehaviourDisposable[] monoBehaviourDisposables = go.GetComponents<MonoBehaviourDisposable>();
+            foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
+                callback(monoBehaviourDisposable);
         }
 
         private static void AddDelayedDispose(Tuple<object, DestroyContext> value, LinkedListNode<Tuple<object, DestroyContext>> addAfterNode = null, bool late = false)

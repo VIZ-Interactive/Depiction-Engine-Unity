@@ -196,7 +196,7 @@ namespace DepictionEngine
 
             if (initializationJson != null)
             {
-                MonoBehaviourBase[] components = gameObject.GetComponents<MonoBehaviourBase>();
+                MonoBehaviourDisposable[] components = gameObject.GetComponents<MonoBehaviourDisposable>();
 
                 JSONObject transformJson = initializationJson[nameof(transform)] as JSONObject;
                 if (transformJson != null)
@@ -683,7 +683,7 @@ namespace DepictionEngine
             return false;
         }
 
-        private void ReferenceDataChangedHandler(ReferenceBase reference, ScriptableObjectBase newValue, ScriptableObjectBase oldValue)
+        private void ReferenceDataChangedHandler(ReferenceBase reference, ScriptableObjectDisposable newValue, ScriptableObjectDisposable oldValue)
         {
             UpdateReferences();
         }
@@ -2167,9 +2167,9 @@ namespace DepictionEngine
                 dataProcessor.Dispose();
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 Dispose(objectAdditionalFallbackValues);
 

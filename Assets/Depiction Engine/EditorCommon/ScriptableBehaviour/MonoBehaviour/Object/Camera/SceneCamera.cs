@@ -172,14 +172,14 @@ namespace DepictionEngine.Editor
             ApplyClipPlanePropertiesToUnityCamera(unityCamera, 0);
         }
 
-        protected override DisposeManager.DestroyContext OverrideDestroyingState(DisposeManager.DestroyContext destroyingState)
+        protected override DisposeManager.DestroyContext OverrideDestroyingContext(DisposeManager.DestroyContext destroyingContext)
         {
             return DisposeManager.DestroyContext.Programmatically;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 if (skybox != null)
                     skybox.enabled = false;

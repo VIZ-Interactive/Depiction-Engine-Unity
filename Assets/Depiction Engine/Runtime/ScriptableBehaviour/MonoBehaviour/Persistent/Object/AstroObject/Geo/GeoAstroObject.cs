@@ -9,7 +9,7 @@ using UnityEngine.Rendering;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Container/Astro/" + nameof(GeoAstroObject))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/" + nameof(GeoAstroObject))]
     public class GeoAstroObject : AstroObject
     {
         [Serializable]
@@ -1024,9 +1024,9 @@ namespace DepictionEngine
             return a.grid2DDimensions.x > b.grid2DDimensions.x;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 _grid2DDimensions = Vector2Int.zero;
                 _grid2DIndex = Vector2Int.zero;

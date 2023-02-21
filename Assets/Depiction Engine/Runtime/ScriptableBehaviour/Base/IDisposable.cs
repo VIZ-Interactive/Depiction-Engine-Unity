@@ -4,31 +4,36 @@ using System;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// Supports Dispose and Initialization. 
+    /// </summary>
     public interface IDisposable
     {
-        bool initialized { get; }
-
-        bool disposedComplete { get; set; }
-        Action InitializedEvent { get; set; }
-        Action<IDisposable> DisposingEvent { get; set; }
-        Action<IDisposable> DisposedEvent { get; set; }
-        DisposeManager.DestroyContext destroyingState { get; }
-
 #if UNITY_EDITOR
+        /// <summary>
+        /// Can the object be found on the Editor undo or redo stack.
+        /// </summary>
         bool hasEditorUndoRedo { get; }
 #endif
 
         /// <summary>
-        /// Acts as a constructor. Needs to be called before the object can be used. Objects created throught the <see cref="InstanceManager"/> should automatically Initialize the object.
+        /// Has the object been initialized.
         /// </summary>
-        /// <returns>False if the object is already initializing or initialized.</returns>
-        /// <remarks>In some edge cases, in the editor, the Initialize may not be called immediately aftet the object is instantiated.</remarks>
-        bool Initialize();
+        bool initialized { get; }
 
         /// <summary>
-        /// Resets the fields to their default value so the object can be reused again. Used by the <see cref="PoolManager"/>.
+        /// Is the object done disposing.
         /// </summary>
-        void Recycle();
+        bool disposedComplete { get; set; }
+
+        /// <summary>
+        /// The <see cref="DisposeManager.DestroyContext"/> under which the object was destroyed.
+        /// </summary>
+        DisposeManager.DestroyContext destroyingContext { get; }
+
+        Action InitializedEvent { get; set; }
+        Action<IDisposable> DisposingEvent { get; set; }
+        Action<IDisposable> DisposedEvent { get; set; }
 
         /// <summary>
         /// Is the object disposing?.
@@ -42,9 +47,31 @@ namespace DepictionEngine
         /// <returns>True if the object as already been disposed / destroyed.</returns>
         bool IsDisposed();
 
+        /// <summary>
+        /// Needs to be called before the object can be used. Objects created throught the <see cref="InstanceManager"/> should automatically Initialize the object.
+        /// </summary>
+        /// <returns>False if the object is already initializing or initialized.</returns>
+        /// <remarks>In some edge cases, in the editor, the Initialize may not be called immediately aftet the object is instantiated.</remarks>
+        bool Initialize();
+
+        /// <summary>
+        /// Resets the fields to their default value so the object can be reused again. It will be called by the <see cref="PoolManager"/> if the object is being recycled from the pool.
+        /// </summary>
+        void Recycle();
+
+        /// <summary>
+        /// This is where you clear or dipose any references. Should be called automatically by <see cref="DisposeManager"/> immediately after <see cref="DisposeManager.Dispose"/> or <see cref="DisposeManager.Destroy"/> is called.
+        /// </summary>
+        /// <returns>True if disposing, False if the object is already disposing or was disposed.</returns>
         bool OnDisposing();
+
+        /// <summary>
+        /// This is where you clear or dipose any remaining references. It will be called automatically by <see cref="DisposeManager"/> immediately after <see cref="OnDisposing"/> unless the object was Destroyed as a result of an Editor action.
+        /// </summary>
+        /// <returns>True if disposing, False if the object is already disposing or was disposed.</returns>
         bool OnDispose();
-        void OnDisposedInternal(DisposeManager.DestroyContext destroyState);
+
+        void OnDisposedInternal(DisposeManager.DestroyContext destroyContext);
 
         bool Equals(Disposable.Null value);
     }

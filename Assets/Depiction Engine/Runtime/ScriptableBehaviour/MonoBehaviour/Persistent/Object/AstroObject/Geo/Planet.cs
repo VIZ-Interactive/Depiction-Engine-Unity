@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Container/Astro/" + nameof(Planet))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/" + nameof(Planet))]
     public class Planet : GeoAstroObject
     {
     }

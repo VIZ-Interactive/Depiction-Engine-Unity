@@ -383,7 +383,7 @@ namespace DepictionEngine
         {
             List<UnityEngine.Object> transforms = new List<UnityEngine.Object>();
 
-            transform.IterateOverRootChildren<UIVisual>((uiVisual) =>
+            transform.IterateOverChildren<UIVisual>((uiVisual) =>
             {
                 foreach (MeshRendererVisual meshRendererVisual in uiVisual.children)
                     transforms.Add(meshRendererVisual.transform);
@@ -509,7 +509,7 @@ namespace DepictionEngine
                 UpdateUILabelMeshUVs();
             }
 
-            transform.IterateOverRootChildren<UIVisual>((uiVisual) =>
+            transform.IterateOverChildren<UIVisual>((uiVisual) =>
             {
                 foreach (MeshRendererVisual meshRendererVisual in uiVisual.children)
                 {
@@ -532,7 +532,7 @@ namespace DepictionEngine
         {
             if (initialized)
             {
-                transform.IterateOverRootChildren<UIVisual>((uiVisual) =>
+                transform.IterateOverChildren<UIVisual>((uiVisual) =>
                 {
                     foreach (MeshRendererVisual meshRendererVisual in uiVisual.children)
                     {

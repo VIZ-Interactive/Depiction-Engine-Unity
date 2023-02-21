@@ -5,6 +5,9 @@ using System.Reflection;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// Implements persistence features mostly required by the <see cref="DatasourceBase"/>.
+    /// </summary>
     public interface IPersistent : IJson
     {
         bool autoDispose { get; }

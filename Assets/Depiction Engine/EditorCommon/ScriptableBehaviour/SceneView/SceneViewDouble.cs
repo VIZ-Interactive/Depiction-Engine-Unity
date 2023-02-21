@@ -1765,9 +1765,9 @@ namespace DepictionEngine.Editor
             return eulerRotation;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 SceneManager sceneManager = SceneManager.Instance(false);
                 if (sceneManager != Disposable.NULL)

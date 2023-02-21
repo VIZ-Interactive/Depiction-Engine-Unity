@@ -10,7 +10,7 @@ namespace DepictionEngine
     /// <summary>
     /// RESTful web services based datasource
     /// </summary>
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Communication/" + nameof(RestDatasource))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Datasource/" + nameof(RestDatasource))]
     public class RestDatasource : DatasourceBase
     {
         private static readonly string[] COPYRIGHTED_DATASOURCE_LIST = { };

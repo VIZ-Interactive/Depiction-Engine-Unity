@@ -361,7 +361,7 @@ namespace DepictionEngine.Editor
             {
                 IPersistent persistent = Selection.GetSelectedDatasourcePersistent();
                 if (!Disposable.IsDisposed(persistent))
-                    DisposeManager.Dispose(persistent is MonoBehaviourBase ? (persistent as MonoBehaviourBase).gameObject : persistent, DisposeManager.DestroyContext.Editor);
+                    DisposeManager.Dispose(persistent is MonoBehaviourDisposable ? (persistent as MonoBehaviourDisposable).gameObject : persistent, DisposeManager.DestroyContext.Editor);
             }
 
             GUILayout.Space(20.0f);

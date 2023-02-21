@@ -9,7 +9,7 @@ namespace DepictionEngine
     /// <summary>
     /// A light source, and lens flare effect, emitting light in all directions.
     /// </summary>
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Light/" + nameof(Star))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/" + nameof(Star))]
     [SelectionBase]
     public class Star : GeoAstroObject
     {

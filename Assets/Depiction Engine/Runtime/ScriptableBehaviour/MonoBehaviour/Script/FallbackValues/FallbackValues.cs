@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Communication/" + nameof(FallbackValues))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Generator/" + nameof(FallbackValues))]
     public class FallbackValues : Script
     {
 #if UNITY_EDITOR
@@ -415,9 +415,9 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 DisposeFallbackValuesObject();
 

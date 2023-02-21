@@ -5,6 +5,9 @@ using System;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// A datasource that supports loading.
+    /// </summary>
     public interface ILoadDatasource
     {
         DatasourceOperationBase Load(Action<List<IPersistent>> operationResult, LoadScope loadScope);

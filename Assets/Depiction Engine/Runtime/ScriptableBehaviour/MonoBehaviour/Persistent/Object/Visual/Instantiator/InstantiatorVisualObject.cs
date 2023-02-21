@@ -278,7 +278,7 @@ namespace DepictionEngine
             }
 
             if (newGameObject == null)
-                newGameObject = MonoBehaviourBase.Instantiate(gameObject, parent.transform, false);
+                newGameObject = MonoBehaviourDisposable.Instantiate(gameObject, parent.transform, false);
 
             newGameObject.name = gameObject.name;
 

@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-	[AddComponentMenu(SceneManager.NAMESPACE + "/Controller/" + nameof(OrbitController))]
+	[AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Controller/" + nameof(OrbitController))]
     [RequireComponent(typeof(AstroObject))]
 	public class OrbitController : ControllerBase
     {

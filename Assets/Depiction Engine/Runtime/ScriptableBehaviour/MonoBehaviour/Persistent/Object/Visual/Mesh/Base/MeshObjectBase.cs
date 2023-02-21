@@ -329,7 +329,7 @@ namespace DepictionEngine
                 meshRendererVisualModifiers = null;
             }
 
-            transform.IterateOverRootChildren<MeshRendererVisual>((meshRendererVisual) =>
+            transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
             {
                 Mesh mesh = GetMeshFromUnityMesh(meshRendererVisual.sharedMesh, false);
                 if (mesh != Disposable.NULL && mesh.NormalsDirty())
@@ -340,7 +340,7 @@ namespace DepictionEngine
             if (meshDataProcessor == null || meshDataProcessor.processingState != Processor.ProcessingState.Processing)
             {
                 Mesh.PhysicsBakeMeshType physicsBakeMesh = useCollider ? convexCollider ? Mesh.PhysicsBakeMeshType.Convex : Mesh.PhysicsBakeMeshType.Concave : Mesh.PhysicsBakeMeshType.None;
-                transform.IterateOverRootChildren<MeshRendererVisual>((meshRendererVisual) =>
+                transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
                 {
                     Mesh mesh = GetMeshFromUnityMesh(meshRendererVisual.sharedMesh, false);
                     if (mesh != Disposable.NULL && mesh.PhysicsBakedMeshDirty(physicsBakeMesh))
@@ -486,7 +486,7 @@ namespace DepictionEngine
         {
             base.ApplyPropertiesToVisual(visualsChanged, meshRendererVisualDirtyFlags);
 
-            transform.IterateOverRootChildren<MeshRendererVisual>((meshRendererVisual) =>
+            transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
             {
                 if (visualsChanged || PropertyDirty(nameof(castShadow)) || PropertyDirty(nameof(alpha)))
                     ApplyCastShadowToMeshRendererVisual(meshRendererVisual, castShadow ? ShadowCastingMode.On : ShadowCastingMode.Off);
@@ -573,9 +573,9 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 meshRendererVisualModifiers = null;
 
@@ -707,9 +707,9 @@ namespace DepictionEngine
             _meshRendererVisualModifiers = null;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 if (_meshRendererVisualModifiers != null)
                 {

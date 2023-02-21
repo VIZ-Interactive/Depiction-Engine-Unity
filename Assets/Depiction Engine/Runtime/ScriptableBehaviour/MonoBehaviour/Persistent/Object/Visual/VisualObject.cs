@@ -635,7 +635,7 @@ namespace DepictionEngine
         protected Visual GetVisual(string name)
         {
             Visual matchingVisual = null;
-            transform.IterateOverRootChildren<Visual>((visual) =>
+            transform.IterateOverChildren<Visual>((visual) =>
             {
                 if (visual.name == name)
                 {
@@ -659,7 +659,7 @@ namespace DepictionEngine
 
         public void ApplyCameraMaskLayerToVisuals(Camera camera = null, bool afterRendering = false)
         {
-            transform.IterateOverRootChildren<Visual>((visual) =>
+            transform.IterateOverChildren<Visual>((visual) =>
             {
                 visual.UpdateLayer(GetVisualIgnoreRender(visual, camera, afterRendering));
                 return true;

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Visual/" + nameof(MeshRendererVisualMeshCollider))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/MeshRendererVisual/" + nameof(MeshRendererVisualMeshCollider))]
     public class MeshRendererVisualMeshCollider : MeshRendererVisual
     {
         public override bool SetColliderType(ColliderType value)

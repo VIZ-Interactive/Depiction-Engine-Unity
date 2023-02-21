@@ -9,7 +9,7 @@ namespace DepictionEngine
     /// <summary>
     /// Operations to be executed by the <see cref="Datasource"/>.
     /// </summary>
-    public class DatasourceOperationBase : ScriptableObjectBase
+    public class DatasourceOperationBase : ScriptableObjectDisposable
     {
         /// <summary>
         /// The different types of loading state. <br/><br/>
@@ -122,9 +122,9 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 OperationDone(new OperationDoneResult(true));
 
@@ -247,9 +247,9 @@ namespace DepictionEngine
             return resultsData.Count;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 if (resultsData != null)
                 {
@@ -314,9 +314,9 @@ namespace DepictionEngine
             get { return _children; }
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 if (_propertyModifiers != null)
                 {

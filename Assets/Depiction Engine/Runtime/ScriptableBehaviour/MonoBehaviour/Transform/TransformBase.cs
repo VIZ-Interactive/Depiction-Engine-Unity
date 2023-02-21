@@ -1031,7 +1031,7 @@ namespace DepictionEngine
             return containsDisposed;
         }
 
-        public void IterateOverRootChildren<T>(Func<T, bool> callback) where T : PropertyMonoBehaviour
+        public void IterateOverChildren<T>(Func<T, bool> callback) where T : PropertyMonoBehaviour
         {
             for (int i = childCount - 1 ; i >= 0 ; i--)
             {
@@ -1043,7 +1043,7 @@ namespace DepictionEngine
 
         public void IterateOverChildrenObject<T>(Func<T, bool> callback) where T : Object
         {
-            IterateOverRootChildren<TransformDouble>((transform) => 
+            IterateOverChildren<TransformDouble>((transform) => 
             {
                 if (transform.objectBase != Disposable.NULL && transform.objectBase is T && !callback(transform.objectBase as T))
                     return false;
@@ -1062,9 +1062,9 @@ namespace DepictionEngine
             UninhibitEnableDisableAll();
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 ChildAddedEvent = null;
                 ChildRemovedEvent = null;
@@ -1076,16 +1076,16 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override DisposeManager.DestroyContext OverrideDestroyingState(DisposeManager.DestroyContext destroyingState)
+        protected override DisposeManager.DestroyContext OverrideDestroyingContext(DisposeManager.DestroyContext destroyingContext)
         {
-            DisposeManager.DestroyContext overrideDestroyingState = base.OverrideDestroyingState(destroyingState);
+            DisposeManager.DestroyContext overrideDestroyingContext = base.OverrideDestroyingContext(destroyingContext);
 
 #if UNITY_EDITOR
             if (_objectBase != Disposable.NULL && _objectBase is Editor.SceneCamera)
-                overrideDestroyingState = DisposeManager.DestroyContext.Programmatically;
+                overrideDestroyingContext = DisposeManager.DestroyContext.Programmatically;
 #endif
 
-            return overrideDestroyingState;
+            return overrideDestroyingContext;
         }
 
         public T GetSafeComponent<T>(InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponent<T>(initializationState); }

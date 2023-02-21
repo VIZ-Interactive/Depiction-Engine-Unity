@@ -7,7 +7,7 @@ namespace DepictionEngine
     /// <summary>
     /// Object required for loaders of certain types.
     /// </summary>
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Container/" + nameof(DatasourceRoot))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Datasource/" + nameof(DatasourceRoot))]
     public class DatasourceRoot : Object
     {
         public override bool IsPhysicsObject()

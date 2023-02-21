@@ -536,7 +536,7 @@ namespace DepictionEngine
             get { return sceneChildren.Count; }
         }
 
-        public void IterateOverRootChildren<T>(Func<T, bool> callback) where T : PropertyMonoBehaviour
+        public void IterateOverChildren<T>(Func<T, bool> callback) where T : PropertyMonoBehaviour
         {
             foreach (PropertyMonoBehaviour propertyMonoBehaviour in sceneChildren)
             {
@@ -569,7 +569,7 @@ namespace DepictionEngine
 
                     int visibleRootGameObjectsCount = childCount;
                     //Subtract the gameObject which are not present in the GetRootGameObjects()
-                    IterateOverRootChildren<TransformBase>((propertyMonoBehaviour) =>
+                    IterateOverChildren<TransformBase>((propertyMonoBehaviour) =>
                     {
                         if (IsGameObjectHiddenOrDontSave(propertyMonoBehaviour.gameObject))
                             visibleRootGameObjectsCount--;
@@ -1309,9 +1309,9 @@ namespace DepictionEngine
             return containsDisposed;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
 #if UNITY_EDITOR
                 Editor.AssetManager.SaveAssets();

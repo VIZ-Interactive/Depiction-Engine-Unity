@@ -145,11 +145,11 @@ namespace DepictionEngine
 
             if (requiredComponentTypes.Count > 0)
             {
-                MonoBehaviourBase[] components = gameObject.GetComponents<MonoBehaviourBase>();
+                MonoBehaviourDisposable[] components = gameObject.GetComponents<MonoBehaviourDisposable>();
 
                 foreach (Type requiredComponentType in requiredComponentTypes)
                 {
-                    MonoBehaviourBase component = RemoveComponentFromList(requiredComponentType, components);
+                    MonoBehaviourDisposable component = RemoveComponentFromList(requiredComponentType, components);
                     if (component == Disposable.NULL)
                         gameObject.AddComponent(requiredComponentType);
                 }
@@ -163,11 +163,11 @@ namespace DepictionEngine
             _requiredComponentTypes.Clear();
         }
 
-        protected MonoBehaviourBase RemoveComponentFromList(Type type, MonoBehaviourBase[] components)
+        protected MonoBehaviourDisposable RemoveComponentFromList(Type type, MonoBehaviourDisposable[] components)
         {
             for (int i = 0; i < components.Length; i++)
             {
-                MonoBehaviourBase component = components[i];
+                MonoBehaviourDisposable component = components[i];
                 if (component != Disposable.NULL)
                 {
                     Type componentType = component.GetType();
@@ -440,11 +440,11 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             { 
-                if (destroyState == DisposeManager.DestroyContext.Unknown)
+                if (destroyContext == DisposeManager.DestroyContext.Unknown)
                 {
                     InitRequiredComponentTypes();
                     GetRequiredComponentTypes(ref _requiredComponentTypes);

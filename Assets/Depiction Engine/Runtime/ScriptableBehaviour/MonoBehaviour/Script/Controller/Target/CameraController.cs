@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Controller/" + nameof(CameraController))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Controller/" + nameof(CameraController))]
     [RequireComponent(typeof(Camera))]
     public class CameraController : TargetController
     {

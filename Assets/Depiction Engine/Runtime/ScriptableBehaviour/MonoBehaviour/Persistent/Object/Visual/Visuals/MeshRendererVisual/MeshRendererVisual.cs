@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Visual/" + nameof(MeshRendererVisual))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/MeshRendererVisual/" + nameof(MeshRendererVisual))]
     public class MeshRendererVisual : Visual
     {
         /// <summary>
@@ -355,15 +355,11 @@ namespace DepictionEngine
     {
         public MeshModifier _meshModifier;
 
-        public override bool Initialize()
+        public override void Initializing()
         {
-            if (base.Initialize())
-            {
-                _meshModifier = Mesh.CreateMeshModifier();
+            base.Initializing();
 
-                return true;
-            }
-            return false;
+            _meshModifier = Mesh.CreateMeshModifier();
         }
 
         public MeshModifier meshModifier
@@ -378,9 +374,9 @@ namespace DepictionEngine
             }
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 DisposeManager.Dispose(_meshModifier);
 
@@ -565,9 +561,9 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 sharedMesh = null;
 

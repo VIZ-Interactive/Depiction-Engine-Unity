@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Visual/" + nameof(UIMeshRendererVisual))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/MeshRendererVisual/" + nameof(UIMeshRendererVisual))]
     public class UIMeshRendererVisual : MeshRendererVisual
     {
         protected override ShadowCastingMode GetDefaultShadowCastingMode()

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Controller/" + nameof(TargetController))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Controller/" + nameof(TargetController))]
     public class TargetController : TargetControllerBase
     {
         public static readonly Vector3Double DEFAULT_FORWARD_VECTOR_VALUE = new Vector3Double(25.0d, 0.0d, 0.0d);

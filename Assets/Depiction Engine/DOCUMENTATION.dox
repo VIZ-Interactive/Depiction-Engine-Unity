@@ -6,7 +6,6 @@
  * - __Unity (Windows, Android, WebGL)__ \n 
  * \n 
  *   + 2022.x
- *   + 2023.x
  * .
  *
  *
@@ -36,11 +35,8 @@
  *    @warning You might have to restart Unity after the Universal Rendering Pipeline as been patched.
  * .
  *
+ * - __Javascript API__ \n
  *
- * # Build
- *
- *
- * - __WebGL / Javascript API__ \n 
  * \n 
  *   + To build the Javascript API, you will have to move the `WebGLTemplates` folder to "/Assets/". You should now be able to select the "Depiction Engine - Demo" WebGL Template under "Edit -> Project Settings -> Player -> Resolution and Presentation". \n 
  * \n 
@@ -74,51 +70,64 @@
  *
  * ## Order of execution
  *
- * - __Initialization__ \n 
+ * - __Instancing__ \n 
  * \n 
- *   + Constructor Initialize(initializecontext).
+ *   + **Recycle**: \n 
+ *     `DepictionEngine.IDisposable.Recycle`
+ *   + **Initialized**: \n 
+ *     `DepictionEngine.MonoBehaviourDisposable.Initialized` `DepictionEngine.ScriptableObjectDisposable.Initialized` `DepictionEngine.Disposable.Initialized`
  * .
  *
- * - __Update__ \n 
+ * - __Updating__ \n 
  * \n 
- *   + Origin Shifting allows for the positioning of objects and rendering on a very large scale. It can be enabled under `DepictionEngine.RenderingManager.originShifting` and will be `true` by default.
+ *   + **HierarchicalFixedUpdate**: . \n 
+ *     `DepictionEngine.PropertyMonoBehaviour.HierarchicalFixedUpdate` \n 
+ *    \n 
+ *   + **PreHierarchicalUpdate**: . \n 
+ *     `DepictionEngine.PropertyMonoBehaviour.PreHierarchicalUpdate`
+ *   + **HierarchicalUpdate**: . \n 
+ *     `DepictionEngine.PropertyMonoBehaviour.HierarchicalUpdate`
+ *   + **PostHierarchicalUpdate**: . \n 
+ *     `DepictionEngine.PropertyMonoBehaviour.PostHierarchicalUpdate` \n 
+ *    \n 
+ *   + **HierarchicalBeginCameraRendering**: . \n 
+ *     `DepictionEngine.PropertyMonoBehaviour.HierarchicalBeginCameraRendering`
+ *   + **HierarchicalEndCameraRendering**: . \n 
+ *     `DepictionEngine.PropertyMonoBehaviour.HierarchicalEndCameraRendering`
  * .
  *
- * - __Disposing__ \n 
+ * - __Disposing / Destroying__ \n 
  * \n 
- *   + OnDisposing. OnDisposed. OnDestroy.
+ *    Whether pooled or destroyed OnDisposing, OnDispose and OnDisposed will always be called, however OnDestroy will be called only when the object is destroyed and not when pooled. \n 
+ * \n 
+ *   + **OnDisposing**: \n 
+ *     `DepictionEngine.IDisposable.OnDisposing`
+ *   + **OnDispose**: \n 
+ *     `DepictionEngine.IDisposable.OnDispose`
+ *   + **OnDisposed**: \n 
+ *     `DepictionEngine.MonoBehaviourDisposable.OnDisposed` `DepictionEngine.ScriptableObjectDisposable.OnDisposed` `DepictionEngine.Disposable.OnDisposed` \n 
+ *    \n 
+ *   + **OnDestroy**: \n 
+ *     `DepictionEngine.IScriptableBehaviour.OnDestroy`
  * .
- * <b><see cref="LateInitialize"/>:</b>
- * Objects that were not initialized are automatically initialized. 
- *  <b><see cref="PreHierarchicalUpdate"/>:</b>
- *  The hierarchy is traversed and values are prepared for the update. <br/><br/>
- *        /// <b><see cref="HierarchicalUpdate"/>:</b> <br/>
- *        /// The hierarchy is traversed and the update code is executed. <br/><br/>
- *        /// <b><see cref="PostHierarchicalUpdate"/>:</b> <br/>
- *        /// The hierarchy is traversed and code that required updated values is executed. <br/><br/>
- *        /// <b><see cref="HierarchicalClearDirtyFlags"/>:</b> <br/>
- *        /// The hierarchy is traversed and dirty flags are cleared. <br/><br/>
- *        /// <b><see cref="HierarchicalActivate"/>:</b> <br/>
- *        /// The hierarchy is traversed and gameObjects that have never been active are temporarly activated and deactivated to allow for their Awake to be called. <br/><br/>
- *        /// <b><see cref="UnityInitialized"/>:</b> <br/>
- *        /// Marks all newly initialized objects as 'UnityInitialized'. <br/><br/>
- *        /// <b><see cref="DelayedOnDestroy"/>:</b> <br/>
- *        /// Objects that were waiting to be destroyed are destroyed. <br/><br/>
- *        /// <b><see cref="DelayedDispose"/>:</b> <br/>
- *        /// Objects that were waiting to be disposed are disposed. <br/><br/>
- *        /// <b><see cref="DelayedDisposeLate"/>:</b> <br/>
  *
  *
- * ## Disposing and Pooling
+ * ## Instancing / Disposing
  *
- * - __Disposing__ \n 
+ * - __Instancing__ \n 
  * \n 
- *   + Objects implementing `DepictionEngine.IDisposable` need to be disposed with the `DepictionEngine.DisposeManager`. If `DepictionEngine.PoolManager.enablePooling` is true `DepictionEngine.IDisposable` objects will be automatically added back to the pool unless a destroyContext is provided. \n 
+ *   + Objects implementing `DepictionEngine.IDisposable` should be instanced using the `DepictionEngine.InstanceManager`. If `DepictionEngine.PoolManager.enablePooling` is true when instanced, `DepictionEngine.IDisposable` objects will be recycled from the pool if an instance already exists. \n 
  *	 ~~~~~~~~~~~~~{.cs}
- *	 DisposeManager.Dispose(object, destroyContext);
+ *	 InstanceManager.CreateInstance(type);
+ *	 ~~~~~~~~~~~~~
+ * - __Disposing__ \n 
+ * \n 
+ *   + Objects implementing `DepictionEngine.IDisposable` need to be disposed with the `DepictionEngine.DisposeManager`. If `DepictionEngine.PoolManager.enablePooling` is true when disposed, `DepictionEngine.IDisposable` objects will be automatically added back to the pool unless a destroyContext is provided in which case they will be destroyed. \n 
+ *	 ~~~~~~~~~~~~~{.cs}
+ *	 DisposeManager.Dispose(object, destroyContext, destroyDelay);
  *	 ~~~~~~~~~~~~~
  * \n 
- *   + Objects which do not implement `DepictionEngine.IDisposable` can be destroyed with the `DepictionEngine.DisposeManager`. Destroying using the `DepictionEngine.DisposeManager` is preferable over calling `GameObject.Destroy` or `GameObject.DestroyImmediate` directly.
+ *   + Objects which do not implement `DepictionEngine.IDisposable` can also be disposed with the `DepictionEngine.DisposeManager`. Disposing using the `DepictionEngine.DisposeManager.Destroy` will automatically call `GameObject.Destroy` or `GameObject.DestroyImmediate` depending on whether we are in the Editor or not. \n 
  *	 ~~~~~~~~~~~~~{.cs}
  *	 DisposeManager.Destroy(object);
  *	 ~~~~~~~~~~~~~

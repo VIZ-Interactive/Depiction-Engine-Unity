@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    public class Datasource : ScriptableObjectBase
+    public class Datasource : ScriptableObjectDisposable
     {
         /// <summary>
         /// The different types of datasource operation. <br/><br/>

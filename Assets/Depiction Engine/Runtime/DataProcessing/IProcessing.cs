@@ -4,6 +4,9 @@ using System;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// Supports processing.
+    /// </summary>
     public interface IProcessing
     {
         Action ProcessingCompletedEvent { get; }

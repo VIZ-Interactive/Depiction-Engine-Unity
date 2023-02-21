@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Communication/Loader/2D/Index/" + nameof(Index2DLoader))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Generator/Loader/2D/Index/" + nameof(Index2DLoader))]
     public class Index2DLoader : Index2DLoaderBase
     {
         [Serializable]

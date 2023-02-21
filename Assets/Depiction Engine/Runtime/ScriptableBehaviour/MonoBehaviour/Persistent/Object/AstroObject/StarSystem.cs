@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Container/Astro/" + nameof(StarSystem))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/" + nameof(StarSystem))]
     public class StarSystem : DatasourceRoot
     {
 		[BeginFoldout("Orbit")]

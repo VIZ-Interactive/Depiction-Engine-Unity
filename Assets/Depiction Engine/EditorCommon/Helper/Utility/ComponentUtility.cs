@@ -13,8 +13,8 @@ namespace DepictionEngine.Editor
         {
             if (UnityEditor.PrefabUtility.GetPrefabAssetType(component) == UnityEditor.PrefabAssetType.NotAPrefab)
             {
-                if (component is MonoBehaviourBase)
-                    (component as MonoBehaviourBase).InhibitEnableDisableAll();
+                if (component is MonoBehaviourDisposable)
+                    (component as MonoBehaviourDisposable).InhibitEnableDisableAll();
 
                 //Avoid 'Don't try to find visible index of Invisible component' error by making the transform visible
                 HideFlags lasHideFlags = component.hideFlags;
@@ -29,8 +29,8 @@ namespace DepictionEngine.Editor
                 component.hideFlags = lasHideFlags;
                 component.transform.hideFlags = lasTransformHideFlags;
 
-                if (component is MonoBehaviourBase)
-                    (component as MonoBehaviourBase).UninhibitEnableDisableAll();
+                if (component is MonoBehaviourDisposable)
+                    (component as MonoBehaviourDisposable).UninhibitEnableDisableAll();
             }
         }
     }

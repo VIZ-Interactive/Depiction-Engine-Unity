@@ -107,7 +107,7 @@ namespace DepictionEngine
 
             if (raycast)
             {
-                transform.IterateOverRootChildren<MeshRendererVisual>((childMeshRendererVisual) =>
+                transform.IterateOverChildren<MeshRendererVisual>((childMeshRendererVisual) =>
                 {
                     if (childMeshRendererVisual != Disposable.NULL)
                     {

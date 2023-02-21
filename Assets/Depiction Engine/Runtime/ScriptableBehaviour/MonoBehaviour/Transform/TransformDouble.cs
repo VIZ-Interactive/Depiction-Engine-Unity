@@ -10,7 +10,7 @@ namespace DepictionEngine
     /// <summary>
     /// 64 bit double version of the Transform.
     /// </summary>
-    [AddComponentMenu(SceneManager.NAMESPACE + "/Transform")]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Transform")]
     public class TransformDouble : TransformBase
     {
         //Maximum origin distance Unity supports before printing out 'Object is too large or too far away from the origin.' Errors
@@ -1109,9 +1109,9 @@ namespace DepictionEngine
             return value;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyState)
+        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {
-            if (base.OnDisposed(destroyState))
+            if (base.OnDisposed(destroyContext))
             {
                 RemoveOriginShiftDirty(GetInstanceID());
 

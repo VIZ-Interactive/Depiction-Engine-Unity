@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/" + nameof(AstroObject))]
     public class AstroObject : DatasourceRoot
     {
         /// <summary>

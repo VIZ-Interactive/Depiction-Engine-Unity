@@ -2,6 +2,9 @@
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// Can be safely passed as a parameter to <see cref="Processor"/> for asynchronous processing.
+    /// </summary>
     public interface IMultithreadSafe
     {
         bool locked { get; set; }
