@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    public class Grid2DMeshObjectBase : MeshObjectBase, IGridIndexObject
+    public class Grid2DMeshObjectBase : MeshObjectBase, IGrid2DIndex
     {
         private const string TEXTURE_INDEX_DIMENSIONS_POSTFIX = "IndexDimensions";
 

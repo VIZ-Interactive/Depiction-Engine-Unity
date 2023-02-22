@@ -19,7 +19,7 @@ namespace DepictionEngine
         /// <b><see cref="SurfaceUp"/>:</b> <br/>
         /// The planet up vector will be used as a normal irregardless of the terrain elevation <br/><br/>
         /// <b><see cref="Auto"/>:</b> <br/>
-        /// The normals will be automatically calculated by Unity's <see cref="Mesh.RecalculateNormals"/> function
+        /// The normals will be automatically calculated by Unity's <see cref="DepictionEngine.Mesh.RecalculateNormals"/> function
         /// </summary>
         public enum NormalsType
         {

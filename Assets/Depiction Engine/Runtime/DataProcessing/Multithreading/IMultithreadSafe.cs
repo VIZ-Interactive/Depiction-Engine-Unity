@@ -3,7 +3,7 @@
 namespace DepictionEngine
 {
     /// <summary>
-    /// Can be safely passed as a parameter to <see cref="Processor"/> for asynchronous processing.
+    /// Can be safely passed as a parameter to <see cref="DepictionEngine.Processor"/> for asynchronous processing.
     /// </summary>
     public interface IMultithreadSafe
     {

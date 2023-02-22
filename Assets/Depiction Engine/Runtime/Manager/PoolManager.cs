@@ -163,7 +163,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The interval (in seconds) at which we call the <see cref="ResizePools"/> function.
+        /// The interval (in seconds) at which we call the <see cref="DepictionEngine.PoolManager.ResizePools"/> function.
         /// </summary>
         [Json]
         public float resizeInterval
@@ -181,7 +181,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// How many instances should we destroy at a time during each <see cref="ResizePools"/> calls.
+        /// How many instances should we destroy at a time during each <see cref="DepictionEngine.PoolManager.ResizePools"/> calls.
         /// </summary>
         [Json]
         public int destroyCount

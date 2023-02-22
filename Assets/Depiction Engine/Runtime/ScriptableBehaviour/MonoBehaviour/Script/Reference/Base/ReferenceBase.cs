@@ -247,7 +247,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// An id key used to retreive the data from an <see cref="IdLoader"/>.
+        /// An id key used to retreive the data from an <see cref="DepictionEngine.IdLoader"/>.
         /// </summary>
         public SerializableGuid dataId
         {
@@ -262,7 +262,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A 2D grid index key used to retreive the data from an <see cref="Index2DLoaderBase"/>.
+        /// A 2D grid index key used to retreive the data from an <see cref="DepictionEngine.Index2DLoaderBase"/>.
         /// </summary>
         public Grid2DIndex dataIndex2D
         {

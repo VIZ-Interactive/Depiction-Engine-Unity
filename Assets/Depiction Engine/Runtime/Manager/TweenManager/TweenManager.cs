@@ -8,7 +8,7 @@ using UnityEngine;
 namespace DepictionEngine
 {
     /// <summary>
-    /// Singleton managing <see cref="Tween"/>'s.
+    /// Singleton managing <see cref="DepictionEngine.Tween"/>'s.
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(TweenManager))]
     [RequireComponent(typeof(SceneManager))]

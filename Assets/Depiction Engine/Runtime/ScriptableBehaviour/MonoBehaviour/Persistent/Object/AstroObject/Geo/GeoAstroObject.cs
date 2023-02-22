@@ -498,7 +498,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The amount of time required for the <see cref="GeoAstroObject"/> to transition from spherical to flat.
+        /// The amount of time required for the <see cref="DepictionEngine.GeoAstroObject"/> to transition from spherical to flat.
         /// </summary>
         [Json]
         public float sphericalDuration

@@ -99,7 +99,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Another variation of the <see cref="baseAddress"/> used randomly for load balancing. Set to blank to ignore.
+        /// Another variation of the <see cref="DepictionEngine.RestDatasource.baseAddress"/> used randomly for load balancing. Set to blank to ignore.
         /// </summary>
         [Json]
         public string baseAddress2
@@ -115,7 +115,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Another variation of the <see cref="baseAddress"/> used randomly for load balancing. Set to blank to ignore.
+        /// Another variation of the <see cref="DepictionEngine.RestDatasource.baseAddress"/> used randomly for load balancing. Set to blank to ignore.
         /// </summary>
         [Json]
         public string baseAddress3
@@ -131,7 +131,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Another variation of the <see cref="baseAddress"/> used randomly for load balancing. Set to blank to ignore.
+        /// Another variation of the <see cref="DepictionEngine.RestDatasource.baseAddress"/> used randomly for load balancing. Set to blank to ignore.
         /// </summary>
         [Json]
         public string baseAddress4

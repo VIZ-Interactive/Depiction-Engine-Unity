@@ -197,15 +197,15 @@ namespace DepictionEngine
 
         private void PersistenceDataPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
-            if (property is IGridIndexObject)
+            if (property is IGrid2DIndex)
             {
-                bool dimensionsChanged = name == nameof(IGridIndexObject.grid2DDimensions);
-                bool indexChanged = name == nameof(IGridIndexObject.grid2DIndex);
+                bool dimensionsChanged = name == nameof(IGrid2DIndex.grid2DDimensions);
+                bool indexChanged = name == nameof(IGrid2DIndex.grid2DIndex);
                 if (dimensionsChanged || indexChanged)
                 {
                     if (GetPersistenceData(property.id, out PersistenceData persistenceData))
                     {
-                        IGridIndexObject gridIndexObject = property as IGridIndexObject;
+                        IGrid2DIndex gridIndexObject = property as IGrid2DIndex;
 
                         IterateOverLoaders((loader) =>
                         {

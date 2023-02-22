@@ -237,7 +237,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Is the property name <see cref="position"/>, <see cref="rotation"/> or <see cref="lossyScale"/>.
+        /// Is the property name <see cref="DepictionEngine.TransformDouble.position"/>, <see cref="DepictionEngine.TransformDouble.rotation"/> or <see cref="DepictionEngine.TransformDouble.lossyScale"/>.
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
@@ -336,7 +336,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Geo Coordinate of the transform relative to the parent <see cref="GeoAstroObject"/>, in Json format.
+        /// Geo Coordinate of the transform relative to the parent <see cref="DepictionEngine.GeoAstroObject"/>, in Json format.
         /// </summary>
         public JSONNode geoCoordinateJson
         {
@@ -354,7 +354,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Geo Coordinate of the transform relative to the parent <see cref="GeoAstroObject"/>.
+        /// Geo Coordinate of the transform relative to the parent <see cref="DepictionEngine.GeoAstroObject"/>.
         /// </summary>
         [Json(conditionalMethod: nameof(IncludeGeoCoordinate), propertyName: nameof(geoCoordinateJson))]
         public GeoCoordinate3Double geoCoordinate

@@ -188,7 +188,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// This is the last chance to clear or dipose any remaining references. It will be called immediately after the <see cref="OnDispose"/> unless a <see cref="DisposeManager.DestroyDelay"/> was passed to the <see cref="DisposeManager.Dispose"/> call.
+        /// This is the last chance to clear or dipose any remaining references. It will be called immediately after the <see cref="DepictionEngine.IDisposable.OnDispose"/> unless a <see cref="DepictionEngine.DisposeManager.DestroyDelay"/> was passed to the <see cref="DepictionEngine.DisposeManager.Dispose"/> call.
         /// </summary>
         /// <param name="destroyContext">The context under which the object is being destroyed.</param>
         /// <returns>False if the object was already disposed otherwise True.</returns>

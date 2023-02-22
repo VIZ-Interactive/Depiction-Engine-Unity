@@ -8,7 +8,7 @@ using UnityEngine;
 namespace DepictionEngine
 {
     /// <summary>
-    /// Singleton managing <see cref="DatasourceBase"/>'s.
+    /// Singleton managing <see cref="DepictionEngine.DatasourceBase"/>'s.
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(DatasourceManager))]
     [RequireComponent(typeof(SceneManager))]

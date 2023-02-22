@@ -5,9 +5,9 @@ using System;
 namespace DepictionEngine
 {
     /// <summary>
-    /// Implements 
+    /// Implements mesh access for <see cref="DepictionEngine.AssetBase"/> who act as wrapper for mesh instance(s).
     /// </summary>
-    internal interface IUnityMeshAsset
+    public interface IUnityMeshAsset
     {
         void IterateOverUnityMesh(Action<UnityEngine.Mesh> callback);
     }

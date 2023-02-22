@@ -388,7 +388,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="LoadScope"/>(s) currently loading.
+        /// Returns the number of <see cref="DepictionEngine.LoadScope"/>(s) currently loading.
         /// </summary>
         public int loadingCount
         {
@@ -400,7 +400,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="LoadScope"/>(s) currently loaded.
+        /// Returns the number of <see cref="DepictionEngine.LoadScope"/>(s) currently loaded.
         /// </summary>
         public int loadedCount
         {
@@ -538,7 +538,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The endpoint that will be used by the <see cref="RestDatasource"/> when loading.
+        /// The endpoint that will be used by the <see cref="DepictionEngine.RestDatasource"/> when loading.
         /// </summary>
         [Json]
         public string loadEndpoint
@@ -565,7 +565,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The amount of time (in seconds) to wait for a '<see cref="RestDatasource"/> loading operation' before canceling, if it applies. 
+        /// The amount of time (in seconds) to wait for a '<see cref="DepictionEngine.RestDatasource"/> loading operation' before canceling, if it applies. 
         /// </summary>
         [Json]
         public int timeout
@@ -575,7 +575,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Values to send as web request headers during a '<see cref="RestDatasource"/> loading operation', if it applies. 
+        /// Values to send as web request headers during a '<see cref="DepictionEngine.RestDatasource"/> loading operation', if it applies. 
         /// </summary>
         [Json]
         public List<string> headers
@@ -615,7 +615,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The interval (in seconds) at which we call the <see cref="ReloadAll"/> function. Automatically calling <see cref="ReloadAll"/> can be useful to keep objects in synch with a datasource. Set to zero to deactivate.
+        /// The interval (in seconds) at which we call the <see cref="DepictionEngine.LoaderBase.ReloadAll"/> function. Automatically calling <see cref="DepictionEngine.LoaderBase.ReloadAll"/> can be useful to keep objects in synch with a datasource. Set to zero to deactivate.
         /// </summary>
         [Json]
         public float autoReloadInterval
@@ -631,7 +631,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled the <see cref="LoadScope"/>'s will be automatically disposed when their last reference is removed.
+        /// When enabled the <see cref="DepictionEngine.LoadScope"/>'s will be automatically disposed when their last reference is removed.
         /// </summary>
         [Json]
         public bool autoDisposeUnused
@@ -695,7 +695,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Create missing <see cref="LoadScope"/>(s) and dispose those that are no longer required.
+        /// Create missing <see cref="DepictionEngine.LoadScope"/>(s) and dispose those that are no longer required.
         /// </summary>
         /// <returns></returns>
         public List<LoadScope> LoadAll()
@@ -704,7 +704,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Create missing <see cref="LoadScope"/>(s), reload existing ones and dispose those that are no longer required.
+        /// Create missing <see cref="DepictionEngine.LoadScope"/>(s), reload existing ones and dispose those that are no longer required.
         /// </summary>
         /// <returns></returns>
         public List<LoadScope> ReloadAll()
@@ -713,7 +713,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns true if a loadScope is found for the specified <see cref="IPersistent"/>.
+        /// Returns true if a loadScope is found for the specified <see cref="DepictionEngine.IPersistent"/>.
         /// </summary>
         /// <param name="loadScope"></param>
         /// <param name="persistent"></param>
@@ -890,7 +890,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Dispose all the <see cref="LoadScope"/>(s).
+        /// Dispose all the <see cref="DepictionEngine.LoadScope"/>(s).
         /// </summary>
         public void DisposeLoadScopes()
         {
@@ -903,7 +903,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Dispose the <see cref="LoadScope"/>.
+        /// Dispose the <see cref="DepictionEngine.LoadScope"/>.
         /// </summary>
         protected void DisposeLoadScope(LoadScope loadScope)
         {

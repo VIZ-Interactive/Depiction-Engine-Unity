@@ -179,7 +179,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A value to insert between <see cref="repeatCount"/> repetitions. 
+        /// A value to insert between <see cref="DepictionEngine.Label.repeatCount"/> repetitions. 
         /// </summary>
         [Json]
 #if UNITY_EDITOR
@@ -295,7 +295,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A list of 3D points that the label should follow between the transform position and the <see cref="endCoordinate"/>.
+        /// A list of 3D points that the label should follow between the transform position and the <see cref="DepictionEngine.Label.endCoordinate"/>.
         /// </summary>
         [Json]
         public List<Vector3Double> textCurve

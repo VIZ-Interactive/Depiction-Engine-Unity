@@ -57,7 +57,7 @@ namespace DepictionEngine
     }
 
     /// <summary>
-    /// A list of <see cref="GeoCoordinateGeometry"/>.
+    /// A list of <see cref="DepictionEngine.GeoCoordinateGeometry"/>.
     /// </summary>
     [Serializable]
     public struct GeoCoordinateGeometries

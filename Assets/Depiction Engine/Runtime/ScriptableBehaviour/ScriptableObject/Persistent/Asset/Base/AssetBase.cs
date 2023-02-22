@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    public class AssetBase : PersistentScriptableObject, IGridIndexObject
+    public class AssetBase : PersistentScriptableObject, IGrid2DIndex
     {
         /// <summary>
         /// Different types of indexes.<br/><br/>

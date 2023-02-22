@@ -122,7 +122,7 @@ namespace DepictionEngine
 
                                         JSONObject json = new JSONObject();
 
-                                        json[nameof(IGridIndexObject.grid2DDimensions)] = JsonUtility.ToJson(grid2DDimensions);
+                                        json[nameof(IGrid2DIndex.grid2DDimensions)] = JsonUtility.ToJson(grid2DDimensions);
                                         json[nameof(Object.transform)] = jsonTransform;
 
                                         List<PropertyModifier> propertyModifiers = null;

@@ -4,7 +4,9 @@ using System;
 
 namespace DepictionEngine
 {
-
+    /// <summary>
+    /// Implements 2D Grid members compatible with <see cref="DepictionEngine.Grid2DLoaderBase"/>.
+    /// </summary>
     public interface IGrid2D : IGrid
     {
         GeoCoordinate2Double geoCenter { get; }

@@ -149,10 +149,10 @@ namespace DepictionEngine
 		private DateTime? _fromTime;
 		private DateTime? _toTime;
 		private DateTimeOffset? _startTime;
-		/// <summary>
-		/// Start animating the current <see cref="StarSystem"/> time for the duration specified.
-		/// </summary>
-		public void StartTimeAnimation()
+        /// <summary>
+        /// Start animating the current <see cref="DepictionEngine.StarSystem"/> time for the duration specified.
+        /// </summary>
+        public void StartTimeAnimation()
 		{
 			StopAllAnimations();
 			StarSystem starSystem = objectBase as StarSystem;

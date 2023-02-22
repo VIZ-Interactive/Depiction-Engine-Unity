@@ -612,7 +612,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The interval (in seconds) at which we call the <see cref="UpdateEnvironment"/> function. Set to zero to deactivate.
+        /// The interval (in seconds) at which we call the <see cref="DepictionEngine.RenderingManager.UpdateEnvironment"/> function. Set to zero to deactivate.
         /// </summary>
         [Json]
         public float environmentUpdateInterval
@@ -657,7 +657,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The outline color of <see cref="Label"/>'s.
+        /// The outline color of <see cref="DepictionEngine.Label"/>'s.
         /// </summary>
         [Json]
         public Color labelOutlineColor
@@ -667,7 +667,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The outline width of <see cref="Label"/>'s.
+        /// The outline width of <see cref="DepictionEngine.Label"/>'s.
         /// </summary>
         [Json]
         public float labelOutlineWidth
@@ -677,7 +677,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The UniversalRendererData to be controlled by the <see cref="RenderingManager"/> for features such as Ambient Occlusions.
+        /// The UniversalRendererData to be controlled by the <see cref="DepictionEngine.RenderingManager"/> for features such as Ambient Occlusions.
         /// </summary>
         public UniversalRendererData rendererData
         {
@@ -692,7 +692,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The Volume to be controlled by the <see cref="RenderingManager"/> for effects such as Depth Of Field or others.
+        /// The Volume to be controlled by the <see cref="DepictionEngine.RenderingManager"/> for effects such as Depth Of Field or others.
         /// </summary>
         public Volume postProcessVolume
         {
@@ -707,7 +707,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A color used by objects who support highlight such as <see cref="FeatureGridMeshObjectBase"/> where individual features will be highlighted on mouse over.
+        /// A color used by objects who support highlight such as <see cref="DepictionEngine.FeatureGridMeshObjectBase"/> where individual features will be highlighted on mouse over.
         /// </summary>
         [Json]
         public Color highlightColor
@@ -727,7 +727,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A min and max clamping values for the <see cref="dynamicFocusDistance"/> calculations. 
+        /// A min and max clamping values for the <see cref="DepictionEngine.RenderingManager.dynamicFocusDistance"/> calculations. 
         /// </summary>
         [Json]
         public Vector2 minMaxFocusDistance

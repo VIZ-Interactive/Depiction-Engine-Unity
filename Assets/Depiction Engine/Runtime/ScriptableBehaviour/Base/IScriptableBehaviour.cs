@@ -34,7 +34,7 @@ namespace DepictionEngine
         bool IsUserChangeContext();
 
         /// <summary>
-        /// When isUserChange is true, any changes made to properties, with an <see cref="JsonAttribute"/>, within the callback will be marked as 'Out of Synch' with their datasource provided they are associated with one.
+        /// When isUserChange is true, any changes made to properties, with an <see cref="DepictionEngine.JsonAttribute"/>, within the callback will be marked as 'Out of Synch' with their datasource provided they are associated with one.
         /// </summary>
         /// <param name="callback"></param>
         /// <param name="isUserChange"></param>

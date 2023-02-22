@@ -301,7 +301,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A min and max clamping values used on the <see cref="distance"/>. 
+        /// A min and max clamping values used on the <see cref="DepictionEngine.TargetControllerBase.distance"/>. 
         /// </summary>
         [Json]
         public Vector2Double minMaxDistance

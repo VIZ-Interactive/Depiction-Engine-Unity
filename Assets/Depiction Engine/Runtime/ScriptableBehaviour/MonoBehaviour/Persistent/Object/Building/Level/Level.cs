@@ -224,7 +224,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled the level will trigger <see cref="LoaderBase.LoadAll"/> on open and <see cref="LoaderBase.DisposeLoadScopes"/> on close.
+        /// When enabled the level will trigger <see cref="DepictionEngine.LoaderBase.LoadAll"/> on open and <see cref="DepictionEngine.LoaderBase.DisposeLoadScopes"/> on close.
         /// </summary>
         [Json]
         public bool manageLoaders

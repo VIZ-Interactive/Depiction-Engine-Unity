@@ -122,7 +122,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Get the context in which the <see cref="Initialize"/> was triggered.
+        /// Get the context in which the <see cref="DepictionEngine.IDisposable.Initialize"/> was triggered.
         /// </summary>
         /// <returns></returns>
         private InstanceManager.InitializationContext GetInitializingState()
@@ -157,7 +157,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Add the object to the <see cref="InstanceManager"/> if possible.
+        /// Add the object to the <see cref="DepictionEngine.InstanceManager"/> if possible.
         /// </summary>
         /// <returns>True if the instance was added successfully.</returns>
         protected virtual bool AddToInstanceManager()
@@ -260,7 +260,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Disables internal calls to <see cref="ExplicitOnEnable"/> and <see cref="ExplicitOnDisable"/>.
+        /// Disables internal calls to <see cref="DepictionEngine.IScriptableBehaviour.ExplicitOnEnable"/> and <see cref="DepictionEngine.IScriptableBehaviour.ExplicitOnDisable"/>.
         /// </summary>
         public void InhibitEnableDisableAll()
         {
@@ -270,7 +270,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Enables internal calls to <see cref="ExplicitOnEnable"/> and <see cref="ExplicitOnDisable"/>.
+        /// Enables internal calls to <see cref="DepictionEngine.IScriptableBehaviour.ExplicitOnEnable"/> and <see cref="DepictionEngine.IScriptableBehaviour.ExplicitOnDisable"/>.
         /// </summary>
         public void UninhibitEnableDisableAll()
         {
@@ -280,7 +280,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Called after <see cref="Initialize"/> and when the component enable state changed.
+        /// Called after <see cref="DepictionEngine.Disposable.Initialize"/> and when the component enable state changed.
         /// </summary>
         public virtual void ExplicitOnEnable()
         {
@@ -716,7 +716,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// This is the last chance to clear or dipose any remaining references. It will be called immediately after the <see cref="OnDispose"/> unless a <see cref="DisposeManager.DestroyDelay"/> was passed to the <see cref="DisposeManager.Dispose"/> call.
+        /// This is the last chance to clear or dipose any remaining references. It will be called immediately after the <see cref="DepictionEngine.IDisposable.OnDispose"/> unless a <see cref="DepictionEngine.DisposeManager.DestroyDelay"/> was passed to the <see cref="DepictionEngine.DisposeManager.Dispose"/> call.
         /// </summary>
         /// <param name="destroyContext">The context under which the object is being destroyed.</param>
         /// <returns>False if the object was already disposed otherwise True.</returns>

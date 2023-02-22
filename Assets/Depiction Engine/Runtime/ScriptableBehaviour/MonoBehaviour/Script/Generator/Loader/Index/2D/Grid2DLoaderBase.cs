@@ -54,7 +54,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A value (in seconds) by which we will multiply the offset between the center index and the <see cref="LoadScope"/> index to cause objects farther away from the center to be loaded later then objects nearby. Set to zero to deactivate and load everything at the same time.
+        /// A value (in seconds) by which we will multiply the offset between the center index and the <see cref="DepictionEngine.LoadScope"/> index to cause objects farther away from the center to be loaded later then objects nearby. Set to zero to deactivate and load everything at the same time.
         /// </summary>
         [Json]
         public float loadDelay
@@ -64,7 +64,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The grid zoom value. Ignored by <see cref="CameraGrid2DLoader"/> or <see cref="FillGrid2DLoader"/>.
+        /// The grid zoom value. Ignored by <see cref="DepictionEngine.CameraGrid2DLoader"/> or <see cref="DepictionEngine.FillGrid2DLoader"/>.
         /// </summary>
         [Json]
         public int zoom

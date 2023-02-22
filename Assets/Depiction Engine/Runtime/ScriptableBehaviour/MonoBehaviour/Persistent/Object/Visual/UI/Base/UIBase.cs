@@ -78,7 +78,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled <see cref="UIVisual"/>'s will have collider component.
+        /// When enabled <see cref="DepictionEngine.UIVisual"/>'s will have collider component.
         /// </summary>
         [Json]
         public bool useCollider

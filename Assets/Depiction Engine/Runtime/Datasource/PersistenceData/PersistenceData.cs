@@ -8,7 +8,7 @@ using UnityEngine;
 namespace DepictionEngine
 {
     /// <summary>
-    /// Class containing information about an <see cref="IPersistent"/> object's relationship with a <see cref="DatasourceBase"/>.
+    /// Class containing information about an <see cref="DepictionEngine.IPersistent"/> object's relationship with a <see cref="DepictionEngine.DatasourceBase"/>.
     /// </summary>
     public class PersistenceData : ScriptableObjectDisposable
     {

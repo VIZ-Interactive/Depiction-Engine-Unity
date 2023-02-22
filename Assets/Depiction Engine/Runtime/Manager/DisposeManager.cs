@@ -56,7 +56,7 @@ namespace DepictionEngine
         public static LinkedList<Tuple<object, DestroyContext>> DelayedDisposeLate;
 
         /// <summary>
-        /// Will dispose of an object by sending it to the pool if pooling is enabled, it implements <see cref="IDisposable"/> and no <see cref="DestroyContext"/> is specified. Otherwise it will be destroyed.
+        /// Will dispose of an object by sending it to the pool if pooling is enabled, it implements <see cref="DepictionEngine.IDisposable"/> and no <see cref="DepictionEngine.DisposeManager.DestroyContext"/> is specified. Otherwise it will be destroyed.
         /// </summary>
         /// <param name="obj">The object to dispose.</param>
         /// <param name="destroyContext">The context under which the object is being destroyed.</param>

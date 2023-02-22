@@ -121,7 +121,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled <see cref="UpdateAllGameObjects"/> will be called automatically when the object is created or when the assetBundle changes.
+        /// When enabled <see cref="DepictionEngine.InstantiatorVisualObject.UpdateAllGameObjects"/> will be called automatically when the object is created or when the assetBundle changes.
         /// </summary>
         [Json]
         public bool autoInstantiate

@@ -6,7 +6,7 @@ using System.Reflection;
 namespace DepictionEngine
 {
     /// <summary>
-    /// Implements persistence features mostly required by the <see cref="DatasourceBase"/>.
+    /// Implements persistence features mostly required by the <see cref="DepictionEngine.DatasourceBase"/>.
     /// </summary>
     public interface IPersistent : IJson
     {

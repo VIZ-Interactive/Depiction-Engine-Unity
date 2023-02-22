@@ -12,13 +12,13 @@ namespace DepictionEngine
     public static class InstanceUtility
     {
         /// <summary>
-        /// Create a new <see cref="Camera"/> equipped with a <see cref="CameraController"/> and target.
+        /// Create a new <see cref="DepictionEngine.Camera"/> equipped with a <see cref="DepictionEngine.CameraController"/> and target.
         /// </summary>
-        /// <param name="parent">The parent <see cref="Transform"/> under which we will create the <see cref="Camera"/>.</param>
+        /// <param name="parent">The parent <see cref="UnityEngine.Transform"/> under which we will create the <see cref="DepictionEngine.Camera"/>.</param>
         /// <param name="initializationState"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
-        /// <returns>The newly created <see cref="Camera"/> instance.</returns>
+        /// <returns>The newly created <see cref="DepictionEngine.Camera"/> instance.</returns>
         public static Camera CreateTargetCamera(Transform parent, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false)
         {
             Camera camera = null;
@@ -47,16 +47,16 @@ namespace DepictionEngine
         /// <summary>
         /// Create a new planet.
         /// </summary>
-        /// <param name="parentId">The id of the parent <see cref="Transform"/> under which we will create the <see cref="Planet"/>.</param>
+        /// <param name="parentId">The id of the parent <see cref="UnityEngine.Transform"/> under which we will create the <see cref="DepictionEngine.Planet"/>.</param>
         /// <param name="name">The name of the planet.</param>
         /// <param name="spherical">Display as a sphere (true) or flat (false)?</param>
         /// <param name="size">The size (radius in spherical mode or width in flat mode), in world units.</param>
-        /// <param name="mass">Used to determine the amount of gravitational force to apply when <see cref="Object.useGravity"/> is enabled.</param>
+        /// <param name="mass">Used to determine the amount of gravitational force to apply when <see cref="DepictionEngine.Object.useGravity"/> is enabled.</param>
         /// <param name="json">Optional initialization values.</param>
         /// <param name="initializingState"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
-        /// <returns>The newly created <see cref="Planet"/> instance.</returns>
+        /// <returns>The newly created <see cref="DepictionEngine.Planet"/> instance.</returns>
         public static Planet CreatePlanet(
             SerializableGuid parentId,
             string name,
@@ -79,16 +79,16 @@ namespace DepictionEngine
         /// <summary>
         /// Create a new planet.
         /// </summary>
-        /// <param name="parent">The parent <see cref="Transform"/> under which we will create the <see cref="Planet"/>.</param>
+        /// <param name="parent">The parent <see cref="UnityEngine.Transform"/> under which we will create the <see cref="DepictionEngine.Planet"/>.</param>
         /// <param name="name">The name of the planet.</param>
         /// <param name="spherical">Display as a sphere (true) or flat (false)?</param>
         /// <param name="size">The size (radius in spherical mode or width in flat mode), in world units.</param>
-        /// <param name="mass">Used to determine the amount of gravitational force to apply when <see cref="Object.useGravity"/> is enabled.</param>
+        /// <param name="mass">Used to determine the amount of gravitational force to apply when <see cref="DepictionEngine.Object.useGravity"/> is enabled.</param>
         /// <param name="json">Optional initialization values.</param>
         /// <param name="initializingState"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
-        /// <returns>The newly created <see cref="Planet"/> instance.</returns>
+        /// <returns>The newly created <see cref="DepictionEngine.Planet"/> instance.</returns>
         public static Planet CreatePlanet(
         Transform parent,
         string name,
@@ -124,26 +124,26 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Create a new <see cref="DatasourceRoot"/>.
+        /// Create a new <see cref="DepictionEngine.DatasourceRoot"/>.
         /// </summary>
-        /// <param name="planetId">The id of the parent <see cref="Planet"/> under which we will create the <see cref="DatasourceRoot"/>.</param>
+        /// <param name="planetId">The id of the parent <see cref="DepictionEngine.Planet"/> under which we will create the <see cref="DepictionEngine.DatasourceRoot"/>.</param>
         /// <param name="name">The name of the layer.</param>
         /// <param name="json">Optional initialization values.</param>
         /// <param name="initializingState">.</param>
-        /// <returns>The newly created <see cref="DatasourceRoot"/> instance.</returns>
+        /// <returns>The newly created <see cref="DepictionEngine.DatasourceRoot"/> instance.</returns>
         public static DatasourceRoot CreateLayer(SerializableGuid planetId, string name, JSONNode json = null, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
         {
             return CreateLayer(InstanceManager.Instance().GetAstroObject(planetId) as Planet, name, json, initializingState);
         }
 
         /// <summary>
-        /// Create a new <see cref="DatasourceRoot"/>.
+        /// Create a new <see cref="DepictionEngine.DatasourceRoot"/>.
         /// </summary>
-        /// <param name="planet">The parent <see cref="Planet"/> under which we will create the <see cref="DatasourceRoot"/>.</param>
+        /// <param name="planet">The parent <see cref="DepictionEngine.Planet"/> under which we will create the <see cref="DepictionEngine.DatasourceRoot"/>.</param>
         /// <param name="name">The name of the layer.</param>
         /// <param name="json">Optional initialization values.</param>
         /// <param name="initializingState">.</param>
-        /// <returns>The newly created <see cref="DatasourceRoot"/> instance.</returns>
+        /// <returns>The newly created <see cref="DepictionEngine.DatasourceRoot"/> instance.</returns>
         public static DatasourceRoot CreateLayer(Planet planet, string name, JSONNode json = null, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
         {
             if (planet == Disposable.NULL)
@@ -158,11 +158,11 @@ namespace DepictionEngine
 
         private static List<Type> _requiredComponentTypes;
         /// <summary>
-        /// Creates a <see cref="JSONArray"/> containing the initialization values for a <see cref="LoaderBase"/>, <see cref="FallbackValues"/> and coresponding <see cref="AssetReference"/> that can be passed on to the json parameter of <see cref="InstanceManager.Initialize"/> or some other instancing derivative methods.
+        /// Creates a <see cref="DepictionEngine.JSONArray"/> containing the initialization values for a <see cref="DepictionEngine.LoaderBase"/>, <see cref="DepictionEngine.FallbackValues"/> and coresponding <see cref="DepictionEngine.AssetReference"/> that can be passed on to the json parameter of <see cref="DepictionEngine.InstanceManager.Initialize"/> or some other instancing derivative methods.
         /// </summary>
-        /// <param name="loaderType">The <see cref="LoaderBase"/> type.</param>
-        /// <param name="fallbackType">The <see cref="FallbackValues"/> type.</param>
-        /// <returns>The newly created <see cref="JSONArray"/> containing the components initialization values.</returns>
+        /// <param name="loaderType">The <see cref="DepictionEngine.LoaderBase"/> type.</param>
+        /// <param name="fallbackType">The <see cref="DepictionEngine.FallbackValues"/> type.</param>
+        /// <returns>The newly created <see cref="DepictionEngine.JSONArray"/> containing the components initialization values.</returns>
         public static JSONArray GetLoaderJson(Type loaderType, Type fallbackType)
         {
             JSONArray components = new JSONArray();
@@ -210,11 +210,11 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Creates a <see cref="JSONObject"/> of specified type so it can be passed on to the json parameter of <see cref="InstanceManager.Initialize"/> or some other instancing derivative methods.
+        /// Creates a <see cref="DepictionEngine.JSONObject"/> of specified type so it can be passed on to the json parameter of <see cref="DepictionEngine.InstanceManager.Initialize"/> or some other instancing derivative methods.
         /// </summary>
         /// <param name="type">The component type.</param>
         /// <param name="id">An Optional component id. If ommited a new guid will be generated.</param>
-        /// <returns>The newly create <see cref="JSONObject"/> containing the component initialization values.</returns>
+        /// <returns>The newly create <see cref="DepictionEngine.JSONObject"/> containing the component initialization values.</returns>
         public static JSONObject GetComponentJson(Type type, SerializableGuid id = default(SerializableGuid))
         {
             JSONObject json = new JSONObject();
@@ -226,9 +226,9 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Merge the componentsJson into the objectInitializationJson so it can be passed on to the json parameter of <see cref="InstanceManager.Initialize"/> or some other instancing derivative methods.
+        /// Merge the componentsJson into the objectInitializationJson so it can be passed on to the json parameter of <see cref="DepictionEngine.InstanceManager.Initialize"/> or some other instancing derivative methods.
         /// </summary>
-        /// <param name="componentsJson">A <see cref="JSONObject"/> or <see cref="JSONArray"/> composed of component(s) initialization values.</param>
+        /// <param name="componentsJson">A <see cref="DepictionEngine.JSONObject"/> or <see cref="DepictionEngine.JSONArray"/> composed of component(s) initialization values.</param>
         /// <param name="objectInitializationJson">The json to merge the component(s) values into.</param>
         /// <returns>The objectInitialization json.</returns>
         public static JSONNode MergeComponentsToObjectInitializationJson(JSONNode componentsJson, JSONObject objectInitializationJson)

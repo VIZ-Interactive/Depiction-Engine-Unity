@@ -82,7 +82,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Should this object be added to the <see cref="InstanceManager"/>.
+        /// Should this object be added to the <see cref="DepictionEngine.InstanceManager"/>.
         /// </summary>
         /// <returns>True of the object should be added.</returns>
         protected virtual bool AddInstanceToManager()

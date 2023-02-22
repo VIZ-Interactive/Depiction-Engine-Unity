@@ -123,7 +123,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Should this object be added to the <see cref="InstanceManager"/>.
+        /// Should this object be added to the <see cref="DepictionEngine.InstanceManager"/>.
         /// </summary>
         /// <returns>True of the object should be added.</returns>
         protected virtual bool AddInstanceToManager()
@@ -726,7 +726,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PreHierarchicalUpdateChild(PropertyMonoBehaviour child) { child.PreHierarchicalUpdate(); }
         /// <summary>
-        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the UnityEngine Update. It is called before the <see cref="HierarchicalUpdate"/>.
+        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the UnityEngine Update. It is called before the <see cref="DepictionEngine.PropertyMonoBehaviour.HierarchicalUpdate"/>.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool PreHierarchicalUpdate()
@@ -756,7 +756,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void HierarchicalUpdateChild(PropertyMonoBehaviour child) { child.HierarchicalUpdate(); }
         /// <summary>
-        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the UnityEngine Update. It is called after the <see cref="PreHierarchicalUpdate"/> and before the <see cref="PostHierarchicalUpdate"/>.
+        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the UnityEngine Update. It is called after the <see cref="DepictionEngine.PropertyMonoBehaviour.PreHierarchicalUpdate"/> and before the <see cref="DepictionEngine.PropertyMonoBehaviour.PostHierarchicalUpdate"/>.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool HierarchicalUpdate()
@@ -772,7 +772,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PostHierarchicalUpdateChild(PropertyMonoBehaviour child) { child.PostHierarchicalUpdate(); }
         /// <summary>
-        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the UnityEngine Update. It is called after the <see cref="HierarchicalUpdate"/>.
+        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the UnityEngine Update. It is called after the <see cref="DepictionEngine.PropertyMonoBehaviour.HierarchicalUpdate"/>.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool PostHierarchicalUpdate()

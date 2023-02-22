@@ -38,7 +38,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled the <see cref="TargetController"/> will always position the object in a way so that it does not penetrate a mesh. 
+        /// When enabled the <see cref="DepictionEngine.TargetController"/> will always position the object in a way so that it does not penetrate a mesh. 
         /// </summary>
         [Json]
 #if UNITY_EDITOR

@@ -133,11 +133,11 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Populate a list with the <see cref="RequireComponent"/> && optionally <see cref="RequireScriptAttribute"/> attribute types found in a specific Class.
+        /// Populate a list with the <see cref="UnityEngine.RequireComponent"/> && optionally <see cref="DepictionEngine.RequireScriptAttribute"/> attribute types found in a specific Class.
         /// </summary>
         /// <param name="types">The reference to the list that will be populated. The list will be cleared first.</param>
         /// <param name="classType">The class type in which attributes should be found.</param>
-        /// <param name="includeRequireScriptAttribute">true to include <see cref="RequireScriptAttribute"/>.</param>
+        /// <param name="includeRequireScriptAttribute">true to include <see cref="DepictionEngine.RequireScriptAttribute"/>.</param>
         /// <returns></returns>
         public static void GetRequiredComponentTypes(ref List<Type> types, Type classType, bool includeRequireScriptAttribute = true)
         {

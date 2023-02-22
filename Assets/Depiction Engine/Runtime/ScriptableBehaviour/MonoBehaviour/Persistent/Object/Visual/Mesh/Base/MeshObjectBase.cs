@@ -113,7 +113,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled the <see cref="MeshRendererVisual"/>'s will have collider component.
+        /// When enabled the <see cref="DepictionEngine.MeshRendererVisual"/>'s will have collider component.
         /// </summary>
         [Json]
         public bool useCollider
@@ -588,7 +588,7 @@ namespace DepictionEngine
     }
 
     /// <summary>
-    /// A list of Mesh parameters used by <see cref="MeshProcessingFunctions"/>.
+    /// A list of Mesh parameters used by <see cref="DepictionEngine.MeshProcessingFunctions"/>.
     /// </summary>
     public class MeshesParameters : ProcessorParameters
     {
@@ -625,7 +625,7 @@ namespace DepictionEngine
     }
 
     /// <summary>
-    /// Mesh parameters used by <see cref="MeshProcessingFunctions"/>.
+    /// Mesh parameters used by <see cref="DepictionEngine.MeshProcessingFunctions"/>.
     /// </summary>
     public struct MeshParameters
     {

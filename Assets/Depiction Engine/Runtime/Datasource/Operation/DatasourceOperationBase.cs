@@ -7,7 +7,7 @@ using UnityEngine;
 namespace DepictionEngine
 {
     /// <summary>
-    /// Operations to be executed by the <see cref="Datasource"/>.
+    /// Operations to be executed by the <see cref="DepictionEngine.Datasource"/>.
     /// </summary>
     public class DatasourceOperationBase : ScriptableObjectDisposable
     {

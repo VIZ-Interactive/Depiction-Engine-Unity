@@ -8,7 +8,7 @@ using UnityEngine;
 namespace DepictionEngine
 {
     /// <summary>
-    /// Singleton managing <see cref="Camera"/>'s.
+    /// Singleton managing <see cref="DepictionEngine.Camera"/>'s.
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(CameraManager))]
     [RequireComponent(typeof(SceneManager))]

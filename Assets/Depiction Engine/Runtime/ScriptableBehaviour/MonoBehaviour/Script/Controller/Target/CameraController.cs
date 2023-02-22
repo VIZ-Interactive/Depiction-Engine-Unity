@@ -168,7 +168,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled the near and far clipping plane of the <see cref="Camera"/> will be change automaticaly based on calculations involving the distance between the camera and the target. 
+        /// When enabled the near and far clipping plane of the <see cref="DepictionEngine.Camera"/> will be change automaticaly based on calculations involving the distance between the camera and the target. 
         /// </summary>
         [Json]
         public bool dynamicClippingPlanes
@@ -178,7 +178,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A factor by which the distance between the <see cref="Camera"/> and target distance is multiplied for the <see cref="dynamicClippingPlanes"/> calculations. 
+        /// A factor by which the distance between the <see cref="DepictionEngine.Camera"/> and target distance is multiplied for the <see cref="DepictionEngine.CameraController.dynamicClippingPlanes"/> calculations. 
         /// </summary>
         [Json]
         public float clippingDistanceMultiplier
@@ -188,7 +188,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A min and max clamping values for the <see cref="dynamicClippingPlanes"/> calculations. 
+        /// A min and max clamping values for the <see cref="DepictionEngine.CameraController.dynamicClippingPlanes"/> calculations. 
         /// </summary>
         [Json]
         public Vector2 minMaxFarClippingDistance
@@ -244,7 +244,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The distance from the target that the <see cref="Camera"/> should reach by the end of the animation.
+        /// The distance from the target that the <see cref="DepictionEngine.Camera"/> should reach by the end of the animation.
         /// </summary>
         [Json]
         public double toDistance

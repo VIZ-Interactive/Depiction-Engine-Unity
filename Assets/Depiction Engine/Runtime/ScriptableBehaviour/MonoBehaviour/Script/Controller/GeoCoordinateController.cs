@@ -171,7 +171,7 @@ namespace DepictionEngine
 		}
 
         /// <summary>
-        /// When enabled the <see cref="GeoCoordinateController"/> will always position the object in a way so that it does not penetrate the ground. 
+        /// When enabled the <see cref="DepictionEngine.GeoCoordinateController"/> will always position the object in a way so that it does not penetrate the ground. 
         /// </summary>
         [Json]
 #if UNITY_EDITOR
@@ -195,7 +195,7 @@ namespace DepictionEngine
 		}
 
         /// <summary>
-        /// When enabled the <see cref="GeoCoordinateController"/> will always position the object above the ground. 
+        /// When enabled the <see cref="DepictionEngine.GeoCoordinateController"/> will always position the object above the ground. 
         /// </summary>
         [Json]
 #if UNITY_EDITOR
@@ -219,7 +219,7 @@ namespace DepictionEngine
 		}
 
         /// <summary>
-        /// This value represents the distance from the ground at which the object will be positioned. Requires <see cref="autoSnapToGround"/> enabled to take effect.
+        /// This value represents the distance from the ground at which the object will be positioned. Requires <see cref="DepictionEngine.GeoCoordinateController.autoSnapToGround"/> enabled to take effect.
         /// </summary>
         [Json]
 #if UNITY_EDITOR
@@ -239,7 +239,7 @@ namespace DepictionEngine
 		}
 
         /// <summary>
-        /// When enabled the <see cref="GeoCoordinateController"/> will always rotate the object so that it is pointing upwards. 
+        /// When enabled the <see cref="DepictionEngine.GeoCoordinateController"/> will always rotate the object so that it is pointing upwards. 
         /// </summary>
         [Json]
 #if UNITY_EDITOR
@@ -258,10 +258,10 @@ namespace DepictionEngine
 			}
 		}
 
-		/// <summary>
-		/// An offset vector represented in degrees which is added to the surface up vector used by the <see cref="autoAlignToSurface"/>.
-		/// </summary>
-		[Json]
+        /// <summary>
+        /// An offset vector represented in degrees which is added to the surface up vector used by the <see cref="DepictionEngine.GeoCoordinateController.autoAlignToSurface"/>.
+        /// </summary>
+        [Json]
 #if UNITY_EDITOR
 		[RecordAdditionalObjects(nameof(GetTransformAdditionalRecordObjects))]
 #endif

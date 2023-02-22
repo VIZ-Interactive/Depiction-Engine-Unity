@@ -44,7 +44,7 @@ namespace DepictionEngine
 		}
 
         /// <summary>
-        /// Limits the object altitude to ground level + offset. (Requires <see cref="autoSnapToGround"/> enabled).
+        /// Limits the object altitude to ground level + offset. (Requires <see cref="DepictionEngine.XYZController.autoSnapToGround"/> enabled).
         /// </summary>
         [Json]
 #if UNITY_EDITOR

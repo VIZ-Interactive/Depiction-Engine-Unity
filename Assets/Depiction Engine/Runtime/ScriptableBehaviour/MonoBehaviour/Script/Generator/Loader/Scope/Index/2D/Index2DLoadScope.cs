@@ -155,9 +155,9 @@ namespace DepictionEngine
 
         public override bool IsInScope(IPersistent persistent)
         {
-            if (persistent is IGridIndexObject)
+            if (persistent is IGrid2DIndex)
             {
-                IGridIndexObject grid2DObject = persistent as IGridIndexObject;
+                IGrid2DIndex grid2DObject = persistent as IGrid2DIndex;
                 return grid2DObject.IsGridIndexValid() && grid2DObject.grid2DDimensions == scopeDimensions && grid2DObject.grid2DIndex == scopeIndex;
             }
             return false;

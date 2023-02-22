@@ -93,10 +93,10 @@ namespace DepictionEngine
 			set { orbitAroundAstroObjectId = value != Disposable.NULL ? value.id : SerializableGuid.Empty; }
 		}
 
-		/// <summary>
-		/// The id of the <see cref="AstroObject"/> whose position will act as the center of the star system.
-		/// </summary>
-		[Json]
+        /// <summary>
+        /// The id of the <see cref="DepictionEngine.AstroObject"/> whose position will act as the center of the star system.
+        /// </summary>
+        [Json]
 		public SerializableGuid orbitAroundAstroObjectId
 		{
 			get { return _orbitAroundAstroObjectId; }

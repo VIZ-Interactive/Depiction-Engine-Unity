@@ -714,7 +714,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled some <see cref="Processor"/>'s will perform their work on seperate threads.
+        /// When enabled some <see cref="DepictionEngine.Processor"/>'s will perform their work on seperate threads.
         /// </summary>
         [Json]
         public bool enableMultithreading

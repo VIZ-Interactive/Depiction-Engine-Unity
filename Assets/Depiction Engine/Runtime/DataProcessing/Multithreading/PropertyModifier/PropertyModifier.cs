@@ -5,7 +5,7 @@ using System;
 namespace DepictionEngine
 {
     /// <summary>
-    /// Used to modify the properties of a <see cref="IScriptableBehaviour"/> object.
+    /// Used to modify the properties of a <see cref="DepictionEngine.IScriptableBehaviour"/> object.
     /// </summary>
     [Serializable]
     public class PropertyModifier : Disposable

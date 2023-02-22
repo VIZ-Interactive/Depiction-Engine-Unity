@@ -947,7 +947,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled, the GameObject will automaticaly reacts to <see cref="AstroObject"/> gravitational pull based on <see cref="Object.mass"/> and <see cref="AstroObject.mass"/>.
+        /// When enabled, the GameObject will automaticaly reacts to <see cref="DepictionEngine.AstroObject"/> gravitational pull based on <see cref="DepictionEngine.Object.mass"/> and <see cref="DepictionEngine.AstroObject.mass"/>.
         /// </summary>
         [Json(conditionalMethod: nameof(IsPhysicsObject))]
         public bool useGravity
@@ -963,9 +963,9 @@ namespace DepictionEngine
                 });
             }
         }
-    
+
         /// <summary>
-        /// Used to determine the amount of gravitational force to apply when <see cref="Object.useGravity"/> is enabled. 
+        /// Used to determine the amount of gravitational force to apply when <see cref="DepictionEngine.Object.useGravity"/> is enabled. 
         /// </summary>
         [Json(conditionalMethod: nameof(IsPhysicsObject))]
         public double mass
@@ -1021,7 +1021,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled, the <see cref="GameObject"/> will not be displayed in the hierarchy.
+        /// When enabled, the <see cref="UnityEngine.GameObject"/> will not be displayed in the hierarchy.
         /// </summary>
         [Json]
         public virtual bool isHiddenInHierarchy
@@ -1040,7 +1040,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled, a new <see cref="AnimatorBase"/> will be created if none is present in the <see cref="IPersistent"/> returned from the datasource.
+        /// When enabled, a new <see cref="DepictionEngine.AnimatorBase"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createAnimatorIfMissing
@@ -1078,7 +1078,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled, a new <see cref="ControllerBase"/> will be created if none is present in the <see cref="IPersistent"/> returned from the datasource.
+        /// When enabled, a new <see cref="DepictionEngine.ControllerBase"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createControllerIfMissing
@@ -1116,7 +1116,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled, a new <see cref="GeneratorBase"/> will be created if none is present in the <see cref="IPersistent"/> returned from the datasource.
+        /// When enabled, a new <see cref="DepictionEngine.GeneratorBase"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createGeneratorIfMissing
@@ -1154,7 +1154,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled, a new <see cref="ReferenceBase"/> will be created if none is present in the <see cref="IPersistent"/> returned from the datasource.
+        /// When enabled, a new <see cref="DepictionEngine.ReferenceBase"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createReferenceIfMissing
@@ -1192,7 +1192,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled, a new <see cref="EffectBase"/> will be created if none is present in the <see cref="IPersistent"/> returned from the datasource.
+        /// When enabled, a new <see cref="DepictionEngine.EffectBase"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createEffectIfMissing
@@ -1230,7 +1230,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled, a new <see cref="FallbackValues"/> will be created if none is present in the <see cref="IPersistent"/> returned from the datasource.
+        /// When enabled, a new <see cref="DepictionEngine.FallbackValues"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createFallbackValuesIfMissing
@@ -1268,7 +1268,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled, a new <see cref="DatasourceBase"/> will be created if none is present in the <see cref="IPersistent"/> returned from the datasource.
+        /// When enabled, a new <see cref="DepictionEngine.DatasourceBase"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createDatasourceIfMissing
@@ -1306,7 +1306,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The <see cref="AnimatorBase"/> used by this object.
+        /// The <see cref="DepictionEngine.AnimatorBase"/> used by this object.
         /// </summary>
         [Json(propertyName: nameof(animatorJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public AnimatorBase animator
@@ -1316,7 +1316,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The <see cref="ControllerBase"/> used by this object.
+        /// The <see cref="DepictionEngine.ControllerBase"/> used by this object.
         /// </summary>
         [Json(propertyName: nameof(controllerJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public ControllerBase controller
@@ -1335,7 +1335,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A list of <see cref="GeneratorBase"/> used by this object.
+        /// A list of <see cref="DepictionEngine.GeneratorBase"/> used by this object.
         /// </summary>
         [Json(propertyName: nameof(generatorsJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<GeneratorBase> generators
@@ -1350,7 +1350,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A list of <see cref="ReferenceBase"/> used by this object.
+        /// A list of <see cref="DepictionEngine.ReferenceBase"/> used by this object.
         /// </summary>
         [Json(propertyName: nameof(referencesJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<ReferenceBase> references
@@ -1365,7 +1365,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A list of <see cref="EffectBase"/> used by this object.
+        /// A list of <see cref="DepictionEngine.EffectBase"/> used by this object.
         /// </summary>
         [Json(propertyName: nameof(effectsJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<EffectBase> effects
@@ -1380,7 +1380,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A list of <see cref="FallbackValues"/> used by this object.
+        /// A list of <see cref="DepictionEngine.FallbackValues"/> used by this object.
         /// </summary>
         [Json(propertyName: nameof(fallbackValuesJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<FallbackValues> fallbackValues
@@ -1395,7 +1395,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A list of <see cref="DatasourceBase"/> used by this object.
+        /// A list of <see cref="DepictionEngine.DatasourceBase"/> used by this object.
         /// </summary>
         [Json(propertyName: nameof(datasourcesJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<DatasourceBase> datasources

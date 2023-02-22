@@ -203,7 +203,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A row defined by a list of <see cref="Range"/>.
+        /// A row defined by a list of <see cref="DepictionEngine.Grid2D.Range"/>.
         /// </summary>
         protected class Row : List<Range>
         {

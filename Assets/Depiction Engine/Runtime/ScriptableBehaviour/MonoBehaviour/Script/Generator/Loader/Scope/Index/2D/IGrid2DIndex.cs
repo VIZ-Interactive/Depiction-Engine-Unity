@@ -2,7 +2,10 @@
 
 namespace DepictionEngine
 {
-    public interface IGridIndexObject
+    /// <summary>
+    /// Implements the members required to be within the scope of an <see cref="DepictionEngine.Index2DLoadScope"/> used by <see cref="DepictionEngine.Index2DLoaderBase"/>.
+    /// </summary>
+    public interface IGrid2DIndex
     {
         Vector2Int grid2DIndex { get; }
         Vector2Int grid2DDimensions { get; }

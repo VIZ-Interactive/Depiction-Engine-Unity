@@ -206,7 +206,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The interval (in seconds) at which we call the <see cref="Synchronize"/> function. Automatically calling <see cref="Synchronize"/> can be useful to keep objects in synch with a datasource. Set to zero to deactivate.
+        /// The interval (in seconds) at which we call the <see cref="DepictionEngine.IPersistent.Synchronize"/> function. Automatically calling <see cref="DepictionEngine.IPersistent.Synchronize"/> can be useful to keep objects in synch with a datasource. Set to zero to deactivate.
         /// </summary>
         [Json]
         public float autoSynchronizeInterval
@@ -252,7 +252,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled a new <see cref="IPersistent"/> will be created if none is present in the datasource.
+        /// When enabled a new <see cref="DepictionEngine.IPersistent"/> will be created if none is present in the datasource.
         /// </summary>
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createPersistentIfMissing
@@ -262,7 +262,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Whether or not the object contains data that is copyrighted. If true the object may not be persisted in a Scene or <see cref="Datasource"/>.
+        /// Whether or not the object contains data that is copyrighted. If true the object may not be persisted in a Scene or <see cref="DepictionEngine.Datasource"/>.
         /// </summary>
         [Json(get:false)]
         public bool containsCopyrightedMaterial

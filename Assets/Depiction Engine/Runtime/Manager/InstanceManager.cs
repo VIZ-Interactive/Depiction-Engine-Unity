@@ -143,7 +143,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="TransformDouble"/>.
+        /// Returns the number of <see cref="DepictionEngine.TransformDouble"/>.
         /// </summary>
         public int transformsCount { get { return transforms.Count; } }
         private TransformDictionary transforms
@@ -157,7 +157,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="PersistentMonoBehaviour"/>.
+        /// Returns the number of <see cref="DepictionEngine.PersistentMonoBehaviour"/>.
         /// </summary>
         public int persistentMonoBehavioursCount { get { return persistentMonoBehaviours.Count; } }
         private PersistentMonoBehaviourDictionary persistentMonoBehaviours
@@ -171,7 +171,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="PersistentScriptableObject"/>.
+        /// Returns the number of <see cref="DepictionEngine.PersistentScriptableObject"/>.
         /// </summary>
         public int persistentScriptableObjectsCount { get { return persistentScriptableObjects.Count; } }
         private PersistentScriptableObjectDictionary persistentScriptableObjects
@@ -185,7 +185,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="TerrainGridMeshObject"/>.
+        /// Returns the number of <see cref="DepictionEngine.TerrainGridMeshObject"/>.
         /// </summary>
         public int terrainGridMeshObjectsCount { get { return terrainGridMeshObjects.Count; } }
         private TerrainGridMeshObjectDictionary terrainGridMeshObjects
@@ -199,7 +199,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="AstroObject"/>.
+        /// Returns the number of <see cref="DepictionEngine.AstroObject"/>.
         /// </summary>
         public int astroObjectsCount { get { return astroObjects.Count; } }
         private AstroObjectDictionary astroObjects
@@ -213,7 +213,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="StarSystem"/>.
+        /// Returns the number of <see cref="DepictionEngine.StarSystem"/>.
         /// </summary>
         public int starSystemsCount { get { return starSystems.Count; } }
         private List<StarSystem> starSystems
@@ -227,7 +227,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="Star"/>.
+        /// Returns the number of <see cref="DepictionEngine.Star"/>.
         /// </summary>
         public int starsCount { get { return stars.Count; } }
         private List<Star> stars
@@ -241,7 +241,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="VisualObject"/>.
+        /// Returns the number of <see cref="DepictionEngine.VisualObject"/>.
         /// </summary>
         public int visualObjectsCount { get { return visualObjects.Count; } }
         private VisualObjectDictionary visualObjects
@@ -255,7 +255,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="AnimatorBase"/>.
+        /// Returns the number of <see cref="DepictionEngine.AnimatorBase"/>.
         /// </summary>
         public int animatorsCount { get { return animators.Count; } }
         private AnimatorDictionary animators
@@ -269,7 +269,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="ControllerBase"/>.
+        /// Returns the number of <see cref="DepictionEngine.ControllerBase"/>.
         /// </summary>
         public int controllersCount { get { return controllers.Count; } }
         private ControllerDictionary controllers
@@ -283,7 +283,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="GeneratorBase"/>.
+        /// Returns the number of <see cref="DepictionEngine.GeneratorBase"/>.
         /// </summary>
         public int generatorsCount { get { return generators.Count; } }
         private GeneratorDictionary generators
@@ -297,7 +297,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="ReferenceBase"/>.
+        /// Returns the number of <see cref="DepictionEngine.ReferenceBase"/>.
         /// </summary>
         public int referencesCount { get { return references.Count; } }
         private ReferenceDictionary references
@@ -311,7 +311,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="EffectBase"/>.
+        /// Returns the number of <see cref="DepictionEngine.EffectBase"/>.
         /// </summary>
         public int effectsCount { get { return effects.Count; } }
         private EffectDictionary effects
@@ -325,7 +325,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="FallbackValues"/>.
+        /// Returns the number of <see cref="DepictionEngine.FallbackValues"/>.
         /// </summary>
         public int fallbackValuesCount { get { return fallbackValues.Count; } }
         private FallbackValuesDictionary fallbackValues
@@ -339,7 +339,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="DatasourceBase"/>.
+        /// Returns the number of <see cref="DepictionEngine.DatasourceBase"/>.
         /// </summary>
         public int datasourcesCount { get { return datasources.Count; } }
         private DatasourceDictionary datasources
@@ -366,7 +366,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="Camera"/>.
+        /// Returns the number of <see cref="DepictionEngine.Camera"/>.
         /// </summary>
         public int camerasCount { get { return cameras.Count; } }
         private List<Camera> cameras
@@ -380,7 +380,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the number of <see cref="ManagerBase"/>.
+        /// Returns the number of <see cref="DepictionEngine.ManagerBase"/>.
         /// </summary>
         public int managersCount { get { return managers.Count; } }
         private ManagerDictionary managers
@@ -452,7 +452,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Returns the <see cref="Star"/> if one exists.
+        /// Returns the <see cref="DepictionEngine.Star"/> if one exists.
         /// </summary>
         /// <returns></returns>
         public Star GetStar()
@@ -1040,13 +1040,13 @@ namespace DepictionEngine
         /// Create an instance.
         /// </summary>
         /// <typeparam name="T">The type of instance to create.</typeparam>
-        /// <param name="parent">The parent <see cref="Transform"/> under which the instance should be created.</param>
+        /// <param name="parent">The parent <see cref="UnityEngine.Transform"/> under which the instance should be created.</param>
         /// <param name="json">Values to initialize the instance with.</param>
-        /// <param name="propertyModifiers">A list of <see cref="PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
+        /// <param name="propertyModifiers">A list of <see cref="DepictionEngine.PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
         /// <param name="initializingState"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
-        /// <param name="isFallbackValues">If true a <see cref="FallbackValues"/> will be created and the instance type will be passed to the <see cref="FallbackValues.SetFallbackJsonFromType"/> function.</param>
+        /// <param name="isFallbackValues">If true a <see cref="DepictionEngine.FallbackValues"/> will be created and the instance type will be passed to the <see cref="DepictionEngine.FallbackValues.SetFallbackJsonFromType"/> function.</param>
         /// <returns>The newly created instance.</returns>
         public T CreateInstance<T>(Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingState = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false) where T : IDisposable
         {
@@ -1057,13 +1057,13 @@ namespace DepictionEngine
         /// Create an instance.
         /// </summary>
         /// <param name="type">The type of instance to create.</param>
-        /// <param name="parent">The parent <see cref="Transform"/> under which the instance should be created.</param>
+        /// <param name="parent">The parent <see cref="UnityEngine.Transform"/> under which the instance should be created.</param>
         /// <param name="json">Values to initialize the instance with.</param>
-        /// <param name="propertyModifiers">A list of <see cref="PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
+        /// <param name="propertyModifiers">A list of <see cref="DepictionEngine.PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
         /// <param name="initializingState"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
-        /// <param name="isFallbackValues">If true a <see cref="FallbackValues"/> will be created and the instance type will be passed to the <see cref="FallbackValues.SetFallbackJsonFromType"/> function.</param>
+        /// <param name="isFallbackValues">If true a <see cref="DepictionEngine.FallbackValues"/> will be created and the instance type will be passed to the <see cref="DepictionEngine.FallbackValues.SetFallbackJsonFromType"/> function.</param>
         /// <returns>The newly created instance.</returns>
         public IDisposable CreateInstance(Type type, Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingState = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false)
         {
@@ -1229,8 +1229,8 @@ namespace DepictionEngine
         /// <param name="disposable">The object to initialize.</param>
         /// <param name="initializationState"></param>
         /// <param name="json">Values to initialize the instance with.</param>
-        /// <param name="propertyModifiers">A list of <see cref="PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
-        /// <param name="isFallbackValues">If true a <see cref="FallbackValues"/> will be created and the instance type will be passed to the <see cref="FallbackValues.SetFallbackJsonFromType"/> function.</param>
+        /// <param name="propertyModifiers">A list of <see cref="DepictionEngine.PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
+        /// <param name="isFallbackValues">If true a <see cref="DepictionEngine.FallbackValues"/> will be created and the instance type will be passed to the <see cref="DepictionEngine.FallbackValues.SetFallbackJsonFromType"/> function.</param>
         /// <returns>The object that was initialized.</returns>
         public static IDisposable Initialize(IDisposable disposable, InitializationContext initializationState = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {

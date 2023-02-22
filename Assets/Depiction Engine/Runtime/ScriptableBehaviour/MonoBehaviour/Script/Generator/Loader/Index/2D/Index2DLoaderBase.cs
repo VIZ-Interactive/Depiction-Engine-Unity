@@ -102,7 +102,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Which type of values to send as URL parameters to the <see cref="RestDatasource"/> to receive the proper tile.
+        /// Which type of values to send as URL parameters to the <see cref="DepictionEngine.RestDatasource"/> to receive the proper tile.
         /// </summary>
         [Json]
         public Index2DLoadScope.URLParametersType indexUrlParamType
@@ -204,9 +204,9 @@ namespace DepictionEngine
 
         public override bool GetLoadScope(out LoadScope loadScope, IPersistent persistent)
         {
-            if (persistent is IGridIndexObject)
+            if (persistent is IGrid2DIndex)
             {
-                IGridIndexObject gridIndexObject = persistent as IGridIndexObject;
+                IGrid2DIndex gridIndexObject = persistent as IGrid2DIndex;
                 if (GetLoadScope(out Index2DLoadScope index2DLoadScope, gridIndexObject.grid2DDimensions, gridIndexObject.grid2DIndex))
                 {
                     loadScope = index2DLoadScope;

@@ -14,7 +14,7 @@ namespace DepictionEngine
     public class CameraGrid2DLoader : Grid2DLoaderBase
     {
         /// <summary>
-        /// The different parts of a camera that the <see cref="CameraGrid2DLoader"/> can center itself on. <br/><br/>
+        /// The different parts of a camera that the <see cref="DepictionEngine.CameraGrid2DLoader"/> can center itself on. <br/><br/>
         /// <b><see cref="Target"/>:</b> <br/>
         /// Center on the camera target. <br/><br/>
         /// <b><see cref="Camera"/>:</b> <br/>
@@ -185,7 +185,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// MeshObject whose scope zoom value falls outside of this range will have their <see cref="MeshObjectBase.useCollider"/> value set to false.
+        /// MeshObject whose scope zoom value falls outside of this range will have their <see cref="DepictionEngine.MeshObjectBase.useCollider"/> value set to false.
         /// </summary>
         [Json]
         public Vector2Int collidersRange

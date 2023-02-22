@@ -230,7 +230,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled the child <see cref="Visual"/> will not be saved as part of the Scene.
+        /// When enabled the child <see cref="DepictionEngine.Visual"/> will not be saved as part of the Scene.
         /// </summary>
         [Json]
         public bool dontSaveVisualsToScene

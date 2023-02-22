@@ -3,7 +3,7 @@
 namespace DepictionEngine
 {
     /// <summary>
-    /// 
+    /// Implements basic Grid members.
     /// </summary>
     public interface IGrid
     {
