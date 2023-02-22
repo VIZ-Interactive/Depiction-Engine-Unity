@@ -5,6 +5,9 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// Astronomical object such as planet, star, asteroid, black holes etc.
+    /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/" + nameof(AstroObject))]
     public class AstroObject : DatasourceRoot
     {

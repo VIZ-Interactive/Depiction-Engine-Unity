@@ -423,15 +423,15 @@ namespace DepictionEngine
 
         private void RemoveMeshDelegate(Mesh mesh)
         {
-            mesh.DisposingEvent -= MeshDisposingHandler;
+            mesh.DisposeEvent -= MeshDisposeHandler;
         }
 
         private void AddMeshDelegate(Mesh mesh)
         {
-            mesh.DisposingEvent += MeshDisposingHandler;
+            mesh.DisposeEvent += MeshDisposeHandler;
         }
 
-        private void MeshDisposingHandler(IDisposable disposable)
+        private void MeshDisposeHandler(IDisposable disposable)
         {
 
         }
@@ -1444,7 +1444,7 @@ namespace DepictionEngine
                         {
                             ComputeBuffer layerCustomEffectComputeBuffer = layersCustomEffectComputeBuffer[visualObject.layer];
                             material.SetBuffer("_CustomEffectsBuffer", layerCustomEffectComputeBuffer);
-                            material.SetInteger("_CustomEffectsBufferDimensions", layerCustomEffectComputeBuffer.count);
+                            material.SetInteger("_CustomEffectsBufferDimensions", layerCustomEffectComputeBuffer != null ? layerCustomEffectComputeBuffer.count : 0);
 
                             material.EnableKeyword("ENABLE_COMPUTE_BUFFER");
                         }

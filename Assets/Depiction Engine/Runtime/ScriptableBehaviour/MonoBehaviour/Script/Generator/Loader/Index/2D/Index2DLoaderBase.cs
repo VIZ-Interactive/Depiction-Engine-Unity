@@ -96,7 +96,7 @@ namespace DepictionEngine
             {
                 SetValue(nameof(minMaxZoom), value, ref _minMaxZoom, (newValue, oldValue) =>
                 {
-                    ForceAutoLoad();
+                    QueueAutoUpdate();
                 });
             }
         }
@@ -152,7 +152,7 @@ namespace DepictionEngine
 
                 SetValue(nameof(xyTilesRatio), value, ref _xyTilesRatio, (newValue, oldValue) =>
                 {
-                    ForceAutoLoad();
+                    QueueAutoUpdate();
                 });
             }
         }

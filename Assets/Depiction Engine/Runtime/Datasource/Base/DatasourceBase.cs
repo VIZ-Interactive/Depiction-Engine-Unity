@@ -256,9 +256,9 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Push scene objects values to the datasource.
+        /// Add all the <see cref="DepictionEngine.IPersistent"/> found in the datasource to the save operation queue.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The number of <see cref="DepictionEngine.IPersistent"/> succesfully added to the queue.</returns>
         public int SaveAll()
         {
             int saving = 0;
@@ -275,8 +275,9 @@ namespace DepictionEngine
 
         private Dictionary<Guid, Datasource.PersistenceOperationData> _savePersistenceOperationDatas;
         /// <summary>
-        /// Push scene objects values to the datasource.
+        /// Add the the <see cref="DepictionEngine.IPersistent"/> to the save operation queue.
         /// </summary>
+        /// <returns>True if the <see cref="DepictionEngine.IPersistent"/> was succesfully added to the queue otherwise False.</returns>
         public bool Save(IPersistent persistent)
         {
             if (datasource.SupportsOperationType(Datasource.OperationType.Save))
@@ -313,9 +314,9 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Pull the values from the datasource and use them to update the scene objects.
+        /// Add all the <see cref="DepictionEngine.IPersistent"/> found in the datasource to the synchronize operation queue.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The number of <see cref="DepictionEngine.IPersistent"/> succesfully added to the queue.</returns>
         public int SynchronizeAll()
         {
             int synchronizing = 0;
@@ -332,8 +333,9 @@ namespace DepictionEngine
 
         private Dictionary<Guid, Datasource.PersistenceOperationData> _synchronizePersistenceOperationDatas;
         /// <summary>
-        /// Pull the values from the datasource and use them to update the objects.
+        /// Add the the <see cref="DepictionEngine.IPersistent"/> to the synchronize operation queue.
         /// </summary>
+        /// <returns>True if the <see cref="DepictionEngine.IPersistent"/> was succesfully added to the queue otherwise False.</returns>
         public bool Synchronize(IPersistent persistent)
         {
             if (datasource.SupportsOperationType(Datasource.OperationType.Synchronize))
@@ -357,9 +359,9 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Delete all the scene objects from the datasource (The local objects will not be deleted).
+        /// Add all the <see cref="DepictionEngine.IPersistent"/> found in the datasource to the delete operation queue.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The number of <see cref="DepictionEngine.IPersistent"/> succesfully added to the queue.</returns>
         public int DeleteAll()
         {
             int deleting = 0;
@@ -376,9 +378,9 @@ namespace DepictionEngine
 
         private Dictionary<Guid, Datasource.PersistenceOperationData> _deletePersistenceOperationDatas;
         /// <summary>
-        /// Delete all the objects from the datasource (The local objects will not be deleted).
+        /// Add the the <see cref="DepictionEngine.IPersistent"/> to the delete operation queue.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if the <see cref="DepictionEngine.IPersistent"/> was succesfully added to the queue otherwise False.</returns>
         public bool Delete(IPersistent persistent)
         {
             if (datasource.SupportsOperationType(Datasource.OperationType.Delete))
@@ -415,11 +417,11 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Load data from the datasource.
+        /// Execute a load operation based off of the information found in the <see cref="DepictionEngine.LoadScope"/>.
         /// </summary>
         /// <param name="operationResult"></param>
         /// <param name="loadScope"></param>
-        /// <returns></returns>
+        /// <returns>A <see cref="DepictionEngine.DatasourceOperationBase"/> containing the synch or async result of the operation.</returns>
         public DatasourceOperationBase Load(Action<List<IPersistent>> operationResult, LoadScope loadScope)
         {
             DatasourceOperationBase datasourceOperation = CreateLoadDatasourceOperation(loadScope);

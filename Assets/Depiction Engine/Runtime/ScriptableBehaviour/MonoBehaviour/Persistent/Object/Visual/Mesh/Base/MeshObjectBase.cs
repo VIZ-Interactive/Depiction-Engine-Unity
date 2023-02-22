@@ -172,6 +172,9 @@ namespace DepictionEngine
                 mesh.dontSaveToScene = dontSaveToScene || dontSaveVisualsToScene;
         }
 
+        /// <summary>
+        /// Dispatched after the <see cref="DepictionEngine.MeshObjectBase.meshDataProcessor"/> as completed modifying the <see cref="DepictionEngine.Mesh"/> that will be displayed by the child <see cref="DepictionEngine.MeshRendererVisual"/>.
+        /// </summary>
         public Action ProcessingCompletedEvent
         {
             get { return _processingCompletedEvent; }

@@ -9,6 +9,9 @@ using UnityEngine.Rendering;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// Astronomical object that can be represented with a surface, atmosphere(optional) or need to use a geographic coordinate system.
+    /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/" + nameof(GeoAstroObject))]
     public class GeoAstroObject : AstroObject
     {
@@ -49,7 +52,13 @@ namespace DepictionEngine
 
         private Grid2DIndexTerrainGridMeshObjectDictionary[] _grid2DIndexTerrainGridMeshObjects;
 
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.Grid2DIndexTerrainGridMeshObjects"/> is added at a specific zoom level and index in the <see cref="GeoAstroObject"/> grid.
+        /// </summary>
         public Action<Grid2DIndexTerrainGridMeshObjects, Vector2Int, Vector2Int> TerrainGridMeshObjectAddedEvent;
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.Grid2DIndexTerrainGridMeshObjects"/> is Removed from a specific zoom level and index in the <see cref="GeoAstroObject"/> grid.
+        /// </summary>
         public Action<Grid2DIndexTerrainGridMeshObjects, Vector2Int, Vector2Int> TerrainGridMeshObjectRemovedEvent;
 
 #if UNITY_EDITOR
@@ -234,18 +243,18 @@ namespace DepictionEngine
         private void RemoveChildTerrainGridMeshObjectDelegates(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject)
         {
             grid2DIndexTerrainGridMeshObject.TerrainGridMeshObjectPropertyAssignedEvent -= ChildTerrainGridMeshObjectPropertyAssigned;
-            grid2DIndexTerrainGridMeshObject.DisposingEvent -= Grid2DIndexTerrainGridMeshObjectDisposing;
+            grid2DIndexTerrainGridMeshObject.DisposeEvent -= Grid2DIndexTerrainGridMeshObjectDisposeHandler;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddChildTerrainGridMeshObjectDelegates(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject)
         {
             grid2DIndexTerrainGridMeshObject.TerrainGridMeshObjectPropertyAssignedEvent += ChildTerrainGridMeshObjectPropertyAssigned;
-            grid2DIndexTerrainGridMeshObject.DisposingEvent += Grid2DIndexTerrainGridMeshObjectDisposing;
+            grid2DIndexTerrainGridMeshObject.DisposeEvent += Grid2DIndexTerrainGridMeshObjectDisposeHandler;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Grid2DIndexTerrainGridMeshObjectDisposing(IDisposable disposable)
+        private void Grid2DIndexTerrainGridMeshObjectDisposeHandler(IDisposable disposable)
         {
             Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject = disposable as Grid2DIndexTerrainGridMeshObjects;
 
@@ -820,6 +829,9 @@ namespace DepictionEngine
         }
     }
 
+    /// <summary>
+    /// Class containing all the <see cref="DepictionEngine.TerrainGridMeshObject"/> found for a specific grid dimension and index.
+    /// </summary>
     [Serializable]
     public class Grid2DIndexTerrainGridMeshObjects : Disposable
     {
@@ -828,12 +840,27 @@ namespace DepictionEngine
 
         private List<TerrainGridMeshObject> _terrainGridMeshObjects;
 
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.PropertyMonoBehaviour.PropertyAssignedEvent"/> is detected in any of the <see cref="DepictionEngine.TerrainGridMeshObject"/>.
+        /// </summary>
         public Action<Grid2DIndexTerrainGridMeshObjects, string, object, object> TerrainGridMeshObjectPropertyAssignedEvent;
 
+        /// <summary>
+        /// Dispatched when a child is added to any of the <see cref="DepictionEngine.TerrainGridMeshObject"/>.
+        /// </summary>
         public Action<Object, PropertyMonoBehaviour> TerrainGridMeshObjectChildAddedEvent;
+        /// <summary>
+        /// Dispatched when a child is removed from any of the <see cref="DepictionEngine.TerrainGridMeshObject"/>.
+        /// </summary>
         public Action<Object, PropertyMonoBehaviour> TerrainGridMeshObjectChildRemovedEvent;
 
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.TerrainGridMeshObject"/> is added.
+        /// </summary>
         public Action<TerrainGridMeshObject> TerrainGridMeshObjectAddedEvent;
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.TerrainGridMeshObject"/> is removed.
+        /// </summary>
         public Action<TerrainGridMeshObject> TerrainGridMeshObjectRemovedEvent;
 
         public void Init(Vector2Int grid2DDimensions, Vector2Int grid2DIndex)
@@ -928,7 +955,7 @@ namespace DepictionEngine
             terrainGridMeshObject.PropertyAssignedEvent += TerrainGridMeshObjectPropertyAssignedHandler;
             terrainGridMeshObject.ChildAddedEvent += TerrainGridMeshObjectChildAddedHandler;
             terrainGridMeshObject.ChildRemovedEvent += TerrainGridMeshObjectChildRemovedHandler;
-            terrainGridMeshObject.DisposingEvent += TerrainGridMeshObjectDisposingHandler;
+            terrainGridMeshObject.DisposeEvent += TerrainGridMeshObjectDisposeHandler;
         }
 
         private void RemoveTerrainGridMeshObject(TerrainGridMeshObject terrainGridMeshObject)
@@ -936,7 +963,7 @@ namespace DepictionEngine
             terrainGridMeshObject.PropertyAssignedEvent -= TerrainGridMeshObjectPropertyAssignedHandler;
             terrainGridMeshObject.ChildAddedEvent -= TerrainGridMeshObjectChildAddedHandler;
             terrainGridMeshObject.ChildRemovedEvent -= TerrainGridMeshObjectChildRemovedHandler;
-            terrainGridMeshObject.DisposingEvent -= TerrainGridMeshObjectDisposingHandler;
+            terrainGridMeshObject.DisposeEvent -= TerrainGridMeshObjectDisposeHandler;
         }
 
         protected void TerrainGridMeshObjectPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
@@ -957,7 +984,7 @@ namespace DepictionEngine
                 TerrainGridMeshObjectChildRemovedEvent(objectBase, child);
         }
 
-        protected void TerrainGridMeshObjectDisposingHandler(IDisposable disposable)
+        protected void TerrainGridMeshObjectDisposeHandler(IDisposable disposable)
         {
             Remove(disposable as TerrainGridMeshObject);
         }

@@ -30,11 +30,29 @@ namespace DepictionEngine
         private bool _isMouseDown;
         private Tween _mouseClickTween;
 
+        /// <summary>
+        /// Dispatched every update. This only works when in play mode and a main <see cref="DepictionEngine.Camera"/> is present in the scene. 
+        /// </summary>
         public static Action<RaycastHitDouble> OnMouseMoveEvent;
+        /// <summary>
+        /// Dispatched once when a mouse enters a <see cref="DepictionEngine.MeshRendererVisual"/>. This only works  when in play mode and a main <see cref="DepictionEngine.Camera"/> is present in the scene. 
+        /// </summary>
         public static Action<RaycastHitDouble> OnMouseEnterEvent;
+        /// <summary>
+        /// Dispatched once when a mouse exits a <see cref="DepictionEngine.MeshRendererVisual"/>. This only works  when in play mode and a main <see cref="DepictionEngine.Camera"/> is present in the scene. 
+        /// </summary>
         public static Action<RaycastHitDouble> OnMouseExitEvent;
+        /// <summary>
+        /// Dispatched once when the left mouse button is pressed or at least one touch input is detected. This only works when in play mode and a main <see cref="DepictionEngine.Camera"/> is present in the scene. 
+        /// </summary>
         public static Action<RaycastHitDouble> OnMouseDownEvent;
+        /// <summary>
+        /// Dispatched once when the left mouse button is released or no touch inputs are detected. This only works when in play mode and a main <see cref="DepictionEngine.Camera"/> is present in the scene. 
+        /// </summary>
         public static Action<RaycastHitDouble> OnMouseUpEvent;
+        /// <summary>
+        /// Dispatched once if an <see cref="DepictionEngine.InputManager.OnMouseUpEvent"/> is detected within less then 0.15 second after a <see cref="DepictionEngine.InputManager.OnMouseDownEvent"/> has been dispatched. This only works when in play mode and a main <see cref="DepictionEngine.Camera"/> is present in the scene. 
+        /// </summary>
         public static Action<RaycastHitDouble> OnMouseClickedEvent;
 
         private static InputManager _instance;

@@ -21,6 +21,9 @@ namespace DepictionEngine
 #endif
         private Datasource _sceneDatasource;
 
+        /// <summary>
+        /// Dispatched after any of the <see cref="DepictionEngine.LoaderBase"/> found in the scene have their <see cref="DepictionEngine.LoaderBase.datasource"/> field value changed.
+        /// </summary>
         public static Action<LoaderBase> DatasourceLoadersChangedEvent;
 
 #if UNITY_EDITOR

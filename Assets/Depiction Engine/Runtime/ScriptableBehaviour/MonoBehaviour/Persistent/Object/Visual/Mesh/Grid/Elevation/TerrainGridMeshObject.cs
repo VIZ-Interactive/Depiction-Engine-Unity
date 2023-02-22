@@ -842,12 +842,14 @@ namespace DepictionEngine
 
             private void TerrainGridMeshObjectChildAddedHandler(Object objectBase, PropertyMonoBehaviour child)
             {
-                _changed = true;
+                if (child is MeshRendererVisual)
+                    _changed = true;
             }
 
             private void TerrainGridMeshObjectChildRemovedHandler(Object objectBase, PropertyMonoBehaviour child)
             {
-                _changed = true;
+                if (child is MeshRendererVisual)
+                    _changed = true;
             }
 
             private void RemoveParentGeoAstroObjectDelegate(GeoAstroObject parentGeoAstroObject)

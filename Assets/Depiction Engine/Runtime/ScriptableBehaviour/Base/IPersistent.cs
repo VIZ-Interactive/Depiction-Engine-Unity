@@ -16,9 +16,39 @@ namespace DepictionEngine
 
         bool createPersistentIfMissing { get; }
 
-        Action<IJson, PropertyInfo> UserPropertyAssignedEvent { get; set; }
+        /// <summary>
+        /// Dispatched as a signal to any <see cref="DepictionEngine.DatasourceBase"/> containing this <see cref="DepictionEngine.IPersistent"/> to let them know that they need to add it to their save operation queue.
+        /// </summary>
         Action<IPersistent, Action> PersistenceSaveOperationEvent { get; set; }
+        /// <summary>
+        /// Dispatched as a signal to any <see cref="DepictionEngine.DatasourceBase"/> containing this <see cref="DepictionEngine.IPersistent"/> to let them know that they need to add it to their synchronize operation queue.
+        /// </summary>
         Action<IPersistent, Action> PersistenceSynchronizeOperationEvent { get; set; }
+        /// <summary>
+        /// Dispatched as a signal to any <see cref="DepictionEngine.DatasourceBase"/> containing this <see cref="DepictionEngine.IPersistent"/> to let them know that they need to add it to their delete operation queue.
+        /// </summary>
         Action<IPersistent, Action> PersistenceDeleteOperationEvent { get; set; }
+        /// <summary>
+        /// Dispatched after a property assign action was detected while <see cref="DepictionEngine.IScriptableBehaviour.IsUserChangeContext"/> was true.
+        /// </summary>
+        Action<IJson, PropertyInfo> UserPropertyAssignedEvent { get; set; }
+
+        /// <summary>
+        /// Trigger the dispatch of a <see cref="DepictionEngine.IPersistent.PersistenceSaveOperationEvent"/>.
+        /// </summary>
+        /// <returns>The number of <see cref="DepictionEngine.IPersistent"/> successfully added to the queue.</returns>
+        int Save();
+
+        /// <summary>
+        /// Trigger the dispatch of a <see cref="DepictionEngine.IPersistent.PersistenceSynchronizeOperationEvent"/>.
+        /// </summary>
+        /// <returns>The number of <see cref="DepictionEngine.IPersistent"/> successfully added to the queue.</returns>
+        int Synchronize();
+
+        /// <summary>
+        /// Trigger the dispatch of a <see cref="DepictionEngine.IPersistent.PersistenceDeleteOperationEvent"/>.
+        /// </summary>
+        /// <returns>The number of <see cref="DepictionEngine.IPersistent"/> successfully added to the queue.</returns>
+        int Delete();
     }
 }

@@ -44,7 +44,13 @@ namespace DepictionEngine
         [SerializeField]
         private bool _supportsDelete;
 
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.PersistenceData"/> instance is added to the <see cref="DepictionEngine.Datasource"/>.
+        /// </summary>
         public Action<PersistenceData> PersistenceDataAddedEvent;
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.PersistenceData"/> instance is removed from the <see cref="DepictionEngine.Datasource"/>.
+        /// </summary>
         public Action<PersistenceData> PersistenceDataRemovedEvent;
 
         public override void Recycle()
@@ -151,13 +157,13 @@ namespace DepictionEngine
         private void RemoveLoaderDelegates(LoaderBase loader)
         {
             if (!Object.ReferenceEquals(loader, null))
-                loader.LoadScopeDisposingEvent -= LoadScopeDisposingHandler;
+                loader.LoadScopeDisposeEvent -= LoadScopeDisposingHandler;
         }
 
         private void AddLoaderDelegates(LoaderBase loader)
         {
             if (!IsDisposing() && loader != Disposable.NULL)
-                loader.LoadScopeDisposingEvent += LoadScopeDisposingHandler;
+                loader.LoadScopeDisposeEvent += LoadScopeDisposingHandler;
         }
 
         private void LoadScopeDisposingHandler(IDisposable disposable)

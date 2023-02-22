@@ -44,7 +44,13 @@ namespace DepictionEngine
         [HideInInspector]
         public bool managedByObject;
 
+        /// <summary>
+        /// Dispatched when the <see cref="DepictionEngine.ReferenceBase.data"/> changed.
+        /// </summary>
         public Action<ReferenceBase, PersistentScriptableObject, PersistentScriptableObject> DataChangedEvent;
+        /// <summary>
+        /// Dispatched when a property assignment is detected in the <see cref="DepictionEngine.ReferenceBase.loader"/>. 
+        /// </summary>
         public Action<ReferenceBase, IProperty, string, object, object> LoaderPropertyAssignedChangedEvent;
 
 #if UNITY_EDITOR
@@ -167,7 +173,7 @@ namespace DepictionEngine
         {
             if (!Object.ReferenceEquals(loadScope, null))
             {
-                loadScope.DisposingEvent -= LoadScopeDisposingHandler;
+                loadScope.DisposeEvent -= LoadScopeDisposeHandler;
                 loadScope.LoadingStateChangedEvent -= LoadScopeChangedHandler;
                 loadScope.PersistentAddedEvent -= LoadScopeChangedHandler;
             }
@@ -177,13 +183,13 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && loadScope != Disposable.NULL)
             {
-                loadScope.DisposingEvent += LoadScopeDisposingHandler;
+                loadScope.DisposeEvent += LoadScopeDisposeHandler;
                 loadScope.LoadingStateChangedEvent += LoadScopeChangedHandler;
                 loadScope.PersistentAddedEvent += LoadScopeChangedHandler;
             }
         }
 
-        private void LoadScopeDisposingHandler(IDisposable disposable)
+        private void LoadScopeDisposeHandler(IDisposable disposable)
         {
             SetLoadScope(null);
         }
@@ -196,16 +202,16 @@ namespace DepictionEngine
         private void RemoveDataDelegates(ScriptableObjectDisposable data)
         {
             if (!Object.ReferenceEquals(data, null))
-                data.DisposingEvent -= DataDisposingHandler;
+                data.DisposeEvent -= DataDisposeHandler;
         }
 
         private void AddDataDelegates(ScriptableObjectDisposable data)
         {
             if (!IsDisposing() && data != Disposable.NULL)
-                data.DisposingEvent += DataDisposingHandler;
+                data.DisposeEvent += DataDisposeHandler;
         }
 
-        private void DataDisposingHandler(IDisposable disposable)
+        private void DataDisposeHandler(IDisposable disposable)
         {
             SetData(null);
         }

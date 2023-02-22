@@ -28,6 +28,9 @@ namespace DepictionEngine.Editor
         private static bool _processingEditorCopyPasteOrDuplicateOrDragDropComponent;
         private static List<Tuple<UnityEngine.Object, UndoOperationType>> _undoOperationsQueue;
 
+        /// <summary>
+        /// Dispatched at the same time as <see cref="UnityEditor.Undo.undoRedoPerformed"/>.
+        /// </summary>
         public static Action UndoRedoPerformedEvent;
 
         public static void UpdateAllDelegates(bool isDisposing)

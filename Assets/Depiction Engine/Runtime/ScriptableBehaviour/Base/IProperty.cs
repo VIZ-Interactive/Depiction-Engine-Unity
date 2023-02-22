@@ -14,6 +14,9 @@ namespace DepictionEngine
         /// </summary>
         SerializableGuid id { get; }
 
+        /// <summary>
+        /// Dispatched when a new value as been assigned to a field using the <see cref="DepictionEngine.PropertyMonoBehaviour.SetValue"/> method.
+        /// </summary>
         Action<IProperty, string, object, object> PropertyAssignedEvent { get; set; }
 
         /// <summary>

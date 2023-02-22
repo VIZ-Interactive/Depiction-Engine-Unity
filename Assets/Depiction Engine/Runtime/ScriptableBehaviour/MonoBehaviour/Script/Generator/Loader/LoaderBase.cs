@@ -105,7 +105,10 @@ namespace DepictionEngine
         private Tween _loadDelayTimer;
         private Tween _autoReloadIntervalTimer;
 
-        public Action<LoadScope> LoadScopeDisposingEvent;
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.LoadScope"/> is Disposing.
+        /// </summary>
+        public Action<LoadScope> LoadScopeDisposeEvent;
 
 #if UNITY_EDITOR
         protected virtual bool GetShowWaitBetweenLoad()
@@ -236,7 +239,7 @@ namespace DepictionEngine
             {
                 InitializeLoadScopes();
 
-                ForceAutoLoad();
+                QueueAutoUpdate();
 
                 UpdateLoaderFields(true);
                 UpdateLoadScopeFields();
@@ -318,7 +321,7 @@ namespace DepictionEngine
         {
             if (!Object.ReferenceEquals(loadScope, null))
             {
-                loadScope.DisposingEvent -= LoadScopeDisposingHandler;
+                loadScope.DisposeEvent -= LoadScopeDisposeHandler;
                 loadScope.DisposedEvent -= LoadScopeDisposedHandler;
             }
         }
@@ -327,17 +330,17 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && loadScope != Disposable.NULL)
             {
-                loadScope.DisposingEvent += LoadScopeDisposingHandler;
+                loadScope.DisposeEvent += LoadScopeDisposeHandler;
                 loadScope.DisposedEvent += LoadScopeDisposedHandler;
             }
         }
 
-        private void LoadScopeDisposingHandler(IDisposable disposable)
+        private void LoadScopeDisposeHandler(IDisposable disposable)
         {
             LoadScope loadScope = disposable as LoadScope;
 
-            if (LoadScopeDisposingEvent != null)
-                LoadScopeDisposingEvent(loadScope);
+            if (LoadScopeDisposeEvent != null)
+                LoadScopeDisposeEvent(loadScope);
         }
 
         private void LoadScopeDisposedHandler(IDisposable disposable)
@@ -739,7 +742,10 @@ namespace DepictionEngine
             return false;
         }
 
-        protected void ForceAutoLoad()
+        /// <summary>
+        /// Queue a call to <see cref="DepictionEngine.LoaderBase.UpdateLoadScopes"/> if and when possible.
+        /// </summary>
+        protected void QueueAutoUpdate()
         {
             if (initialized)
                 _autoUpdate = true;

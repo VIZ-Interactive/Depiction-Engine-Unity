@@ -40,7 +40,7 @@ namespace DepictionEngine
         private bool _isUserChange;
 
         private Action _initializedEvent;
-        private Action<IDisposable> _disposingEvent;
+        private Action<IDisposable> _disposeEvent;
         private Action<IDisposable> _disposedEvent;
 
 #if UNITY_EDITOR
@@ -385,10 +385,10 @@ namespace DepictionEngine
 
         private void RemoveDisposingDelegate(IDisposable disposable)
         {
-            disposable.DisposingEvent -= ObjectDisposingHandler;
+            disposable.DisposeEvent -= ObjectDisposeHandler;
         }
 
-        private void ObjectDisposingHandler(IDisposable disposable)
+        private void ObjectDisposeHandler(IDisposable disposable)
         {
             RemoveDisposingDelegate(disposable);
         }
@@ -581,10 +581,10 @@ namespace DepictionEngine
             set { _initializedEvent = value; }
         }
 
-        public Action<IDisposable> DisposingEvent
+        public Action<IDisposable> DisposeEvent
         {
-            get { return _disposingEvent; }
-            set { _disposingEvent = value; }
+            get { return _disposeEvent; }
+            set { _disposeEvent = value; }
         }
 
         public Action<IDisposable> DisposedEvent
@@ -701,9 +701,9 @@ namespace DepictionEngine
                 if (_destroyingContext == DisposeManager.DestroyContext.Unknown)
                     _destroyingContext = DisposeManager.destroyingContext;
 
-                if (DisposingEvent != null)
-                    DisposingEvent(this);
-                DisposingEvent = null;
+                if (DisposeEvent != null)
+                    DisposeEvent(this);
+                DisposeEvent = null;
 
                 return true;
             }

@@ -40,8 +40,17 @@ namespace DepictionEngine
         [SerializeField]
         private bool _supportsDelete;
 
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.IProperty.PropertyAssignedEvent"/> is dispatched by the encapsulated <see cref="DepictionEngine.IPersistent"/>.
+        /// </summary>
         public Action<IProperty, string, object, object> PropertyAssignedEvent;
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.IPersistent.PersistenceSaveOperationEvent"/>, <see cref="DepictionEngine.IPersistent.PersistenceSynchronizeOperationEvent"/> or <see cref="DepictionEngine.IPersistent.PersistenceDeleteOperationEvent"/> is dispatched by the encapsulated <see cref="DepictionEngine.IPersistent"/>.
+        /// </summary>
         public Action<Datasource.OperationType, IPersistent, Action> PersistenceOperationEvent;
+        /// <summary>
+        /// Dispatched after the <see cref="DepictionEngine.PersistenceData.canBeAutoDisposed"/> value changed.
+        /// </summary>
         public Action<PersistenceData> CanBeAutoDisposedChangedEvent;
 
         public override void Recycle()

@@ -31,9 +31,30 @@ namespace DepictionEngine
         /// </summary>
         DisposeManager.DestroyContext destroyingContext { get; }
 
+        /// <summary>
+        /// Dispatched after the object as been initialized.
+        /// </summary>
         Action InitializedEvent { get; set; }
-        Action<IDisposable> DisposingEvent { get; set; }
+        /// <summary>
+        /// Dispatched during the <see cref="DepictionEngine.IDisposable.OnDispose"/>.
+        /// </summary>
+        Action<IDisposable> DisposeEvent { get; set; }
+        /// <summary>
+        /// Dispatched during the <see cref="DepictionEngine.MonoBehaviourDisposable.OnDisposed"/>, <see cref="DepictionEngine.ScriptableObjectDisposable.OnDisposed"/> or <see cref="DepictionEngine.Disposable.OnDisposed"/>.
+        /// </summary>
         Action<IDisposable> DisposedEvent { get; set; }
+
+        /// <summary>
+        /// Resets the fields to their default value so the object can be reused again. It will be called by the <see cref="DepictionEngine.PoolManager"/> if the object is being recycled from the pool.
+        /// </summary>
+        void Recycle();
+
+        /// <summary>
+        /// Needs to be called before the object can be used. Objects created throught the <see cref="DepictionEngine.InstanceManager"/> should automatically Initialize the object.
+        /// </summary>
+        /// <returns>False if the object is already initializing or initialized.</returns>
+        /// <remarks>In some edge cases, in the editor, the Initialize may not be called immediately aftet the object is instantiated.</remarks>
+        bool Initialize();
 
         /// <summary>
         /// Is the object disposing?.
@@ -46,18 +67,6 @@ namespace DepictionEngine
         /// </summary>
         /// <returns>True if the object as already been disposed / destroyed.</returns>
         bool IsDisposed();
-
-        /// <summary>
-        /// Needs to be called before the object can be used. Objects created throught the <see cref="DepictionEngine.InstanceManager"/> should automatically Initialize the object.
-        /// </summary>
-        /// <returns>False if the object is already initializing or initialized.</returns>
-        /// <remarks>In some edge cases, in the editor, the Initialize may not be called immediately aftet the object is instantiated.</remarks>
-        bool Initialize();
-
-        /// <summary>
-        /// Resets the fields to their default value so the object can be reused again. It will be called by the <see cref="DepictionEngine.PoolManager"/> if the object is being recycled from the pool.
-        /// </summary>
-        void Recycle();
 
         /// <summary>
         /// This is where you clear or dipose any references. Should be called automatically by the <see cref="DepictionEngine.DisposeManager"/> immediately after <see cref="DepictionEngine.DisposeManager.Dispose"/> or <see cref="DepictionEngine.DisposeManager.Destroy"/> is called.

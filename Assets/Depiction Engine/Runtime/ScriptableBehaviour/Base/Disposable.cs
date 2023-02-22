@@ -21,7 +21,7 @@ namespace DepictionEngine
         private DisposeManager.DestroyContext _destroyingContext;
 
         private Action _initializedEvent;
-        private Action<IDisposable> _disposingEvent;
+        private Action<IDisposable> _disposeEvent;
         private Action<IDisposable> _disposedEvent;
 
         public virtual void Recycle()
@@ -42,6 +42,8 @@ namespace DepictionEngine
                 UpdateAllDelegates();
 
                 Initialized();
+                if (InitializedEvent != null)
+                    InitializedEvent();
 
                 return true;
             }
@@ -70,7 +72,7 @@ namespace DepictionEngine
         /// <summary>
         /// Acts as a reliable constructor and will always by called unlike Awake which is sometimes skipped.
         /// </summary>
-        public virtual void Initialized()
+        protected virtual void Initialized()
         {
             _initialized = true;
         }
@@ -117,10 +119,10 @@ namespace DepictionEngine
             set { _initializedEvent = value; }
         }
 
-        public Action<IDisposable> DisposingEvent
+        public Action<IDisposable> DisposeEvent
         {
-            get { return _disposingEvent; }
-            set { _disposingEvent = value; }
+            get { return _disposeEvent; }
+            set { _disposeEvent = value; }
         }
 
         public Action<IDisposable> DisposedEvent
@@ -173,9 +175,9 @@ namespace DepictionEngine
 
                 _destroyingContext = GetDestroyingContext(DisposeManager.destroyingContext);
 
-                if (DisposingEvent != null)
-                    DisposingEvent(this);
-                DisposingEvent = null;
+                if (DisposeEvent != null)
+                    DisposeEvent(this);
+                DisposeEvent = null;
 
                 return true;
             }

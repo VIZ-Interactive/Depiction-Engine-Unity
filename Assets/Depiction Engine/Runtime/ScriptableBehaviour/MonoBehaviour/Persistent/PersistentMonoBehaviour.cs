@@ -387,10 +387,6 @@ namespace DepictionEngine
             }
         }
 
-        /// <summary>
-        /// Push this object's values to the datasource.
-        /// </summary>
-        /// <returns></returns>
         public int Save()
         {
             int saved = 0;
@@ -401,10 +397,6 @@ namespace DepictionEngine
             return saved;
         }
 
-        /// <summary>
-        /// Pull the values from the datasource and use them to update this object.
-        /// </summary>
-        /// <returns></returns>
         public int Synchronize()
         {
             int synchronized = 0;
@@ -415,10 +407,6 @@ namespace DepictionEngine
             return synchronized;
         }
 
-        /// <summary>
-        /// Delete from datasource (this object will not be deleted).
-        /// </summary>
-        /// <returns></returns>
         public int Delete()
         {
             int deleted = 0;

@@ -14,7 +14,7 @@ namespace DepictionEngine
 
                 objectBase.ChildRemovedEvent -= ObjectChildRemovedHandler;
                 objectBase.ChildAddedEvent -= ObjectChildAddedHandler;
-                objectBase.ChildPropertyAssignedEvent -= ObjectChildPropertyAssignedHandler;
+                objectBase.ChildObjectPropertyAssignedEvent -= ObjectChildPropertyAssignedHandler;
                 objectBase.ScriptRemovedEvent -= ObjectScriptRemovedHandler;
                 objectBase.ScriptAddedEvent -= ObjectScriptAddedHandler;
                 objectBase.ComponentPropertyAssignedEvent -= ObjectComponentPropertyAssignedHandler;
@@ -32,7 +32,7 @@ namespace DepictionEngine
 
                 objectBase.ChildRemovedEvent += ObjectChildRemovedHandler;
                 objectBase.ChildAddedEvent += ObjectChildAddedHandler;
-                objectBase.ChildPropertyAssignedEvent += ObjectChildPropertyAssignedHandler;
+                objectBase.ChildObjectPropertyAssignedEvent += ObjectChildPropertyAssignedHandler;
                 objectBase.ComponentPropertyAssignedEvent += ObjectComponentPropertyAssignedHandler;
                 
                 return true;

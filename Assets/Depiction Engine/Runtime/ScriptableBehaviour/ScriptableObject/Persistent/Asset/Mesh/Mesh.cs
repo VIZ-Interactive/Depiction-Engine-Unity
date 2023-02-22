@@ -58,6 +58,9 @@ namespace DepictionEngine
         private List<MeshObjectBase> _meshObjectModifying;
         private bool _modificationPending;
 
+        /// <summary>
+        /// Dispatched to signal a <see cref="DepictionEngine.MeshRendererVisualModifier"/> in a <see cref="DepictionEngine.MeshGridMeshObject"/> is about to start modification or right after it finished modifying. 
+        /// </summary>
         private Action ModificationPendingChangedEvent;
 
         public override void Recycle()
@@ -104,15 +107,15 @@ namespace DepictionEngine
 
         private void AddMeshObjectDelegate(MeshObjectBase meshObject)
         {
-            meshObject.DisposingEvent += MeshObjectDisposingHandler;
+            meshObject.DisposeEvent += MeshObjectDisposeHandler;
         }
 
         private void RemoveMeshObjectDelegate(MeshObjectBase meshObject)
         {
-            meshObject.DisposingEvent -= MeshObjectDisposingHandler;
+            meshObject.DisposeEvent -= MeshObjectDisposeHandler;
         }
 
-        private void MeshObjectDisposingHandler(IDisposable disposable)
+        private void MeshObjectDisposeHandler(IDisposable disposable)
         {
             RemoveModifying(disposable as MeshObjectBase);
         }

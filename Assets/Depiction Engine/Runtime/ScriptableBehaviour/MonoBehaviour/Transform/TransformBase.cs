@@ -47,9 +47,21 @@ namespace DepictionEngine
       
         private TransformComponents3 _unityTransformComponents;
 
+        /// <summary>
+        /// Dispatched when a child such as a <see cref="DepictionEngine.TransformDouble"/> or a <see cref="DepictionEngine.Visual"/>, when a <see cref="DepictionEngine.VisualObject"/> is present, is added. 
+        /// </summary>
         public Action<TransformBase, PropertyMonoBehaviour> ChildAddedEvent;
+        /// <summary>
+        /// Dispatched when a child is removed. 
+        /// </summary>
         public Action<TransformBase, PropertyMonoBehaviour> ChildRemovedEvent;
-        public Action<TransformBase, string, object, object> ChildPropertyChangedEvent;
+        /// <summary>
+        /// Dispatched when a property assignment is detected in any of the children.
+        /// </summary>
+        public Action<TransformBase, string, object, object> ChildPropertyAssignedEvent;
+        /// <summary>
+        /// Dispatched when some transform component(s) such as localPosition, localRotation or localScale have changed.
+        /// </summary>
         public Action<Component, Component> ChangedEvent;
  
         public override void Recycle()
@@ -324,8 +336,8 @@ namespace DepictionEngine
             if (!HasChanged(oldValue, newValue))
                 return;
 
-            if (ChildPropertyChangedEvent != null)
-                ChildPropertyChangedEvent(property as TransformBase, name, newValue, oldValue);
+            if (ChildPropertyAssignedEvent != null)
+                ChildPropertyAssignedEvent(property as TransformBase, name, newValue, oldValue);
         }
 
         public override bool IsDynamicProperty(int key)
@@ -411,7 +423,7 @@ namespace DepictionEngine
             Vector3 euler = UnityEditor.TransformUtils.GetInspectorRotation(transform);
             transform.localRotation = lastLocalRotation;
 
-            //Weird behavior in Unity where sometimes the localRotation value is being slightly altered after assignement
+            //Weird behavior in Unity where sometimes the localRotation value is being slightly altered after assignment
             //Fix: Simply update the recorded transform with the new altered value if they where the same before
             if (localRotationChangeDetected && !DetectDirectTransformLocalRotationManipulation())
                 InitLastLocalRotationField();
@@ -429,7 +441,7 @@ namespace DepictionEngine
             Quaternion newLocalRotation = transform.localRotation;
             transform.localRotation = localRotation;
 
-            //Weird behavior in Unity where sometimes the localRotation value is being slightly altered after assignement
+            //Weird behavior in Unity where sometimes the localRotation value is being slightly altered after assignment
             //Fix: Simply update the recorded transform with the new altered value if they where the same before
             if (localRotationChangeDetected && !DetectDirectTransformLocalRotationManipulation())
                 InitLastLocalRotationField();
@@ -1068,7 +1080,7 @@ namespace DepictionEngine
             {
                 ChildAddedEvent = null;
                 ChildRemovedEvent = null;
-                ChildPropertyChangedEvent = null;
+                ChildPropertyAssignedEvent = null;
                 ChangedEvent = null;
 
                 return true;

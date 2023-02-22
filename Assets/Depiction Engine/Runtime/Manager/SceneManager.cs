@@ -6,7 +6,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection;
-using HarmonyLib;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Microsoft.Design", "IDE1006",
@@ -123,12 +122,30 @@ namespace DepictionEngine
 
         private static bool _sceneClosing;
 
+        /// <summary>
+        /// Dispatched right after all objects have been initialized. 
+        /// </summary>
         public static Action PostLateInitializeEvent;
+        /// <summary>
+        /// Dispatched when the parent Scene of the <see cref="DepictionEngine.SceneManager"/> gameObject is closing.
+        /// </summary>
         public static Action SceneClosingEvent;
+        /// <summary>
+        /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
+        /// </summary>
         public static Action UnityInitializedEvent;
+        /// <summary>
+        /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/>.
+        /// </summary>
         public static Action DelayedOnDestroyEvent;
 
+        /// <summary>
+        /// Dispatched at the same time as the <see cref="UnityEditor.AssemblyReloadEvents.beforeAssemblyReload"/>.
+        /// </summary>
         public static Action BeforeAssemblyReloadEvent;
+        /// <summary>
+        /// Dispatched at the same time as the <see cref="UnityEditor.AssemblyReloadEvents.afterAssemblyReload"/>.
+        /// </summary>
         public static Action AfterAssemblyReloadEvent;
 
         private static SceneManager _instance;
@@ -253,6 +270,9 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        /// <summary>
+        /// Dispatched at the same time as the <see cref="UnityEditor.EditorApplication.playModeStateChanged"/>.
+        /// </summary>
         public static Action<UnityEditor.PlayModeStateChange> PlayModeStateChangedEvent;
 
         private static UnityEditor.PlayModeStateChange _playModeState;

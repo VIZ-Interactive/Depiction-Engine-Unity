@@ -124,8 +124,14 @@ namespace DepictionEngine
         [ThreadStatic]
         public static bool inhibitExplicitAwake = false;
 
+        /// <summary>
+        /// Dispatched when a new instance was created and added to the Scene.
+        /// </summary>
         public static Action<IProperty> AddedEvent;
 
+        /// <summary>
+        /// Dispatched when an instance has been disposed from to the Scene.
+        /// </summary>
         public static Action<IProperty> RemovedEvent;
 
         private static InstanceManager _instance;

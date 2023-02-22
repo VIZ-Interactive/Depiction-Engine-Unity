@@ -301,16 +301,16 @@ namespace DepictionEngine
         protected void RemoveBuildingDelegates()
         {
             if (!Object.ReferenceEquals(building, null))
-                building.DisposingEvent -= BuildingDisposedHandler;
+                building.DisposeEvent -= BuildingDisposeHandler;
         }
 
         private void AddBuildingDelegates()
         {
             if (building != Disposable.NULL)
-                building.DisposingEvent += BuildingDisposedHandler;
+                building.DisposeEvent += BuildingDisposeHandler;
         }
 
-        private void BuildingDisposedHandler(IDisposable disposable)
+        private void BuildingDisposeHandler(IDisposable disposable)
         {
             building = null;
         }

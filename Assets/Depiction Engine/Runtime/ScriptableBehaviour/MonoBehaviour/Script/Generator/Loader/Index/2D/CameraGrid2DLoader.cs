@@ -123,8 +123,8 @@ namespace DepictionEngine
         {
             if (cameraGridLoaderCenterOnLoadTrigger != null)
             {
-                cameraGridLoaderCenterOnLoadTrigger.DisposingEvent += CameraGridLoaderCenterOnLoadTriggerDisposingHandler;
-                cameraGridLoaderCenterOnLoadTrigger.ForceAutoUpdateEvent += CameraGridLoaderCenterOnLoadTriggerForceAutoUpdateHandler;
+                cameraGridLoaderCenterOnLoadTrigger.CameraDisposeEvent += CameraGridLoaderCenterOnLoadTriggerDisposingHandler;
+                cameraGridLoaderCenterOnLoadTrigger.QueueAutoUpdateEvent += CameraGridLoaderCenterOnLoadTriggerQueueAutoUpdateHandler;
             }
         }
 
@@ -132,8 +132,8 @@ namespace DepictionEngine
         {
             if (!Object.ReferenceEquals(cameraGridLoaderCenterOnLoadTrigger, null))
             {
-                cameraGridLoaderCenterOnLoadTrigger.DisposingEvent -= CameraGridLoaderCenterOnLoadTriggerDisposingHandler;
-                cameraGridLoaderCenterOnLoadTrigger.ForceAutoUpdateEvent -= CameraGridLoaderCenterOnLoadTriggerForceAutoUpdateHandler;
+                cameraGridLoaderCenterOnLoadTrigger.CameraDisposeEvent -= CameraGridLoaderCenterOnLoadTriggerDisposingHandler;
+                cameraGridLoaderCenterOnLoadTrigger.QueueAutoUpdateEvent -= CameraGridLoaderCenterOnLoadTriggerQueueAutoUpdateHandler;
             }
         }
 
@@ -142,23 +142,23 @@ namespace DepictionEngine
             RemoveCameraGridLoaderCenterOnLoadTrigger(cameraGridLoaderCenterOnLoadTrigger);
         }
 
-        private void CameraGridLoaderCenterOnLoadTriggerForceAutoUpdateHandler()
+        private void CameraGridLoaderCenterOnLoadTriggerQueueAutoUpdateHandler()
         {
-            ForceAutoLoad();
+            QueueAutoUpdate();
         }
 
         public override void ExplicitOnEnable()
         {
             base.ExplicitOnEnable();
 
-            ForceAutoLoad();
+            QueueAutoUpdate();
         }
 
         protected override bool SetParentGeoAstroObject(GeoAstroObject newValue, GeoAstroObject oldValue)
         {
             if (base.SetParentGeoAstroObject(newValue, oldValue))
             {
-                ForceAutoLoad();
+                QueueAutoUpdate();
 
                 return true;
             }
@@ -179,7 +179,7 @@ namespace DepictionEngine
             {
                 SetValue(nameof(cascades), value, ref _cascades, (newValue, oldValue) =>
                 {
-                    ForceAutoLoad();
+                    QueueAutoUpdate();
                 });
             }
         }
@@ -205,7 +205,7 @@ namespace DepictionEngine
             {
                 SetValue(nameof(centerOn), value, ref _centerOn, (newValue, oldValue) =>
                 {
-                    ForceAutoLoad();
+                    QueueAutoUpdate();
                 });
             }
         }
@@ -221,7 +221,7 @@ namespace DepictionEngine
             {
                 SetValue(nameof(sizeMultiplier), value, ref _sizeMultiplier, (newValue, oldValue) =>
                 {
-                    ForceAutoLoad();
+                    QueueAutoUpdate();
                 });
             }
         }
@@ -237,7 +237,7 @@ namespace DepictionEngine
             {
                 SetValue(nameof(sizeLatitudeCompensation), value, ref _sizeLatitudeCompensation, (newValue, oldValue) =>
                 {
-                    ForceAutoLoad();
+                    QueueAutoUpdate();
                 });
             }
         }
@@ -311,7 +311,7 @@ namespace DepictionEngine
                     if (!Object.ReferenceEquals(cameraGrid2D, null))
                         cameraGrids.Remove(cameraGrid2D);
 
-                    ForceAutoLoad();
+                    QueueAutoUpdate();
                 }
             }
         }
@@ -331,7 +331,7 @@ namespace DepictionEngine
 
                     cameraGrids.Add(CreateCameraGrid<CameraGrid2D>(camera));
 
-                    ForceAutoLoad();
+                    QueueAutoUpdate();
                 }
             }
 
@@ -476,8 +476,14 @@ namespace DepictionEngine
 
             private GeoAstroObject _parentGeoAstroObject;
 
-            public Action<CameraGridLoaderCenterOnLoadTrigger> DisposingEvent;
-            public Action ForceAutoUpdateEvent;
+            /// <summary>
+            /// Dispatched when the <see cref="DepictionEngine.Camera"/> <see cref="DepictionEngine.IDisposable.OnDispose"/> is triggered.
+            /// </summary>
+            public Action<CameraGridLoaderCenterOnLoadTrigger> CameraDisposeEvent;
+            /// <summary>
+            /// Dispatched after changes requiring a <see cref="DepictionEngine.LoaderBase.QueueAutoUpdate"/> in the <see cref="DepictionEngine.CameraGrid2DLoader"/> are detected.
+            /// </summary>
+            public Action QueueAutoUpdateEvent;
 
             public CameraGridLoaderCenterOnLoadTrigger(CameraGrid2DLoader cameraGrid2DLoader, Camera camera)
             {
@@ -514,7 +520,7 @@ namespace DepictionEngine
             {
                 if (!Object.ReferenceEquals(camera, null))
                 {
-                    camera.DisposingEvent -= CameraDisposingHandler;
+                    camera.DisposeEvent -= CameraDisposeHandler;
                     camera.PropertyAssignedEvent -= CameraPropertyAssignedHandler;
                 }
             }
@@ -523,24 +529,24 @@ namespace DepictionEngine
             {
                 if (camera != Disposable.NULL)
                 {
-                    camera.DisposingEvent += CameraDisposingHandler;
+                    camera.DisposeEvent += CameraDisposeHandler;
                     camera.PropertyAssignedEvent += CameraPropertyAssignedHandler;
                 }
             }
 
-            private void CameraDisposingHandler(IDisposable disposable)
+            private void CameraDisposeHandler(IDisposable disposable)
             {
                 dynamicSizeOffsetTimer = null;
 
                 UpdateAllDelegates(true);
-                if (DisposingEvent != null)
-                    DisposingEvent(this);
+                if (CameraDisposeEvent != null)
+                    CameraDisposeEvent(this);
             }
 
             private void CameraPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
             {
                 if (name == nameof(Camera.activeAndEnabled))
-                    DispatchForceAutoUpdate();
+                    DispatchQueueAutoUpdate();
             }
 
             private void RemoveParentGeoAstroObjectDelegates(GeoAstroObject parentGeoAstroObject)
@@ -565,7 +571,7 @@ namespace DepictionEngine
             private void ParentGeoAstroObjectPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
             {
                 if (name == nameof(GeoAstroObject.size) || name == nameof(GeoAstroObject.sphericalRatio))
-                    DispatchForceAutoUpdate();
+                    DispatchQueueAutoUpdate();
             }
 
             private void ParentGeoAstroObjectTransformPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
@@ -636,15 +642,15 @@ namespace DepictionEngine
                         GeoCoordinate3Double centerOnTransformGeoCoordinate = parentGeoAstroObject.GetGeoCoordinateFromPoint(centerOnTransform.position);
                         double angleThreshold = 0.0001d;
                         if (Math.Abs(centerOnTransformGeoCoordinate.latitude - _lastLoadedCenterOnTransformGeoCoordinate.Value.latitude) > angleThreshold || Math.Abs(centerOnTransformGeoCoordinate.longitude - _lastLoadedCenterOnTransformGeoCoordinate.Value.longitude) > angleThreshold || Math.Abs(centerOnTransformGeoCoordinate.altitude - _lastLoadedCenterOnTransformGeoCoordinate.Value.altitude) > 1.0d)
-                            DispatchForceAutoUpdate();
+                            DispatchQueueAutoUpdate();
                     }
                 }
             }
 
-            private void DispatchForceAutoUpdate()
+            private void DispatchQueueAutoUpdate()
             {
-                if (ForceAutoUpdateEvent != null)
-                    ForceAutoUpdateEvent();
+                if (QueueAutoUpdateEvent != null)
+                    QueueAutoUpdateEvent();
             }
 
             public void Update()
@@ -759,7 +765,7 @@ namespace DepictionEngine
 
                     AddParentGeoAstroObjectDelegates(_parentGeoAstroObject);
 
-                    ForceAutoUpdateEvent();
+                    QueueAutoUpdateEvent();
                 }
             }
 
@@ -779,7 +785,7 @@ namespace DepictionEngine
 
                     LastCenterOnTransformPositionDirty();
 
-                    DispatchForceAutoUpdate();
+                    DispatchQueueAutoUpdate();
                 }
             }
 
@@ -853,7 +859,7 @@ namespace DepictionEngine
 
                 _dynamicSizeOffset = value;
 
-                DispatchForceAutoUpdate();
+                DispatchQueueAutoUpdate();
 
                 return true;
             }

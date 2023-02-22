@@ -21,7 +21,13 @@ namespace DepictionEngine
 
         private Tween _loadIntervalTween;
 
+        /// <summary>
+        /// Dispatched when the loading state changed.
+        /// </summary>
         public Action<LoadScope> LoadingStateChangedEvent;
+        /// <summary>
+        /// Dispatched when an <see cref="DepictionEngine.IPersistent"/> loaded from a <see cref="DepictionEngine.ILoadDatasource"/> is added to the <see cref="DepictionEngine.LoadScope"/>.
+        /// </summary>
         public Action<LoadScope> PersistentAddedEvent;
 
         public override void Recycle()

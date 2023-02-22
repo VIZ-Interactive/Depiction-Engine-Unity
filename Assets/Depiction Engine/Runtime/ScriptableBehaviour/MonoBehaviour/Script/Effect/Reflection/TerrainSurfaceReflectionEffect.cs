@@ -53,13 +53,13 @@ namespace DepictionEngine
         private void RemoveCameraSmoothElevationDelegates(CameraSmoothElevation cameraSmoothElevation)
         {
             if (!Object.ReferenceEquals(cameraSmoothElevation, null))
-                cameraSmoothElevation.CameraDisposingEvent -= CameraSmoothElevationCameraDisposingHandler;
+                cameraSmoothElevation.CameraDisposeEvent -= CameraSmoothElevationCameraDisposingHandler;
         }
 
         private void AddCameraSmoothElevationDelegates(CameraSmoothElevation cameraSmoothElevation)
         {
             if (!IsDisposing() && cameraSmoothElevation != Disposable.NULL)
-                cameraSmoothElevation.CameraDisposingEvent += CameraSmoothElevationCameraDisposingHandler;
+                cameraSmoothElevation.CameraDisposeEvent += CameraSmoothElevationCameraDisposingHandler;
         }
 
         private void CameraSmoothElevationCameraDisposingHandler(CameraSmoothElevation cameraSmoothElevation)
@@ -231,6 +231,9 @@ namespace DepictionEngine
             return false;
         }
 
+        /// <summary>
+        /// Class used to access the average overtime elevation value of the terrain under the camera.
+        /// </summary>
         [Serializable]
         private class CameraSmoothElevation : Disposable
         {
@@ -241,7 +244,10 @@ namespace DepictionEngine
             private double _elevation;
             private List<double> _elevations;
 
-            public Action<CameraSmoothElevation> CameraDisposingEvent;
+            /// <summary>
+            /// Dispatched when the <see cref="DepictionEngine.Camera"/> <see cref="DepictionEngine.IDisposable.OnDispose"/> is triggered.
+            /// </summary>
+            public Action<CameraSmoothElevation> CameraDisposeEvent;
 
             public CameraSmoothElevation Init(Camera camera, GeoAstroObject parentGeoAstroObject)
             {
@@ -268,7 +274,7 @@ namespace DepictionEngine
             {
                 if (!Object.ReferenceEquals(camera, null))
                 {
-                    camera.DisposingEvent -= CameraDisposingHandler;
+                    camera.DisposeEvent -= CameraDisposeHandler;
                     if (!Object.ReferenceEquals(camera.transform, null))
                         camera.transform.PropertyAssignedEvent -= CameraTransformPropertyAssigned;
                 }
@@ -278,15 +284,15 @@ namespace DepictionEngine
             {
                 if (!IsDisposing() && camera != Disposable.NULL)
                 {
-                    camera.DisposingEvent += CameraDisposingHandler;
+                    camera.DisposeEvent += CameraDisposeHandler;
                     camera.transform.PropertyAssignedEvent += CameraTransformPropertyAssigned;
                 }
             }
 
-            private void CameraDisposingHandler(IDisposable disposable)
+            private void CameraDisposeHandler(IDisposable disposable)
             {
-                if (CameraDisposingEvent != null)
-                    CameraDisposingEvent(this);
+                if (CameraDisposeEvent != null)
+                    CameraDisposeEvent(this);
             }
 
             private void CameraTransformPropertyAssigned(IProperty property, string name, object newValue, object oldValue)

@@ -53,19 +53,49 @@ namespace DepictionEngine
 
         private Rigidbody _rigidbodyInternal;
 
+        /// <summary>
+        /// Dispatched when a child such as <see cref="DepictionEngine.TransformDouble"/> or <see cref="DepictionEngine.MeshRendererVisual"/>(for <see cref="DepictionEngine.VisualObject"/>) is added.
+        /// </summary>
         public Action<Object, PropertyMonoBehaviour> ChildAddedEvent;
+        /// <summary>
+        /// Dispatched when a child such as <see cref="DepictionEngine.TransformDouble"/> or <see cref="DepictionEngine.MeshRendererVisual"/>(for <see cref="DepictionEngine.VisualObject"/>) is removed.
+        /// </summary>
         public Action<Object, PropertyMonoBehaviour> ChildRemovedEvent;
-        public Action<IProperty, string> ChildPropertyAssignedEvent;
+        /// <summary>
+        /// Dispatched when a property assign event is detected in the <see cref="DepictionEngine.Object"/> of one of the child <see cref="DepictionEngine.TransformDouble"/>.
+        /// </summary>
+        public Action<IProperty, string> ChildObjectPropertyAssignedEvent;
 
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.Script"/> is added.
+        /// </summary>
         public Action<Object, Script> ScriptAddedEvent;
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.Script"/> is removed.
+        /// </summary>
         public Action<Object, Script> ScriptRemovedEvent;
+        /// <summary>
+        /// Dispatched when a property assign event is detected in any of the <see cref="DepictionEngine.Script"/> or <see cref="DepictionEngine.TransformDouble"/>.
+        /// </summary>
         public Action<IProperty, string> ComponentPropertyAssignedEvent;
 
+        /// <summary>
+        /// Dispatched after changes to the <see cref="DepictionEngine.TransformDouble.localPosition"/>, <see cref="DepictionEngine.TransformDouble.localRotation"/> or <see cref="DepictionEngine.TransformDouble.localScale"/> have been detected. 
+        /// </summary>
         public Action<TransformBase.Component, TransformBase.Component> TransformChangedEvent;
+        /// <summary>
+        /// Dispatched when a property assign event is detected in the <see cref="DepictionEngine.TransformDouble"/>.
+        /// </summary>
         public Action<IProperty, string, object, object> TransformPropertyAssignedEvent;
-        
+
+        /// <summary>
+        /// Dispatched when a property assign event is detected in the parent <see cref="DepictionEngine.GeoAstroObject"/>.
+        /// </summary>
         public Action<IProperty, string, object, object> ParentGeoAstroObjectPropertyAssignedEvent;
 
+        /// <summary>
+        /// A callback triggered by changes in the <see cref="DepictionEngine.TransformDouble"/> allowing you to make changes to the new values before they are assigned.
+        /// </summary>
         public Action<LocalPositionParam, LocalRotationParam, LocalScaleParam, Camera> TransformControllerCallback;
 
         protected override void IterateOverComponentReference(Action<SerializableGuid, Action> callback)
@@ -549,7 +579,7 @@ namespace DepictionEngine
                 transform.ChangedEvent -= TransformChangedHandler;
                 transform.ChildAddedEvent -= TransformChildAddedHandler;
                 transform.ChildRemovedEvent -= TransformChildRemovedHandler;
-                transform.ChildPropertyChangedEvent -= TransformChildPropertyChangedHandler;
+                transform.ChildPropertyAssignedEvent -= TransformChildPropertyChangedHandler;
                 if (transform is TransformDouble)
                 {
                     TransformDouble transformDouble = transform as TransformDouble;
@@ -576,7 +606,7 @@ namespace DepictionEngine
                 transform.ChangedEvent += TransformChangedHandler;
                 transform.ChildAddedEvent += TransformChildAddedHandler;
                 transform.ChildRemovedEvent += TransformChildRemovedHandler;
-                transform.ChildPropertyChangedEvent += TransformChildPropertyChangedHandler;
+                transform.ChildPropertyAssignedEvent += TransformChildPropertyChangedHandler;
 
                 if (transform is TransformDouble)
                 {
@@ -744,22 +774,22 @@ namespace DepictionEngine
         private void RemoveObjectChildDelegates(Object objectBase)
         {
             if (!Object.ReferenceEquals(objectBase, null))
-                objectBase.PropertyAssignedEvent -= ObjectChildPropertyAssignedHandler;
+                objectBase.PropertyAssignedEvent -= ChildObjectPropertyAssignedHandler;
         }
 
         private void AddObjectChildDelegates(Object objectBase)
         {
             if (objectBase != Disposable.NULL)
-                objectBase.PropertyAssignedEvent += ObjectChildPropertyAssignedHandler;
+                objectBase.PropertyAssignedEvent += ChildObjectPropertyAssignedHandler;
         }
 
-        protected void ObjectChildPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
+        protected void ChildObjectPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             if (!HasChanged(oldValue, newValue))
                 return;
 
-            if (ChildPropertyAssignedEvent != null)
-                ChildPropertyAssignedEvent(property, name);
+            if (ChildObjectPropertyAssignedEvent != null)
+                ChildObjectPropertyAssignedEvent(property, name);
         }
 
         public virtual int GetAdditionalChildCount()

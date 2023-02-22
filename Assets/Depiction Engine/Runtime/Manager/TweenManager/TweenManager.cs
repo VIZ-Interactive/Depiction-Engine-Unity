@@ -60,16 +60,16 @@ namespace DepictionEngine
         private void RemoveTweenDelegates(Tween tween)
         {
             if (!Object.ReferenceEquals(tween, null))
-                tween.DisposingEvent -= TweenDisposingHandler;
+                tween.DisposeEvent -= TweenDisposeHandler;
         }
 
         private void AddTweenDelegates(Tween tween)
         {
             if (tween != Disposable.NULL)
-                tween.DisposingEvent += TweenDisposingHandler;
+                tween.DisposeEvent += TweenDisposeHandler;
         }
 
-        private void TweenDisposingHandler(IDisposable disposable)
+        private void TweenDisposeHandler(IDisposable disposable)
         {
             RemoveTween(disposable as Tween);
         }
