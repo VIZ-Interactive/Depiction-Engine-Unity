@@ -104,20 +104,20 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             AddReferenceFromLoader(loadScope);
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-             InitValue(value => loaderId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(loaderId, loader, initializingState); }, initializingState);
-            InitValue(value => dataId = value, SerializableGuid.Empty, initializingState);
-            InitValue(value => dataIndex2D = value, Grid2DIndex.empty, initializingState);
+             InitValue(value => loaderId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(loaderId, loader, initializingContext); }, initializingContext);
+            InitValue(value => dataId = value, SerializableGuid.Empty, initializingContext);
+            InitValue(value => dataIndex2D = value, Grid2DIndex.empty, initializingContext);
         }
 
 #if UNITY_EDITOR

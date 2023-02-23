@@ -157,7 +157,7 @@ namespace DepictionEngine
             return loadSceneDatasourceOperation;
         }
 
-        public static FileSystemDatasource GetFileSystemDatasource(string databaseNamespace, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically)
+        public static FileSystemDatasource GetFileSystemDatasource(string databaseNamespace, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
             FileSystemDatasource fileSystemDatasource = null;
 
@@ -178,7 +178,7 @@ namespace DepictionEngine
 
                 if (fileSystemDatasource == Disposable.NULL)
                 {
-                    fileSystemDatasource = CreateDatasource<FileSystemDatasource>(initializationState);
+                    fileSystemDatasource = CreateDatasource<FileSystemDatasource>(initializingContext);
                     fileSystemDatasource.databaseNamespace = databaseNamespace;
                 }
             }
@@ -186,7 +186,7 @@ namespace DepictionEngine
             return fileSystemDatasource;
         }
 
-        public static RestDatasource GetRestDatasource(string baseAddress, string baseAddress2, string baseAddress3, string baseAddress4, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically)
+        public static RestDatasource GetRestDatasource(string baseAddress, string baseAddress2, string baseAddress3, string baseAddress4, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
             RestDatasource restDatasource = null;
 
@@ -207,7 +207,7 @@ namespace DepictionEngine
 
                 if (restDatasource == Disposable.NULL)
                 {
-                    restDatasource = CreateDatasource<RestDatasource>(initializationState);
+                    restDatasource = CreateDatasource<RestDatasource>(initializingContext);
                     restDatasource.baseAddress = baseAddress;
                     restDatasource.baseAddress2 = baseAddress2;
                     restDatasource.baseAddress3 = baseAddress3;
@@ -218,7 +218,7 @@ namespace DepictionEngine
             return restDatasource;
         }
 
-        private static T CreateDatasource<T>(InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically) where T : DatasourceBase
+        private static T CreateDatasource<T>(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : DatasourceBase
         {
             T datasource = null;
 
@@ -228,15 +228,15 @@ namespace DepictionEngine
             {
                 datasourcesGo = new GameObject(name);
 #if UNITY_EDITOR
-                Editor.UndoManager.RegisterCreatedObjectUndo(datasourcesGo, initializationState);
+                Editor.UndoManager.RegisterCreatedObjectUndo(datasourcesGo, initializingContext);
 #endif
-                datasourcesGo.AddSafeComponent<Object>(initializationState);
+                datasourcesGo.AddSafeComponent<Object>(initializingContext);
             }
 
-            datasource = datasourcesGo.AddSafeComponent<T>(initializationState);
+            datasource = datasourcesGo.AddSafeComponent<T>(initializingContext);
 
 #if UNITY_EDITOR
-            Editor.UndoManager.RegisterCompleteObjectUndo(datasource, initializationState);
+            Editor.UndoManager.RegisterCompleteObjectUndo(datasource, initializingContext);
 #endif
 
             return datasource;

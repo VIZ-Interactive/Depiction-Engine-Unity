@@ -55,18 +55,18 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            if (initializingState == InstanceManager.InitializationContext.Editor_Duplicate || initializingState == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
             {
                 if (unityTexture != null)
                     unityTexture = Duplicate(unityTexture);
             }
 
-            InitValue(value => wrapMode = value, TextureWrapMode.Clamp, initializingState);
-            InitValue(value => filterMode = value, FilterMode.Bilinear, initializingState);
+            InitValue(value => wrapMode = value, TextureWrapMode.Clamp, initializingContext);
+            InitValue(value => filterMode = value, FilterMode.Bilinear, initializingContext);
         }
 
         public int width
@@ -153,14 +153,14 @@ namespace DepictionEngine
             return bytes;
         }
 
-        public override void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        public override void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
-            SetData(value as byte[], false, width, height, format, mipmapCount != 0, false, initializingState);
+            SetData(value as byte[], false, width, height, format, mipmapCount != 0, false, initializingContext);
         }
 
-        public void SetData(byte[] textureBytes, bool isRawTextureBytes, int width, int height, TextureFormat format, bool mipChain, bool linear, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        public void SetData(byte[] textureBytes, bool isRawTextureBytes, int width, int height, TextureFormat format, bool mipChain, bool linear, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
-            CreateTextureIfRequired(isRawTextureBytes, width, height, format, mipChain, linear, initializingState);
+            CreateTextureIfRequired(isRawTextureBytes, width, height, format, mipChain, linear, initializingContext);
 
             if (isRawTextureBytes)
             {
@@ -176,12 +176,12 @@ namespace DepictionEngine
             DataPropertyAssigned();
         }
 
-        private void CreateTextureIfRequired(bool isRawTextureBytes, int width, int height, TextureFormat format, bool mipChain, bool linear, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        private void CreateTextureIfRequired(bool isRawTextureBytes, int width, int height, TextureFormat format, bool mipChain, bool linear, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
             bool requiresNewTexture2D = unityTexture == null || this.mipmapCount != (mipChain ? this.mipmapCount : 1);
 
 #if UNITY_EDITOR
-            if (initializingState == InstanceManager.InitializationContext.Editor)
+            if (initializingContext == InstanceManager.InitializationContext.Editor)
                 requiresNewTexture2D = true;
 #endif
 
@@ -192,7 +192,7 @@ namespace DepictionEngine
                 if (height == 0)
                     height = 2;
 
-                SetData(new Texture2D(width, height, format, mipChain, linear), initializingState);
+                SetData(new Texture2D(width, height, format, mipChain, linear), initializingContext);
             }
         }
 
@@ -216,13 +216,13 @@ namespace DepictionEngine
             return "png";
         }
 
-        private void SetData(Texture2D texture, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        private void SetData(Texture2D texture, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
             Texture2D oldUnityTexture = unityTexture;
 
             unityTexture = texture;
             
-            DisposeOldDataAndRegisterNewData(oldUnityTexture, unityTexture, initializingState);
+            DisposeOldDataAndRegisterNewData(oldUnityTexture, unityTexture, initializingContext);
         }
 
         public Texture2D unityTexture

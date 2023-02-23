@@ -26,11 +26,11 @@ namespace DepictionEngine
 		}
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => toGroundSnapOffset = value, GeoCoordinateController.DEFAULT_GROUND_SNAP_OFFSET_VALUE, initializingState);
+            InitValue(value => toGroundSnapOffset = value, GeoCoordinateController.DEFAULT_GROUND_SNAP_OFFSET_VALUE, initializingContext);
         }
 
         protected override float GetDefaultDuration()

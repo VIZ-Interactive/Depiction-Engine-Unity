@@ -104,15 +104,15 @@ namespace DepictionEngine
         private ManagerDictionary _managers;
 
         [ThreadStatic]
-        private static InitializationContext _initializingState = InitializationContext.Editor;
-        public static InitializationContext initializingState
+        private static InitializationContext _initializingContext = InitializationContext.Editor;
+        public static InitializationContext initializingContext
         {
-            get { return _initializingState; }
+            get { return _initializingContext; }
             set
             {
-                if (_initializingState == value)
+                if (_initializingContext == value)
                     return;
-                _initializingState = value;
+                _initializingContext = value;
             }
         }
         [ThreadStatic]
@@ -1049,14 +1049,14 @@ namespace DepictionEngine
         /// <param name="parent">The parent <see cref="UnityEngine.Transform"/> under which the instance should be created.</param>
         /// <param name="json">Values to initialize the instance with.</param>
         /// <param name="propertyModifiers">A list of <see cref="DepictionEngine.PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
-        /// <param name="initializingState"></param>
+        /// <param name="initializingContext"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
         /// <param name="isFallbackValues">If true a <see cref="DepictionEngine.FallbackValues"/> will be created and the instance type will be passed to the <see cref="DepictionEngine.FallbackValues.SetFallbackJsonFromType"/> function.</param>
         /// <returns>The newly created instance.</returns>
-        public T CreateInstance<T>(Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingState = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false) where T : IDisposable
+        public T CreateInstance<T>(Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false) where T : IDisposable
         {
-            return (T)CreateInstance(typeof(T), parent, json, propertyModifiers, initializingState, setParentAndAlign, moveToView, isFallbackValues);
+            return (T)CreateInstance(typeof(T), parent, json, propertyModifiers, initializingContext, setParentAndAlign, moveToView, isFallbackValues);
         }
 
         /// <summary>
@@ -1066,18 +1066,18 @@ namespace DepictionEngine
         /// <param name="parent">The parent <see cref="UnityEngine.Transform"/> under which the instance should be created.</param>
         /// <param name="json">Values to initialize the instance with.</param>
         /// <param name="propertyModifiers">A list of <see cref="DepictionEngine.PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
-        /// <param name="initializingState"></param>
+        /// <param name="initializingContext"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
         /// <param name="isFallbackValues">If true a <see cref="DepictionEngine.FallbackValues"/> will be created and the instance type will be passed to the <see cref="DepictionEngine.FallbackValues.SetFallbackJsonFromType"/> function.</param>
         /// <returns>The newly created instance.</returns>
-        public IDisposable CreateInstance(Type type, Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingState = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false)
+        public IDisposable CreateInstance(Type type, Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false)
         {
             if (type == null)
                 return null;
 
-            if (initializingState == InitializationContext.Existing_Or_Editor_UndoRedo)
-                initializingState = InitializationContext.Editor;
+            if (initializingContext == InitializationContext.Existing_Or_Editor_UndoRedo)
+                initializingContext = InitializationContext.Editor;
 
             bool isMonoBehaviourType = type.IsSubclassOf(typeof(MonoBehaviour));
 #if UNITY_EDITOR
@@ -1105,7 +1105,7 @@ namespace DepictionEngine
 
             IDisposable disposable = null;
 
-            if (initializingState != InitializationContext.Editor && initializingState != InitializationContext.Editor_Duplicate && initializingState != InitializationContext.Existing_Or_Editor_UndoRedo)
+            if (initializingContext != InitializationContext.Editor && initializingContext != InitializationContext.Editor_Duplicate && initializingContext != InitializationContext.Existing_Or_Editor_UndoRedo)
             {
                 PoolManager poolManager = PoolManager.Instance();
                 if (poolManager != Disposable.NULL)
@@ -1120,14 +1120,14 @@ namespace DepictionEngine
                     InitializeGameObject(go, parent, setParentAndAlign, moveToView);
 
 #if UNITY_EDITOR
-                    Editor.UndoManager.RegisterCreatedObjectUndo(go, initializingState);
+                    Editor.UndoManager.RegisterCreatedObjectUndo(go, initializingContext);
 #endif
 
-                    disposable = go.AddSafeComponent(type, initializingState, json, propertyModifiers, isFallbackValues) as IDisposable;
+                    disposable = go.AddSafeComponent(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
                 }
                 else if (typeof(IDisposable).IsAssignableFrom(type))
                 {
-                    InitializingState(() =>
+                    InitializingContext(() =>
                     {
                         if (typeof(IScriptableBehaviour).IsAssignableFrom(type))
                             InhibitExplicitAwake(() => { disposable = ScriptableObject.CreateInstance(type) as IScriptableBehaviour; }, true);
@@ -1135,14 +1135,14 @@ namespace DepictionEngine
                             disposable = Activator.CreateInstance(type) as IDisposable;
 
 #if UNITY_EDITOR
-                        Editor.UndoManager.RegisterCreatedObjectUndo(disposable as UnityEngine.Object, initializingState);
+                        Editor.UndoManager.RegisterCreatedObjectUndo(disposable as UnityEngine.Object, initializingContext);
 #endif
 
                         if (disposable is IScriptableBehaviour)
                             (disposable as IScriptableBehaviour).ExplicitAwake();
                         disposable.Initialize();
 
-                    }, initializingState, json, propertyModifiers, isFallbackValues);
+                    }, initializingContext, json, propertyModifiers, isFallbackValues);
                 }
             }
             else if (disposable is MonoBehaviourDisposable)
@@ -1156,7 +1156,7 @@ namespace DepictionEngine
                     component.InhibitExplicitOnEnableDisable();
 
                 go.SetActive(true);
-                disposable = go.GetSafeComponent(type, initializingState, json, propertyModifiers, isFallbackValues) as IDisposable;
+                disposable = go.GetSafeComponent(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
 
                 foreach (MonoBehaviourDisposable component in components)
                     component.UninhibitExplicitOnEnableDisable();
@@ -1168,7 +1168,7 @@ namespace DepictionEngine
                 }
             }
             else
-                Initialize(disposable, initializingState, json, propertyModifiers, isFallbackValues);
+                Initialize(disposable, initializingContext, json, propertyModifiers, isFallbackValues);
 
             if (!disposable.IsDisposing())
             {
@@ -1205,18 +1205,18 @@ namespace DepictionEngine
         /// </summary>
         /// <typeparam name="T">The type of the UnityEngine.Object to duplicate.</typeparam>
         /// <param name="objectToDuplicate">The UnityEngine.Object instance to duplicate.</param>
-        /// <param name="initializationState"></param>
+        /// <param name="initializingContext"></param>
         /// <returns>The duplicated object</returns>
-        public static T Duplicate<T>(T objectToDuplicate, InitializationContext initializationState) where T : UnityEngine.Object
+        public static T Duplicate<T>(T objectToDuplicate, InitializationContext initializingContext) where T : UnityEngine.Object
         {
             T duplicatedObject = null;
 
-            InitializingState(() =>
+            InitializingContext(() =>
             {
                 duplicatedObject = !DisposeManager.IsNullOrDisposing(objectToDuplicate) ? Object.Instantiate(objectToDuplicate) : null;
 
 #if UNITY_EDITOR
-                Editor.UndoManager.RegisterCreatedObjectUndo(duplicatedObject, initializationState);
+                Editor.UndoManager.RegisterCreatedObjectUndo(duplicatedObject, initializingContext);
 #endif
                 if (duplicatedObject is IDisposable)
                 {
@@ -1224,7 +1224,7 @@ namespace DepictionEngine
                         (duplicatedObject as IScriptableBehaviour).ExplicitAwake();
                     (duplicatedObject as IDisposable).Initialize();
                 }
-            }, initializationState);
+            }, initializingContext);
 
             return duplicatedObject;
         }
@@ -1233,44 +1233,44 @@ namespace DepictionEngine
         /// Initialize an object.
         /// </summary>
         /// <param name="disposable">The object to initialize.</param>
-        /// <param name="initializationState"></param>
+        /// <param name="initializingContext"></param>
         /// <param name="json">Values to initialize the instance with.</param>
         /// <param name="propertyModifiers">A list of <see cref="DepictionEngine.PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
         /// <param name="isFallbackValues">If true a <see cref="DepictionEngine.FallbackValues"/> will be created and the instance type will be passed to the <see cref="DepictionEngine.FallbackValues.SetFallbackJsonFromType"/> function.</param>
         /// <returns>The object that was initialized.</returns>
-        public static IDisposable Initialize(IDisposable disposable, InitializationContext initializationState = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
+        public static IDisposable Initialize(IDisposable disposable, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
-            InitializingState(() =>
+            InitializingContext(() =>
             {
                 if (disposable is IScriptableBehaviour)
                     (disposable as IScriptableBehaviour).ExplicitAwake();
                 disposable.Initialize();
-            }, initializationState, json, propertyModifiers, isFallbackValues);
+            }, initializingContext, json, propertyModifiers, isFallbackValues);
 
             return disposable;
         }
 
-        public static void InitializingState(Action callback, InitializationContext initializingState, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
+        public static void InitializingContext(Action callback, InitializationContext initializingContext, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
-            InitializationContext lastInitializingState = InstanceManager.initializingState;
+            InitializationContext lastinitializingContext = InstanceManager.initializingContext;
             JSONNode lastInitializeJSON = InstanceManager.initializeJSON;
             List<PropertyModifier> lastInitializePropertyModifers = InstanceManager.initializePropertyModifiers;
             bool lastIsFallbackValues = InstanceManager.initializeIsFallbackValues;
 
-            InstanceManager.initializingState = initializingState;
+            InstanceManager.initializingContext = initializingContext;
             InstanceManager.initializeJSON = json;
             InstanceManager.initializePropertyModifiers = propertyModifiers;
             InstanceManager.initializeIsFallbackValues = isFallbackValues;
 
             callback();
             
-            InstanceManager.initializingState = lastInitializingState;
+            InstanceManager.initializingContext = lastinitializingContext;
             InstanceManager.initializeJSON = lastInitializeJSON;
             InstanceManager.initializePropertyModifiers = lastInitializePropertyModifers;
             InstanceManager.initializeIsFallbackValues = lastIsFallbackValues;
         }
 
-        private static void InhibitExplicitAwake(Action callback, bool inhibitExplicitAwake)
+        public static void InhibitExplicitAwake(Action callback, bool inhibitExplicitAwake)
         {
             bool lastInhibitExplicitAwake = InstanceManager.inhibitExplicitAwake;
             

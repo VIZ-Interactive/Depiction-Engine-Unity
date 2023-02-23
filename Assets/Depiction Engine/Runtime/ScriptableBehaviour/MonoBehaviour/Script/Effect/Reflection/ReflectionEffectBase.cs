@@ -20,13 +20,13 @@ namespace DepictionEngine
 
         private bool _reflectionTextureDirty;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => reflectionTextureSize = value, new Vector2Int(512, 512), initializingState);
-            InitValue(value => renderShadows = value, false, initializingState);
-            InitValue(value => ignoreLayers = value, LayerMask.GetMask(new string[] { typeof(UIBase).Name, typeof(Star).Name, typeof(TerrainEdgeMeshRendererVisual).Name, typeof(TerrainGridMeshObject).Name, typeof(TerrainGridMeshObject).Name + InstanceManager.GLOBAL_LAYER, typeof(AtmosphereGridMeshObject).Name, "Ignore Render", "Ignore Raycast" }), initializingState);
+            InitValue(value => reflectionTextureSize = value, new Vector2Int(512, 512), initializingContext);
+            InitValue(value => renderShadows = value, false, initializingContext);
+            InitValue(value => ignoreLayers = value, LayerMask.GetMask(new string[] { typeof(UIBase).Name, typeof(Star).Name, typeof(TerrainEdgeMeshRendererVisual).Name, typeof(TerrainGridMeshObject).Name, typeof(TerrainGridMeshObject).Name + InstanceManager.GLOBAL_LAYER, typeof(AtmosphereGridMeshObject).Name, "Ignore Render", "Ignore Raycast" }), initializingContext);
         }
 
         protected override float GetDefaultAlpha()

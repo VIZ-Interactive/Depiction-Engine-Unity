@@ -67,20 +67,20 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => snapDistanceToZoom = value, false, initializingState);
-            InitValue(value => useInertia = value, true, initializingState);
-            InitValue(value => dynamicClippingPlanes = value, true, initializingState);
-            InitValue(value => clippingDistanceMultiplier = value, 5.0f, initializingState);
-            InitValue(value => minMaxFarClippingDistance = value, new Vector2(2000.0f, 15000.0f), initializingState);
-            InitValue(value => tiltLimit = value, new Vector2(0.0f, 1.5f), initializingState);
-            InitValue(value => scrollWheelMultiplier = value, 1.0f, initializingState);
-            InitValue(value => duration = value, 5.0f, initializingState);
-            InitValue(value => toDistance = value, DEFAULT_DISTANCE_VALUE, initializingState);
-            InitValue(value => toGeoCoordinate = value, GeoCoordinate3Double.zero, initializingState);
+            InitValue(value => snapDistanceToZoom = value, false, initializingContext);
+            InitValue(value => useInertia = value, true, initializingContext);
+            InitValue(value => dynamicClippingPlanes = value, true, initializingContext);
+            InitValue(value => clippingDistanceMultiplier = value, 5.0f, initializingContext);
+            InitValue(value => minMaxFarClippingDistance = value, new Vector2(2000.0f, 15000.0f), initializingContext);
+            InitValue(value => tiltLimit = value, new Vector2(0.0f, 1.5f), initializingContext);
+            InitValue(value => scrollWheelMultiplier = value, 1.0f, initializingContext);
+            InitValue(value => duration = value, 5.0f, initializingContext);
+            InitValue(value => toDistance = value, DEFAULT_DISTANCE_VALUE, initializingContext);
+            InitValue(value => toGeoCoordinate = value, GeoCoordinate3Double.zero, initializingContext);
         }
 
         protected override bool GetDefaultPreventMeshPenetration()

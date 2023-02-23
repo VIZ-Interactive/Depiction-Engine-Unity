@@ -52,37 +52,37 @@ namespace DepictionEngine
 
         private UnityEngine.ReflectionProbe _reflectionProbe;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => reflectionProbeType = value, UnityEngine.Rendering.ReflectionProbeMode.Baked, initializingState);
-            InitValue(value => refreshMode = value, UnityEngine.Rendering.ReflectionProbeRefreshMode.OnAwake, initializingState);
-            InitValue(value => timeSlicing = value, UnityEngine.Rendering.ReflectionProbeTimeSlicingMode.AllFacesAtOnce, initializingState);
+            InitValue(value => reflectionProbeType = value, UnityEngine.Rendering.ReflectionProbeMode.Baked, initializingContext);
+            InitValue(value => refreshMode = value, UnityEngine.Rendering.ReflectionProbeRefreshMode.OnAwake, initializingContext);
+            InitValue(value => timeSlicing = value, UnityEngine.Rendering.ReflectionProbeTimeSlicingMode.AllFacesAtOnce, initializingContext);
 
-            InitValue(value => importance = value, 1, initializingState);
-            InitValue(value => intensity = value, 1.0f, initializingState);
-            InitValue(value => boxProjection = value, false, initializingState);
-            InitValue(value => blendDistance = value, 1.0f, initializingState);
-            InitValue(value => boxSize = value, new Vector3(10.0f, 10.0f, 10.0f), initializingState);
-            InitValue(value => boxOffset = value, Vector3.zero, initializingState);
+            InitValue(value => importance = value, 1, initializingContext);
+            InitValue(value => intensity = value, 1.0f, initializingContext);
+            InitValue(value => boxProjection = value, false, initializingContext);
+            InitValue(value => blendDistance = value, 1.0f, initializingContext);
+            InitValue(value => boxSize = value, new Vector3(10.0f, 10.0f, 10.0f), initializingContext);
+            InitValue(value => boxOffset = value, Vector3.zero, initializingContext);
 
-            InitValue(value => resolution = value, 128, initializingState);
-            InitValue(value => hdr = value, true, initializingState);
-            InitValue(value => shadowDistance = value, 100.0f, initializingState);
-            InitValue(value => clearFlags = value, UnityEngine.Rendering.ReflectionProbeClearFlags.Skybox, initializingState);
-            InitValue(value => backgroundColor = value, new Color(0.1921569f, 0.3019608f, 0.4745098f, 0.0f), initializingState);
-            InitValue(value => cullingMask = value, 0, initializingState);
-            InitValue(value => nearClipPlane = value, 0.3f, initializingState);
-            InitValue(value => farClipPlane = value, 1000.0f, initializingState);
+            InitValue(value => resolution = value, 128, initializingContext);
+            InitValue(value => hdr = value, true, initializingContext);
+            InitValue(value => shadowDistance = value, 100.0f, initializingContext);
+            InitValue(value => clearFlags = value, UnityEngine.Rendering.ReflectionProbeClearFlags.Skybox, initializingContext);
+            InitValue(value => backgroundColor = value, new Color(0.1921569f, 0.3019608f, 0.4745098f, 0.0f), initializingContext);
+            InitValue(value => cullingMask = value, 0, initializingContext);
+            InitValue(value => nearClipPlane = value, 0.3f, initializingContext);
+            InitValue(value => farClipPlane = value, 1000.0f, initializingContext);
         }
 
 #if UNITY_EDITOR
-        protected override void RegisterInitializeObjectUndo(InstanceManager.InitializationContext initializingState)
+        protected override void RegisterInitializeObjectUndo(InstanceManager.InitializationContext initializingContext)
         {
-            base.RegisterInitializeObjectUndo(initializingState);
+            base.RegisterInitializeObjectUndo(initializingContext);
 
-            Editor.UndoManager.RegisterCreatedObjectUndo(reflectionProbe, initializingState);
+            Editor.UndoManager.RegisterCreatedObjectUndo(reflectionProbe, initializingContext);
         }
 #endif
 

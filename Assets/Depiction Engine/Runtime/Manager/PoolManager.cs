@@ -125,14 +125,14 @@ namespace DepictionEngine
             StartDynamicResizing();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => enablePooling = value, true, initializingState);
-            InitValue(value => maxSize = value, 150, initializingState);
-            InitValue(value => resizeInterval = value, 10.0f, initializingState);
-            InitValue(value => destroyCount = value, 50, initializingState);
+            InitValue(value => enablePooling = value, true, initializingContext);
+            InitValue(value => maxSize = value, 150, initializingContext);
+            InitValue(value => resizeInterval = value, 10.0f, initializingContext);
+            InitValue(value => destroyCount = value, 50, initializingContext);
         }
 
         /// <summary>
@@ -239,12 +239,6 @@ namespace DepictionEngine
                         _setExpandedRecursiveMethodInfo.Invoke(_hierarchyWindow, new object[] { go.GetInstanceID(), false });
                         _setExpandedRecursiveMethodInfo.Invoke(_hierarchyWindow, new object[] { gameObject.GetInstanceID(), false });
                     }
-
-                    //Make sure GameObject is visible
-                    UnityEditor.SceneVisibilityManager.instance.Show(go, true);
-
-                    //Make sure GameObject is pickable
-                    UnityEditor.SceneVisibilityManager.instance.EnablePicking(go, true);
 #endif
                 }
 
@@ -308,6 +302,17 @@ namespace DepictionEngine
                                     if (disposable is MonoBehaviour)
                                     {
                                         GameObject go = (disposable as MonoBehaviour).gameObject;
+
+#if UNITY_EDITOR
+                                        //Make sure GameObject is visible
+                                        if (UnityEditor.SceneVisibilityManager.instance.IsHidden(go, true))
+                                            UnityEditor.SceneVisibilityManager.instance.Show(go, true);
+
+                                        //Make sure GameObject is pickable
+                                        if (UnityEditor.SceneVisibilityManager.instance.IsPickingDisabled(go, true))
+                                            UnityEditor.SceneVisibilityManager.instance.EnablePicking(go, true);
+#endif
+
                                         MonoBehaviourDisposable[] monoBehaviourDisposables = go.GetComponents<MonoBehaviourDisposable>();
                                         foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
                                             monoBehaviourDisposable.Recycle();

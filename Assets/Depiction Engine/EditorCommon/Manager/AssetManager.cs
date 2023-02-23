@@ -14,7 +14,7 @@ namespace DepictionEngine.Editor
             //Debug.Log(PrefabUtility.GetCorrespondingObjectFromSource(gameObject));
             //Object obj = gameObject.GetComponent<Object>();
             //gameObject.transform.hideFlags |= HideFlags.HideInInspector;
-            //InstanceManager.Initialize(gameObject, InitializationState.Programmatically_Duplicate);
+            //InstanceManager.Initialize(gameObject, initializingContext.Programmatically_Duplicate);
             //PrefabUtility.ApplyPrefabInstance(gameObject, InteractionMode.AutomatedAction);
             //DisposeManager.Dispose(g);
         }

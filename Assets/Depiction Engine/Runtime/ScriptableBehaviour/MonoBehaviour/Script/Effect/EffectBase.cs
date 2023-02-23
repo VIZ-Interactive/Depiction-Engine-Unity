@@ -11,11 +11,11 @@ namespace DepictionEngine
         [SerializeField, Tooltip("How visible should the effect be."), EndFoldout]
         private float _alpha;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => alpha = value, GetDefaultAlpha(), initializingState);
+            InitValue(value => alpha = value, GetDefaultAlpha(), initializingContext);
         }
 
         protected virtual float GetDefaultAlpha()

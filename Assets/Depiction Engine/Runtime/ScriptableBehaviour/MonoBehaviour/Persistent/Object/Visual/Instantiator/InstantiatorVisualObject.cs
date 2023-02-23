@@ -6,6 +6,9 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// Instantiate the <see cref="DepictionEngine.Visual"/> found in an <see cref="DepictionEngine.AssetBundle"/> as children.
+    /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/" + nameof(InstantiatorVisualObject))]
     [RequireScript(typeof(AssetReference))]
     public class InstantiatorVisualObject : VisualObject
@@ -51,11 +54,11 @@ namespace DepictionEngine
             _gameObjects = null;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => autoInstantiate = value, true, initializingState);
+            InitValue(value => autoInstantiate = value, true, initializingContext);
         }
 
         public override bool LateInitialize()

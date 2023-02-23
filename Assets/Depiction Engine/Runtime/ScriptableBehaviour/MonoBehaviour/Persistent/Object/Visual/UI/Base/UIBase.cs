@@ -25,13 +25,13 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => useCollider = value, GetDefaultUseCollider(), initializingState);
-            InitValue(value => screenSpace = value, true, initializingState);
-            InitValue(value => scale = value, 2.0f, initializingState);
+            InitValue(value => useCollider = value, GetDefaultUseCollider(), initializingContext);
+            InitValue(value => screenSpace = value, true, initializingContext);
+            InitValue(value => scale = value, 2.0f, initializingContext);
         }
 
         protected override void VisibleCamerasChanged()

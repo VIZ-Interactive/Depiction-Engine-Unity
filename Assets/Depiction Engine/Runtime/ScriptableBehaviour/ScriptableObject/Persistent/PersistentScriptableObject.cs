@@ -99,9 +99,9 @@ namespace DepictionEngine
             return true;
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializationState)
+        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
         {
-            if (base.Initialize(initializationState))
+            if (base.Initialize(initializingContext))
             {
                 StartAutoSynchronizeIntervalTimer();
 
@@ -110,14 +110,14 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => autoDispose = value, DEFAULT_AUTO_DISPOSE, initializingState);
-            InitValue(value => autoSynchronizeInterval = value, DEFAULT_AUTO_SYNCHRONIZE_INTERVAL, initializingState);
-            InitValue(value => dontSaveToScene = value, GetDefaultDontSaveToScene(), initializingState);
-            InitValue(value => createPersistentIfMissing = value, true, initializingState);
+            InitValue(value => autoDispose = value, DEFAULT_AUTO_DISPOSE, initializingContext);
+            InitValue(value => autoSynchronizeInterval = value, DEFAULT_AUTO_SYNCHRONIZE_INTERVAL, initializingContext);
+            InitValue(value => dontSaveToScene = value, GetDefaultDontSaveToScene(), initializingContext);
+            InitValue(value => createPersistentIfMissing = value, true, initializingContext);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

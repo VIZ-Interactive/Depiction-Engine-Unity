@@ -84,22 +84,22 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => color = value, Color.white, initializingState);
-            InitValue(value => text = value, "My Label", initializingState);
-            InitValue(value => repeatCount = value, 0, initializingState);
-            InitValue(value => repeatSpacer = value, "      ", initializingState);
-            InitValue(value => fontSize = value, 30.0f, initializingState);
-            InitValue(value => maxVisibleLines = value, 1, initializingState);
-            InitValue(value => alignment = value, TextAlignmentOptions.Capline, initializingState);
-            InitValue(value => width = value, 250.0f, initializingState);
-            InitValue(value => height = value, 20.0f, initializingState);
-            InitValue(value => useEndCoordinate = value, false, initializingState);
-            InitValue(value => endCoordinate = value, Vector3Double.zero, initializingState);
-            InitValue(value => textCurve = value, new List<Vector3Double>(), initializingState);
+            InitValue(value => color = value, Color.white, initializingContext);
+            InitValue(value => text = value, "My Label", initializingContext);
+            InitValue(value => repeatCount = value, 0, initializingContext);
+            InitValue(value => repeatSpacer = value, "      ", initializingContext);
+            InitValue(value => fontSize = value, 30.0f, initializingContext);
+            InitValue(value => maxVisibleLines = value, 1, initializingContext);
+            InitValue(value => alignment = value, TextAlignmentOptions.Capline, initializingContext);
+            InitValue(value => width = value, 250.0f, initializingContext);
+            InitValue(value => height = value, 20.0f, initializingContext);
+            InitValue(value => useEndCoordinate = value, false, initializingContext);
+            InitValue(value => endCoordinate = value, Vector3Double.zero, initializingContext);
+            InitValue(value => textCurve = value, new List<Vector3Double>(), initializingContext);
         }
 
 #if UNITY_EDITOR

@@ -8,77 +8,77 @@ namespace DepictionEngine
 {
     public static class GameObjectExtension
     {
-        public static T AddSafeComponent<T>(this GameObject go, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
+        public static T AddSafeComponent<T>(this GameObject go, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
         {
-            return (T)go.AddSafeComponent(typeof(T), initializingState, json, propertyModifiers);
+            return (T)go.AddSafeComponent(typeof(T), initializingContext, json, propertyModifiers);
         }
 
-        public static Component AddSafeComponent(this GameObject go, Type type, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
+        public static Component AddSafeComponent(this GameObject go, Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
-            if (initializingState == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo)
-                initializingState = InstanceManager.InitializationContext.Editor;
+            if (initializingContext == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo)
+                initializingContext = InstanceManager.InitializationContext.Editor;
 
             Component component = null;
 
-            InstanceManager.InitializingState(() => 
+            InstanceManager.InitializingContext(() => 
             { 
 #if UNITY_EDITOR
-                if (initializingState == InstanceManager.InitializationContext.Editor || initializingState == InstanceManager.InitializationContext.Editor_Duplicate)
+                if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate)
                     component = Editor.UndoManager.AddComponent(go, type);
 #endif
                 if (DisposeManager.IsNullOrDisposing(component))
                     component = go.AddComponent(type);
-            }, initializingState, json, propertyModifiers, isFallbackValues);
+            }, initializingContext, json, propertyModifiers, isFallbackValues);
 
             //The Null check is because Unity sometimes prevent component creation if a component of similar type already exists
             if (component is MonoBehaviourDisposable && !DisposeManager.IsNullOrDisposing(component))
             {
                 MonoBehaviourDisposable monoBehaviourDisposable = component as MonoBehaviourDisposable;
-                TransformExtension.InitializeComponent(monoBehaviourDisposable, initializingState, json, propertyModifiers, isFallbackValues);
+                TransformExtension.InitializeComponent(monoBehaviourDisposable, initializingContext, json, propertyModifiers, isFallbackValues);
                 monoBehaviourDisposable.ExplicitOnEnable();
             }
 
             return component;
         }
 
-        public static T GetSafeComponent<T>(this GameObject go, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
+        public static T GetSafeComponent<T>(this GameObject go, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
         {
-            return (T)go.transform.GetSafeComponent(typeof(T), initializingState, json, propertyModifiers);
+            return (T)go.transform.GetSafeComponent(typeof(T), initializingContext, json, propertyModifiers);
         }
 
-        public static Component GetSafeComponent(this GameObject go, Type type, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
+        public static Component GetSafeComponent(this GameObject go, Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
-            return go.transform.GetSafeComponent(type, initializingState, json, propertyModifiers, isFallbackValues);
+            return go.transform.GetSafeComponent(type, initializingContext, json, propertyModifiers, isFallbackValues);
         }
 
-        public static T GetSafeComponentInParent<T>(this GameObject go, bool includeInactive, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
+        public static T GetSafeComponentInParent<T>(this GameObject go, bool includeInactive, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
         {
-            return (T)go.transform.GetSafeComponentInParent(typeof(T), includeInactive, initializingState, json, propertyModifiers);
+            return (T)go.transform.GetSafeComponentInParent(typeof(T), includeInactive, initializingContext, json, propertyModifiers);
         }
 
-        public static Component GetSafeComponentInParent(this GameObject go, Type type, bool includeInactive, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null)
+        public static Component GetSafeComponentInParent(this GameObject go, Type type, bool includeInactive, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null)
         {
-            return go.transform.GetSafeComponentInParent(type, includeInactive, initializingState, json, propertyModifiers);
+            return go.transform.GetSafeComponentInParent(type, includeInactive, initializingContext, json, propertyModifiers);
         }
 
-        public static List<T> GetSafeComponents<T>(this GameObject go, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
+        public static List<T> GetSafeComponents<T>(this GameObject go, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
         {
-            return go.transform.GetSafeComponents<T>(initializingState, json, propertyModifiers);
+            return go.transform.GetSafeComponents<T>(initializingContext, json, propertyModifiers);
         }
 
-        public static List<Component> GetSafeComponents(this GameObject go, Type type, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null)
+        public static List<Component> GetSafeComponents(this GameObject go, Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null)
         {
-            return go.transform.GetSafeComponents(type, initializingState, json, propertyModifiers);
+            return go.transform.GetSafeComponents(type, initializingContext, json, propertyModifiers);
         }
 
-        public static List<T> GetSafeComponentsInChildren<T>(this GameObject go, bool includeSibling = true, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
+        public static List<T> GetSafeComponentsInChildren<T>(this GameObject go, bool includeSibling = true, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
         {
-            return go.transform.GetSafeComponentsInChildren<T>(includeSibling, initializingState, json, propertyModifiers);
+            return go.transform.GetSafeComponentsInChildren<T>(includeSibling, initializingContext, json, propertyModifiers);
         }
 
-        public static List<Component> GetSafeComponentsInChildren(this GameObject go, Type type, bool includeSibling = false, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null)
+        public static List<Component> GetSafeComponentsInChildren(this GameObject go, Type type, bool includeSibling = false, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null)
         {
-            return go.transform.GetSafeComponentsInChildren(type, includeSibling, initializingState, json, propertyModifiers);
+            return go.transform.GetSafeComponentsInChildren(type, includeSibling, initializingContext, json, propertyModifiers);
         }
 
         public static IDisposable GetDisposableInComponents(this GameObject go)

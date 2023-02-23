@@ -117,9 +117,9 @@ namespace DepictionEngine
                 _lastTransformLocalScale = transformLocalScale;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             //Make sure the gameObject is activated at least once so when we Destroy, the OnDestroy will be triggered even during Undo/Redo
             if (!isActiveAndEnabled)
@@ -130,11 +130,11 @@ namespace DepictionEngine
             SetComponentDirtyFlag(true, true, true);
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            if (initializingState == InstanceManager.InitializationContext.Reset)
+            if (initializingContext == InstanceManager.InitializationContext.Reset)
             {
                 transformLocalPosition = Vector3.zero;
                 transformLocalRotation = Quaternion.identity;
@@ -216,7 +216,7 @@ namespace DepictionEngine
         {
             bool siblingsChanged = base.SiblingsHasChanged();
 
-            if (!siblingsChanged && objectBase == Disposable.NULL && GetSafeComponent<Object>(GetInitializeState()) != Disposable.NULL)
+            if (!siblingsChanged && objectBase == Disposable.NULL && GetSafeComponent<Object>(GetInitializeContext()) != Disposable.NULL)
                 siblingsChanged = true;
 
             return siblingsChanged;
@@ -226,10 +226,13 @@ namespace DepictionEngine
         {
             bool childrenChanged = base.ChildrenHasChanged();
 
-            int childCount = transform.childCount + (objectBase != Disposable.NULL ? objectBase.GetAdditionalChildCount() : 0);
-            if (!childrenChanged && children.Count != childCount)
-                childrenChanged = true;
-    
+            if (this != null)
+            {
+                int childCount = transform.childCount + (objectBase != Disposable.NULL ? objectBase.GetAdditionalChildCount() : 0);
+                if (!childrenChanged && children.Count != childCount)
+                    childrenChanged = true;
+            }
+
             return childrenChanged;
         }
 
@@ -1100,21 +1103,21 @@ namespace DepictionEngine
             return overrideDestroyingContext;
         }
 
-        public T GetSafeComponent<T>(InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponent<T>(initializationState); }
+        public T GetSafeComponent<T>(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponent<T>(initializingContext); }
 
-        public UnityEngine.Component GetSafeComponent(Type type, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically) { return transform.GetSafeComponent(type, initializationState); }
+        public UnityEngine.Component GetSafeComponent(Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) { return transform.GetSafeComponent(type, initializingContext); }
 
-        public T GetSafeComponentInParent<T>(bool includeInactive, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponentInParent<T>(includeInactive, initializationState); }
+        public T GetSafeComponentInParent<T>(bool includeInactive, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponentInParent<T>(includeInactive, initializingContext); }
 
-        public UnityEngine.Component GetSafeComponentInParent(Type type, bool includeInactive, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically) { return transform.GetSafeComponentInParent(type, includeInactive, initializationState); }
+        public UnityEngine.Component GetSafeComponentInParent(Type type, bool includeInactive, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) { return transform.GetSafeComponentInParent(type, includeInactive, initializingContext); }
 
-        public List<T> GetSafeComponents<T>(InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponents<T>(initializationState); }
+        public List<T> GetSafeComponents<T>(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponents<T>(initializingContext); }
 
-        public List<UnityEngine.Component> GetSafeComponents(Type type, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically) { return transform.GetSafeComponents(type, initializationState); }
+        public List<UnityEngine.Component> GetSafeComponents(Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) { return transform.GetSafeComponents(type, initializingContext); }
 
-        public List<T> GetSafeComponentsInChildren<T>(bool includeSibling = false, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponentsInChildren<T>(includeSibling, initializationState); }
+        public List<T> GetSafeComponentsInChildren<T>(bool includeSibling = false, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponentsInChildren<T>(includeSibling, initializingContext); }
 
-        public List<UnityEngine.Component> GetSafeComponentsInChildren(Type type, bool includeSibling = false, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically) { return transform.GetSafeComponentsInChildren(type, includeSibling, initializationState); }
+        public List<UnityEngine.Component> GetSafeComponentsInChildren(Type type, bool includeSibling = false, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) { return transform.GetSafeComponentsInChildren(type, includeSibling, initializingContext); }
     }
 
     [Serializable]

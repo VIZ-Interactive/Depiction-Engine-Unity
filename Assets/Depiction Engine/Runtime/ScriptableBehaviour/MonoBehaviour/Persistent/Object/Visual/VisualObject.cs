@@ -91,15 +91,18 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             if (meshRendererVisualDirtyFlags == null)
                 meshRendererVisualDirtyFlags = ScriptableObject.CreateInstance(GetMeshRendererVisualDirtyFlagType()) as VisualObjectVisualDirtyFlags;
 
+            if (initializingContext == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo)
+                meshRendererVisualDirtyFlags.Recreate();
+
             //Dont Popup if the object was duplicated or already existed
-            popup = initializingState == InstanceManager.InitializationContext.Editor || initializingState == InstanceManager.InitializationContext.Programmatically;
+            popup = initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Programmatically;
             
             if (!popup)
                 DetectCompromisedPopup();
@@ -123,14 +126,14 @@ namespace DepictionEngine
             return typeof(VisualObjectVisualDirtyFlags);
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => dontSaveVisualsToScene = value, GetDefaultDontSaveVisualsToScene(), initializingState);
-            InitValue(value => alpha = value, GetDefaultAlpha(), initializingState);
-            InitValue(value => popupType = value, GetDefaultPopupType(), initializingState);
-            InitValue(value => popupDuration = value, GetDefaultPopupDuration(), initializingState);
+            InitValue(value => dontSaveVisualsToScene = value, GetDefaultDontSaveVisualsToScene(), initializingContext);
+            InitValue(value => alpha = value, GetDefaultAlpha(), initializingContext);
+            InitValue(value => popupType = value, GetDefaultPopupType(), initializingContext);
+            InitValue(value => popupDuration = value, GetDefaultPopupDuration(), initializingContext);
         }
 
 #if UNITY_EDITOR
@@ -666,24 +669,24 @@ namespace DepictionEngine
             });
         }
 
-        protected virtual T CreateMeshRendererVisual<T>(string name = null, Transform parent = null, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically) where T : MeshRendererVisual
+        protected virtual T CreateMeshRendererVisual<T>(string name = null, Transform parent = null) where T : MeshRendererVisual
         {
-            return CreateVisual<T>(name, parent, initializingState);
+            return CreateVisual<T>(name, parent);
         }
 
-        protected virtual MeshRendererVisual CreateMeshRendererVisual(Type type, string name = null, Transform parent = null, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        protected virtual MeshRendererVisual CreateMeshRendererVisual(Type type, string name = null, Transform parent = null)
         {
-            return CreateVisual(type, name, parent, initializingState) as MeshRendererVisual;
+            return CreateVisual(type, name, parent) as MeshRendererVisual;
         }
 
-        protected T CreateVisual<T>(string name = null, Transform parent = null, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, List<PropertyModifier> propertyModifers = null) where T : Visual
+        protected T CreateVisual<T>(string name = null, Transform parent = null, List<PropertyModifier> propertyModifers = null) where T : Visual
         {
-            return (T)CreateVisual(typeof(T), name, parent, initializingState, propertyModifers);
+            return (T)CreateVisual(typeof(T), name, parent, propertyModifers);
         }
 
-        protected Visual CreateVisual(Type type, string name = null, Transform parent = null, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, List<PropertyModifier> propertyModifers = null)
+        protected Visual CreateVisual(Type type, string name = null, Transform parent = null, List<PropertyModifier> propertyModifers = null)
         {
-            return CreateChild(type, name, parent, initializingState, propertyModifers) as Visual;
+            return CreateChild(type, name, parent, InstanceManager.InitializationContext.Programmatically, propertyModifers) as Visual;
         }
 
         public void AddAllChildMeshRenderers()

@@ -22,7 +22,7 @@ namespace DepictionEngine
             return initializeJSON;
         }
 
-        protected override SerializableGuid GetId(SerializableGuid id, InstanceManager.InitializationContext initializationState)
+        protected override SerializableGuid GetId(SerializableGuid id, InstanceManager.InitializationContext initializingContext)
         {
             if (_initializationJson != null)
             {
@@ -32,7 +32,7 @@ namespace DepictionEngine
                 _initializationJson.Remove(nameof(PropertyScriptableObject.id));
             }
 
-            return base.GetId(id, initializationState);
+            return base.GetId(id, initializingContext);
         }
 
         protected override bool InitializeLastFields()
@@ -46,16 +46,16 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void  InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void  InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
           
-            InitValue(value => enabled = value, true, initializingState);
+            InitValue(value => enabled = value, true, initializingContext);
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializationState)
+        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
         {
-            if (base.Initialize(initializationState))
+            if (base.Initialize(initializingContext))
             {
                 if (_initializationJson != null)
                     SetJson(_initializationJson);
@@ -65,9 +65,9 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void Initialized(InstanceManager.InitializationContext initializingState)
+        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
         {
-            base.Initialized(initializingState);
+            base.Initialized(initializingContext);
 
             _initializationJson = null;
         }

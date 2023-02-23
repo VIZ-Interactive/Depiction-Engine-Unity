@@ -42,12 +42,12 @@ namespace DepictionEngine
             }
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => fallbackValuesId = value, GetDefaultFallbackValuesId(), () => { return GetDuplicateComponentReferenceId(fallbackValuesId, fallbackValues, initializingState); }, initializingState);
-            InitValue(value => seed = value, -1, initializingState);
+            InitValue(value => fallbackValuesId = value, GetDefaultFallbackValuesId(), () => { return GetDuplicateComponentReferenceId(fallbackValuesId, fallbackValues, initializingContext); }, initializingContext);
+            InitValue(value => seed = value, -1, initializingContext);
         }
 
         protected virtual List<SerializableGuid> GetDefaultFallbackValuesId()
@@ -170,17 +170,12 @@ namespace DepictionEngine
             if (!Disposable.IsDisposed(persistent))
                 return false;
 
-            persistent = (IPersistent)instanceManager.CreateInstance(type, null, json, propertyModifiers, GetPersistentInitializationState());
+            persistent = (IPersistent)instanceManager.CreateInstance(type, null, json, propertyModifiers, InstanceManager.InitializationContext.Programmatically);
             if (!Disposable.IsDisposed(persistent))
                 return true;
 
             persistent = null;
             return false;
-        }
-
-        protected virtual InstanceManager.InitializationContext GetPersistentInitializationState()
-        {
-            return InstanceManager.InitializationContext.Programmatically;
         }
     }
 

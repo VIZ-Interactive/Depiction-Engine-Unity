@@ -70,18 +70,18 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => cascades = value, new Vector2Int(0, MAX_ZOOM), initializingState);
-            InitValue(value => collidersRange = value, new Vector2Int(0, MAX_ZOOM), initializingState);
-            InitValue(value => centerOn = value, CameraCenterOnType.Camera, initializingState);
-            InitValue(value => sizeMultiplier = value, 2.0f, initializingState);
-            InitValue(value => sizeLatitudeCompensation = value, true, initializingState);
-            InitValue(value => sizeOffsettingMultiplier = value, 1.2f, initializingState);
-            InitValue(value => sizeOffsettingMaximum = value, 1.0f, initializingState);
-            InitValue(value => sizeOffsettingDuration = value, 2.0f, initializingState);
+            InitValue(value => cascades = value, new Vector2Int(0, MAX_ZOOM), initializingContext);
+            InitValue(value => collidersRange = value, new Vector2Int(0, MAX_ZOOM), initializingContext);
+            InitValue(value => centerOn = value, CameraCenterOnType.Camera, initializingContext);
+            InitValue(value => sizeMultiplier = value, 2.0f, initializingContext);
+            InitValue(value => sizeLatitudeCompensation = value, true, initializingContext);
+            InitValue(value => sizeOffsettingMultiplier = value, 1.2f, initializingContext);
+            InitValue(value => sizeOffsettingMaximum = value, 1.0f, initializingContext);
+            InitValue(value => sizeOffsettingDuration = value, 2.0f, initializingContext);
         }
 
         protected override bool UpdateAllDelegates()

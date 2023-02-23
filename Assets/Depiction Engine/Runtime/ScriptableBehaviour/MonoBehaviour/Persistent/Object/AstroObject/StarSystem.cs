@@ -71,20 +71,20 @@ namespace DepictionEngine
 				callback(_orbitAroundAstroObjectId, UpdateOrbitAroundAstroObject);
 		}
 
-		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-			base.InitializeSerializedFields(initializingState);
+			base.InitializeSerializedFields(initializingContext);
 
-			InitValue(value => orbitAroundAstroObjectId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(orbitAroundAstroObjectId, orbitAroundAstroObject, initializingState); }, initializingState);
-			InitValue(value => sizeMultiplier = value, 1.0d, initializingState);
-			InitValue(value => live = value, true, initializingState);
-			InitValue(value => year = value, 2000, initializingState);
-			InitValue(value => month = value, 1, initializingState);
-			InitValue(value => day = value, 1, initializingState);
-			InitValue(value => hour = value, 0, initializingState);
-			InitValue(value => minute = value, 0, initializingState);
-			InitValue(value => second = value, 0, initializingState);
-			InitValue(value => millisecond = value, 0, initializingState);
+			InitValue(value => orbitAroundAstroObjectId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(orbitAroundAstroObjectId, orbitAroundAstroObject, initializingContext); }, initializingContext);
+			InitValue(value => sizeMultiplier = value, 1.0d, initializingContext);
+			InitValue(value => live = value, true, initializingContext);
+			InitValue(value => year = value, 2000, initializingContext);
+			InitValue(value => month = value, 1, initializingContext);
+			InitValue(value => day = value, 1, initializingContext);
+			InitValue(value => hour = value, 0, initializingContext);
+			InitValue(value => minute = value, 0, initializingContext);
+			InitValue(value => second = value, 0, initializingContext);
+			InitValue(value => millisecond = value, 0, initializingContext);
 		}
 
 		public AstroObject orbitAroundAstroObject

@@ -12,9 +12,9 @@ namespace DepictionEngine.Editor
             return false;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             if (controller == Disposable.NULL)
             {

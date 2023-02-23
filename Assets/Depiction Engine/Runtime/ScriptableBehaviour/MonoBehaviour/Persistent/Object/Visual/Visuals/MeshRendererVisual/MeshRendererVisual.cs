@@ -7,6 +7,9 @@ using UnityEngine.Rendering;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// A <see cref="DepictionEngine.Visual"/> containing a MeshRenderer.
+    /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/MeshRendererVisual/" + nameof(MeshRendererVisual))]
     public class MeshRendererVisual : Visual
     {
@@ -41,9 +44,9 @@ namespace DepictionEngine
             colliderType = ColliderType.None;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
             
             InitMeshFilter();
             InitMeshRenderer();
@@ -96,12 +99,12 @@ namespace DepictionEngine
                 _colliderType = ColliderType.None;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => shadowCastingMode = value, GetDefaultShadowCastingMode(), initializingState);
-            InitValue(value => receiveShadows = value, GetDefaultReceiveShadows(), initializingState);
+            InitValue(value => shadowCastingMode = value, GetDefaultShadowCastingMode(), initializingContext);
+            InitValue(value => receiveShadows = value, GetDefaultReceiveShadows(), initializingContext);
         }
 
         protected override bool SetVisualObject(VisualObject oldValue, VisualObject newValue)

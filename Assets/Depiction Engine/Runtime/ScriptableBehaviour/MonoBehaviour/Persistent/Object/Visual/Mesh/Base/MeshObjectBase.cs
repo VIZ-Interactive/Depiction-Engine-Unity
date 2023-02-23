@@ -60,11 +60,11 @@ namespace DepictionEngine
             _meshParameters = null;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            if (initializingState == InstanceManager.InitializationContext.Editor_Duplicate || initializingState == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
             {
                 meshes.Clear();
                 isSharedMeshFlags.Clear();
@@ -72,10 +72,10 @@ namespace DepictionEngine
                 meshRendererVisualDirtyFlags.Recreate();
             }
 
-            InitValue(value => useCollider = value, GetDefaultUseCollider(), initializingState);
-            InitValue(value => convexCollider = value, GetDefaultConvexCollider(), initializingState);
-            InitValue(value => castShadow = value, GetDefaultCastShadow(), initializingState);
-            InitValue(value => receiveShadows = value,GetDefaultReceiveShadows(), initializingState);
+            InitValue(value => useCollider = value, GetDefaultUseCollider(), initializingContext);
+            InitValue(value => convexCollider = value, GetDefaultConvexCollider(), initializingContext);
+            InitValue(value => castShadow = value, GetDefaultCastShadow(), initializingContext);
+            InitValue(value => receiveShadows = value,GetDefaultReceiveShadows(), initializingContext);
         }
 
         protected virtual bool GetDefaultUseCollider()
@@ -400,7 +400,7 @@ namespace DepictionEngine
             Type typeMeshCollider = meshRendererVisualModifier.typeMeshCollider != null ? meshRendererVisualModifier.typeMeshCollider : typeof(MeshRendererVisualMeshCollider);
             Type type = GetMeshRendererType(colliderType, typeNoCollider, typeBoxCollider, typeMeshCollider);
 
-            return CreateVisual(type, meshRendererVisualModifier.name, null, GetInitializeState(), new List<PropertyModifier>() { meshRendererVisualModifier }) as MeshRendererVisual;
+            return CreateVisual(type, meshRendererVisualModifier.name, null, new List<PropertyModifier>() { meshRendererVisualModifier }) as MeshRendererVisual;
         }
 
         protected virtual void UpdateMeshRendererVisualModifiers(Action<VisualObjectVisualDirtyFlags> completedCallback, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
@@ -434,7 +434,7 @@ namespace DepictionEngine
 
                     Type meshType = meshRendererVisualModifier.GetMeshType();
                     if (mesh == Disposable.NULL || mesh.GetType() != meshType)
-                        mesh = Mesh.CreateMesh(meshType, GetInitializeState());
+                        mesh = Mesh.CreateMesh(meshType, GetInitializeContext());
 
                     isSharedMesh = AddMeshToCache(meshRendererVisualModifier, mesh);
                 }

@@ -58,17 +58,17 @@ namespace DepictionEngine
 		}
 #endif
 
-		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-			base.InitializeSerializedFields(initializingState);
+			base.InitializeSerializedFields(initializingContext);
 
-			InitValue(value => speed = value, 10000.0f, initializingState);
-			InitValue(value => infinity = value, true, initializingState);
-			InitValue(value => day = value, 0, initializingState);
-			InitValue(value => hour = value, 0, initializingState);
-			InitValue(value => minute = value, 0, initializingState);
-			InitValue(value => second = value, 0, initializingState);
-			InitValue(value => millisecond = value, 0, initializingState);
+			InitValue(value => speed = value, 10000.0f, initializingContext);
+			InitValue(value => infinity = value, true, initializingContext);
+			InitValue(value => day = value, 0, initializingContext);
+			InitValue(value => hour = value, 0, initializingContext);
+			InitValue(value => minute = value, 0, initializingContext);
+			InitValue(value => second = value, 0, initializingContext);
+			InitValue(value => millisecond = value, 0, initializingContext);
 		}
 
 		/// <summary>

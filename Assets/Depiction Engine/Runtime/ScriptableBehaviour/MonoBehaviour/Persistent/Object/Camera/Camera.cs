@@ -67,11 +67,11 @@ namespace DepictionEngine
 
         private List<Stack> _stacks;
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
-            if (initializingState == InstanceManager.InitializationContext.Editor || initializingState == InstanceManager.InitializationContext.Programmatically)
+            if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Programmatically)
                 RemoveIgnoreRenderFromUnityCameraCullingMask(unityCamera);
         }
 
@@ -80,37 +80,37 @@ namespace DepictionEngine
             unityCamera.cullingMask &= ~(1 << LayerUtility.GetLayer(CameraManager.IGNORE_RENDER_LAYER_NAME));
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => orthographic = value, false, initializingState);
-            InitValue(value => orthographicSize = value, 5.0f, initializingState);
-            InitValue(value => fieldOfView = value, 60.0f, initializingState);
-            InitValue(value => nearClipPlane = value, 0.3f, initializingState);
-            InitValue(value => farClipPlane = value, 5000.0f, initializingState);
+            InitValue(value => orthographic = value, false, initializingContext);
+            InitValue(value => orthographicSize = value, 5.0f, initializingContext);
+            InitValue(value => fieldOfView = value, 60.0f, initializingContext);
+            InitValue(value => nearClipPlane = value, 0.3f, initializingContext);
+            InitValue(value => farClipPlane = value, 5000.0f, initializingContext);
 
-            InitValue(value => postProcessing = value, GetDefaultPostProcessing(), initializingState);
-            InitValue(value => depthTextureMode = value, DepthTextureMode.None, initializingState);
-            InitValue(value => cullingMask = value, -65537, initializingState);
-            InitValue(value => useOcclusionCulling = value, true, initializingState);
+            InitValue(value => postProcessing = value, GetDefaultPostProcessing(), initializingContext);
+            InitValue(value => depthTextureMode = value, DepthTextureMode.None, initializingContext);
+            InitValue(value => cullingMask = value, -65537, initializingContext);
+            InitValue(value => useOcclusionCulling = value, true, initializingContext);
 
-            InitValue(value => clearFlags = value, CameraClearFlags.Skybox, initializingState);
-            InitValue(value => backgroundColor = value, new Color(0.1921569f, 0.3019608f, 0.4745098f, 0.0f), initializingState);
-            InitValue(value => skyboxMaterialPath = value, cameraManager.skyboxMaterialPath, initializingState);
-            InitValue(value => environmentTextureSize = value, DEFAULT_ENVIRONMENT_TEXTURE_SIZE, initializingState);
+            InitValue(value => clearFlags = value, CameraClearFlags.Skybox, initializingContext);
+            InitValue(value => backgroundColor = value, new Color(0.1921569f, 0.3019608f, 0.4745098f, 0.0f), initializingContext);
+            InitValue(value => skyboxMaterialPath = value, cameraManager.skyboxMaterialPath, initializingContext);
+            InitValue(value => environmentTextureSize = value, DEFAULT_ENVIRONMENT_TEXTURE_SIZE, initializingContext);
 
-            InitValue(value => allowHDR = value, true, initializingState);
+            InitValue(value => allowHDR = value, true, initializingContext);
         }
 
 #if UNITY_EDITOR
-        protected override void RegisterInitializeObjectUndo(InstanceManager.InitializationContext initializingState)
+        protected override void RegisterInitializeObjectUndo(InstanceManager.InitializationContext initializingContext)
         {
-            base.RegisterInitializeObjectUndo(initializingState);
+            base.RegisterInitializeObjectUndo(initializingContext);
 
-            Editor.UndoManager.RegisterCreatedObjectUndo(unityCamera, initializingState);
-            Editor.UndoManager.RegisterCreatedObjectUndo(additionalData, initializingState);
-            Editor.UndoManager.RegisterCreatedObjectUndo(skybox, initializingState);
+            Editor.UndoManager.RegisterCreatedObjectUndo(unityCamera, initializingContext);
+            Editor.UndoManager.RegisterCreatedObjectUndo(additionalData, initializingContext);
+            Editor.UndoManager.RegisterCreatedObjectUndo(skybox, initializingContext);
         }
 
         //Ugly hack to force a Refresh in the 'UniversalRenderPipelineSerializedCamera' and prevent it from spamming 'Index out of bound exception' when a new camera is created and selected in the Editor

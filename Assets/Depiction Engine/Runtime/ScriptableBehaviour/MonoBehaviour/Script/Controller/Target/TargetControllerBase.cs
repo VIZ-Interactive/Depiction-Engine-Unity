@@ -37,9 +37,9 @@ namespace DepictionEngine
                 callback(_targetId, UpdateTarget);
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializationState)
+        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
         {
-            if (base.Initialize(initializationState))
+            if (base.Initialize(initializingContext))
             {
                 UpdateTargetTransform();
 
@@ -48,13 +48,13 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => targetId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(targetId, target, initializingState); }, initializingState);
-            InitValue(value => minMaxDistance = value, GetDefaultMinMaxDistance(), initializingState);
-            InitValue(value => distance = value, DEFAULT_DISTANCE_VALUE, initializingState);
+            InitValue(value => targetId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(targetId, target, initializingContext); }, initializingContext);
+            InitValue(value => minMaxDistance = value, GetDefaultMinMaxDistance(), initializingContext);
+            InitValue(value => distance = value, DEFAULT_DISTANCE_VALUE, initializingContext);
         }
 
         protected override bool UpdateAllDelegates()

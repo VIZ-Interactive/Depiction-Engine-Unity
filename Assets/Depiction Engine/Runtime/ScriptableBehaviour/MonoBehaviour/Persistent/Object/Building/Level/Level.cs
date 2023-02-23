@@ -42,12 +42,12 @@ namespace DepictionEngine
             _groundY = 0.0f;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => showInteriorOnOpenOnly = value, true, initializingState);
-            InitValue(value => manageLoaders = value, true, initializingState);
+            InitValue(value => showInteriorOnOpenOnly = value, true, initializingContext);
+            InitValue(value => manageLoaders = value, true, initializingContext);
         }
 
         public override bool LateInitialize()

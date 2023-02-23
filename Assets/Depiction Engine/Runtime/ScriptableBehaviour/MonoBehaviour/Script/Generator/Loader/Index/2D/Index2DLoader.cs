@@ -27,11 +27,11 @@ namespace DepictionEngine
                 _indexReferences.Clear();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => indices = value, new List<Grid2DIndex>(), initializingState);
+            InitValue(value => indices = value, new List<Grid2DIndex>(), initializingContext);
         }
 
         public override bool LateInitialize()

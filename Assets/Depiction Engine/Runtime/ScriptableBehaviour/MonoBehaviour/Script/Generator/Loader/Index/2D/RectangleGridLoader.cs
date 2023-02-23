@@ -26,13 +26,13 @@ namespace DepictionEngine
                 _rectangleGrid = new RectangleGrid[] { CreateGrid<RectangleGrid>() };
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => angle = value, 0.0d, initializingState);
-            InitValue(value => width = value, 100.0d, initializingState);
-            InitValue(value => height = value, 100.0d, initializingState);
+            InitValue(value => angle = value, 0.0d, initializingContext);
+            InitValue(value => width = value, 100.0d, initializingContext);
+            InitValue(value => height = value, 100.0d, initializingContext);
         }
 
         /// <summary>

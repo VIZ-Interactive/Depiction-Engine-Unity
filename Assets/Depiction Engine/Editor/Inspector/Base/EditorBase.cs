@@ -20,12 +20,15 @@ namespace DepictionEngine.Editor
 
         public override void OnInspectorGUI()
         {
-            EditorGUI.indentLevel = 1;
-            serializedObject.Update();
+            if (serializedObject.targetObject != null)
+            {
+                EditorGUI.indentLevel = 1;
+                serializedObject.Update();
 
-            SerializedProperty serializedProperty = serializedObject.GetIterator();
-            if (serializedProperty.NextVisible(true))
-                AddPropertyFields(serializedProperty);
+                SerializedProperty serializedProperty = serializedObject.GetIterator();
+                if (serializedProperty.NextVisible(true))
+                    AddPropertyFields(serializedProperty);
+            }
 
             UndoManager.FlushUndoRecordObjects();
         }
@@ -632,7 +635,7 @@ namespace DepictionEngine.Editor
             if (labelOverride != null)
                 guiContent = new GUIContent(labelOverride, serializedProperty.tooltip);
 
-            EditorGUILayout.PropertyField(serializedProperty, guiContent, true);
+            EditorGUILayout.PropertyField(serializedProperty, guiContent);
         }
 
         public static bool GetConditionalShowAttributeMethodValue(IEnumerable<CustomAttribute> customAttributes, SerializedProperty serializedProperty)

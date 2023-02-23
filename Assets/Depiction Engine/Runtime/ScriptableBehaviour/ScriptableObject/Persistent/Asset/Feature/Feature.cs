@@ -22,7 +22,7 @@ namespace DepictionEngine
             get { return 0; }
         }
 
-        public override void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        public override void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
             SetData(JSONObject.Parse(Encoding.Default.GetString(value as byte[])));
 

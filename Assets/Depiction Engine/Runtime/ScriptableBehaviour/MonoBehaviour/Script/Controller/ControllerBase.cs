@@ -7,9 +7,9 @@ namespace DepictionEngine
 	[DisallowMultipleComponent]
 	public class ControllerBase : Script
 	{
-        protected override void Initialized(InstanceManager.InitializationContext initializingState)
+        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
         {
-            base.Initialized(initializingState);
+            base.Initialized(initializingContext);
 
             ForceUpdateTransform(true, true, true);
 		}

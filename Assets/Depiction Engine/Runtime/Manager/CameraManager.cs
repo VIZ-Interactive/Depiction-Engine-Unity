@@ -63,16 +63,16 @@ namespace DepictionEngine
             return _instance;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => clearFlags = value, CameraClearFlags.Skybox, initializingState);
-            InitValue(value => backgroundColor = value, Color.black, initializingState);
-            InitValue(value => skyboxMaterialPath = value, RenderingManager.MATERIAL_BASE_PATH + "Skybox/Star-Skybox", initializingState);
-            InitValue(value => distancePass = value, Camera.DEFAULT_DISTANCE_PASS, initializingState);
-            InitValue(value => environmentTextureSize = value, Camera.DEFAULT_ENVIRONMENT_TEXTURE_SIZE, initializingState);
-            InitValue(value => minMaxCameraDistance = value, new Vector2Double(0.01d, MAX_CAMERA_DISTANCE), initializingState);
+            InitValue(value => clearFlags = value, CameraClearFlags.Skybox, initializingContext);
+            InitValue(value => backgroundColor = value, Color.black, initializingContext);
+            InitValue(value => skyboxMaterialPath = value, RenderingManager.MATERIAL_BASE_PATH + "Skybox/Star-Skybox", initializingContext);
+            InitValue(value => distancePass = value, Camera.DEFAULT_DISTANCE_PASS, initializingContext);
+            InitValue(value => environmentTextureSize = value, Camera.DEFAULT_ENVIRONMENT_TEXTURE_SIZE, initializingContext);
+            InitValue(value => minMaxCameraDistance = value, new Vector2Double(0.01d, MAX_CAMERA_DISTANCE), initializingContext);
         }
 
         /// <summary>

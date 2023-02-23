@@ -65,38 +65,40 @@ namespace DepictionEngine
             _initializationPropertyModifiers = InstanceManager.initializePropertyModifiers;
         }
 
-        protected override void InitializeUID(InstanceManager.InitializationContext initializationState)
+        protected override void InitializeUID(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeUID(initializationState);
+            base.InitializeUID(initializingContext);
 
-            id = GetId(id, initializationState);
+            id = GetId(id, initializingContext);
         }
 
-        protected virtual SerializableGuid GetId(SerializableGuid id, InstanceManager.InitializationContext initializationState)
+        protected virtual SerializableGuid GetId(SerializableGuid id, InstanceManager.InitializationContext initializingContext)
         {
-            if (id == SerializableGuid.Empty || initializationState == InstanceManager.InitializationContext.Editor_Duplicate || initializationState == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (id == SerializableGuid.Empty || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
                 return SerializableGuid.NewGuid();
             else
                 return id;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             InitializeLastFields();
 
             UpdateActiveAndEnabled();
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializationState)
+        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
         {
-            if (base.Initialize(initializationState))
+            if (base.Initialize(initializingContext))
             {
-                InitializeDependencies(initializationState);
+                InitializeDependencies(initializingContext);
 
                 if (!UpdateRelations())
                     return false;
+
+                InitializeDependenciesAfterRelations(initializingContext);
 
                 if (_initializationPropertyModifiers != null)
                 {
@@ -110,14 +112,19 @@ namespace DepictionEngine
             return false;
         }
 
-        protected virtual void InitializeDependencies(InstanceManager.InitializationContext initializingState)
+        protected virtual void InitializeDependencies(InstanceManager.InitializationContext initializingContext)
         {
 
         }
 
-        protected override void Initialized(InstanceManager.InitializationContext initializingState)
+        protected virtual void InitializeDependenciesAfterRelations(InstanceManager.InitializationContext initializingContext)
         {
-            base.Initialized(initializingState);
+
+        }
+
+        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
 
             UpdateFields();
         }
@@ -147,19 +154,19 @@ namespace DepictionEngine
             if (ParentHasChanged())
                 UpdateParent();
 
-            if (IsDisposing())
+            if (Disposable.IsDisposed(this))
                 return false;
 
             if (SiblingsHasChanged())
                 UpdateSiblings();
 
-            if (IsDisposing())
+            if (Disposable.IsDisposed(this))
                 return false;
 
             if (ChildrenHasChanged())
                 UpdateChildren();
 
-            if (IsDisposing())
+            if (Disposable.IsDisposed(this))
                 return false;
 
             return true;
@@ -264,11 +271,14 @@ namespace DepictionEngine
             {
                 List<Component> children = null;
 
-                foreach (Transform childTransform in transform)
+                if (transform != null)
                 {
-                    if (children == null)
-                        children = new List<Component>();
-                    children.AddRange(childTransform.GetComponents(childType));
+                    foreach (Transform childTransform in transform)
+                    {
+                        if (children == null)
+                            children = new List<Component>();
+                        children.AddRange(childTransform.GetComponents(childType));
+                    }
                 }
 
                 if (children != null)
@@ -290,7 +300,7 @@ namespace DepictionEngine
             if (component is PropertyMonoBehaviour)
             {
                 PropertyMonoBehaviour propertyMonoBehaviour = component as PropertyMonoBehaviour;
-                InstanceManager.Initialize(propertyMonoBehaviour, GetInitializeState(InstanceManager.InitializationContext.Editor), json, null, isFallbackValues);
+                InstanceManager.Initialize(propertyMonoBehaviour, GetInitializeContext(InstanceManager.InitializationContext.Editor), json, null, isFallbackValues);
                 return propertyMonoBehaviour;
             }
 
@@ -344,14 +354,14 @@ namespace DepictionEngine
             return component;
         }
 
-        protected List<SerializableGuid> GetDuplicateComponentReferenceId<T>(List<SerializableGuid> ids, List<T> componentReferences, InstanceManager.InitializationContext initializingState) where T : PropertyMonoBehaviour
+        protected List<SerializableGuid> GetDuplicateComponentReferenceId<T>(List<SerializableGuid> ids, List<T> componentReferences, InstanceManager.InitializationContext initializingContext) where T : PropertyMonoBehaviour
         {
             if (componentReferences != null)
             {
                 for (int i = 0; i < ids.Count; i++)
                 {
                     T componentReference = componentReferences[i];
-                    InstanceManager.Initialize(componentReference, initializingState);
+                    InstanceManager.Initialize(componentReference, initializingContext);
                     if (ids[i] != componentReference.id)
                         ids[i] = componentReference.id;
                 }
@@ -360,11 +370,11 @@ namespace DepictionEngine
             return ids;
         }
 
-        protected SerializableGuid GetDuplicateComponentReferenceId<T>(SerializableGuid id, T componentReference, InstanceManager.InitializationContext initializingState) where T: PropertyMonoBehaviour
+        protected SerializableGuid GetDuplicateComponentReferenceId<T>(SerializableGuid id, T componentReference, InstanceManager.InitializationContext initializingContext) where T: PropertyMonoBehaviour
         {
             if (componentReference != Disposable.NULL)
             {
-                InstanceManager.Initialize(componentReference, initializingState);
+                InstanceManager.Initialize(componentReference, initializingContext);
                 if (id != componentReference.id)
                     id = componentReference.id;
             }
@@ -580,7 +590,7 @@ namespace DepictionEngine
                 if (value == Disposable.NULL)
                     value = GetRootParent();
                 if (value != Disposable.NULL)
-                    InstanceManager.Initialize(value, GetInitializeState());
+                    InstanceManager.Initialize(value, GetInitializeContext());
             }
 
             return value;
@@ -887,6 +897,13 @@ namespace DepictionEngine
             }
             return false;
         }
+
+#if UNITY_EDITOR
+        public virtual bool PasteComponentAllowed()
+        {
+            return true;
+        }
+#endif
 
         /// <summary>
         /// The hierarchy is traversed and dirty flags are cleared.

@@ -87,15 +87,15 @@ namespace DepictionEngine
         private Texture _colorMap;
         private Texture _additionalMap;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => defaultColor = value, new Color(0.8627450980392157f, 0.8235294117647058f, 0.7843137254901961f), initializingState);
-            InitValue(value => defaultHeight = value, 10.0f, initializingState);
-            InitValue(value => defaultLevelHeight = value, 3.0f, initializingState);
-            InitValue(value => shaderPath = value, RenderingManager.SHADER_BASE_PATH + "BuildingGrid", initializingState);
-            InitValue(value => color = value, Color.clear, initializingState);
+            InitValue(value => defaultColor = value, new Color(0.8627450980392157f, 0.8235294117647058f, 0.7843137254901961f), initializingContext);
+            InitValue(value => defaultHeight = value, 10.0f, initializingContext);
+            InitValue(value => defaultLevelHeight = value, 3.0f, initializingContext);
+            InitValue(value => shaderPath = value, RenderingManager.SHADER_BASE_PATH + "BuildingGrid", initializingContext);
+            InitValue(value => color = value, Color.clear, initializingContext);
         }
 
         protected override bool UpdateReferences(bool forceUpdate = false)

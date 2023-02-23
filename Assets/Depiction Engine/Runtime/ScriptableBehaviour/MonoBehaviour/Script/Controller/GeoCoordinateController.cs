@@ -55,20 +55,20 @@ namespace DepictionEngine
 		}
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-			base.InitializeSerializedFields(initializingState);
+			base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => preventGroundPenetration = value, true, initializingState);
-			InitValue(value => autoSnapToGround = value, SnapType.Terrain, initializingState);
-			InitValue(value => groundSnapOffset = value, DEFAULT_GROUND_SNAP_OFFSET_VALUE, initializingState);
-			InitValue(value => autoAlignToSurface = value, true, initializingState);
-			InitValue(value => upVector = value, Vector3.zero, initializingState);
+            InitValue(value => preventGroundPenetration = value, true, initializingContext);
+			InitValue(value => autoSnapToGround = value, SnapType.Terrain, initializingContext);
+			InitValue(value => groundSnapOffset = value, DEFAULT_GROUND_SNAP_OFFSET_VALUE, initializingContext);
+			InitValue(value => autoAlignToSurface = value, true, initializingContext);
+			InitValue(value => upVector = value, Vector3.zero, initializingContext);
 		}
 
-		protected override bool Initialize(InstanceManager.InitializationContext initializingState)
+		protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
 		{
-			if (base.Initialize(initializingState))
+			if (base.Initialize(initializingContext))
 			{
 				InitElevation();
 

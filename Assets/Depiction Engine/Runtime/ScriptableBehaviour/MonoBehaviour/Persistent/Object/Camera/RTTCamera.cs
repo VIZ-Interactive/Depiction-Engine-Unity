@@ -8,9 +8,9 @@ namespace DepictionEngine
 {
     public class RTTCamera : Camera
     {
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             unityCamera.enabled = false;
         }

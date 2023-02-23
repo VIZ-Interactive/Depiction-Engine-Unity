@@ -92,9 +92,9 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             InitGrid2DIndexTerrainGridMeshObjects();
 
@@ -107,29 +107,24 @@ namespace DepictionEngine
                 _grid2DIndexTerrainGridMeshObjects = new Grid2DIndexTerrainGridMeshObjectDictionary[31];
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => size = value, DEFAULT_SIZE, initializingState);
-            InitValue(value => sphericalDuration = value, 2.0f, initializingState);
-            InitValue(value => spherical = value, true, initializingState);
-            InitValue(value => reflectionProbe = value, GetDefaultReflectionProbe(), initializingState);
+            InitValue(value => size = value, DEFAULT_SIZE, initializingContext);
+            InitValue(value => sphericalDuration = value, 2.0f, initializingContext);
+            InitValue(value => spherical = value, true, initializingContext);
+            InitValue(value => reflectionProbe = value, GetDefaultReflectionProbe(), initializingContext);
         }
 
-        public override bool LateInitialize()
+        protected override void InitializeDependenciesAfterRelations(InstanceManager.InitializationContext initializingContext)
         {
-            if (base.LateInitialize())
-            {
-                InitReflectionProbeObject();
+            base.InitializeDependenciesAfterRelations(initializingContext);
 
-                return true;
-            }
-
-            return false;
+            InitReflectionProbeObject(initializingContext);
         }
 
-        protected virtual void InitReflectionProbeObject()
+        protected virtual void InitReflectionProbeObject(InstanceManager.InitializationContext initializingContext)
         {
             string reflectionProbeName = GetReflectionProbeName();
 
@@ -137,12 +132,11 @@ namespace DepictionEngine
 
             Transform reflectionProbeTransform = gameObject.transform.Find(reflectionProbeName);
 
-            InstanceManager.InitializationContext initializationState = GetInitializeState();
             if (reflectionProbeTransform != null)
-                reflectionProbeObject = reflectionProbeTransform.GetSafeComponent<ReflectionProbe>(initializationState);
+                reflectionProbeObject = reflectionProbeTransform.GetSafeComponent<ReflectionProbe>(initializingContext);
             else
             {
-                reflectionProbeObject = CreateChild<ReflectionProbe>(reflectionProbeName, null, initializationState);
+                reflectionProbeObject = CreateChild<ReflectionProbe>(reflectionProbeName, null, initializingContext);
                 reflectionProbeObject.reflectionProbeType = ReflectionProbeMode.Custom;
                 reflectionProbeObject.importance = 0;
             }

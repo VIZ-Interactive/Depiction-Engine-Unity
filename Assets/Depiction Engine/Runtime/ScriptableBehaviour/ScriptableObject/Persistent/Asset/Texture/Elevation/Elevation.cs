@@ -82,21 +82,21 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             UpdateElevation();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
            
-            InitValue(value => elevationMultiplier = value, 1.0f, initializingState);
-            InitValue(value => xFlip = value, false, initializingState);
-            InitValue(value => yFlip = value, false, initializingState);
-            InitValue(value => minElevation = value, MIN_ELEVATION, initializingState);
+            InitValue(value => elevationMultiplier = value, 1.0f, initializingContext);
+            InitValue(value => xFlip = value, false, initializingContext);
+            InitValue(value => yFlip = value, false, initializingContext);
+            InitValue(value => minElevation = value, MIN_ELEVATION, initializingContext);
         }
 
 #if UNITY_EDITOR
@@ -184,9 +184,9 @@ namespace DepictionEngine
             return dataType == LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw || dataType == LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw;
         }
 
-        public override void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        public override void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
-            base.SetData(value, dataType, initializingState);
+            base.SetData(value, dataType, initializingContext);
 
             minElevation = GetMinElevationFromDataType(dataType);
 

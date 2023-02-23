@@ -26,20 +26,20 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private Material _ceilingMaterial;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            if (initializingState == InstanceManager.InitializationContext.Editor_Duplicate || initializingState == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
             {
                 _floorMaterial = null;
                 _wallsMaterial = null;
                 _ceilingMaterial = null;
             }
 
-            InitValue(value => floorShaderPath = value, RenderingManager.SHADER_BASE_PATH + "Level", initializingState);
-            InitValue(value => wallsShaderPath = value, RenderingManager.SHADER_BASE_PATH + "Level", initializingState);
-            InitValue(value => ceilingShaderPath = value, RenderingManager.SHADER_BASE_PATH + "Level", initializingState);
+            InitValue(value => floorShaderPath = value, RenderingManager.SHADER_BASE_PATH + "Level", initializingContext);
+            InitValue(value => wallsShaderPath = value, RenderingManager.SHADER_BASE_PATH + "Level", initializingContext);
+            InitValue(value => ceilingShaderPath = value, RenderingManager.SHADER_BASE_PATH + "Level", initializingContext);
         }
 
         public float GetHeight()

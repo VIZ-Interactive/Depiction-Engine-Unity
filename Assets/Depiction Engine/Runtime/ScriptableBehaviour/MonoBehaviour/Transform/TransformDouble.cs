@@ -56,9 +56,9 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
             TransformDouble newParent = GetParent() as TransformDouble;
 
@@ -66,12 +66,12 @@ namespace DepictionEngine
             QuaternionDouble localRotation = this.localRotation;
             Vector3Double localScale = this.localScale;
 
-            if (initializingState == InstanceManager.InitializationContext.Reset || initializingState == InstanceManager.InitializationContext.Editor || initializingState == InstanceManager.InitializationContext.Programmatically)
+            if (initializingContext == InstanceManager.InitializationContext.Reset || initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Programmatically)
             {
                 localPosition = transformLocalPosition;
 
 #if UNITY_EDITOR
-                if (renderingManager.wasFirstUpdated && renderingManager.originShifting && (initializingState == InstanceManager.InitializationContext.Reset || initializingState == InstanceManager.InitializationContext.Editor) && transformLocalPosition != Vector3.zero)
+                if (renderingManager.wasFirstUpdated && renderingManager.originShifting && (initializingContext == InstanceManager.InitializationContext.Reset || initializingContext == InstanceManager.InitializationContext.Editor) && transformLocalPosition != Vector3.zero)
                 {
                     Editor.SceneCamera sceneCamera = Editor.SceneViewDouble.lastActiveSceneViewDouble != Disposable.NULL ? Editor.SceneViewDouble.lastActiveSceneViewDouble.camera : null;
                     localPosition += sceneCamera.GetOrigin();
@@ -81,7 +81,7 @@ namespace DepictionEngine
                 localRotation = transformLocalRotation;
                 localScale = transformLocalScale;
             }
-            else if (initializingState == InstanceManager.InitializationContext.Editor_Duplicate || initializingState == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            else if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
             {
                 if (parent != newParent)
                 {

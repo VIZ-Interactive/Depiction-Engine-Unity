@@ -113,9 +113,9 @@ namespace DepictionEngine
             return true;
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializingState)
+        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
         {
-            if (base.Initialize(initializingState))
+            if (base.Initialize(initializingContext))
             {
                 StartAutoSynchronizeIntervalTimer();
 
@@ -124,20 +124,20 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => name = value, base.name, initializingState);
-            InitValue(value => autoDispose = value, PersistentScriptableObject.DEFAULT_AUTO_DISPOSE, initializingState);
-            InitValue(value => autoSynchronizeInterval = value, PersistentScriptableObject.DEFAULT_AUTO_SYNCHRONIZE_INTERVAL, initializingState);
-            InitValue(value => dontSaveToScene = value, GetDefaultDontSaveToScene(), initializingState);
-            InitValue(value => createPersistentIfMissing = value, true, initializingState);
+            InitValue(value => name = value, base.name, initializingContext);
+            InitValue(value => autoDispose = value, PersistentScriptableObject.DEFAULT_AUTO_DISPOSE, initializingContext);
+            InitValue(value => autoSynchronizeInterval = value, PersistentScriptableObject.DEFAULT_AUTO_SYNCHRONIZE_INTERVAL, initializingContext);
+            InitValue(value => dontSaveToScene = value, GetDefaultDontSaveToScene(), initializingContext);
+            InitValue(value => createPersistentIfMissing = value, true, initializingContext);
         }
 
-        protected override void InitializeDependencies(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeDependenciesAfterRelations(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeDependencies(initializingState);
+            base.InitializeDependenciesAfterRelations(initializingContext);
 
             InitRequiredComponentTypes();
             GetRequiredComponentTypes(ref _requiredComponentTypes);
@@ -151,7 +151,7 @@ namespace DepictionEngine
                 {
                     MonoBehaviourDisposable component = RemoveComponentFromList(requiredComponentType, components);
                     if (component == Disposable.NULL)
-                        gameObject.AddComponent(requiredComponentType);
+                        gameObject.AddSafeComponent(requiredComponentType, initializingContext);
                 }
             }
         }

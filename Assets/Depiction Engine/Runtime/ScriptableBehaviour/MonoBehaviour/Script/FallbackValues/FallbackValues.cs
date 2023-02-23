@@ -2,7 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI;
 
 namespace DepictionEngine
 {
@@ -46,11 +48,16 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
             DisposeFallbackValuesObject();
+
+#if UNITY_EDITOR
+            if (initializingContext == InstanceManager.InitializationContext.Reset)
+                fallbackValuesJson = null;
+#endif
         }
 
 #if UNITY_EDITOR
@@ -60,7 +67,7 @@ namespace DepictionEngine
             base.UndoRedoPerformed();
 
             if (_lastFallbackValuesJsonStr != _fallbackValuesJsonStr)
-                SetFallbackValuesJson((JSONObject)JSONObject.Parse(_fallbackValuesJsonStr), true);
+                SetFallbackValuesJson((JSONObject)JSONObject.Parse(_fallbackValuesJsonStr));
         }
 #endif
 
@@ -159,7 +166,7 @@ namespace DepictionEngine
             set { SetFallbackValuesJson(ValidateFallbackValuesJson(value)); }
         }
 
-        private bool SetFallbackValuesJson(JSONObject value, bool updateFallbackValuesObject = false)
+        private bool SetFallbackValuesJson(JSONObject value)
         {
             return SetValue(nameof(fallbackValuesJson), value, ref _fallbackValuesJson, (newValue, oldValue) =>
             {
@@ -168,11 +175,8 @@ namespace DepictionEngine
 
                 JsonUtility.FromJson(out string jsonStr, newValue);
 
-                if (fallbackValuesObject != null)
-                {
-                    if (updateFallbackValuesObject)
-                        (fallbackValuesObject as IJson).SetJson(newValue);
-                }
+                if (IsUserChangeContext() && fallbackValuesObject != null)
+                    (fallbackValuesObject as IJson).SetJson(newValue);
 
                 UpdateFallbackJsonStr(jsonStr);
 
@@ -237,7 +241,7 @@ namespace DepictionEngine
 
         public UnityEngine.Object GetFallbackValuesObject(Type type, JSONNode json = null)
         {
-            if (fallbackValuesObject == null || fallbackValuesObject.GetType() != type)
+            if (Disposable.IsDisposed(fallbackValuesObject) || fallbackValuesObject.GetType() != type)
             {
                 if (fallbackValuesObject != null)
                     DisposeFallbackValuesObject();

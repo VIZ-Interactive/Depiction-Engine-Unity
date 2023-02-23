@@ -29,19 +29,19 @@ namespace DepictionEngine
             unityMeshes = null;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            if (initializingState == InstanceManager.InitializationContext.Editor_Duplicate || initializingState == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
                 _material = null;
 
-            InitValue(value => shaderPath = value, RenderingManager.SHADER_BASE_PATH + "BuildingGrid", initializingState);
+            InitValue(value => shaderPath = value, RenderingManager.SHADER_BASE_PATH + "BuildingGrid", initializingContext);
         }
 
-        protected override void Initialized(InstanceManager.InitializationContext initializingState)
+        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
         {
-            base.Initialized(initializingState);
+            base.Initialized(initializingContext);
 
             if (unityMeshes == null || unityMeshes.Length == 0)
                 UdateUnityMeshes();

@@ -28,31 +28,31 @@ namespace DepictionEngine
 
         private GlobalLoader _atmosphereLoader;
 
-        protected override void Initialized(InstanceManager.InitializationContext initializingState)
+        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
         {
-            base.Initialized(initializingState);
+            base.Initialized(initializingContext);
           
             string atmosphereLoadersName = "AtmosphereLoader";
 
             Transform atmosphereLoaderTransform = gameObject.transform.Find(atmosphereLoadersName);
 
             if (atmosphereLoaderTransform != null)
-                atmosphereLoader = atmosphereLoaderTransform.GetSafeComponent<GlobalLoader>(initializingState);
+                atmosphereLoader = atmosphereLoaderTransform.GetSafeComponent<GlobalLoader>(initializingContext);
             else
             {
-                DatasourceRoot datasourceRoot = objectBase.CreateChild<DatasourceRoot>(atmosphereLoadersName, null, initializingState);
+                DatasourceRoot datasourceRoot = objectBase.CreateChild<DatasourceRoot>(atmosphereLoadersName, null, initializingContext);
                 datasourceRoot.dontSaveToScene = true;
                 
                 SerializableGuid atmosphereGridMeshObjectFallbackValuesId = SerializableGuid.NewGuid();
                 
-                atmosphereLoader = datasourceRoot.gameObject.AddSafeComponent<GlobalLoader>(initializingState);
+                atmosphereLoader = datasourceRoot.gameObject.AddSafeComponent<GlobalLoader>(initializingContext);
                 atmosphereLoader.autoUpdateInterval = 0.0f;
                 atmosphereLoader.zoomRange = Vector2Int.zero;
                 atmosphereLoader.fallbackValuesId = new List<SerializableGuid> { atmosphereGridMeshObjectFallbackValuesId };
 
                 JSONObject json = new JSONObject();
                 json[nameof(PropertyMonoBehaviour.id)] = JsonUtility.ToJson(atmosphereGridMeshObjectFallbackValuesId);
-                FallbackValues atmosphereGridMeshObjectFallbackValues = datasourceRoot.gameObject.AddSafeComponent<FallbackValues>(initializingState, json);
+                FallbackValues atmosphereGridMeshObjectFallbackValues = datasourceRoot.gameObject.AddSafeComponent<FallbackValues>(initializingContext, json);
                 atmosphereGridMeshObjectFallbackValues.SetFallbackJsonFromType(typeof(AtmosphereGridMeshObject).FullName);
                 atmosphereGridMeshObjectFallbackValues.SetProperty(nameof(AtmosphereGridMeshObject.dontSaveToScene), true);
             }
@@ -64,16 +64,16 @@ namespace DepictionEngine
                 atmosphereLoader.objectBase.isHiddenInHierarchy = true;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => sunBrightness = value, 200.0f, initializingState);
-            InitValue(value => rayleighScattering = value, 0.001f, initializingState);
-            InitValue(value => mieScattering = value, 0.008f, initializingState);
-            InitValue(value => miePhaseAsymmetryFactor = value, -0.999f, initializingState);
-            InitValue(value => scaleDepth = value, 0.17f, initializingState);
-            InitValue(value => waveLength = value, new Color(0.8679245f, 0.7108141f, 0.5287087f), initializingState);
+            InitValue(value => sunBrightness = value, 200.0f, initializingContext);
+            InitValue(value => rayleighScattering = value, 0.001f, initializingContext);
+            InitValue(value => mieScattering = value, 0.008f, initializingContext);
+            InitValue(value => miePhaseAsymmetryFactor = value, -0.999f, initializingContext);
+            InitValue(value => scaleDepth = value, 0.17f, initializingContext);
+            InitValue(value => waveLength = value, new Color(0.8679245f, 0.7108141f, 0.5287087f), initializingContext);
         }
 
         private GlobalLoader atmosphereLoader

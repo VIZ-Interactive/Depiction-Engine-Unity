@@ -75,11 +75,11 @@ namespace DepictionEngine
             _normalsType = NormalsType.None;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            if (initializingState == InstanceManager.InitializationContext.Editor_Duplicate || initializingState == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
             {
                 if (unityMesh != null)
                     unityMesh = Duplicate(unityMesh);
@@ -242,26 +242,26 @@ namespace DepictionEngine
             return Encoding.ASCII.GetBytes(bytes);
         }
 
-        public override void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        public override void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
             if (JsonUtility.FromJson(out UnityEngine.Mesh newUnityMesh, value as JSONNode))
             {
-                SetData(newUnityMesh, initializingState);
+                SetData(newUnityMesh, initializingContext);
 
                 DataPropertyAssigned();
             }
         }
 
-        public void SetData(List<int> triangles, List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs, List<Color32> colors, Bounds? bounds = null, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        public void SetData(List<int> triangles, List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs, List<Color32> colors, Bounds? bounds = null, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
             SetData(triangles, vertices, normals, uvs, colors, !bounds.HasValue);
             if (bounds.HasValue)
                 this.bounds = bounds.Value;
         }
 
-        public bool SetData(int[] triangles = null, Vector3[] vertices = null, Vector3[] normals = null, List<Vector2> uvs = null, Color32[] colors = null, bool calculateBounds = true, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        public bool SetData(int[] triangles = null, Vector3[] vertices = null, Vector3[] normals = null, List<Vector2> uvs = null, Color32[] colors = null, bool calculateBounds = true, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
-            CreateMeshIfRequired(initializingState);
+            CreateMeshIfRequired(initializingContext);
 
             bool changed = false;
 
@@ -284,9 +284,9 @@ namespace DepictionEngine
             return false;
         }
 
-        public bool SetData(List<int> triangles = null, List<Vector3> vertices = null, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool calculateBounds = true, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        public bool SetData(List<int> triangles = null, List<Vector3> vertices = null, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool calculateBounds = true, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
-            CreateMeshIfRequired(initializingState);
+            CreateMeshIfRequired(initializingContext);
 
             bool changed = false;
             if (SetTrianglesVertices(triangles, vertices, calculateBounds))
@@ -308,17 +308,17 @@ namespace DepictionEngine
             return false;
         }
 
-        private void CreateMeshIfRequired(InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        private void CreateMeshIfRequired(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
             bool requiresNewMesh = unityMesh == null;
 
 #if UNITY_EDITOR
-            if (initializingState == InstanceManager.InitializationContext.Editor)
+            if (initializingContext == InstanceManager.InitializationContext.Editor)
                 requiresNewMesh = true;
 #endif
 
             if (requiresNewMesh)
-                SetData(new UnityEngine.Mesh(), initializingState);
+                SetData(new UnityEngine.Mesh(), initializingContext);
         }
 
         public void SetData(UnityEngine.Mesh mesh)
@@ -505,13 +505,13 @@ namespace DepictionEngine
         }
 
 
-        private void SetData(UnityEngine.Mesh mesh, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        private void SetData(UnityEngine.Mesh mesh, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
             UnityEngine.Mesh oldUnityMesh = unityMesh;
 
             unityMesh = mesh;
 
-            DisposeOldDataAndRegisterNewData(oldUnityMesh, unityMesh, initializingState);
+            DisposeOldDataAndRegisterNewData(oldUnityMesh, unityMesh, initializingContext);
         }
 
         public UnityEngine.Mesh unityMesh
@@ -566,19 +566,19 @@ namespace DepictionEngine
             modificationPending = meshObjectModifying.Count != 0;
         }
 
-        public static T CreateMesh<T>(InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically) where T : Mesh
+        public static T CreateMesh<T>(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : Mesh
         {
-            return CreateMesh(typeof(T), initializationState) as T;
+            return CreateMesh(typeof(T), initializingContext) as T;
         }
 
-        public static Mesh CreateMesh(InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically)
+        public static Mesh CreateMesh(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
-            return CreateMesh(typeof(Mesh), initializationState);
+            return CreateMesh(typeof(Mesh), initializingContext);
         }
 
-        public static Mesh CreateMesh(Type type, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically)
+        public static Mesh CreateMesh(Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
-            Mesh mesh = InstanceManager.Instance().CreateInstance(type, initializingState: initializationState) as Mesh;
+            Mesh mesh = InstanceManager.Instance().CreateInstance(type, initializingContext: initializingContext) as Mesh;
             mesh.name = typeof(Mesh).Name;
             return mesh;
         }

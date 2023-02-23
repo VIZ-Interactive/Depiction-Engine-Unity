@@ -37,11 +37,11 @@ namespace DepictionEngine
                 _idLoadScopes.Clear();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => ids = value, new List<SerializableGuid>(), initializingState);
+            InitValue(value => ids = value, new List<SerializableGuid>(), initializingContext);
         }
 
         public override bool LateInitialize()

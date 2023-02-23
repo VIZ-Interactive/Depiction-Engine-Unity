@@ -148,9 +148,9 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             InitRigidbody();
         }
@@ -169,60 +169,60 @@ namespace DepictionEngine
             }
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
             if (isFallbackValues)
-                InitValue(value => objectAdditionalFallbackValues = value, CreateOptionalProperties<ObjectAdditionalFallbackValues>(initializingState), initializingState);
+                InitValue(value => objectAdditionalFallbackValues = value, CreateOptionalProperties<ObjectAdditionalFallbackValues>(initializingContext), initializingContext);
 
             if (objectAdditionalFallbackValues != null)
             {
-                InitValue(value => createAnimatorIfMissing = value, true, initializingState);
-                InitValue(value => animatorId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.animatorId, objectAdditionalFallbackValues.animator, initializingState); }, initializingState);
+                InitValue(value => createAnimatorIfMissing = value, true, initializingContext);
+                InitValue(value => animatorId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.animatorId, objectAdditionalFallbackValues.animator, initializingContext); }, initializingContext);
 
-                InitValue(value => createControllerIfMissing = value, true, initializingState);
-                InitValue(value => controllerId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.controllerId, objectAdditionalFallbackValues.controller, initializingState); }, initializingState);
+                InitValue(value => createControllerIfMissing = value, true, initializingContext);
+                InitValue(value => controllerId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.controllerId, objectAdditionalFallbackValues.controller, initializingContext); }, initializingContext);
 
-                InitValue(value => createGeneratorIfMissing = value, true, initializingState);
-                InitValue(value => generatorsId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.generatorsId, objectAdditionalFallbackValues.generators, initializingState); }, initializingState);
+                InitValue(value => createGeneratorIfMissing = value, true, initializingContext);
+                InitValue(value => generatorsId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.generatorsId, objectAdditionalFallbackValues.generators, initializingContext); }, initializingContext);
 
-                InitValue(value => createReferenceIfMissing = value, true, initializingState);
-                InitValue(value => referencesId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.referencesId, objectAdditionalFallbackValues.references, initializingState); }, initializingState);
+                InitValue(value => createReferenceIfMissing = value, true, initializingContext);
+                InitValue(value => referencesId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.referencesId, objectAdditionalFallbackValues.references, initializingContext); }, initializingContext);
 
-                InitValue(value => createEffectIfMissing = value, true, initializingState);
-                InitValue(value => effectsId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.effectsId, objectAdditionalFallbackValues.effects, initializingState); }, initializingState);
+                InitValue(value => createEffectIfMissing = value, true, initializingContext);
+                InitValue(value => effectsId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.effectsId, objectAdditionalFallbackValues.effects, initializingContext); }, initializingContext);
 
-                InitValue(value => createFallbackValuesIfMissing = value, true, initializingState);
-                InitValue(value => fallbackValuesId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.fallbackValuesId, objectAdditionalFallbackValues.fallbackValues, initializingState); }, initializingState);
+                InitValue(value => createFallbackValuesIfMissing = value, true, initializingContext);
+                InitValue(value => fallbackValuesId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.fallbackValuesId, objectAdditionalFallbackValues.fallbackValues, initializingContext); }, initializingContext);
 
-                InitValue(value => createDatasourceIfMissing = value, true, initializingState);
-                InitValue(value => datasourcesId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.datasourcesId, objectAdditionalFallbackValues.datasources, initializingState); }, initializingState);
+                InitValue(value => createDatasourceIfMissing = value, true, initializingContext);
+                InitValue(value => datasourcesId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.datasourcesId, objectAdditionalFallbackValues.datasources, initializingContext); }, initializingContext);
             }
 
-            InitValue(value => tags = value, "", initializingState);
-            InitValue(value => useGravity = value, false, initializingState);
-            InitValue(value => mass = value, GetDefaultMass(), initializingState);
-            InitValue(value => layer = value, LayerUtility.GetDefaultLayer(GetType()), initializingState);
-            InitValue(value => tag = value, "Untagged", initializingState);
-            InitValue(value => isHiddenInHierarchy = value, GetDefaultIsHiddenInHierarchy(), () => { return false; }, initializingState);
+            InitValue(value => tags = value, "", initializingContext);
+            InitValue(value => useGravity = value, false, initializingContext);
+            InitValue(value => mass = value, GetDefaultMass(), initializingContext);
+            InitValue(value => layer = value, LayerUtility.GetDefaultLayer(GetType()), initializingContext);
+            InitValue(value => tag = value, "Untagged", initializingContext);
+            InitValue(value => isHiddenInHierarchy = value, GetDefaultIsHiddenInHierarchy(), () => { return false; }, initializingContext);
         }
 
-        protected T CreateOptionalProperties<T>(InstanceManager.InitializationContext initializingState) where T : OptionalPropertiesBase
+        protected T CreateOptionalProperties<T>(InstanceManager.InitializationContext initializingContext) where T : OptionalPropertiesBase
         {
             OptionalPropertiesBase optionalProperties = ScriptableObject.CreateInstance<T>();
             optionalProperties.parent = this;
 
 #if UNITY_EDITOR
-            Editor.UndoManager.RegisterCreatedObjectUndo(optionalProperties, initializingState);
+            Editor.UndoManager.RegisterCreatedObjectUndo(optionalProperties, initializingContext);
 #endif
 
             return optionalProperties as T;
         }
 
-        protected override void InitializeDependencies(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeDependencies(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeDependencies(initializingState);
+            base.InitializeDependencies(initializingContext);
 
             if (initializationJson != null)
             {
@@ -251,7 +251,7 @@ namespace DepictionEngine
                         if (animator != Disposable.NULL)
                             InitializeComponent(animator, animatorJson);
                         else
-                            CreateScript(animatorType, animatorJson, initializingState);
+                            CreateScript(animatorType, animatorJson, initializingContext);
                     }
                 }
 
@@ -266,7 +266,7 @@ namespace DepictionEngine
                         if (controller != Disposable.NULL)
                             InitializeComponent(controller, controllerJson);
                         else
-                            CreateScript(controllerType, controllerJson, initializingState);
+                            CreateScript(controllerType, controllerJson, initializingContext);
                     }
                 }
 
@@ -283,7 +283,7 @@ namespace DepictionEngine
                             if (generator != Disposable.NULL)
                                 InitializeComponent(generator, generatorJson);
                             else
-                                CreateScript(generatorType, generatorJson, initializingState);
+                                CreateScript(generatorType, generatorJson, initializingContext);
                         }
                     }
                 }
@@ -301,7 +301,7 @@ namespace DepictionEngine
                             if (reference != Disposable.NULL)
                                 InitializeComponent(reference, referenceJson);
                             else
-                                CreateScript(referenceType, referenceJson, initializingState);
+                                CreateScript(referenceType, referenceJson, initializingContext);
                         }
                     }
                 }
@@ -319,7 +319,7 @@ namespace DepictionEngine
                             if (effect != Disposable.NULL)
                                 InitializeComponent(effect, effectJson);
                             else
-                                CreateScript(effectType, effectJson, initializingState);
+                                CreateScript(effectType, effectJson, initializingContext);
                         }
                     }
                 }
@@ -337,7 +337,7 @@ namespace DepictionEngine
                             if (fallbackValue != Disposable.NULL)
                                 InitializeComponent(fallbackValue, fallbackValueJson);
                             else
-                                CreateScript(fallbackValueType, fallbackValueJson, initializingState);
+                                CreateScript(fallbackValueType, fallbackValueJson, initializingContext);
                         }
                     }
                 }
@@ -355,16 +355,16 @@ namespace DepictionEngine
                             if (datasource != Disposable.NULL)
                                 InitializeComponent(datasource, datasourceJson);
                             else
-                                CreateScript(datasourceType, datasourceJson, initializingState);
+                                CreateScript(datasourceType, datasourceJson, initializingContext);
                         }
                     }
                 }
             }
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializingState)
+        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
         {
-            if (base.Initialize(initializingState))
+            if (base.Initialize(initializingContext))
             {
                 UpdateReferences(true);
 
@@ -373,28 +373,28 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void Initialized(InstanceManager.InitializationContext initializingState)
+        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
         {
-            base.Initialized(initializingState);
+            base.Initialized(initializingContext);
 
             ForceUpdateTransform(true, true, true);
         }
 
 #if UNITY_EDITOR
-        protected override void RegisterInitializeObjectUndo(InstanceManager.InitializationContext initializingState)
+        protected override void RegisterInitializeObjectUndo(InstanceManager.InitializationContext initializingContext)
         {
-            base.RegisterInitializeObjectUndo(initializingState);
+            base.RegisterInitializeObjectUndo(initializingContext);
 
             //Register GameObject name/layer/enabled etc...
-            Editor.UndoManager.RegisterCompleteObjectUndo(gameObject, initializingState);
+            Editor.UndoManager.RegisterCompleteObjectUndo(gameObject, initializingContext);
         }
 #endif
 
-        protected override bool IsValidInitialization(InstanceManager.InitializationContext initializingState)
+        protected override bool IsValidInitialization(InstanceManager.InitializationContext initializingContext)
         {
-            if (base.IsValidInitialization(initializingState))
+            if (base.IsValidInitialization(initializingContext))
             {
-                if (!CanBeDuplicated() && (initializingState == InstanceManager.InitializationContext.Editor_Duplicate || initializingState == InstanceManager.InitializationContext.Programmatically_Duplicate))
+                if (!CanBeDuplicated() && (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate))
                 {
                     DisposeManager.Destroy(gameObject);
 
@@ -1658,26 +1658,26 @@ namespace DepictionEngine
             }
         }
 
-        public T CreateScript<T>(InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically) where T : Script
+        public T CreateScript<T>(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : Script
         {
-            return CreateScript(typeof(T), null, initializingState) as T;
+            return CreateScript(typeof(T), null, initializingContext) as T;
         }
 
-        public T CreateScript<T>(JSONNode json, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically) where T : Script
+        public T CreateScript<T>(JSONNode json, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : Script
         {
-            return CreateScript(typeof(T), json, initializingState) as T;
+            return CreateScript(typeof(T), json, initializingContext) as T;
         }
 
-        public Script CreateScript(Type type, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, bool isFallbackValues = false)
+        public Script CreateScript(Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, bool isFallbackValues = false)
         {
-            return CreateScript(type, null, initializingState, isFallbackValues);
+            return CreateScript(type, null, initializingContext, isFallbackValues);
         }
 
-        public Script CreateScript(Type type, JSONNode json, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically, bool isFallbackValues = false)
+        public Script CreateScript(Type type, JSONNode json, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, bool isFallbackValues = false)
         {
             if (!type.IsSubclassOf(typeof(Script)))
                 return null;
-            return gameObject.AddSafeComponent(type, initializingState, json, null, isFallbackValues) as Script;
+            return gameObject.AddSafeComponent(type, initializingContext, json, null, isFallbackValues) as Script;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1904,14 +1904,14 @@ namespace DepictionEngine
             return RemoveListItem(datasources, datasource);
         }
 
-        public T CreateChild<T>(string name = null, Transform parent = null, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically, List<PropertyModifier> propertyModifiers = null) where T : IScriptableBehaviour
+        public T CreateChild<T>(string name = null, Transform parent = null, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, List<PropertyModifier> propertyModifiers = null) where T : IScriptableBehaviour
         {
-            return (T)CreateChild(typeof(T), name, parent, initializationState, propertyModifiers);
+            return (T)CreateChild(typeof(T), name, parent, initializingContext, propertyModifiers);
         }
 
-        public IScriptableBehaviour CreateChild(Type type, string name = null, Transform parent = null, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically, List<PropertyModifier> propertyModifiers = null)
+        public IScriptableBehaviour CreateChild(Type type, string name = null, Transform parent = null, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, List<PropertyModifier> propertyModifiers = null)
         {
-            IScriptableBehaviour scriptableBehaviour = instanceManager.CreateInstance(type, parent != null ? parent : gameObject.transform, initializingState: initializationState, propertyModifiers: propertyModifiers) as IScriptableBehaviour;
+            IScriptableBehaviour scriptableBehaviour = instanceManager.CreateInstance(type, parent != null ? parent : gameObject.transform, initializingContext: initializingContext, propertyModifiers: propertyModifiers) as IScriptableBehaviour;
             
             if (!string.IsNullOrEmpty(name))
                 scriptableBehaviour.name = name;

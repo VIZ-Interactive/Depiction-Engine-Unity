@@ -613,7 +613,7 @@ namespace DepictionEngine.Editor
 
         private static T CreateObject<T>(Transform parent, string name = "", bool setParentAndAlign = true, bool moveToView = true, bool selectGameObject = true) where T : Object
         {
-            T objectBase = InstanceManager.Instance().CreateInstance<T>(parent, name, initializingState: InstanceManager.InitializationContext.Editor, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
+            T objectBase = InstanceManager.Instance().CreateInstance<T>(parent, name, initializingContext: InstanceManager.InitializationContext.Editor, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
 
             if (selectGameObject)
                 SelectObject(objectBase);

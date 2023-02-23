@@ -37,12 +37,12 @@ namespace DepictionEngine
 		}
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => toForwardVector = value, TargetController.DEFAULT_FORWARD_VECTOR_VALUE, initializingState);
-            InitValue(value => toDistance = value, TargetController.DEFAULT_DISTANCE_VALUE, initializingState);
+            InitValue(value => toForwardVector = value, TargetController.DEFAULT_FORWARD_VECTOR_VALUE, initializingContext);
+            InitValue(value => toDistance = value, TargetController.DEFAULT_DISTANCE_VALUE, initializingContext);
         }
 
         protected override float GetDefaultDuration()

@@ -35,11 +35,11 @@ namespace DepictionEngine
             }
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => zoomRange = value, GetDefaultZoomRange(), initializingState);
+            InitValue(value => zoomRange = value, GetDefaultZoomRange(), initializingContext);
         }
 
         protected virtual Vector2Int GetDefaultZoomRange()

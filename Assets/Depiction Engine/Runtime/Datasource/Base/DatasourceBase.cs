@@ -133,11 +133,11 @@ namespace DepictionEngine
                 _datasource.Recycle();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            if (datasource == null)
+            if (datasource == Disposable.NULL)
             {
                 datasource = DatasourceManager.CreateDatasource();
                 datasource.name = GetType().Name;
@@ -151,13 +151,16 @@ namespace DepictionEngine
                 RemoveDatasourcePersistenceDataDelegates();
                 AddDatasourcePersistenceDataDelegates();
 
-                datasource.IterateOverPersistenceData((persistenceData) =>
+                if (datasource != Disposable.NULL)
                 {
-                    RemovePersistenceDataDelegates(persistenceData);
-                    AddPersistenceDataDelegates(persistenceData);
+                    datasource.IterateOverPersistenceData((persistenceData) =>
+                    {
+                        RemovePersistenceDataDelegates(persistenceData);
+                        AddPersistenceDataDelegates(persistenceData);
 
-                    return true;
-                });
+                        return true;
+                    });
+                }
 
                 return true;
             }

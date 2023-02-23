@@ -80,14 +80,14 @@ namespace DepictionEngine
 		}
 #endif
 
-		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-			base.InitializeSerializedFields(initializingState);
+			base.InitializeSerializedFields(initializingContext);
 
-			InitValue(value => toLocalPosition = value, Vector3Double.zero, initializingState);
-			InitValue(value => toGeoCoordinate = value, GeoCoordinate3Double.zero, initializingState);
-			InitValue(value => toLocalRotation = value, Vector3Double.zero, initializingState);
-			InitValue(value => toLocalScale = value, Vector3Double.one, initializingState);
+			InitValue(value => toLocalPosition = value, Vector3Double.zero, initializingContext);
+			InitValue(value => toGeoCoordinate = value, GeoCoordinate3Double.zero, initializingContext);
+			InitValue(value => toLocalRotation = value, Vector3Double.zero, initializingContext);
+			InitValue(value => toLocalScale = value, Vector3Double.one, initializingContext);
 		}
 
         protected override bool TransformPropertyAssigned(IProperty property, string name, object newValue, object oldValue)

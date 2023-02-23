@@ -147,13 +147,13 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => gridIndexType = value, GridIndexType.None, initializingState);
-            InitValue(value => grid2DDimensions = value, Vector2Int.one, initializingState);
-            InitValue(value => grid2DIndex = value, Vector2Int.zero, initializingState);
+            InitValue(value => gridIndexType = value, GridIndexType.None, initializingContext);
+            InitValue(value => grid2DDimensions = value, Vector2Int.one, initializingContext);
+            InitValue(value => grid2DIndex = value, Vector2Int.zero, initializingContext);
         }
 
 #if UNITY_EDITOR
@@ -234,7 +234,7 @@ namespace DepictionEngine
             return null;
         }
 
-        public virtual void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        public virtual void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
 
         }
@@ -263,19 +263,19 @@ namespace DepictionEngine
             return "";
         }
 
-        protected void DisposeOldDataAndRegisterNewData<T>(T oldData, T newData, InstanceManager.InitializationContext initializingState) where T : UnityEngine.Object
+        protected void DisposeOldDataAndRegisterNewData<T>(T oldData, T newData, InstanceManager.InitializationContext initializingContext) where T : UnityEngine.Object
         {
             if (newData != oldData)
             {
                 DisposeManager.DestroyContext destroyContext = DisposeManager.DestroyContext.Unknown;
 #if UNITY_EDITOR
-                if (initializingState == InstanceManager.InitializationContext.Editor)
+                if (initializingContext == InstanceManager.InitializationContext.Editor)
                     destroyContext = DisposeManager.DestroyContext.Editor;
 #endif
                 Dispose(oldData, DisposeManager.DestroyDelay.None, destroyContext);
 
 #if UNITY_EDITOR
-                Editor.UndoManager.RegisterCreatedObjectUndo(newData, initializingState);
+                Editor.UndoManager.RegisterCreatedObjectUndo(newData, initializingContext);
 #endif
             }
         }

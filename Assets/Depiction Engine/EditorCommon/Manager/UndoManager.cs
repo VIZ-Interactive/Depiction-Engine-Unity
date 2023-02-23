@@ -115,10 +115,10 @@ namespace DepictionEngine.Editor
         /// Increment current group index and change its name.
         /// </summary>
         /// <param name="name"></param>
-        /// <param name="initializationState"></param>
-        public static void CreateNewGroup(string name, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Editor)
+        /// <param name="initializingContext"></param>
+        public static void CreateNewGroup(string name, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
         {
-            if (initializationState == InstanceManager.InitializationContext.Editor || initializationState == InstanceManager.InitializationContext.Editor_Duplicate)
+            if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate)
             {
                 IncrementCurrentGroup();
                 currentGroupName = name;
@@ -176,14 +176,14 @@ namespace DepictionEngine.Editor
         /// Registers an undo operation to undo the creation of an object.
         /// </summary>
         /// <param name="objectToUndo"></param>
-        /// <param name="initializationState"></param>
-        public static void RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Editor)
+        /// <param name="initializingContext"></param>
+        public static void RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
         {
-            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is UnityEngine.Object && (initializationState == InstanceManager.InitializationContext.Editor || initializationState == InstanceManager.InitializationContext.Editor_Duplicate))
+            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is UnityEngine.Object && (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate))
             {
                 //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the wrong Group
                 //Fix: We Queue the operation to perform it later(at the Beginning of the next Update) when the Undo Group name as been updated
-                if (initializationState == InstanceManager.InitializationContext.Editor_Duplicate)
+                if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate)
                 {
                     QueueUndoOperation(objectToUndo, UndoOperationType.Created);
                     _processingEditorCopyPasteOrDuplicateOrDragDropComponent = true;
@@ -203,14 +203,14 @@ namespace DepictionEngine.Editor
         /// Stores a copy of the object states on the undo stack.
         /// </summary>
         /// <param name="objectToUndo"></param>
-        /// <param name="initializationState"></param>
-        public static void RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Editor)
+        /// <param name="initializingContext"></param>
+        public static void RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
         {
-            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is UnityEngine.Object && (initializationState == InstanceManager.InitializationContext.Editor || initializationState == InstanceManager.InitializationContext.Editor_Duplicate))
+            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is UnityEngine.Object && (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate))
             {
                 //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the wrong Group
                 //Fix: We Queue the operation to perform it later(at the Beginning of the next Update) when the Undo Group name as been updated
-                if (initializationState == InstanceManager.InitializationContext.Editor_Duplicate)
+                if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate)
                 {
                     QueueUndoOperation(objectToUndo, UndoOperationType.Complete);
                     _processingEditorCopyPasteOrDuplicateOrDragDropComponent = true;
@@ -348,6 +348,8 @@ namespace DepictionEngine.Editor
         public static void RevertAllInCurrentGroup()
         {
             Undo.RevertAllInCurrentGroup();
+            SetCurrentGroupName(Undo.GetCurrentGroupName());
+            _currentGroupIndex = Undo.GetCurrentGroup();
         }
 
         private static void UpdateCurrentGroupNameIfCapturingInInspector(IDisposable objectToUndo)
@@ -418,7 +420,10 @@ namespace DepictionEngine.Editor
                     if (splitCurrentGroupName.Length > 2 && splitCurrentGroupName[0] == "Paste" && splitCurrentGroupName[splitCurrentGroupName.Length - 1] == "Values")
                     {
                         foreach (IJson validatedObject in _validatedObjects)
-                            SceneManager.PastingComponentValues(validatedObject, validatedObject.GetJson());
+                        {
+                            if (validatedObject.PasteComponentAllowed())
+                                SceneManager.PastingComponentValues(validatedObject, validatedObject.GetJson());
+                        }
 
                         RevertAllInCurrentGroup();
                     }

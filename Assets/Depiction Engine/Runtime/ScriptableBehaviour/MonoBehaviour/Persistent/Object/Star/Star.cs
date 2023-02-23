@@ -40,25 +40,25 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
-            InitLightAndLensFlare(initializingState);
+            InitLightAndLensFlare(initializingContext);
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => color = value, new Color(1.0f, 0.9597525f, 0.9016172f), initializingState);
-            InitValue(value => lensFlareScale = value, 1.3f, initializingState);
-            InitValue(value => intensity = value, 1.8f, initializingState);
-            InitValue(value => range = value, 1000000.0f, initializingState);
-            InitValue(value => shadows = value, LightShadows.Soft, initializingState);
+            InitValue(value => color = value, new Color(1.0f, 0.9597525f, 0.9016172f), initializingContext);
+            InitValue(value => lensFlareScale = value, 1.3f, initializingContext);
+            InitValue(value => intensity = value, 1.8f, initializingContext);
+            InitValue(value => range = value, 1000000.0f, initializingContext);
+            InitValue(value => shadows = value, LightShadows.Soft, initializingContext);
         }
 
-        protected override void InitReflectionProbeObject()
+        protected override void InitReflectionProbeObject(InstanceManager.InitializationContext initializingContext)
         {
         }
 
@@ -72,7 +72,7 @@ namespace DepictionEngine
             return false;
         }
 
-        private void InitLightAndLensFlare(InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        private void InitLightAndLensFlare(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
             if (!isFallbackValues)
             {
@@ -88,15 +88,15 @@ namespace DepictionEngine
                     go.transform.SetParent(gameObject.transform, false);
 
 #if UNITY_EDITOR
-                    Editor.UndoManager.RegisterCreatedObjectUndo(go, initializingState);
+                    Editor.UndoManager.RegisterCreatedObjectUndo(go, initializingContext);
 #endif
 
-                    _lightInternal = go.AddSafeComponent<Light>(initializingState);
+                    _lightInternal = go.AddSafeComponent<Light>(initializingContext);
                     _lightInternal.type = LightType.Directional;
 
-                    go.AddSafeComponent<UniversalAdditionalLightData>(initializingState);
+                    go.AddSafeComponent<UniversalAdditionalLightData>(initializingContext);
 
-                    _lensFlare = go.AddSafeComponent<LensFlareComponentSRP>(initializingState);
+                    _lensFlare = go.AddSafeComponent<LensFlareComponentSRP>(initializingContext);
                     _lensFlare.lensFlareData = Resources.Load("LensFlare/Sun Lens Flare (SRP)") as LensFlareDataSRP;
                     _lensFlare.useOcclusion = false;
                 }

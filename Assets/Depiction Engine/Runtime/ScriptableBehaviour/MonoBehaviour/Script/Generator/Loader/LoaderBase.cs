@@ -172,9 +172,9 @@ namespace DepictionEngine
             ClearLoadScopes();
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             KillTimers();
             StartAutoReloadIntervalTimer();
@@ -182,15 +182,15 @@ namespace DepictionEngine
             UpdateLoadTriggers();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            bool clearLoadScopes = initializingState == InstanceManager.InitializationContext.Editor_Duplicate || initializingState == InstanceManager.InitializationContext.Programmatically_Duplicate;
+            bool clearLoadScopes = initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate;
 
             //Problem: When undoing a "Add Component"(Loader) action done in the inspector and redoing it, some null loadScopes can be found in the LoadScope Dictionary for some reason
             //Fix: If this initialization is the result of an Undo/Redo operation, we look for null LoadScope in the Dictionary and Clear it all if we find some
-            if (!clearLoadScopes && initializingState == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo)
+            if (!clearLoadScopes && initializingContext == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo)
             {
                 if (DetectNullLoadScope())
                 {
@@ -210,17 +210,17 @@ namespace DepictionEngine
                 return true;
             });
 
-            InitValue(value => datasourceId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(datasourceId, datasource, initializingState); }, initializingState);
-            InitValue(value => loadEndpoint = value, "", initializingState);
-            InitValue(value => dataType = value, DataType.Json, initializingState);
-            InitValue(value => depth = value, 0, initializingState);
-            InitValue(value => autoDisposeUnused = value, GetDefaultAutoDisposeUnused(), initializingState);
-            InitValue(value => timeout = value, 60, initializingState);
-            InitValue(value => headers = value, new List<string>(), initializingState);
-            InitValue(value => autoUpdateWhenDisabled = value, GetDefaultAutoLoadWhenDisabled(), initializingState);
-            InitValue(value => autoUpdateInterval = value, GetDefaultWaitBetweenLoad(), initializingState);
-            InitValue(value => autoUpdateDelay = value, GetDefaultLoadDelay(), initializingState);
-            InitValue(value => autoReloadInterval = value, GetDefaultAutoReloadInterval(), initializingState);
+            InitValue(value => datasourceId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(datasourceId, datasource, initializingContext); }, initializingContext);
+            InitValue(value => loadEndpoint = value, "", initializingContext);
+            InitValue(value => dataType = value, DataType.Json, initializingContext);
+            InitValue(value => depth = value, 0, initializingContext);
+            InitValue(value => autoDisposeUnused = value, GetDefaultAutoDisposeUnused(), initializingContext);
+            InitValue(value => timeout = value, 60, initializingContext);
+            InitValue(value => headers = value, new List<string>(), initializingContext);
+            InitValue(value => autoUpdateWhenDisabled = value, GetDefaultAutoLoadWhenDisabled(), initializingContext);
+            InitValue(value => autoUpdateInterval = value, GetDefaultWaitBetweenLoad(), initializingContext);
+            InitValue(value => autoUpdateDelay = value, GetDefaultLoadDelay(), initializingContext);
+            InitValue(value => autoReloadInterval = value, GetDefaultAutoReloadInterval(), initializingContext);
         }
 
         protected virtual void ClearLoadScopes()
@@ -847,7 +847,7 @@ namespace DepictionEngine
 
         protected LoadScope CreateLoadScope(Type type)
         {
-            LoadScope loadScope = instanceManager.CreateInstance(type, initializingState: GetInitializeState()) as LoadScope;
+            LoadScope loadScope = instanceManager.CreateInstance(type, initializingContext: GetInitializeContext()) as LoadScope;
             return loadScope != Disposable.NULL ? loadScope : null;
         }
 

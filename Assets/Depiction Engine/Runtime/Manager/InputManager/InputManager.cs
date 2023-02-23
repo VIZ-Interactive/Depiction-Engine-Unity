@@ -69,9 +69,9 @@ namespace DepictionEngine
             return _instance;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             UpdateCaptureAllKeyboardInput();
 
@@ -93,11 +93,11 @@ namespace DepictionEngine
             }
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => captureAllKeyboardInput = value, true, initializingState);
+            InitValue(value => captureAllKeyboardInput = value, true, initializingContext);
         }
 
         private void MouseMove(RaycastHitDouble hit)

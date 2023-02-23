@@ -12,5 +12,9 @@ namespace DepictionEngine
         void SetJson(JSONNode json);
         JSONObject GetJson(Datasource outOfSynchDatasource = null, JSONNode filter = null);
         bool GetJsonAttribute(string name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo);
+
+#if UNITY_EDITOR
+        bool PasteComponentAllowed();
+#endif
     }
 }

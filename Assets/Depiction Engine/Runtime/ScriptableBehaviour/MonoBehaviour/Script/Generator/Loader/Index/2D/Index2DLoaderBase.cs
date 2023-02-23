@@ -46,13 +46,13 @@ namespace DepictionEngine
                 _index2DLoadScopes.Clear();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => minMaxZoom = value, new Vector2Int(0, 20), initializingState);
-            InitValue(value => indexUrlParamType = value, Index2DLoadScope.URLParametersType.ZoomXY, initializingState);
-            InitValue(value => xyTilesRatio = value, 1.0f, initializingState);
+            InitValue(value => minMaxZoom = value, new Vector2Int(0, 20), initializingContext);
+            InitValue(value => indexUrlParamType = value, Index2DLoadScope.URLParametersType.ZoomXY, initializingContext);
+            InitValue(value => xyTilesRatio = value, 1.0f, initializingContext);
         }
 
         protected override bool DetectNullLoadScope()

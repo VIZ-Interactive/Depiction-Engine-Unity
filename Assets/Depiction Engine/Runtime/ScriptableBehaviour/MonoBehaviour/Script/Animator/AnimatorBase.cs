@@ -30,11 +30,11 @@ namespace DepictionEngine
 		}
 #endif
 
-		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-			base.InitializeSerializedFields(initializingState);
+			base.InitializeSerializedFields(initializingContext);
 
-			InitValue(value => duration = value, GetDefaultDuration(), initializingState);
+			InitValue(value => duration = value, GetDefaultDuration(), initializingContext);
 		}
 
 		protected override bool AddInstanceToManager()

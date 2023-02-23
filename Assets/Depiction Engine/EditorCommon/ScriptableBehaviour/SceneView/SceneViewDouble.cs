@@ -70,7 +70,7 @@ namespace DepictionEngine.Editor
         private bool _forceHandleVisibility;
 
         private bool _deleted;
-        private InstanceManager.InitializationContext _sceneViewInitializingState;
+        private InstanceManager.InitializationContext _sceneViewinitializingContext;
 
         private TargetControllerComponents _sceneViewDoubleComponents;
         private SceneViewDoubleComponentsDelta _sceneViewDoubleComponentsDelta;
@@ -87,13 +87,13 @@ namespace DepictionEngine.Editor
         private MethodInfo _onGUIEndedRemoveDelegate;
         private MethodInfo _onGUIEndedAddDelegate;
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
-            _sceneViewInitializingState = initializingState;
+            _sceneViewinitializingContext = initializingContext;
 
-            if (initializingState == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo)
+            if (initializingContext == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo)
             {
                 if (SceneManager.playModeState == PlayModeStateChange.ExitingPlayMode)
                 {
@@ -125,7 +125,7 @@ namespace DepictionEngine.Editor
         {
             _sceneViewInstanceId = sceneView.GetInstanceID();
 
-            if (_sceneViewInitializingState == InstanceManager.InitializationContext.Programmatically)
+            if (_sceneViewinitializingContext == InstanceManager.InitializationContext.Programmatically)
             {
                 pivot = sceneView.pivot;
                 rotation = sceneView.rotation;

@@ -166,9 +166,9 @@ namespace DepictionEngine
             return _instance;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
 #if UNITY_EDITOR            
             UnityEditor.PlayerSettings.allowUnsafeCode = true;
@@ -200,17 +200,17 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => debug = value, false, initializingState);
-            InitValue(value => runInBackground = value, true, initializingState);
-            InitValue(value => enableMultithreading = value, true, initializingState);
+            InitValue(value => debug = value, false, initializingContext);
+            InitValue(value => runInBackground = value, true, initializingContext);
+            InitValue(value => enableMultithreading = value, true, initializingContext);
 #if UNITY_EDITOR
-            InitValue(value => buildOutputPath = value, "Assets/DepictionEngine/Resources/AssetBundle", initializingState);
-            InitValue(value => buildOptions = value, UnityEditor.BuildAssetBundleOptions.None, initializingState);
-            InitValue(value => buildTarget = value, UnityEditor.BuildTarget.StandaloneWindows64, initializingState);
+            InitValue(value => buildOutputPath = value, "Assets/DepictionEngine/Resources/AssetBundle", initializingContext);
+            InitValue(value => buildOptions = value, UnityEditor.BuildAssetBundleOptions.None, initializingContext);
+            InitValue(value => buildTarget = value, UnityEditor.BuildTarget.StandaloneWindows64, initializingContext);
 #endif
         }
 
@@ -1072,6 +1072,10 @@ namespace DepictionEngine
         {
             if (_pastingComponentValuesToObjects == null)
                 _pastingComponentValuesToObjects = new List<(IJson, JSONObject)>();
+            
+            if (json[nameof(IProperty.id)] != null)
+                json.Remove(nameof(IProperty.id));
+            
             _pastingComponentValuesToObjects.Add((iJson, json));
         }
 #endif
@@ -1098,7 +1102,8 @@ namespace DepictionEngine
             {
                 //We assume that all the objects are of the same type
                 IScriptableBehaviour firstUnityObject = _pastingComponentValuesToObjects[0].Item1;
-                string groupName = "Paste " + firstUnityObject.GetType().FullName + " Values";
+                //'Pasted' is not a typo it is used to distinguish Unity 'Paste Component Values' action from the one we create. If there is no distinction then if the undo/redo actions are played again this code will be executed again and a new action will be recorded in the history erasing any subsequent actions.
+                string groupName = "Pasted " + firstUnityObject.GetType().FullName + " Values";
 
                 Editor.UndoManager.SetCurrentGroupName(groupName);
                 
@@ -1113,7 +1118,6 @@ namespace DepictionEngine
                     JSONObject json = pastingComponentValuesToObject.Item2;
                     iJson.IsUserChange(() => 
                     {
-                        Debug.Log(json);
                         iJson.SetJson(json);
                     });
                 }

@@ -86,22 +86,22 @@ namespace DepictionEngine
                 _terrainGridCache.Clear();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            if (initializingState == InstanceManager.InitializationContext.Editor_Duplicate || initializingState == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
                 _material = null;
 
-            InitValue(value => sphericalSubdivision = value, 2, initializingState);
-            InitValue(value => flatSubdivision = value, 2, initializingState);
-            InitValue(value => subdivisionZoomFactor = value, 1.2f, initializingState);
-            InitValue(value => overlapFactor = value, 1.0f, initializingState);
-            InitValue(value => edgeDepth = value, GetDefaultEdgeDepth(), initializingState);
-            InitValue(value => normalsType = value, NormalsType.DerivedFromElevation, initializingState);
-            InitValue(value => shaderPath = value, GetDefaultShaderPath(), initializingState);
-            InitValue(value => edgeOverlapThickness = value, 0.12f, initializingState);
-            InitValue(value => color = value, Color.clear, initializingState);
+            InitValue(value => sphericalSubdivision = value, 2, initializingContext);
+            InitValue(value => flatSubdivision = value, 2, initializingContext);
+            InitValue(value => subdivisionZoomFactor = value, 1.2f, initializingContext);
+            InitValue(value => overlapFactor = value, 1.0f, initializingContext);
+            InitValue(value => edgeDepth = value, GetDefaultEdgeDepth(), initializingContext);
+            InitValue(value => normalsType = value, NormalsType.DerivedFromElevation, initializingContext);
+            InitValue(value => shaderPath = value, GetDefaultShaderPath(), initializingContext);
+            InitValue(value => edgeOverlapThickness = value, 0.12f, initializingContext);
+            InitValue(value => color = value, Color.clear, initializingContext);
         }
 
         protected override bool UpdateReferences(bool forceUpdate = false)

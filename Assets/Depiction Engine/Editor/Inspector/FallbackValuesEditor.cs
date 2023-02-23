@@ -27,7 +27,7 @@ namespace DepictionEngine.Editor
                 if (_fallbackValuesObject == value)
                     return;
 
-                FallbackValues fallbackValues = serializedObject.targetObject as FallbackValues;
+               FallbackValues fallbackValues = serializedObject.targetObject as FallbackValues;
 
                 if (fallbackValues != Disposable.NULL)
                     fallbackValues.ReleaseFallbackValuesObject(_fallbackValuesObject);

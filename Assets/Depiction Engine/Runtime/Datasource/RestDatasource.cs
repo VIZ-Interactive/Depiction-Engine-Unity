@@ -39,9 +39,9 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private List<string> _baseAddresses;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
             //Mapbox-Streets : https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA
             //Earth Satellite : https://api.mapbox.com/v4/mapbox.satellite/{0}/{1}/{2}@2x.jpg90?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA
@@ -53,13 +53,13 @@ namespace DepictionEngine
             //Vertical Exageration 4x
             //Moon Elevation : https://tiles.arcgis.com/tiles/WQ9KVmV6xGGMnCiQ/arcgis/rest/services/Moon_Elevation_Surface/ImageServer/tile/{0}/{2}/{1}?blankTile=false 
 
-            InitValue(value => baseAddress = value, "", initializingState);
-            InitValue(value => baseAddress2 = value, "", initializingState);
-            InitValue(value => baseAddress3 = value, "", initializingState);
-            InitValue(value => baseAddress4 = value, "", initializingState);
-            InitValue(value => saveEndpoint = value, "", initializingState);
-            InitValue(value => synchronizeEndpoint = value, "", initializingState);
-            InitValue(value => deleteEndpoint = value, "", initializingState);
+            InitValue(value => baseAddress = value, "", initializingContext);
+            InitValue(value => baseAddress2 = value, "", initializingContext);
+            InitValue(value => baseAddress3 = value, "", initializingContext);
+            InitValue(value => baseAddress4 = value, "", initializingContext);
+            InitValue(value => saveEndpoint = value, "", initializingContext);
+            InitValue(value => synchronizeEndpoint = value, "", initializingContext);
+            InitValue(value => deleteEndpoint = value, "", initializingContext);
         }
 
         public override string GetDatasourceName()

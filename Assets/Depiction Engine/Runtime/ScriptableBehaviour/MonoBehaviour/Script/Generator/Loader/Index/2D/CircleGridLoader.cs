@@ -22,11 +22,11 @@ namespace DepictionEngine
                 _circleGrid = new CircleGrid[] { CreateGrid<CircleGrid>() };
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => radius = value, 100.0f, initializingState);
+            InitValue(value => radius = value, 100.0f, initializingContext);
         }
 
         /// <summary>

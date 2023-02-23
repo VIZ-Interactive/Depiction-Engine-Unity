@@ -15,30 +15,30 @@ namespace DepictionEngine
         /// Create a new <see cref="DepictionEngine.Camera"/> equipped with a <see cref="DepictionEngine.CameraController"/> and target.
         /// </summary>
         /// <param name="parent">The parent <see cref="UnityEngine.Transform"/> under which we will create the <see cref="DepictionEngine.Camera"/>.</param>
-        /// <param name="initializationState"></param>
+        /// <param name="initializingContext"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
         /// <returns>The newly created <see cref="DepictionEngine.Camera"/> instance.</returns>
-        public static Camera CreateTargetCamera(Transform parent, InstanceManager.InitializationContext initializationState = InstanceManager.InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false)
+        public static Camera CreateTargetCamera(Transform parent, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false)
         {
             Camera camera = null;
 
             InstanceManager instanceManager = InstanceManager.Instance();
             if (instanceManager != Disposable.NULL)
             {
-                Object target = instanceManager.CreateInstance<VisualObject>(parent, json: "Target", initializingState: initializationState, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
-                target.CreateScript<GeoCoordinateController>(initializationState);
-                target.CreateScript<TransformAnimator>(initializationState);
+                Object target = instanceManager.CreateInstance<VisualObject>(parent, json: "Target", initializingContext: initializingContext, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
+                target.CreateScript<GeoCoordinateController>(initializingContext);
+                target.CreateScript<TransformAnimator>(initializingContext);
 
-                camera = instanceManager.CreateInstance<Camera>(parent, json: "Camera", initializingState: initializationState);
+                camera = instanceManager.CreateInstance<Camera>(parent, json: "Camera", initializingContext: initializingContext);
 
-                CameraController cameraController = camera.CreateScript<CameraController>(initializationState);
+                CameraController cameraController = camera.CreateScript<CameraController>(initializingContext);
                 cameraController.targetId = target.id;
 #if UNITY_EDITOR
-                Editor.UndoManager.RegisterCompleteObjectUndo(cameraController, initializationState);
+                Editor.UndoManager.RegisterCompleteObjectUndo(cameraController, initializingContext);
 #endif
 
-                camera.CreateScript<TargetControllerAnimator>(initializationState);
+                camera.CreateScript<TargetControllerAnimator>(initializingContext);
             }
 
             return camera;
@@ -53,7 +53,7 @@ namespace DepictionEngine
         /// <param name="size">The size (radius in spherical mode or width in flat mode), in world units.</param>
         /// <param name="mass">Used to determine the amount of gravitational force to apply when <see cref="DepictionEngine.Object.useGravity"/> is enabled.</param>
         /// <param name="json">Optional initialization values.</param>
-        /// <param name="initializingState"></param>
+        /// <param name="initializingContext"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
         /// <returns>The newly created <see cref="DepictionEngine.Planet"/> instance.</returns>
@@ -64,7 +64,7 @@ namespace DepictionEngine
             double size,
             double mass,
             JSONNode json = null,
-            InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically,
+            InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically,
             bool setParentAndAlign = false,
             bool moveToView = false)
         {
@@ -73,7 +73,7 @@ namespace DepictionEngine
             if (parentId != SerializableGuid.Empty)
                 component = InstanceManager.Instance().GetIJson(parentId) as Component;
 
-            return CreatePlanet(component != null ? component.transform : null, name, spherical, size, mass, json, initializingState, setParentAndAlign, moveToView);
+            return CreatePlanet(component != null ? component.transform : null, name, spherical, size, mass, json, initializingContext, setParentAndAlign, moveToView);
         }
 
         /// <summary>
@@ -85,7 +85,7 @@ namespace DepictionEngine
         /// <param name="size">The size (radius in spherical mode or width in flat mode), in world units.</param>
         /// <param name="mass">Used to determine the amount of gravitational force to apply when <see cref="DepictionEngine.Object.useGravity"/> is enabled.</param>
         /// <param name="json">Optional initialization values.</param>
-        /// <param name="initializingState"></param>
+        /// <param name="initializingContext"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
         /// <returns>The newly created <see cref="DepictionEngine.Planet"/> instance.</returns>
@@ -96,7 +96,7 @@ namespace DepictionEngine
         double size,
         double mass,
         JSONNode json = null,
-        InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically,
+        InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically,
         bool setParentAndAlign = false,
         bool moveToView = false)
         {
@@ -104,20 +104,20 @@ namespace DepictionEngine
                 json = new JSONObject();
             json[nameof(Object.name)] = name;
 
-            Planet planet = InstanceManager.Instance().CreateInstance<Planet>(parent, json: json, initializingState: initializingState, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
+            Planet planet = InstanceManager.Instance().CreateInstance<Planet>(parent, json: json, initializingContext: initializingContext, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
             planet.SetSpherical(spherical, false);
             if (spherical)
                 planet.transform.localRotation = QuaternionDouble.Euler(-90.0d, 0.0d, 0.0d);
 
 #if UNITY_EDITOR
-            Editor.UndoManager.RegisterCompleteObjectUndo(planet.transform, initializingState);
+            Editor.UndoManager.RegisterCompleteObjectUndo(planet.transform, initializingContext);
 #endif
 
             planet.size = size;
             planet.mass = mass;
 
 #if UNITY_EDITOR
-            Editor.UndoManager.RegisterCompleteObjectUndo(planet, initializingState);
+            Editor.UndoManager.RegisterCompleteObjectUndo(planet, initializingContext);
 #endif
 
             return planet;
@@ -129,11 +129,11 @@ namespace DepictionEngine
         /// <param name="planetId">The id of the parent <see cref="DepictionEngine.Planet"/> under which we will create the <see cref="DepictionEngine.DatasourceRoot"/>.</param>
         /// <param name="name">The name of the layer.</param>
         /// <param name="json">Optional initialization values.</param>
-        /// <param name="initializingState">.</param>
+        /// <param name="initializingContext">.</param>
         /// <returns>The newly created <see cref="DepictionEngine.DatasourceRoot"/> instance.</returns>
-        public static DatasourceRoot CreateLayer(SerializableGuid planetId, string name, JSONNode json = null, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        public static DatasourceRoot CreateLayer(SerializableGuid planetId, string name, JSONNode json = null, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
-            return CreateLayer(InstanceManager.Instance().GetAstroObject(planetId) as Planet, name, json, initializingState);
+            return CreateLayer(InstanceManager.Instance().GetAstroObject(planetId) as Planet, name, json, initializingContext);
         }
 
         /// <summary>
@@ -142,9 +142,9 @@ namespace DepictionEngine
         /// <param name="planet">The parent <see cref="DepictionEngine.Planet"/> under which we will create the <see cref="DepictionEngine.DatasourceRoot"/>.</param>
         /// <param name="name">The name of the layer.</param>
         /// <param name="json">Optional initialization values.</param>
-        /// <param name="initializingState">.</param>
+        /// <param name="initializingContext">.</param>
         /// <returns>The newly created <see cref="DepictionEngine.DatasourceRoot"/> instance.</returns>
-        public static DatasourceRoot CreateLayer(Planet planet, string name, JSONNode json = null, InstanceManager.InitializationContext initializingState = InstanceManager.InitializationContext.Programmatically)
+        public static DatasourceRoot CreateLayer(Planet planet, string name, JSONNode json = null, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
             if (planet == Disposable.NULL)
                 return null;
@@ -153,7 +153,7 @@ namespace DepictionEngine
                 json = new JSONObject();
             json[nameof(DatasourceRoot.name)] = name;
 
-            return InstanceManager.Instance().CreateInstance<DatasourceRoot>(planet.gameObject.transform, json: json, initializingState: initializingState);
+            return InstanceManager.Instance().CreateInstance<DatasourceRoot>(planet.gameObject.transform, json: json, initializingContext: initializingContext);
         }
 
         private static List<Type> _requiredComponentTypes;

@@ -34,7 +34,7 @@ namespace DepictionEngine
         private bool _disposed;
         private bool _disposedComplete;
 
-        private InstanceManager.InitializationContext _initializingState;
+        private InstanceManager.InitializationContext _initializingContext;
         private DisposeManager.DestroyContext _destroyingContext;
         private IScriptableBehaviour _originator;
         private bool _isUserChange;
@@ -59,7 +59,7 @@ namespace DepictionEngine
             _isFallbackValues = false;
             _awake = _initializing = _initialized = _instanceAdded = _disposing = _dispose = _disposed = _disposedComplete = false;
             _destroyingContext = DisposeManager.DestroyContext.Unknown;
-            _initializingState = InstanceManager.InitializationContext.Unknown;
+            _initializingContext = InstanceManager.InitializationContext.Unknown;
 
 #if UNITY_EDITOR
             _lastHasEditorUndoRedo = _hasEditorUndoRedo = false;
@@ -73,27 +73,30 @@ namespace DepictionEngine
             {
                 Initializing();
 
-                InstanceManager.InitializationContext initializingState = GetInitializingState();
+                //Create the SceneManager if this is the first MonoBehaviour created
+                SceneManager.Instance();
 
-                InitializeUID(initializingState);
+                InstanceManager.InitializationContext initializingContext = GetinitializingContext();
+
+                InitializeUID(initializingContext);
 
                 bool abortInitialization = false;
 
                 IsUserChange(() =>
                 {
-                    if (!Initialize(initializingState))
+                    if (!Initialize(initializingContext))
                         abortInitialization = true;
-                }, initializingState == InstanceManager.InitializationContext.Editor || initializingState == InstanceManager.InitializationContext.Editor_Duplicate);
+                }, initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate);
 
                 if (abortInitialization)
                     return false;
 
-                Initialized(initializingState);
+                Initialized(initializingContext);
                 if (InitializedEvent != null)
                     InitializedEvent();
 
 #if UNITY_EDITOR
-                RegisterInitializeObjectUndo(initializingState);
+                RegisterInitializeObjectUndo(initializingContext);
 #endif
 
                 _instanceAdded = AddToInstanceManager();
@@ -104,9 +107,9 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        protected virtual void RegisterInitializeObjectUndo(InstanceManager.InitializationContext initializingState)
+        protected virtual void RegisterInitializeObjectUndo(InstanceManager.InitializationContext initializingContext)
         {
-            Editor.UndoManager.RegisterCompleteObjectUndo(this, initializingState);
+            Editor.UndoManager.RegisterCompleteObjectUndo(this, initializingContext);
         }
 #endif
 
@@ -125,26 +128,26 @@ namespace DepictionEngine
         /// Get the context in which the <see cref="DepictionEngine.IDisposable.Initialize"/> was triggered.
         /// </summary>
         /// <returns></returns>
-        private InstanceManager.InitializationContext GetInitializingState()
+        private InstanceManager.InitializationContext GetinitializingContext()
         {
-            InstanceManager.InitializationContext newInitializingState = InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo;
+            InstanceManager.InitializationContext newinitializingContext = InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo;
 
-            if (_initializingState == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo || _initializingState == InstanceManager.InitializationContext.Editor_Duplicate || _initializingState == InstanceManager.InitializationContext.Programmatically_Duplicate)
-                newInitializingState = _initializingState;
+            if (_initializingContext == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo || _initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || _initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
+                newinitializingContext = _initializingContext;
             else
             {
-                InstanceManager.InitializationContext initializingState = InstanceManager.initializingState;
+                InstanceManager.InitializationContext initializingContext = InstanceManager.initializingContext;
                 int newInstanceID = GetInstanceID();
                 if (newInstanceID != instanceID)
                 {
                     if (instanceID == 0)
-                        newInitializingState = initializingState == InstanceManager.InitializationContext.Programmatically ? InstanceManager.InitializationContext.Programmatically : InstanceManager.InitializationContext.Editor;
+                        newinitializingContext = initializingContext == InstanceManager.InitializationContext.Programmatically ? InstanceManager.InitializationContext.Programmatically : InstanceManager.InitializationContext.Editor;
                     else if (newInstanceID < 0)
-                        newInitializingState = _initializingState == InstanceManager.InitializationContext.Programmatically ? InstanceManager.InitializationContext.Programmatically_Duplicate : InstanceManager.InitializationContext.Editor_Duplicate;
+                        newinitializingContext = _initializingContext == InstanceManager.InitializationContext.Programmatically ? InstanceManager.InitializationContext.Programmatically_Duplicate : InstanceManager.InitializationContext.Editor_Duplicate;
                 }
             }
 
-            return newInitializingState;
+            return newinitializingContext;
         }
 
         /// <summary>
@@ -168,7 +171,7 @@ namespace DepictionEngine
         /// <summary>
         /// The main initialization function.
         /// </summary>
-        /// <param name="initializingState"></param>
+        /// <param name="initializingContext"></param>
         /// <returns>False if the initialization failed.</returns>
         protected virtual bool Initialize(InstanceManager.InitializationContext initializatingState)
         {
@@ -188,14 +191,14 @@ namespace DepictionEngine
         /// <summary>
         /// Provides the ability to interrupt the initialization.
         /// </summary>
-        /// <param name="initializingState"></param>
+        /// <param name="initializingContext"></param>
         /// <returns>False to interrupt the initialization.</returns>
-        protected virtual bool IsValidInitialization(InstanceManager.InitializationContext initializingState)
+        protected virtual bool IsValidInitialization(InstanceManager.InitializationContext initializingContext)
         {
             return true;
         }
 
-        protected virtual void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected virtual void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
 #if UNITY_EDITOR
             RenderingManager.UpdateIcon(this);
@@ -205,36 +208,36 @@ namespace DepictionEngine
         /// <summary>
         /// Initialize SerializedField's to their default values.
         /// </summary>
-        /// <param name="initializingState"></param>
-        protected virtual void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        /// <param name="initializingContext"></param>
+        protected virtual void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
             
         }
 
-        protected bool InitValue<T>(Action<T> callback, T defaultValue, InstanceManager.InitializationContext initializingState, bool reset = true)
+        protected bool InitValue<T>(Action<T> callback, T defaultValue, InstanceManager.InitializationContext initializingContext, bool reset = true)
         {
-            return MonoBehaviourDisposable.InitValueInternal(callback, defaultValue, initializingState, reset);
+            return MonoBehaviourDisposable.InitValueInternal(callback, defaultValue, initializingContext, reset);
         }
 
-        protected bool InitValue<T>(Action<T> callback, T defaultValue, Func<T> duplicateValue, InstanceManager.InitializationContext initializingState, bool reset = true)
+        protected bool InitValue<T>(Action<T> callback, T defaultValue, Func<T> duplicateValue, InstanceManager.InitializationContext initializingContext, bool reset = true)
         {
-            return MonoBehaviourDisposable.InitValueInternal(callback, defaultValue, duplicateValue, initializingState, reset);
+            return MonoBehaviourDisposable.InitValueInternal(callback, defaultValue, duplicateValue, initializingContext, reset);
         }
 
-        public static bool InitValueInternal<T>(Action<T> callback, T defaultValue, Func<T> duplicateValue, InstanceManager.InitializationContext initializingState, bool reset = true)
+        public static bool InitValueInternal<T>(Action<T> callback, T defaultValue, Func<T> duplicateValue, InstanceManager.InitializationContext initializingContext, bool reset = true)
         {
-            if (initializingState == InstanceManager.InitializationContext.Editor_Duplicate || initializingState == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
             {
                 callback(duplicateValue());
                 return true;
             }
             else
-                return InitValueInternal(callback, defaultValue, initializingState, reset);
+                return InitValueInternal(callback, defaultValue, initializingContext, reset);
         }
 
-        public static bool InitValueInternal<T>(Action<T> callback, T defaultValue, InstanceManager.InitializationContext initializingState, bool reset = true)
+        public static bool InitValueInternal<T>(Action<T> callback, T defaultValue, InstanceManager.InitializationContext initializingContext, bool reset = true)
         {
-            if (initializingState == InstanceManager.InitializationContext.Editor || initializingState == InstanceManager.InitializationContext.Programmatically || (initializingState == InstanceManager.InitializationContext.Reset && reset))
+            if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Programmatically || (initializingContext == InstanceManager.InitializationContext.Reset && reset))
             {
                 callback(defaultValue);
                 return true;
@@ -245,9 +248,9 @@ namespace DepictionEngine
         /// <summary>
         /// Acts as a reliable constructor and will always by called unlike Awake which is sometimes skipped.
         /// </summary>
-        protected virtual void Initialized(InstanceManager.InitializationContext initializingState)
+        protected virtual void Initialized(InstanceManager.InitializationContext initializingContext)
         {
-            _initializingState = InstanceManager.InitializationContext.Unknown;
+            _initializingContext = InstanceManager.InitializationContext.Unknown;
             if (!isFallbackValues)
                 _initialized = true;
 
@@ -506,14 +509,14 @@ namespace DepictionEngine
             return _isUserChange || (!Object.ReferenceEquals(_originator, null) && _originator.IsUserChangeContext());
         }
 
-        public InstanceManager.InitializationContext GetInitializeState(InstanceManager.InitializationContext defaultState = InstanceManager.InitializationContext.Programmatically)
+        public InstanceManager.InitializationContext GetInitializeContext(InstanceManager.InitializationContext defaultState = InstanceManager.InitializationContext.Programmatically)
         {
             InstanceManager.InitializationContext initializeState = defaultState;
 
             if (_initializing && !_initialized)
-                initializeState = _initializingState;
+                initializeState = _initializingContext;
             else if (_originator != null)
-                initializeState = _originator.GetInitializeState(initializeState);
+                initializeState = _originator.GetInitializeContext(initializeState);
             else if (_disposing)
             {
                 switch (_destroyingContext)
@@ -657,7 +660,7 @@ namespace DepictionEngine
         {
             if (DisposeManager.IsNullOrDisposing(objectToDuplicate))
                 return null;
-            return InstanceManager.Duplicate(objectToDuplicate, GetInitializeState());
+            return InstanceManager.Duplicate(objectToDuplicate, GetInitializeContext());
         }
 
         public void Originator(Action callback, IScriptableBehaviour originator)
@@ -778,7 +781,7 @@ namespace DepictionEngine
         {
             if (!_initializing)
             {
-                _initializingState = InstanceManager.initializingState;
+                _initializingContext = InstanceManager.initializingContext;
 
                 if (!_awake)
                 {
@@ -788,7 +791,7 @@ namespace DepictionEngine
                 }
 
 #if UNITY_EDITOR
-                if (GetInitializingState() == InstanceManager.InitializationContext.Editor_Duplicate)
+                if (GetinitializingContext() == InstanceManager.InitializationContext.Editor_Duplicate)
                     Initialize();
 #endif
             }
@@ -801,9 +804,6 @@ namespace DepictionEngine
 
         private void Awake()
         {
-            //Create the SceneManager if this is the first MonoBehaviour created
-            SceneManager.Instance();
-
             if (!InstanceManager.inhibitExplicitAwake)
                 ExplicitAwake();
         }
@@ -869,10 +869,16 @@ namespace DepictionEngine
         {
             if (_unityInitialized)
             {
-                SceneManager.Reseting(this);
+                if (ResetAllowed())
+                    SceneManager.Reseting(this);
 
                 Editor.UndoManager.RevertAllInCurrentGroup();
             }
+        }
+
+        protected virtual bool ResetAllowed()
+        {
+            return true;
         }
 
         public void InspectorReset()

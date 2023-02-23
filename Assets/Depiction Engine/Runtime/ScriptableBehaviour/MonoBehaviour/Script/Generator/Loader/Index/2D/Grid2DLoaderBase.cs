@@ -24,9 +24,9 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             InitGrids();
         }
@@ -35,12 +35,12 @@ namespace DepictionEngine
         {
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => loadDelay = value, GetDefaultLoadInterval(), initializingState);
-            InitValue(value => zoom = value, 0, initializingState);
+            InitValue(value => loadDelay = value, GetDefaultLoadInterval(), initializingContext);
+            InitValue(value => zoom = value, 0, initializingContext);
         }
 
         protected override float GetDefaultWaitBetweenLoad()

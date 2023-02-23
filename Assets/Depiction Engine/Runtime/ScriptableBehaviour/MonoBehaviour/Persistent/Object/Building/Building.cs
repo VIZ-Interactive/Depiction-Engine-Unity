@@ -26,11 +26,11 @@ namespace DepictionEngine
                 callback(_groundLevelId, UpdateGroundLevel);
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => groundLevelId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(groundLevelId, groundLevel, initializingState); }, initializingState);
+            InitValue(value => groundLevelId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(groundLevelId, groundLevel, initializingContext); }, initializingContext);
         }
 
         public override bool LateInitialize()
@@ -39,9 +39,9 @@ namespace DepictionEngine
             {
                 if (controller == Disposable.NULL)
                 {
-                    GeoCoordinateController controller = gameObject.GetSafeComponent<GeoCoordinateController>(GetInitializeState());
+                    GeoCoordinateController controller = gameObject.GetSafeComponent<GeoCoordinateController>(GetInitializeContext());
                     if (controller == Disposable.NULL)
-                        controller = gameObject.AddSafeComponent<GeoCoordinateController>(GetInitializeState());
+                        controller = gameObject.AddSafeComponent<GeoCoordinateController>(GetInitializeContext());
                     controller.groundSnapOffset = 1.0f;
                 }
 

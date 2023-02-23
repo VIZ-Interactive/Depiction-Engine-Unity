@@ -19,12 +19,12 @@ namespace DepictionEngine
         [SerializeField, Tooltip("A vector pointing from the target towards the object, in degrees."), EndFoldout]
         private Vector3Double _forwardVector;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => preventMeshPenetration = value, GetDefaultPreventMeshPenetration(), initializingState);
-            InitValue(value => forwardVector = value, DEFAULT_FORWARD_VECTOR_VALUE, initializingState);
+            InitValue(value => preventMeshPenetration = value, GetDefaultPreventMeshPenetration(), initializingContext);
+            InitValue(value => forwardVector = value, DEFAULT_FORWARD_VECTOR_VALUE, initializingContext);
         }
 
         protected virtual bool GetDefaultPreventMeshPenetration()

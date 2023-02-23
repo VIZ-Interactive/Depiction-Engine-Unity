@@ -6,6 +6,9 @@ using UnityEngine.SceneManagement;
 
 namespace DepictionEngine
 {
+    /// <summary>
+    /// A GameObject meant to be used as a child of a <see cref="DepictionEngine.VisualObject"/>.
+    /// </summary>
     [DisallowMultipleComponent]
     public class Visual : PropertyMonoBehaviour
     {
@@ -56,7 +59,7 @@ namespace DepictionEngine
             if (!IsDisposing())
             {
                 if (parent == Disposable.NULL || parent.gameObject.transform != transform.parent)
-                    parent = transform.parent.GetSafeComponentInParent(typeof(Visual), true, GetInitializeState()) as Visual;
+                    parent = transform.parent.GetSafeComponentInParent(typeof(Visual), true, GetInitializeContext()) as Visual;
             }
 
             return parent;
@@ -66,7 +69,7 @@ namespace DepictionEngine
         {
             if (base.SetParent(value))
             {
-                visualObject = !IsDisposing() && transform.parent != null ? transform.parent.GetSafeComponentInParent(typeof(VisualObject), true, GetInitializeState()) as VisualObject : null;
+                visualObject = !IsDisposing() && transform.parent != null ? transform.parent.GetSafeComponentInParent(typeof(VisualObject), true, GetInitializeContext()) as VisualObject : null;
                 
                 return true;
             }

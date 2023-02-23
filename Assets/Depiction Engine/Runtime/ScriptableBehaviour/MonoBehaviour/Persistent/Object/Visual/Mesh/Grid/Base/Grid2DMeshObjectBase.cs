@@ -36,12 +36,12 @@ namespace DepictionEngine
             _meshRendererVisualLocalScale = Vector3.zero;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => altitudeOffset = value, 0.0d, initializingState);
-            InitValue(value => grid2DDimensions = value, Vector2Int.one, initializingState);
+            InitValue(value => altitudeOffset = value, 0.0d, initializingContext);
+            InitValue(value => grid2DDimensions = value, Vector2Int.one, initializingContext);
         }
 
         public override bool IsPhysicsObject()
@@ -69,9 +69,9 @@ namespace DepictionEngine
                 UpdateReferenceDataIndex2D();
         }
 
-        protected override void Initialized(InstanceManager.InitializationContext initializingState)
+        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
         {
-            base.Initialized(initializingState);
+            base.Initialized(initializingContext);
 
             UpdateReferenceDataIndex2D();
         }

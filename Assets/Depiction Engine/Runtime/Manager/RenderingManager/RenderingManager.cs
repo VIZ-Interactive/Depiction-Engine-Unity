@@ -293,7 +293,7 @@ namespace DepictionEngine
             foreach (int i in Enum.GetValues(typeof(Marker.Icon)))
             {
                 Marker.Icon icon = (Marker.Icon)i;
-                Marker marker = instanceManager.CreateInstance<Marker>(json: icon.ToString(), initializingState: InstanceManager.InitializationContext.Editor);
+                Marker marker = instanceManager.CreateInstance<Marker>(json: icon.ToString(), initializingContext: InstanceManager.InitializationContext.Editor);
                 marker.icon = icon;
                 marker.color = UnityEngine.Random.ColorHSV(0.0f, 1.0f, 1.0f, 1.0f, 0.5f, 1.0f);
                 marker.transform.position = new Vector3Double(i * 25.0f, 0.0f, 0.0f);
@@ -314,9 +314,9 @@ namespace DepictionEngine
             return _instance;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             UpdateComputeBufferSupported();
 
@@ -334,23 +334,23 @@ namespace DepictionEngine
             }
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => dynamicSkybox = value, true, initializingState);
-            InitValue(value => originShifting = value, true, initializingState);
-            InitValue(value => environmentUpdateInterval = value, 0.2f, initializingState);
-            InitValue(value => highlightColor = value, new Color(0.0f, 1.0f, 1.0f, 0.75f), initializingState);
-            InitValue(value => labelOutlineColor = value, Color.black, initializingState);
-            InitValue(value => labelOutlineWidth = value, 0.25f, initializingState);
-            InitValue(value => dynamicFocusDistance = value, true, initializingState);
-            InitValue(value => minMaxFocusDistance = value, new Vector2(0.0f, 500.0f), initializingState);
+            InitValue(value => dynamicSkybox = value, true, initializingContext);
+            InitValue(value => originShifting = value, true, initializingContext);
+            InitValue(value => environmentUpdateInterval = value, 0.2f, initializingContext);
+            InitValue(value => highlightColor = value, new Color(0.0f, 1.0f, 1.0f, 0.75f), initializingContext);
+            InitValue(value => labelOutlineColor = value, Color.black, initializingContext);
+            InitValue(value => labelOutlineWidth = value, 0.25f, initializingContext);
+            InitValue(value => dynamicFocusDistance = value, true, initializingContext);
+            InitValue(value => minMaxFocusDistance = value, new Vector2(0.0f, 500.0f), initializingContext);
         }
 
-        protected override void Initialized(InstanceManager.InitializationContext initializingState)
+        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
         {
-            base.Initialized(initializingState);
+            base.Initialized(initializingContext);
 
             UpdateEnvironment();
         }

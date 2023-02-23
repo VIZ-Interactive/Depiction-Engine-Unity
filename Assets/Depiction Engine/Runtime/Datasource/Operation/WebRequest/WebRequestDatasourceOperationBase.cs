@@ -94,7 +94,7 @@ namespace DepictionEngine
             {
                 try
                 {
-                    if (Object.ReferenceEquals(_monoBehaviour, null))
+                    if (Disposable.IsDisposed(_monoBehaviour))
                         _monoBehaviour = datasourceManager;
                     _coroutine = _monoBehaviour.StartCoroutine(SendWebRequest(request));
                 }

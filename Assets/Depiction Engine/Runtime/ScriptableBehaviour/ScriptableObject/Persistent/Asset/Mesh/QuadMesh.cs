@@ -37,9 +37,9 @@ namespace DepictionEngine
                             new Vector2(1.0f, 0.0f)
                         };
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializationState)
+        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
         {
-            if (base.Initialize(initializationState))
+            if (base.Initialize(initializingContext))
             {
                 if (unityMesh == null)
                 {

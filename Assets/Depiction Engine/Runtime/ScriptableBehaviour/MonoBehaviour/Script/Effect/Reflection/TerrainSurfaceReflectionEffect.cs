@@ -24,11 +24,11 @@ namespace DepictionEngine
 
         private CamerasSmoothElevationDictionary _camerasSmoothElevation;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => surfaceAltitudeRenderOffset = value, 0.0f, initializingState);
+            InitValue(value => surfaceAltitudeRenderOffset = value, 0.0f, initializingContext);
         }
 
         protected override bool UpdateAllDelegates()

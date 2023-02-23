@@ -47,13 +47,14 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(go, null))
                 {
                     go = new GameObject(gameOjectName);
-                    if (typeof(T) != typeof(SceneManager))
-                        go.AddSafeComponent<SceneManager>();
+                    
+                    InstanceManager.InhibitExplicitAwake(() =>
+                    {
+                        go.AddComponent<ManagersLock>();
+                    }, true);
                 }
             
                 manager = go.GetSafeComponent<T>();
-                if (Object.ReferenceEquals(manager, null))
-                    manager = go.AddSafeComponent<T>();
             }
 
             return manager;
@@ -91,10 +92,20 @@ namespace DepictionEngine
 
         protected override bool UpdateHideFlags()
         {
-            gameObject.hideFlags = hideFlags = HideFlags.None;
-
             return true;
         }
+
+#if UNITY_EDITOR
+        protected override bool ResetAllowed()
+        {
+            return false;
+        }
+
+        public override bool PasteComponentAllowed()
+        {
+            return false;
+        }
+#endif
 
         public override void ExplicitAwake()
         {

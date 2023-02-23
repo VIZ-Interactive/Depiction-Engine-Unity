@@ -160,12 +160,12 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
             string sceneName = gameObject.scene.name;
-            InitValue(value => databaseNamespace = value, (!string.IsNullOrEmpty(sceneName) ? sceneName : UnityEngine.Random.Range(0, 1000000)) + "_db", initializingState);
+            InitValue(value => databaseNamespace = value, (!string.IsNullOrEmpty(sceneName) ? sceneName : UnityEngine.Random.Range(0, 1000000)) + "_db", initializingContext);
         }
 
         public override string GetDatasourceName()

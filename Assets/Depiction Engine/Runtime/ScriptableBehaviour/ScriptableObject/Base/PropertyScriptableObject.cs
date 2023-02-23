@@ -43,31 +43,31 @@ namespace DepictionEngine
             _initializationPropertyModifiers = InstanceManager.initializePropertyModifiers;
         }
 
-        protected override void InitializeUID(InstanceManager.InitializationContext initializationState)
+        protected override void InitializeUID(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeUID(initializationState);
+            base.InitializeUID(initializingContext);
           
-           id = GetId(id, initializationState);
+           id = GetId(id, initializingContext);
         }
 
-        protected virtual SerializableGuid GetId(SerializableGuid id, InstanceManager.InitializationContext initializationState)
+        protected virtual SerializableGuid GetId(SerializableGuid id, InstanceManager.InitializationContext initializingContext)
         {
-            if (id == SerializableGuid.Empty || initializationState == InstanceManager.InitializationContext.Editor_Duplicate || initializationState == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (id == SerializableGuid.Empty || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
                 return SerializableGuid.NewGuid();
             else
                 return id;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingState);
+            base.InitializeFields(initializingContext);
 
             InitializeLastFields();
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializationState)
+        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
         {
-            if (base.Initialize(initializationState))
+            if (base.Initialize(initializingContext))
             {
                 if (_initializationPropertyModifiers != null)
                 {
@@ -170,6 +170,13 @@ namespace DepictionEngine
             }
             return false;
         }
+
+#if UNITY_EDITOR
+        public virtual bool PasteComponentAllowed()
+        {
+            return true;
+        }
+#endif
 
         protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
         {

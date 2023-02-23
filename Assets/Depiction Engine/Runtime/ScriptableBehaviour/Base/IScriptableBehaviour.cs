@@ -17,7 +17,7 @@ namespace DepictionEngine
         string inspectorComponentNameOverride { set; get; }
 #endif
 
-        InstanceManager.InitializationContext GetInitializeState(InstanceManager.InitializationContext defaultState = InstanceManager.InitializationContext.Programmatically);
+        InstanceManager.InitializationContext GetInitializeContext(InstanceManager.InitializationContext defaultState = InstanceManager.InitializationContext.Programmatically);
 
         string name { set; get; }
 

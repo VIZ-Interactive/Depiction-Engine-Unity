@@ -16,9 +16,9 @@ namespace DepictionEngine
             _initializationJson = InstanceManager.initializeJSON;
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializationState)
+        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
         {
-            if (base.Initialize(initializationState))
+            if (base.Initialize(initializingContext))
             {
                 if (_initializationJson != null)
                     SetJson(_initializationJson);
@@ -40,7 +40,7 @@ namespace DepictionEngine
             get { return _initializationJson; }
         }
 
-        protected override SerializableGuid GetId(SerializableGuid id, InstanceManager.InitializationContext initializationState)
+        protected override SerializableGuid GetId(SerializableGuid id, InstanceManager.InitializationContext initializingContext)
         {
             if (_initializationJson != null)
             {
@@ -50,7 +50,7 @@ namespace DepictionEngine
                 _initializationJson.Remove(nameof(PropertyScriptableObject.id));
             }
 
-            return base.GetId(id, initializationState);
+            return base.GetId(id, initializingContext);
         }
 
         public void SetJson(JSONNode json)

@@ -17,12 +17,12 @@ namespace DepictionEngine
 		[SerializeField, Tooltip("A value by which we multiply the distance of the orbiting object to move it further or closer."), EndFoldout]
 		private double _sizeMultiplier;
 
-		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
 		{
-			base.InitializeSerializedFields(initializingState);
+			base.InitializeSerializedFields(initializingContext);
 
-			InitValue(value => orbit = value, GetComponent<Star>() != Disposable.NULL ? AstroObject.PlanetType.Sun : AstroObject.PlanetType.Earth, initializingState);
-			InitValue(value => sizeMultiplier = value, 1.0d, initializingState);
+			InitValue(value => orbit = value, GetComponent<Star>() != Disposable.NULL ? AstroObject.PlanetType.Sun : AstroObject.PlanetType.Earth, initializingContext);
+			InitValue(value => sizeMultiplier = value, 1.0d, initializingContext);
 		}
 
         /// <summary>

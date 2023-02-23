@@ -250,21 +250,21 @@ namespace DepictionEngine
             _buildingLoadScope = null;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingState)
+        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeSerializedFields(initializingState);
+            base.InitializeSerializedFields(initializingContext);
 
-            if (initializingState == InstanceManager.InitializationContext.Editor_Duplicate || initializingState == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
             {
                 _markerBadgeMaterial = null;
                 _markerLineMaterial = null;
                 _markerShadowMaterial = null;
             }
 
-            InitValue(value => color = value, new Color(188.0f / 255.0f, 22.0f / 255.0f, 22.0f / 255.0f), initializingState);
-            InitValue(value => badgeOffset = value, 10.0f, initializingState);
-            InitValue(value => icon = value, Icon.CIRCLE, initializingState);
-            InitValue(value => additionalData = value, "", initializingState);
+            InitValue(value => color = value, new Color(188.0f / 255.0f, 22.0f / 255.0f, 22.0f / 255.0f), initializingContext);
+            InitValue(value => badgeOffset = value, 10.0f, initializingContext);
+            InitValue(value => icon = value, Icon.CIRCLE, initializingContext);
+            InitValue(value => additionalData = value, "", initializingContext);
         }
 
 #if UNITY_EDITOR
