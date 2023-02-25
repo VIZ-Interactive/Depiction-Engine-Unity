@@ -23,11 +23,10 @@ namespace DepictionEngine
             InstanceManager.InitializingContext(() => 
             { 
 #if UNITY_EDITOR
-                if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate)
-                    component = Editor.UndoManager.AddComponent(go, type);
+                component = Editor.UndoManager.AddComponent(go, type, initializingContext);
+#else
+                component = go.AddComponent(type);
 #endif
-                if (DisposeManager.IsNullOrDisposing(component))
-                    component = go.AddComponent(type);
             }, initializingContext, json, propertyModifiers, isFallbackValues);
 
             //The Null check is because Unity sometimes prevent component creation if a component of similar type already exists

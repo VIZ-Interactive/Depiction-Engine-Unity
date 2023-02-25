@@ -10,14 +10,23 @@ namespace DepictionEngine.Editor
 {
     public class SceneCamera : Camera
     {
+        protected override bool InitializeStack(InstanceManager.InitializationContext initializingContext)
+        {
+            return false;
+        }
+
+        protected override void InitializeAdditionalData()
+        {
+        }
+
         protected override void UpdateFields()
         {
             base.UpdateFields();
 
-            InitSceneCameraController();
+            InitializeSceneCameraController();
         }
 
-        private void InitSceneCameraController()
+        private void InitializeSceneCameraController()
         {
             if (SceneManager.sceneClosing || IsDisposing())
                 return;
@@ -45,6 +54,19 @@ namespace DepictionEngine.Editor
             return false;
         }
 
+        public override UnityEngine.Camera unityCamera
+        {
+            protected set
+            {
+                if (base.unityCamera == value)
+                    return;
+
+                base.unityCamera = value;
+
+                UpdateShowImageEffects();
+            }
+        }
+
         public override UniversalAdditionalCameraData GetUniversalAdditionalCameraData()
         {
             return null;
@@ -53,14 +75,6 @@ namespace DepictionEngine.Editor
         public override int GetMainStackCount()
         {
             return GetDefaultDistancePass();
-        }
-
-        protected override void InitAdditionalData()
-        {
-        }
-
-        protected override void CreateStack()
-        {
         }
 
         private void SceneClosing()
@@ -88,7 +102,7 @@ namespace DepictionEngine.Editor
         {
             if (base.SetController(value))
             {
-                InitSceneCameraController();
+                InitializeSceneCameraController();
 
                 return true;
             }
@@ -113,18 +127,20 @@ namespace DepictionEngine.Editor
             return SceneViewDouble.GetSceneViewDouble(this).GetInstanceID();
         }
 
-        public override bool postProcessing
+        protected override void PostProcessingChanged()
         {
-            get 
-            { 
-                SceneView sceneView = SceneViewDouble.GetSceneView(this);
-                return sceneView.sceneViewState.showImageEffects;
-            }
-            set
+            base.PostProcessingChanged();
+
+            UpdateShowImageEffects();
+        }
+
+        private void UpdateShowImageEffects()
+        {
+            SceneView sceneView = SceneViewDouble.GetSceneView(this);
+            if (sceneView != null)
             {
-                SceneView sceneView = SceneViewDouble.GetSceneView(this);
                 SceneView.SceneViewState sceneViewState = sceneView.sceneViewState;
-                sceneViewState.showImageEffects = value;
+                sceneViewState.showImageEffects = postProcessing;
                 sceneView.sceneViewState = sceneViewState;
             }
         }
@@ -172,7 +188,7 @@ namespace DepictionEngine.Editor
             ApplyClipPlanePropertiesToUnityCamera(unityCamera, 0);
         }
 
-        protected override DisposeManager.DestroyContext OverrideDestroyingContext(DisposeManager.DestroyContext destroyingContext)
+        protected override DisposeManager.DestroyContext GetDestroyingContext()
         {
             return DisposeManager.DestroyContext.Programmatically;
         }

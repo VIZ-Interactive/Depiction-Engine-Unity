@@ -56,6 +56,21 @@ namespace DepictionEngine
         }
 #endif
 
+        protected override bool InitializeLastFields()
+        {
+            if (base.InitializeLastFields())
+            {
+#if UNITY_EDITOR
+                _lastLocalPosition = localPosition;
+                _lastGeoCoordinate = geoCoordinate;
+                _lastLocalRotation = localRotation;
+                _lastLocalScale = localScale;
+#endif
+                return true;
+            }
+            return false;
+        }
+
         protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
@@ -110,6 +125,24 @@ namespace DepictionEngine
             SetLocalRotation(localRotation);
             SetLocalScale(localScale);
         }
+
+#if UNITY_EDITOR
+        private Vector3Double _lastLocalPosition;
+        private GeoCoordinate3Double _lastGeoCoordinate;
+        private QuaternionDouble _lastLocalRotation;
+        private Vector3Double _lastLocalScale;
+        protected override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            if (isGeoCoordinateTransform)
+                Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { geoCoordinate = value; }, ref _geoCoordinate, ref _lastGeoCoordinate);
+            else
+                Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { localPosition = value; }, ref _localPosition, ref _lastLocalPosition);
+            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { localRotation = value; }, ref _localRotation, ref _lastLocalRotation);
+            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { localScale = value; }, ref _localScale, ref _lastLocalScale);
+        }
+#endif
 
         /// <summary>
         /// Returns true if the transform is a child.
@@ -327,6 +360,9 @@ namespace DepictionEngine
             return SetValue(nameof(localPosition), ValidateVector3Double(value), ref _localPosition,
                 (newValue, oldValue) =>
                 {
+#if UNITY_EDITOR
+                    _lastLocalPosition = newValue;
+#endif
                     SetComponentDirtyFlag(true);
                     if (deriveGeoordinate)
                         SetGeoCoordinate(GetGeoCoordinateFromLocalPoint(_localPosition), false);
@@ -373,6 +409,9 @@ namespace DepictionEngine
         {
             if (SetValue(nameof(geoCoordinate), value, ref _geoCoordinate) || (forceDeriveLocalPosition && deriveLocalPosition))
             {
+#if UNITY_EDITOR
+                _lastGeoCoordinate = value;
+#endif
                 SetComponentDirtyFlag(true);
 
                 if (deriveLocalPosition)
@@ -490,6 +529,7 @@ namespace DepictionEngine
                 (newValue, oldValue) =>
                 {
 #if UNITY_EDITOR
+                    _lastLocalRotation = newValue;
                     _localEditorEulerAnglesHint = GetInspectorEulerFromLocalRotation(newValue);
 #endif
                     SetComponentDirtyFlag(false, true);
@@ -549,6 +589,9 @@ namespace DepictionEngine
             return SetValue(nameof(localScale), value, ref _localScale, 
                 (newValue, oldValue) =>
                 {
+#if UNITY_EDITOR
+                    _lastLocalScale = newValue;
+#endif
                     SetComponentDirtyFlag(false, false, true);
 
                     OriginShiftDirty(this);
@@ -958,24 +1001,14 @@ namespace DepictionEngine
 
             if (base.SetParent(value, worldPositionStays))
             {
-                if (!IsDisposing())
+                if (relativeTransformComponents != null)
                 {
-                    //Update the parentObject before setting the new relative components so the geoCoordinate can derived properly if required
-                    UpdateParentObject();
-
-                    if (relativeTransformComponents != null)
-                    {
-#if UNITY_EDITOR
-                        if (IsUserChangeContext())
-                            Editor.UndoManager.RecordObject(this);
-#endif
-                        SetLocalPosition(relativeTransformComponents.localPosition);
-                        SetLocalRotation(relativeTransformComponents.localRotation);
-                        SetLocalScale(relativeTransformComponents.localScale);
-                    }
-
-                    OriginShiftDirty(this);
+                    SetLocalPosition(relativeTransformComponents.localPosition);
+                    SetLocalRotation(relativeTransformComponents.localRotation);
+                    SetLocalScale(relativeTransformComponents.localScale);
                 }
+
+                OriginShiftDirty(this);
 
                 return true;
             }

@@ -103,7 +103,7 @@ namespace DepictionEngine
 
         private void ParentGeoAstroObjectTerrainGridMeshObjectChangedHandler(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject, Vector2Int grid2DDimensions, Vector2Int grid2DIndex)
         {
-			if (RequiresElevation() && !forceUpdateTransformPending.localPositionChanged && grid2DIndex == (Vector2Int)MathPlus.GetIndexFromGeoCoordinate(transform.GetGeoCoordinate(), grid2DDimensions))
+			if (transform != Disposable.NULL && RequiresElevation() && !forceUpdateTransformPending.localPositionChanged && grid2DIndex == (Vector2Int)MathPlus.GetIndexFromGeoCoordinate(transform.GetGeoCoordinate(), grid2DDimensions))
 				ForceUpdateTransformPending(true);
         }
 

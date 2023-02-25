@@ -69,7 +69,7 @@ namespace DepictionEngine
         bool IsDisposed();
 
         /// <summary>
-        /// This is where you clear or dipose any references. Should be called automatically by the <see cref="DepictionEngine.DisposeManager"/> immediately after <see cref="DepictionEngine.DisposeManager.Dispose"/> or <see cref="DepictionEngine.DisposeManager.Destroy"/> is called.
+        /// This is where you clear or dipose any references. Should be called automatically by the <see cref="DepictionEngine.DisposeManager"/> immediately after <see cref="DepictionEngine.DisposeManager.Dispose"/> or <see cref="DepictionEngine.DisposeManager.Destroy"/> is called. The <see cref="IDisposable.destroyingContext"/> is not initialized at this point.
         /// </summary>
         /// <returns>True if disposing, False if the object is already disposing or was disposed.</returns>
         bool OnDisposing();

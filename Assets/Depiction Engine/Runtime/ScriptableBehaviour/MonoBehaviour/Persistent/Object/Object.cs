@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace DepictionEngine
 {
@@ -148,27 +149,6 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
-        {
-            base.InitializeFields(initializingContext);
-
-            InitRigidbody();
-        }
-
-        protected void InitRigidbody()
-        {
-            if (rigidbodyInternal == null)
-            {
-                rigidbodyInternal = gameObject.GetComponent<Rigidbody>();
-                if (useGravity && rigidbodyInternal == null)
-                {
-                    rigidbodyInternal = gameObject.AddComponent<Rigidbody>();
-                    rigidbodyInternal.drag = 0.05f;
-                    rigidbodyInternal.useGravity = false;
-                }
-            }
-        }
-
         protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
@@ -220,14 +200,33 @@ namespace DepictionEngine
             return optionalProperties as T;
         }
 
-        protected override void InitializeDependencies(InstanceManager.InitializationContext initializingContext)
+        protected override void CreateComponents(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeDependencies(initializingContext);
+            base.CreateComponents(initializingContext);
+
+            InitializeRigidbody();
+        }
+
+        protected void InitializeRigidbody()
+        {
+            if (rigidbodyInternal == null)
+            {
+                rigidbodyInternal = gameObject.GetComponent<Rigidbody>();
+                if (useGravity && rigidbodyInternal == null)
+                {
+                    rigidbodyInternal = gameObject.AddSafeComponent<Rigidbody>(IsUserChangeContext() ? InstanceManager.InitializationContext.Editor : InstanceManager.InitializationContext.Programmatically);
+                    rigidbodyInternal.drag = 0.05f;
+                    rigidbodyInternal.useGravity = false;
+                }
+            }
+        }
+
+        protected override void InitializeTransform(InstanceManager.InitializationContext initializingContext)
+        {
+            base.InitializeTransform(initializingContext);
 
             if (initializationJson != null)
             {
-                MonoBehaviourDisposable[] components = gameObject.GetComponents<MonoBehaviourDisposable>();
-
                 JSONObject transformJson = initializationJson[nameof(transform)] as JSONObject;
                 if (transformJson != null)
                 {
@@ -235,10 +234,20 @@ namespace DepictionEngine
                     if (string.IsNullOrEmpty(typeStr))
                         typeStr = typeof(TransformDouble).FullName;
                     Type transformType = Type.GetType(typeStr);
-                    TransformDouble transform = RemoveComponentFromList(transformType, components) as TransformDouble;
+                    TransformDouble transform = gameObject.GetComponent(transformType) as TransformDouble;
                     if (transform != Disposable.NULL)
                         InitializeComponent(transform, transformJson);
                 }
+            }
+        }
+
+        protected override void InitializeScripts(InstanceManager.InitializationContext initializingContext)
+        {
+            base.InitializeScripts(initializingContext);
+
+            if (initializationJson != null)
+            {
+                MonoBehaviourDisposable[] components = gameObject.GetComponents<MonoBehaviourDisposable>();
 
                 JSONObject animatorJson = initializationJson[nameof(animator)] as JSONObject;
                 if (animatorJson != null)
@@ -989,7 +998,7 @@ namespace DepictionEngine
                     value = false;
                 SetValue(nameof(useGravity), value, ref _useGravity, (newValue, oldValue) =>
                 {
-                    InitRigidbody();
+                    InitializeRigidbody();
                 });
             }
         }

@@ -1,5 +1,6 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
+using DepictionEngine.Editor;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -365,15 +366,18 @@ namespace DepictionEngine
 
             //IsNullOrDisposed required
             if (!DisposeManager.IsNullOrDisposing(this) && ParentHasChanged())
-                UpdateParent(null, true);
+            {
+                base.SetParent(GetParent());
+                ParentChanged();
+            }
         }
 #endif
 
-        public override void UpdateParent(PropertyMonoBehaviour originator = null, bool isEditorUndo = false)
+        public override void UpdateParent(PropertyMonoBehaviour originator = null)
         {
             Originator(() =>
             {
-                SetParent(GetParent() as TransformBase, !isEditorUndo && initialized);
+                SetParent(GetParent() as TransformBase, initialized);
             }, originator);
         }
 
@@ -794,23 +798,44 @@ namespace DepictionEngine
 
         public virtual bool SetParent(TransformBase value, bool worldPositionStays = true)
         {
-            bool changed = false;
-
             if (base.SetParent(value))
             {
                 if (!IsDisposing())
                 {
                     Transform newTransform = value != Disposable.NULL ? value.transform : null;
                     if (transform.parent != newTransform)
-                        transform.SetParent(newTransform, false);
+                    {
+                        bool parentChanged = false;
+#if UNITY_EDITOR
+                        if (IsUserChangeContext())
+                        {
+                            parentChanged = true;
+                            UndoManager.SetTransformParent(transform, newTransform);
+                        }
+#endif
+                        if (!parentChanged)
+                            transform.SetParent(newTransform, false);
+                    }
 
-                    InitLastTransformFields();
+#if UNITY_EDITOR
+                    if (IsUserChangeContext())
+                        Editor.UndoManager.RecordObject(this);
+#endif
+
+                    ParentChanged();
+
+                    return true;
                 }
-
-                changed = true;
             }
 
-            return changed;
+            return false;
+        }
+
+        private void ParentChanged()
+        {
+            InitLastTransformFields();
+
+            UpdateParentObject();
         }
 
 #if UNITY_EDITOR
@@ -1091,9 +1116,9 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override DisposeManager.DestroyContext OverrideDestroyingContext(DisposeManager.DestroyContext destroyingContext)
+        protected override DisposeManager.DestroyContext GetDestroyingContext()
         {
-            DisposeManager.DestroyContext overrideDestroyingContext = base.OverrideDestroyingContext(destroyingContext);
+            DisposeManager.DestroyContext overrideDestroyingContext = base.GetDestroyingContext();
 
 #if UNITY_EDITOR
             if (_objectBase != Disposable.NULL && _objectBase is Editor.SceneCamera)

@@ -86,6 +86,7 @@ namespace DepictionEngine
             {
 #if UNITY_EDITOR
                 _lastSize = size;
+                _lastSpherical = spherical;
 #endif
                 return true;
             }
@@ -117,9 +118,9 @@ namespace DepictionEngine
             InitValue(value => reflectionProbe = value, GetDefaultReflectionProbe(), initializingContext);
         }
 
-        protected override void InitializeDependenciesAfterRelations(InstanceManager.InitializationContext initializingContext)
+        protected override void CreateComponents(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeDependenciesAfterRelations(initializingContext);
+            base.CreateComponents(initializingContext);
 
             InitReflectionProbeObject(initializingContext);
         }
@@ -187,11 +188,13 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
         private double _lastSize;
+        private bool _lastSpherical;
         protected override void UndoRedoPerformed()
         {
             base.UndoRedoPerformed();
 
             Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { size = value; }, ref _size, ref _lastSize);
+            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { spherical = value; }, ref _spherical, ref _lastSpherical);
         }
 #endif
 
@@ -524,7 +527,10 @@ namespace DepictionEngine
         {
             SetValue(nameof(spherical), value, ref _spherical, (newValue, oldValue) =>
             {
-                sphericalRatioTween = tweenManager.To(sphericalRatio, spherical ? 1.0f : 0.0f, initialized && animate ? sphericalDuration : 0.0f, (value) => { sphericalRatio = value; }, () => { sphericalRatioTween = null; });
+#if UNITY_EDITOR
+                _lastSpherical = newValue;
+#endif
+                sphericalRatioTween = tweenManager.To(sphericalRatio, newValue ? 1.0f : 0.0f, initialized && animate ? sphericalDuration : 0.0f, (value) => { sphericalRatio = value; }, () => { sphericalRatioTween = null; });
             });
         }
 

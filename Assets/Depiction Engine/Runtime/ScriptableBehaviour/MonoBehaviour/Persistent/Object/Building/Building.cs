@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
+    [CreateComponent(typeof(GeoCoordinateController))]
     public class Building : Object
     {
         [BeginFoldout("Building")]
@@ -33,21 +34,13 @@ namespace DepictionEngine
             InitValue(value => groundLevelId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(groundLevelId, groundLevel, initializingContext); }, initializingContext);
         }
 
-        public override bool LateInitialize()
-        {
-            if (base.LateInitialize())
-            {
-                if (controller == Disposable.NULL)
-                {
-                    GeoCoordinateController controller = gameObject.GetSafeComponent<GeoCoordinateController>(GetInitializeContext());
-                    if (controller == Disposable.NULL)
-                        controller = gameObject.AddSafeComponent<GeoCoordinateController>(GetInitializeContext());
-                    controller.groundSnapOffset = 1.0f;
-                }
 
-                return true;
-            }
-            return false;
+        protected override void CreateComponents(InstanceManager.InitializationContext initializingContext)
+        {
+            base.CreateComponents(initializingContext);
+
+            GeoCoordinateController controller = gameObject.GetSafeComponent<GeoCoordinateController>(GetInitializeContext());
+            controller.groundSnapOffset = 1.0f;
         }
 
         protected override bool AddInputManagerDelegates()

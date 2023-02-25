@@ -1,5 +1,6 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
+using DepictionEngine.Editor;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,6 +13,7 @@ namespace DepictionEngine
     /// Wrapper class for 'UnityEngine.Camera' introducing better integrated functionality.
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/" + nameof(Camera))]
+    [CreateComponent(typeof(Skybox), typeof(UniversalAdditionalCameraData))]
     public class Camera : Object
     {
         public const int DEFAULT_ENVIRONMENT_TEXTURE_SIZE = 512;
@@ -67,19 +69,6 @@ namespace DepictionEngine
 
         private List<Stack> _stacks;
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
-        {
-            base.InitializeFields(initializingContext);
-
-            if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Programmatically)
-                RemoveIgnoreRenderFromUnityCameraCullingMask(unityCamera);
-        }
-
-        protected void RemoveIgnoreRenderFromUnityCameraCullingMask(UnityEngine.Camera unityCamera)
-        {
-            unityCamera.cullingMask &= ~(1 << LayerUtility.GetLayer(CameraManager.IGNORE_RENDER_LAYER_NAME));
-        }
-
         protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
@@ -104,15 +93,6 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        protected override void RegisterInitializeObjectUndo(InstanceManager.InitializationContext initializingContext)
-        {
-            base.RegisterInitializeObjectUndo(initializingContext);
-
-            Editor.UndoManager.RegisterCreatedObjectUndo(unityCamera, initializingContext);
-            Editor.UndoManager.RegisterCreatedObjectUndo(additionalData, initializingContext);
-            Editor.UndoManager.RegisterCreatedObjectUndo(skybox, initializingContext);
-        }
-
         //Ugly hack to force a Refresh in the 'UniversalRenderPipelineSerializedCamera' and prevent it from spamming 'Index out of bound exception' when a new camera is created and selected in the Editor
         //This creates a new Undo operation so we need to execute it after the RegisterCreatedObjectUndo
         //TODO: A ticket(Case 1425719) as been opened with Unity to fix this bug, remove this hack once the bug is fixed
@@ -120,54 +100,104 @@ namespace DepictionEngine
         {
             if (stackCount == 0 && Editor.Selection.activeTransform == transform)
             {
-                UnityEditorInternal.ComponentUtility.MoveComponentUp(GetUniversalAdditionalCameraData());
+                //Breaks Undo/redo by adding an additional "Move Component(s)" action.
+                //UnityEditorInternal.ComponentUtility.MoveComponentUp(GetUniversalAdditionalCameraData());
                 moveComponentDown = true;
             }
         }
 #endif
 
-        private void InitCamera()
+        protected override void CreateComponents(InstanceManager.InitializationContext initializingContext)
+        {
+            base.CreateComponents(initializingContext);
+
+            if (!isFallbackValues)
+            {
+                if (skybox == null)
+                    skybox = GetComponent<Skybox>();
+            }
+
+            InitializeCamera(initializingContext);
+
+            InitializeStack(initializingContext);
+        }
+
+        protected virtual void InitializeCamera(InstanceManager.InitializationContext initializingContext)
         {
             if (!isFallbackValues)
             {
-                if (_unityCamera == null)
-                {
-                    _unityCamera = GetComponent<UnityEngine.Camera>();
-                    if (_unityCamera == null)
-                        _unityCamera = gameObject.AddComponent<UnityEngine.Camera>();
-                }
+                if (unityCamera == null)
+                    unityCamera = GetComponent<UnityEngine.Camera>();
+            }
 
-                InitAdditionalData();
+            if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Programmatically)
+                RemoveIgnoreRenderFromUnityCameraCullingMask(unityCamera);
+
+            InitializeAdditionalData();
+        }
+
+        protected virtual void InitializeAdditionalData()
+        {
+            if (!isFallbackValues)
+            {
+                if (additionalData == null)
+                {
+                    additionalData = GetUniversalAdditionalCameraData();
+                    additionalData.SetRenderer(GetDefaultRenderer());
+                }
             }
         }
 
-        protected virtual void InitAdditionalData()
+        protected virtual bool InitializeStack(InstanceManager.InitializationContext initializingContext)
         {
-            if (!isFallbackValues)
+            string stackName = "Stack";
+            if (gameObject.transform.Find(stackName) == null)
             {
-                if (_additionalData == null)
+                GameObject stackGO = new GameObject(stackName);
+                UndoManager.RegisterCreatedObjectUndo(stackGO, initializingContext);
+                UndoManager.SetTransformParent(stackGO.transform, gameObject.transform, false, initializingContext);
+
+                Stack stack = stackGO.AddSafeComponent<Stack>(initializingContext);
+                stack.main = true;
+                stack.synchRenderProperties = true;
+                stack.synchOpticalProperties = true;
+                stack.synchAspectProperty = true;
+                stack.synchBackgroundProperties = true;
+                stack.synchClipPlaneProperties = true;
+                stack.synchCullingMaskProperty = true;
+
+                UniversalAdditionalCameraData universalAdditionalCameraData = GetUniversalAdditionalCameraData();
+
+                int distancePass = GetDefaultDistancePass();
+                for (int i = distancePass - 1; i >= 0; i--)
                 {
-                    _additionalData = GetComponent<UniversalAdditionalCameraData>();
-                    if (_additionalData == null)
+                    GameObject cameraGO = new GameObject("DistancePass_" + (i + 1));
+                    UndoManager.RegisterCreatedObjectUndo(cameraGO, initializingContext);
+                    UndoManager.SetTransformParent(cameraGO.transform, stackGO.transform, false, initializingContext);
+
+                    UnityEngine.Camera unityCamera = cameraGO.AddSafeComponent<UnityEngine.Camera>(initializingContext);
+                    RemoveIgnoreRenderFromUnityCameraCullingMask(unityCamera);
+
+                    UniversalAdditionalCameraData distancePassCameraUniversalAdditionalCameraData = unityCamera.GetUniversalAdditionalCameraData();
+                    UndoManager.RegisterCreatedObjectUndo(distancePassCameraUniversalAdditionalCameraData, initializingContext);
+                    if (distancePassCameraUniversalAdditionalCameraData != null)
                     {
-                        _additionalData = gameObject.AddComponent<UniversalAdditionalCameraData>();
-                        _additionalData.SetRenderer(GetDefaultRenderer());
+                        distancePassCameraUniversalAdditionalCameraData.renderType = CameraRenderType.Overlay;
+                        distancePassCameraUniversalAdditionalCameraData.SetRenderer(GetDefaultRenderer());
                     }
+
+                    if (universalAdditionalCameraData != null)
+                        universalAdditionalCameraData.cameraStack.Add(unityCamera);
                 }
+
+                return true;
             }
+            return false;
         }
 
-        private void InitSkybox()
+        protected void RemoveIgnoreRenderFromUnityCameraCullingMask(UnityEngine.Camera unityCamera)
         {
-            if (!isFallbackValues)
-            {
-                if (_skybox == null)
-                {
-                    _skybox = GetComponent<Skybox>();
-                    if (_skybox == null)
-                        _skybox = gameObject.AddComponent<Skybox>();
-                }
-            }
+            unityCamera.cullingMask &= ~(1 << LayerUtility.GetLayer(CameraManager.IGNORE_RENDER_LAYER_NAME));
         }
 
         private List<Stack> _stacksTmp;
@@ -197,14 +227,11 @@ namespace DepictionEngine
         {
             if (base.LateInitialize())
             {
-                if (stackCount == 0)
-                    CreateStack();
-
 #if UNITY_EDITOR
                 if (moveComponentDown)
                 {
                     moveComponentDown = false;
-                    UnityEditorInternal.ComponentUtility.MoveComponentDown(GetUniversalAdditionalCameraData());
+                    //UnityEditorInternal.ComponentUtility.MoveComponentDown(GetUniversalAdditionalCameraData());
                 }
 #endif
 
@@ -245,42 +272,6 @@ namespace DepictionEngine
             get { return _stacks == null ? 0 : _stacks.Count; }
         }
 
-        protected virtual void CreateStack()
-        {
-            GameObject stackGO = new GameObject("Stack");
-            stackGO.transform.SetParent(gameObject.transform, false);
-            
-            Stack stack = stackGO.AddComponent<Stack>();
-            stack.main = true;
-            stack.synchRenderProperties = true;
-            stack.synchOpticalProperties = true;
-            stack.synchAspectProperty = true;
-            stack.synchBackgroundProperties = true;
-            stack.synchClipPlaneProperties = true;
-            stack.synchCullingMaskProperty = true;
-
-            UniversalAdditionalCameraData universalAdditionalCameraData = GetUniversalAdditionalCameraData();
-
-            int distancePass = GetDefaultDistancePass();
-            for (int i = distancePass - 1; i >= 0; i--)
-            {
-                GameObject cameraGO = new GameObject(name + "_DistancePass_" + (i + 1));
-                cameraGO.transform.SetParent(stackGO.transform, false);
-                UnityEngine.Camera unityCamera = cameraGO.AddComponent<UnityEngine.Camera>();
-                RemoveIgnoreRenderFromUnityCameraCullingMask(unityCamera);
-
-                UniversalAdditionalCameraData distancePassCameraUniversalAdditionalCameraData = unityCamera.GetUniversalAdditionalCameraData();
-                if (distancePassCameraUniversalAdditionalCameraData != null)
-                {
-                    distancePassCameraUniversalAdditionalCameraData.renderType = CameraRenderType.Overlay;
-                    distancePassCameraUniversalAdditionalCameraData.SetRenderer(GetDefaultRenderer());
-                }
-
-                if (universalAdditionalCameraData != null)
-                    universalAdditionalCameraData.cameraStack.Add(unityCamera);
-            }
-        }
-
         public virtual int GetDefaultDistancePass()
         {
             return DEFAULT_DISTANCE_PASS;
@@ -301,22 +292,59 @@ namespace DepictionEngine
             return false;
         }
 
-        public UniversalAdditionalCameraData additionalData
+        public virtual UnityEngine.Camera unityCamera
         {
-            get 
+            get { return _unityCamera; }
+            protected set
             {
-                InitCamera();
-                return _additionalData; 
+                if (_unityCamera == value)
+                    return;
+
+                _unityCamera = value;
             }
         }
 
-        public UnityEngine.Camera unityCamera
+        public UniversalAdditionalCameraData additionalData
         {
-            get
+            get { return _additionalData; }
+            private set
             {
-                InitCamera();
-                return _unityCamera;
+                if (_additionalData == value)
+                    return;
+
+                _additionalData = value;
+
+                UpdateAdditionalData();
             }
+        }
+
+        private void UpdateAdditionalData()
+        {
+            if (additionalData != null)
+            {
+                if (additionalData.renderPostProcessing != postProcessing)
+                    additionalData.renderPostProcessing = postProcessing;
+            }
+        }
+
+        public Skybox skybox
+        {
+            get { return _skybox; }
+            private set
+            {
+                if (_skybox == value)
+                    return;
+
+                _skybox = value;
+
+                UpdateSkybox();
+            }
+        }
+
+        private void UpdateSkybox()
+        {
+            if (skybox != null)
+                skybox.material = RenderingManager.LoadMaterial(skyboxMaterialPath);
         }
 
         public RenderTexture environmentCubemap
@@ -348,15 +376,6 @@ namespace DepictionEngine
         public static Camera main
         {
             get { return UnityEngine.Camera.main != null ? UnityEngine.Camera.main.GetComponent<Camera>() : null; }
-        }
-
-        public Skybox skybox
-        {
-            get 
-            {
-                InitSkybox();
-                return _skybox; 
-            }
         }
 
         public Matrix4x4 GetViewToWorldMatrix()
@@ -405,80 +424,40 @@ namespace DepictionEngine
         /// Is the camera orthographic (true) or perspective (false)?
         /// </summarty>
         [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetUnityCameraAdditionalRecordObjects))]
-#endif
         public bool orthographic
         {
             get { return _orthographic; }
-            set 
-            {
-                SetValue(nameof(orthographic), value, ref _orthographic, (newValue, oldValue) =>
-                {
-                    if (unityCamera != null && unityCamera.orthographic != newValue)
-                        unityCamera.orthographic = newValue;
-                });
-            }
+            set { SetValue(nameof(orthographic), value, ref _orthographic); }
         }
 
         /// <summarty>
         /// Camera's half-szie when in orthographic mode.
         /// </summarty>
         [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetUnityCameraAdditionalRecordObjects))]
-#endif
         public float orthographicSize
         {
             get { return _orthographicSize; }
-            set 
-            {
-                SetValue(nameof(orthographicSize), value, ref _orthographicSize, (newValue, oldValue) =>
-                {
-                    if (unityCamera != null && unityCamera.orthographicSize != newValue)
-                        unityCamera.orthographicSize = newValue;
-                });
-            }
+            set { SetValue(nameof(orthographicSize), value, ref _orthographicSize); }
         }
 
         /// <summary>
         /// The vertical field of view of the camera, in degrees.
         /// </summary>
         [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetUnityCameraAdditionalRecordObjects))]
-#endif
         public float fieldOfView
         {
             get { return _fieldOfView; }
-            set 
-            {
-                SetValue(nameof(fieldOfView), value, ref _fieldOfView, (newValue, oldValue) =>
-                {
-                    if (unityCamera != null && unityCamera.fieldOfView != newValue)
-                        unityCamera.fieldOfView = newValue;
-                });
-            }
+            set { SetValue(nameof(fieldOfView), value, ref _fieldOfView); }
         }
 
         /// <summary>
         /// The distance of the near clipping plane from the Camera, in world units.
         /// </summary>
         [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetUnityCameraAdditionalRecordObjects))]
-#endif
         public float nearClipPlane
         {
             get { return _nearClipPlane; }
-            set 
-            {
-                SetValue(nameof(nearClipPlane), value, ref _nearClipPlane, (newValue, oldValue) =>
-                {
-                    if (unityCamera != null && unityCamera.nearClipPlane != newValue)
-                        unityCamera.nearClipPlane = newValue;
-                });
-            }
+            set { SetValue(nameof(nearClipPlane), value, ref _nearClipPlane); }
         }
 
         /// <summary>
@@ -519,117 +498,71 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         [RecordAdditionalObjects(nameof(GetAdditionalDataAdditionalRecordObjects))]
 #endif
-        public virtual bool postProcessing
+        public bool postProcessing
         {
             get { return _postProcessing; }
             set
             {
                 SetValue(nameof(postProcessing), value, ref _postProcessing, (newValue, oldValue) =>
                 {
-                    if (additionalData != null && additionalData.renderPostProcessing != newValue)
-                        additionalData.renderPostProcessing = newValue;
+                    PostProcessingChanged();
                 });
             }
+        }
+
+        protected virtual void PostProcessingChanged()
+        {
+            UpdateAdditionalData();
         }
 
         /// <summary>
         /// How and if camera generates a depth texture.
         /// </summary>
         [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetUnityCameraAdditionalRecordObjects))]
-#endif
         public DepthTextureMode depthTextureMode
         {
             get { return _depthTextureMode; }
-            set 
-            {
-                SetValue(nameof(depthTextureMode), value, ref _depthTextureMode, (newValue, oldValue) =>
-                {
-                    if (unityCamera != null && unityCamera.depthTextureMode != newValue)
-                        unityCamera.depthTextureMode = newValue;
-                });
-            }
+            set { SetValue(nameof(depthTextureMode), value, ref _depthTextureMode); }
         }
 
         /// <summary>
         /// A mask used to render parts of the Scene selectively.
         /// </summary>
         [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetUnityCameraAdditionalRecordObjects))]
-#endif
         public int cullingMask
         {
             get { return _cullingMask; }
-            set 
-            {
-                SetValue(nameof(cullingMask), value, ref _cullingMask, (newValue, oldValue) =>
-                {
-                    if (unityCamera != null && unityCamera.cullingMask != newValue)
-                        unityCamera.cullingMask = newValue;
-                });
-            }
+            set { SetValue(nameof(cullingMask), value, ref _cullingMask); }
         }
 
         /// <summary>
         /// Whether or not the Camera will use occlusion culling during redering.
         /// </summary>
         [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetUnityCameraAdditionalRecordObjects))]
-#endif
         public bool useOcclusionCulling
         {
             get { return _useOcclusionCulling; }
-            set 
-            {
-                SetValue(nameof(useOcclusionCulling), value, ref _useOcclusionCulling, (newValue, oldValue) =>
-                {
-                    if (unityCamera != null && unityCamera.useOcclusionCulling != newValue)
-                        unityCamera.useOcclusionCulling = newValue;
-                });
-            }
+            set { SetValue(nameof(useOcclusionCulling), value, ref _useOcclusionCulling); }
         }
 
         /// <summary>
         /// How the camera clears the background.
         /// </summary>
         [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetUnityCameraAdditionalRecordObjects))]
-#endif
         public CameraClearFlags clearFlags
         {
             get { return _clearFlags; }
-            set 
-            {
-                SetValue(nameof(clearFlags), value, ref _clearFlags, (newValue, oldValue) =>
-                {
-                    if (unityCamera != null && unityCamera.clearFlags != newValue)
-                        unityCamera.clearFlags = newValue;
-                });
-            }
+            set { SetValue(nameof(clearFlags), value, ref _clearFlags); }
         }
 
         /// <summary>
         /// The color with which the screen will be cleared.
         /// </summary>
         [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetUnityCameraAdditionalRecordObjects))]
-#endif
         public Color backgroundColor
         {
             get { return _backgroundColor; }
-            set 
-            {
-                SetValue(nameof(backgroundColor), value, ref _backgroundColor, (newValue, oldValue) =>
-                {
-                    if (unityCamera != null && unityCamera.backgroundColor != newValue)
-                        unityCamera.backgroundColor = newValue;
-                });
-            }
+            set { SetValue(nameof(backgroundColor), value, ref _backgroundColor); }
         }
 
 #if UNITY_EDITOR
@@ -655,8 +588,7 @@ namespace DepictionEngine
             {
                 SetValue(nameof(skyboxMaterialPath), value, ref _skyboxMaterialPath, (newValue, oldValue) =>
                 {
-                    if (skybox != null)
-                        skybox.material = RenderingManager.LoadMaterial(skyboxMaterialPath);
+                    UpdateSkybox();
                 });
             }
         }
@@ -680,20 +612,10 @@ namespace DepictionEngine
         /// High dynamic range rendering.
         /// </summary>
         [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetUnityCameraAdditionalRecordObjects))]
-#endif
         public bool allowHDR
         {
             get { return _allowHDR; }
-            set 
-            {
-                SetValue(nameof(allowHDR), value, ref _allowHDR, (newValue, oldValue) =>
-                {
-                    if (unityCamera != null && unityCamera.allowHDR != newValue)
-                        unityCamera.allowHDR = newValue;
-                });
-            }
+            set { SetValue(nameof(allowHDR), value, ref _allowHDR); }
         }
 
         public float aspect
@@ -801,8 +723,8 @@ namespace DepictionEngine
 
         public Vector3Double GetFrustumSizeAtDistance(double distance)
         {
-            double height = 2.0d * (unityCamera.orthographic ? unityCamera.orthographicSize : distance * Math.Tan(unityCamera.fieldOfView * 0.5d * MathPlus.DEG2RAD));
-            return new Vector3Double(height * unityCamera.aspect, height, distance);
+            double height = 2.0d * (orthographic ? orthographicSize : distance * Math.Tan(fieldOfView * 0.5d * MathPlus.DEG2RAD));
+            return new Vector3Double(height * aspect, height, distance);
         }
 
         public Vector3 WorldToViewportPoint(Vector3Double position)

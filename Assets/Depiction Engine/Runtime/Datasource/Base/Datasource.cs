@@ -157,16 +157,16 @@ namespace DepictionEngine
         private void RemoveLoaderDelegates(LoaderBase loader)
         {
             if (!Object.ReferenceEquals(loader, null))
-                loader.LoadScopeDisposeEvent -= LoadScopeDisposingHandler;
+                loader.LoadScopeDisposeEvent -= LoadScopeDisposeHandler;
         }
 
         private void AddLoaderDelegates(LoaderBase loader)
         {
             if (!IsDisposing() && loader != Disposable.NULL)
-                loader.LoadScopeDisposeEvent += LoadScopeDisposingHandler;
+                loader.LoadScopeDisposeEvent += LoadScopeDisposeHandler;
         }
 
-        private void LoadScopeDisposingHandler(IDisposable disposable)
+        private void LoadScopeDisposeHandler(IDisposable disposable)
         {
             AutoDisposePersistents(disposable as LoadScope);
         }

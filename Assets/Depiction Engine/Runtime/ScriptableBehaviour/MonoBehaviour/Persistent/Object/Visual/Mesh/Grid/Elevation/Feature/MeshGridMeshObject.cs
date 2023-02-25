@@ -8,7 +8,7 @@ using UnityEngine;
 namespace DepictionEngine
 {
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/Grid/" + nameof(MeshGridMeshObject))]
-    [RequireScript(typeof(AssetReference))]
+    [CreateComponent(typeof(AssetReference))]
     public class MeshGridMeshObject : FeatureGridMeshObjectBase
     {
         [BeginFoldout("Material")]

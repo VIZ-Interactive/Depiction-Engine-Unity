@@ -10,7 +10,7 @@ namespace DepictionEngine
     /// Instantiate the <see cref="DepictionEngine.Visual"/> found in an <see cref="DepictionEngine.AssetBundle"/> as children.
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/" + nameof(InstantiatorVisualObject))]
-    [RequireScript(typeof(AssetReference))]
+    [CreateComponent(typeof(AssetReference))]
     public class InstantiatorVisualObject : VisualObject
     {
         [BeginFoldout("GameObjects")]

@@ -63,7 +63,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    [RequireScript(typeof(AssetReference))]
+    [CreateComponent(typeof(AssetReference))]
     public class FeatureGridMeshObjectBase : ElevationGridMeshObjectBase
     {
         [Serializable]

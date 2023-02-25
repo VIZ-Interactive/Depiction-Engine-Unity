@@ -148,14 +148,6 @@ namespace DepictionEngine.Editor
             return true;
         }
 
-        private static void CorrectCurrentGroupName()
-        {
-            //Correct illegitimate GroupName Change made by Unity by falling back to the last specified GroupName
-            //string name = GetCurrentGroupName();
-            //if (Undo.GetCurrentGroupName() != name)
-            //    SetUnityCurrentGroupName(name);
-        }
-
         private static string SetUnityCurrentGroupName(string name)
         {
             if (Undo.GetCurrentGroupName() != name)
@@ -196,7 +188,6 @@ namespace DepictionEngine.Editor
         private static void RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo)
         {
             Undo.RegisterCreatedObjectUndo(objectToUndo, Undo.GetCurrentGroupName());
-            CorrectCurrentGroupName();
         }
 
         /// <summary>
@@ -223,7 +214,6 @@ namespace DepictionEngine.Editor
         private static void RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo)
         {
             Undo.RegisterCompleteObjectUndo(objectToUndo, Undo.GetCurrentGroupName());
-            CorrectCurrentGroupName();
         }
 
         /// <summary>
@@ -233,7 +223,6 @@ namespace DepictionEngine.Editor
         public static void RegisterFullObjectHierarchyUndo(UnityEngine.Object objectToUndo)
         {
             Undo.RegisterFullObjectHierarchyUndo(objectToUndo, Undo.GetCurrentGroupName());
-            CorrectCurrentGroupName();
         }
 
         /// <summary>
@@ -243,10 +232,7 @@ namespace DepictionEngine.Editor
         public static void RecordObject(UnityEngine.Object objectToUndo)
         {
             if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo))
-            {
                 Undo.RecordObject(objectToUndo, Undo.GetCurrentGroupName());
-                CorrectCurrentGroupName();
-            }
         }
 
         /// <summary>
@@ -279,7 +265,6 @@ namespace DepictionEngine.Editor
                 }
 
                 Undo.RecordObjects(filteredObjetToUndos, Undo.GetCurrentGroupName());
-                CorrectCurrentGroupName();
             }
         }
 
@@ -288,10 +273,26 @@ namespace DepictionEngine.Editor
         /// </summary>
         /// <param name="transform"></param>
         /// <param name="newParent"></param>
-        public static void SetTransformParent(Transform transform, Transform newParent)
+        /// <param name="wordlPositionStays"></param>
+        public static void SetTransformParent(Transform transform, Transform newParent, bool wordlPositionStays, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
         {
-            Undo.SetTransformParent(transform, newParent, Undo.GetCurrentGroupName());
-            CorrectCurrentGroupName();
+            if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate)
+                Undo.SetTransformParent(transform, newParent, wordlPositionStays, Undo.GetCurrentGroupName());
+            else
+                transform.transform.SetParent(newParent, wordlPositionStays);
+        }
+
+        /// <summary>
+        /// Sets the parent of transform to the new parent and records an undo operation.
+        /// </summary>
+        /// <param name="transform"></param>
+        /// <param name="newParent"></param>
+        public static void SetTransformParent(Transform transform, Transform newParent, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
+        {
+            if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate)
+                Undo.SetTransformParent(transform, newParent, Undo.GetCurrentGroupName());
+            else
+                transform.transform.SetParent(newParent);
         }
 
         /// <summary>
@@ -304,10 +305,6 @@ namespace DepictionEngine.Editor
             if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo))
             {
                 Undo.DestroyObjectImmediate(objectToUndo);
-
-                UpdateCurrentGroupNameIfCapturingInInspector(objectToUndo as IDisposable);
-
-                CorrectCurrentGroupName();
 
                 return true;
             }
@@ -326,18 +323,14 @@ namespace DepictionEngine.Editor
         /// <param name="gameObject"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static Component AddComponent(GameObject gameObject, Type type)
+        public static Component AddComponent(GameObject gameObject, Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
         {
-            Component component = null;
+            Component component;
 
-            if (!SceneManager.IsEditorNamespace(type))
-            {
+            if (!SceneManager.IsEditorNamespace(type) && (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate))
                 component = Undo.AddComponent(gameObject, type);
-
-                UpdateCurrentGroupNameIfCapturingInInspector(gameObject.GetDisposableInComponents());
-
-                CorrectCurrentGroupName();
-            }
+            else
+                component = gameObject.AddComponent(type);
 
             return component;
         }
@@ -350,18 +343,6 @@ namespace DepictionEngine.Editor
             Undo.RevertAllInCurrentGroup();
             SetCurrentGroupName(Undo.GetCurrentGroupName());
             _currentGroupIndex = Undo.GetCurrentGroup();
-        }
-
-        private static void UpdateCurrentGroupNameIfCapturingInInspector(IDisposable objectToUndo)
-        {
-            //Are there still inspector Operation that can trigger the Creation or Destruction of component?
-            //Should use the QueueUndoOperation approach instead?
-            //if (!Disposable.IsDisposed(objectToUndo) && objectToUndo is IScriptableBehaviour)
-            //{
-            //    IScriptableBehaviour scriptableBehaviour = objectToUndo as IScriptableBehaviour;
-            //    if (scriptableBehaviour.IsEditorChange() && scriptableBehaviour.isEditorInspectorChange)
-            //        _currentGroupName = "Inspector";
-            //}
         }
 
         /// <summary>

@@ -115,7 +115,7 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
-             InitValue(value => loaderId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(loaderId, loader, initializingContext); }, initializingContext);
+            InitValue(value => loaderId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(loaderId, loader, initializingContext); }, initializingContext);
             InitValue(value => dataId = value, SerializableGuid.Empty, initializingContext);
             InitValue(value => dataIndex2D = value, Grid2DIndex.empty, initializingContext);
         }
@@ -255,6 +255,7 @@ namespace DepictionEngine
         /// <summary>
         /// An id key used to retreive the data from an <see cref="DepictionEngine.IdLoader"/>.
         /// </summary>
+        [Json]
         public SerializableGuid dataId
         {
             get { return _dataId; }
@@ -270,6 +271,7 @@ namespace DepictionEngine
         /// <summary>
         /// A 2D grid index key used to retreive the data from an <see cref="DepictionEngine.Index2DLoaderBase"/>.
         /// </summary>
+        [Json]
         public Grid2DIndex dataIndex2D
         {
             get { return _dataIndex2D; }

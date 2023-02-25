@@ -133,11 +133,11 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Populate a list with the <see cref="UnityEngine.RequireComponent"/> && optionally <see cref="DepictionEngine.RequireScriptAttribute"/> attribute types found in a specific Class.
+        /// Populate a list with the <see cref="UnityEngine.RequireComponent"/> && optionally <see cref="DepictionEngine.CreateComponentAttribute"/> attribute types found in a specific Class.
         /// </summary>
         /// <param name="types">The reference to the list that will be populated. The list will be cleared first.</param>
         /// <param name="classType">The class type in which attributes should be found.</param>
-        /// <param name="includeRequireScriptAttribute">true to include <see cref="DepictionEngine.RequireScriptAttribute"/>.</param>
+        /// <param name="includeRequireScriptAttribute">true to include <see cref="DepictionEngine.CreateComponentAttribute"/>.</param>
         /// <returns></returns>
         public static void GetRequiredComponentTypes(ref List<Type> types, Type classType, bool includeRequireScriptAttribute = true)
         {
@@ -156,15 +156,15 @@ namespace DepictionEngine
 
             if (includeRequireScriptAttribute)
             {
-                IEnumerable<RequireScriptAttribute> requiredScripts = GetAllAttributes<RequireScriptAttribute>(classType, false);
-                foreach (RequireScriptAttribute requiredScript in requiredScripts)
+                IEnumerable<CreateComponentAttribute> createComponents = GetAllAttributes<CreateComponentAttribute>(classType, false);
+                foreach (CreateComponentAttribute createComponent in createComponents)
                 {
-                    if (requiredScript.requiredScript != null)
-                        types.Add(requiredScript.requiredScript);
-                    if (requiredScript.requiredScript2 != null)
-                        types.Add(requiredScript.requiredScript2);
-                    if (requiredScript.requiredScript3 != null)
-                        types.Add(requiredScript.requiredScript3);
+                    if (createComponent.createComponent != null)
+                        types.Add(createComponent.createComponent);
+                    if (createComponent.createComponent2 != null)
+                        types.Add(createComponent.createComponent2);
+                    if (createComponent.createComponent3 != null)
+                        types.Add(createComponent.createComponent3);
                 }
             }            
         }

@@ -9,7 +9,7 @@ using UnityEngine.Rendering;
 namespace DepictionEngine
 { 
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/Grid/" + nameof(TerrainGridMeshObject))]
-    [RequireScript(typeof(AssetReference), typeof(AssetReference), typeof(AssetReference))]
+    [CreateComponent(typeof(AssetReference), typeof(AssetReference), typeof(AssetReference))]
     public class TerrainGridMeshObject : ElevationGridMeshObjectBase
     {
         /// <summary>

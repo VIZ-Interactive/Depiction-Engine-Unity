@@ -135,9 +135,9 @@ namespace DepictionEngine
             InitValue(value => createPersistentIfMissing = value, true, initializingContext);
         }
 
-        protected override void InitializeDependenciesAfterRelations(InstanceManager.InitializationContext initializingContext)
+        protected override void CreateComponents(InstanceManager.InitializationContext initializingContext)
         {
-            base.InitializeDependenciesAfterRelations(initializingContext);
+            base.CreateComponents(initializingContext);
 
             InitRequiredComponentTypes();
             GetRequiredComponentTypes(ref _requiredComponentTypes);
@@ -145,13 +145,19 @@ namespace DepictionEngine
 
             if (requiredComponentTypes.Count > 0)
             {
-                MonoBehaviourDisposable[] components = gameObject.GetComponents<MonoBehaviourDisposable>();
+                Component[] components = gameObject.GetComponents<Component>();
 
                 foreach (Type requiredComponentType in requiredComponentTypes)
                 {
-                    MonoBehaviourDisposable component = RemoveComponentFromList(requiredComponentType, components);
-                    if (component == Disposable.NULL)
-                        gameObject.AddSafeComponent(requiredComponentType, initializingContext);
+                    Component component = RemoveComponentFromList(requiredComponentType, components);
+                    if (Disposable.IsDisposed(component))
+                    {
+#if UNITY_EDITOR
+                        component = Editor.UndoManager.AddComponent(gameObject, requiredComponentType, initializingContext);
+#else
+                        component = gameObject.AddComponent(requiredComponentType);
+#endif
+                    }
                 }
             }
         }
@@ -163,15 +169,14 @@ namespace DepictionEngine
             _requiredComponentTypes.Clear();
         }
 
-        protected MonoBehaviourDisposable RemoveComponentFromList(Type type, MonoBehaviourDisposable[] components)
+        protected Component RemoveComponentFromList(Type type, Component[] components)
         {
             for (int i = 0; i < components.Length; i++)
             {
-                MonoBehaviourDisposable component = components[i];
-                if (component != Disposable.NULL)
+                Component component = components[i];
+                if (!Disposable.IsDisposed(component))
                 {
-                    Type componentType = component.GetType();
-                    if (componentType == type || componentType.IsSubclassOf(type))
+                    if (type.IsAssignableFrom(component.GetType()))
                     {
                         components[i] = null;
                         return component;

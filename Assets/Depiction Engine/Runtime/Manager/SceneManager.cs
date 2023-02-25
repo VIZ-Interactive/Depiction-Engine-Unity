@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection;
+using System.Drawing;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Microsoft.Design", "IDE1006",
@@ -166,6 +167,19 @@ namespace DepictionEngine
             return _instance;
         }
 
+        protected override bool InitializeLastFields()
+        {
+            if (base.InitializeLastFields())
+            {
+#if UNITY_EDITOR
+                _lastDebug = debug;
+                _lastRunInBackground = runInBackground;
+#endif
+                return true;
+            }
+            return false;
+        }
+
         protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
@@ -270,6 +284,16 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        private bool _lastDebug;
+        private bool _lastRunInBackground;
+        protected override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { debug = value; }, ref _debug, ref _lastDebug);
+            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { runInBackground = value; }, ref _runInBackground, ref _lastRunInBackground);
+        }
+
         /// <summary>
         /// Dispatched at the same time as the <see cref="UnityEditor.EditorApplication.playModeStateChanged"/>.
         /// </summary>
@@ -709,7 +733,15 @@ namespace DepictionEngine
 #endif
                 return debug; 
             }
-            set { SetValue(nameof(debug), value, ref _debug); }
+            set
+            {
+                SetValue(nameof(debug), value, ref _debug, (newValue, oldValue) =>
+                {
+#if UNITY_EDITOR
+                    _lastDebug = newValue;
+#endif
+                });
+            }
         }
 
         /// <summary>
@@ -723,6 +755,9 @@ namespace DepictionEngine
             { 
                 SetValue(nameof(runInBackground), value, ref _runInBackground, (newValue, oldValue) =>
                 {
+#if UNITY_EDITOR
+                    _lastRunInBackground = newValue;
+#endif
                     UpdateRunInBackground();
                 }); 
             }
@@ -1127,7 +1162,10 @@ namespace DepictionEngine
 
             InvokeAction(ref UnityInitializedEvent, "UnityInitialized", UpdateExecutionState.UnityInitialized);
 
-            InvokeAction(ref DelayedOnDestroyEvent, "DelayedOnDestroy", UpdateExecutionState.DelayedOnDestroy);
+            DisposeManager.DestroyingContext(() => 
+            {
+                InvokeAction(ref DelayedOnDestroyEvent, "DelayedOnDestroy", UpdateExecutionState.DelayedOnDestroy);
+            }, DisposeManager.DestroyContext.Editor);
 
             DisposeManager.InvokeActions();
 

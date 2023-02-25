@@ -93,12 +93,19 @@ namespace DepictionEngine
         {
             if (base.Initialize(initializingContext))
             {
-                InitializeDependencies(initializingContext);
+                if (!UpdateRelations(
+                    () => 
+                    {
+                        InitializeTransform(initializingContext);
+                    },
+                    () => 
+                    {
+                        CreateComponents(initializingContext);
 
-                if (!UpdateRelations())
+                        InitializeScripts(initializingContext);
+
+                    }))
                     return false;
-
-                InitializeDependenciesAfterRelations(initializingContext);
 
                 if (_initializationPropertyModifiers != null)
                 {
@@ -112,12 +119,17 @@ namespace DepictionEngine
             return false;
         }
 
-        protected virtual void InitializeDependencies(InstanceManager.InitializationContext initializingContext)
+        protected virtual void InitializeTransform(InstanceManager.InitializationContext initializingContext)
         {
 
         }
 
-        protected virtual void InitializeDependenciesAfterRelations(InstanceManager.InitializationContext initializingContext)
+        protected virtual void CreateComponents(InstanceManager.InitializationContext initializingContext)
+        {
+
+        }
+
+        protected virtual void InitializeScripts(InstanceManager.InitializationContext initializingContext)
         {
 
         }
@@ -149,13 +161,19 @@ namespace DepictionEngine
         {
         }
 
-        protected virtual bool UpdateRelations()
+        protected virtual bool UpdateRelations(Action beforeParentInitializeCallback = null, Action beforeSiblingsInitializeCallback = null)
         {
+            if (beforeParentInitializeCallback != null)
+                beforeParentInitializeCallback();
+
             if (ParentHasChanged())
                 UpdateParent();
 
             if (Disposable.IsDisposed(this))
                 return false;
+
+            if (beforeSiblingsInitializeCallback != null)
+                beforeSiblingsInitializeCallback();
 
             if (SiblingsHasChanged())
                 UpdateSiblings();
@@ -239,7 +257,7 @@ namespace DepictionEngine
         /// </summary>
         /// <param name="originator"></param>
         /// <param name="isEditorUndo"></param>
-        public virtual void UpdateParent(PropertyMonoBehaviour originator = null, bool isEditorUndo = false)
+        public virtual void UpdateParent(PropertyMonoBehaviour originator = null)
         {
             Originator(() =>  { SetParent(GetParent()); }, originator);
         }
@@ -741,7 +759,12 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool PreHierarchicalUpdate()
         {
-            if (!UpdateRelations())
+            bool updateRelationsFailed = true;
+            IsUserChange(() => 
+            {
+                updateRelationsFailed = UpdateRelations();
+            });
+            if (!updateRelationsFailed)
                 return false;
 
             if (initialized)

@@ -253,7 +253,7 @@ namespace DepictionEngine
             _initializingContext = InstanceManager.InitializationContext.Unknown;
             if (!isFallbackValues)
                 _initialized = true;
-
+        
             UpdateHideFlags();
         }
 
@@ -701,8 +701,7 @@ namespace DepictionEngine
             {
                 _dispose = true;
 
-                if (_destroyingContext == DisposeManager.DestroyContext.Unknown)
-                    _destroyingContext = DisposeManager.destroyingContext;
+                _destroyingContext = GetDestroyingContext();
 
                 if (DisposeEvent != null)
                     DisposeEvent(this);
@@ -751,15 +750,13 @@ namespace DepictionEngine
         {
             OnDisposing();
 
-            _destroyingContext = OverrideDestroyingContext(destroyingContext);
-
-            if (_destroyingContext != DisposeManager.DestroyContext.Editor_Unknown)
+            if (GetDestroyingContext() != DisposeManager.DestroyContext.Unknown)
                 OnDestroyInternal();
             else
             {
-                _destroyingContext = DisposeManager.DestroyContext.Editor;
-                SceneManager.DelayedOnDestroyEvent += OnDestroyInternal;
 #if UNITY_EDITOR
+                SceneManager.DelayedOnDestroyEvent += OnDestroyInternal;
+
                 if (!_initialized)
                 {
                     Editor.UndoManager.UndoRedoPerformedEvent -= UndoRedoPerformed;
@@ -769,8 +766,10 @@ namespace DepictionEngine
             }
         }
 
-        protected virtual DisposeManager.DestroyContext OverrideDestroyingContext(DisposeManager.DestroyContext destroyingContext)
+        protected virtual DisposeManager.DestroyContext GetDestroyingContext()
         {
+            DisposeManager.DestroyContext destroyingContext = DisposeManager.destroyingContext;
+
             if (SceneManager.IsSceneBeingDestroyed())
                 destroyingContext = DisposeManager.DestroyContext.Programmatically;
 

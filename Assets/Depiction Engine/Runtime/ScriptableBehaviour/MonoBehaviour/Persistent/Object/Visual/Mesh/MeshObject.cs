@@ -5,7 +5,7 @@ using UnityEngine;
 namespace DepictionEngine
 {
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/" + nameof(MeshObject))]
-    [RequireScript(typeof(AssetReference))]
+    [CreateComponent(typeof(AssetReference))]
     public class MeshObject : MeshObjectBase
     {
         private Mesh _mesh;

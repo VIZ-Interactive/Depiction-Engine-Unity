@@ -131,11 +131,6 @@ namespace DepictionEngine
             set { _disposedEvent = value; }
         }
 
-        protected virtual DisposeManager.DestroyContext GetDestroyingContext(DisposeManager.DestroyContext destroyingContext)
-        {
-            return _destroyingContext != DisposeManager.DestroyContext.Unknown ? _destroyingContext : destroyingContext;
-        }
-
         public static bool IsDisposed(object disposable)
         {
             if (Object.ReferenceEquals(disposable, null))
@@ -162,6 +157,7 @@ namespace DepictionEngine
             if (!_disposing)
             {
                 _disposing = true;
+
                 return true;
             }
             return false;
@@ -173,7 +169,7 @@ namespace DepictionEngine
             {
                 _dispose = true;
 
-                _destroyingContext = GetDestroyingContext(DisposeManager.destroyingContext);
+                _destroyingContext = GetDestroyingContext();
 
                 if (DisposeEvent != null)
                     DisposeEvent(this);
@@ -209,6 +205,16 @@ namespace DepictionEngine
                 return true;
             }
             return false;
+        }
+
+        protected virtual DisposeManager.DestroyContext GetDestroyingContext()
+        {
+            DisposeManager.DestroyContext destroyingContext = DisposeManager.destroyingContext;
+
+            if (SceneManager.IsSceneBeingDestroyed())
+                destroyingContext = DisposeManager.DestroyContext.Programmatically;
+
+            return destroyingContext;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

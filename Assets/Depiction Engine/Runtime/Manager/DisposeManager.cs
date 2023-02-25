@@ -38,8 +38,6 @@ namespace DepictionEngine
         /// The destroy was triggered in the editor. <br/><br/>
         /// <b><see cref="Editor_UndoRedo"/>:</b> <br/>
         /// The destroy was triggered in the editor as a result of an undo or redo action. <br/><br/>
-        /// <b><see cref="Editor_Unknown"/>:</b> <br/>
-        /// The destroy was triggered in the editor by the context is unknown.
         /// </summary> 
         public enum DestroyContext
         {
@@ -47,10 +45,9 @@ namespace DepictionEngine
             Programmatically,
             Editor,
             Editor_UndoRedo,
-            Editor_Unknown,
         };
 
-        public static DestroyContext destroyingContext = DestroyContext.Editor_Unknown;
+        public static DestroyContext destroyingContext = DestroyContext.Unknown;
 
         public static LinkedList<Tuple<object, DestroyContext>> DelayedDispose;
         public static LinkedList<Tuple<object, DestroyContext>> DelayedDisposeLate;
@@ -299,7 +296,7 @@ namespace DepictionEngine
             return obj is UnityEngine.Object && (obj as UnityEngine.Object) == null;
         }
 
-        private static void DestroyingContext(Action callback, DestroyContext destroyingContext)
+        public static void DestroyingContext(Action callback, DestroyContext destroyingContext)
         {
             DestroyContext lastDestroyingType = DisposeManager.destroyingContext;
             DisposeManager.destroyingContext = destroyingContext;
