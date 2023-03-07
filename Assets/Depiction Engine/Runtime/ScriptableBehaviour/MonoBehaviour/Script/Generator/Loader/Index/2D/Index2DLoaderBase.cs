@@ -78,8 +78,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_index2DLoadScopes == null)
-                    _index2DLoadScopes = new IndexLoadScopeDictionary();
+                _index2DLoadScopes ??= new IndexLoadScopeDictionary();
                 return _index2DLoadScopes; 
             }
             set { _index2DLoadScopes = value; }
@@ -242,7 +241,7 @@ namespace DepictionEngine
                         load = reload;
                     else if (createIfMissing)
                     {
-                        if (!Object.ReferenceEquals(loadScope, null))
+                        if (loadScope is not null)
                             RemoveLoadScope(loadScope);
 
                         loadScope = CreateIndex2DLoadScope(index, dimensions);
@@ -275,8 +274,7 @@ namespace DepictionEngine
 
                     if (GetLoadScope(out Index2DLoadScope loadScope, dimensions, index, loadInterval, reload, true))
                     {
-                        if (loadScopes == null)
-                            loadScopes = new List<LoadScope>();
+                        loadScopes ??= new List<LoadScope>();
                         loadScopes.Add(loadScope);
                     }
                 });

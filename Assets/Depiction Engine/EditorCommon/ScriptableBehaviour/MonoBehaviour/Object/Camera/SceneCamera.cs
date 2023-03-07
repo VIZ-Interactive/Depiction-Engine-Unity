@@ -120,11 +120,18 @@ namespace DepictionEngine.Editor
             return false;
         }
 
-        public override int GetCameraInstanceId()
+        private int _instanceId;
+        public override int GetCameraInstanceID()
         {
-            //Problem: SceneCameras are Destroyed and Recreated between compilation.
-            //Fix: To Maintain continuity we use the sceneView InstanceID instead which is not Destroyed and Recreated
-            return SceneViewDouble.GetSceneViewDouble(this).GetInstanceID();
+            if (_instanceId == 0)
+            {
+                //Problem: SceneCameras are Destroyed and Recreated between compilation.
+                //Fix: To Maintain continuity we use the sceneView InstanceID instead which is not Destroyed and Recreated
+                SceneViewDouble sceneViewDouble = SceneViewDouble.GetSceneViewDouble(this);
+                if (sceneViewDouble != Disposable.NULL)
+                    _instanceId = sceneViewDouble.GetInstanceID();
+            }
+            return _instanceId;
         }
 
         protected override void PostProcessingChanged()
@@ -175,7 +182,9 @@ namespace DepictionEngine.Editor
                 bool lastPostProcessing = postProcessing;
                 postProcessing = false;
 
+#pragma warning disable CS0618 // Type or member is obsolete
                 UniversalRenderPipeline.RenderSingleCamera(context, unityCamera);
+#pragma warning restore CS0618 // Type or member is obsolete
 
                 postProcessing = lastPostProcessing;
 
@@ -188,14 +197,14 @@ namespace DepictionEngine.Editor
             ApplyClipPlanePropertiesToUnityCamera(unityCamera, 0);
         }
 
-        protected override DisposeManager.DestroyContext GetDestroyingContext()
+        protected override DisposeManager.DisposeContext GetDestroyingContext()
         {
-            return DisposeManager.DestroyContext.Programmatically;
+            return DisposeManager.DisposeContext.Programmatically;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
                 if (skybox != null)
                     skybox.enabled = false;

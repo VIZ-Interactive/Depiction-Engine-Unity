@@ -146,11 +146,15 @@ namespace DepictionEngine
             return false;
         }
 
-        public override void OnDestroy()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            base.OnDestroy();
+            if (base.OnDisposing(disposeContext))
+            {
+                DisposeManager.Dispose(_reflectionTexture);
 
-            Dispose(_reflectionTexture);
+                return true;
+            }
+            return false;
         }
     }
 }

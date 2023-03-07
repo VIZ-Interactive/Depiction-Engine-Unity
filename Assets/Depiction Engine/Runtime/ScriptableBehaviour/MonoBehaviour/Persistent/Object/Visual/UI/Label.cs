@@ -105,7 +105,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         protected UnityEngine.Object[] GetTextMeshProsAdditionalRecordObjects()
         {
-            List<UnityEngine.Object> textMeshPros = new List<UnityEngine.Object>();
+            List<UnityEngine.Object> textMeshPros = new();
 
             transform.IterateOverChildren<UILabel>((uiLabel) =>
             {
@@ -360,9 +360,8 @@ namespace DepictionEngine
         /// <param name="camera"></param>
         public void FlattenCurveCameraZDepth(Camera camera)
         {
-            Vector3Double projectedPoint;
 
-            if (FlattenCurvePoint(out projectedPoint, camera, endCoordinate))
+            if (FlattenCurvePoint(out Vector3Double projectedPoint, camera, endCoordinate))
                 endCoordinate = projectedPoint;
 
             for (int i = 0; i < textCurve.Count; i++)

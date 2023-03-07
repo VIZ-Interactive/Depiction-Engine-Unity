@@ -18,9 +18,9 @@ namespace DepictionEngine
             }
         }
 
-        public override bool OnDispose()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDispose())
+            if (base.OnDisposing(disposeContext))
             {
                 DisposingLocked();
                 return true;
@@ -33,9 +33,9 @@ namespace DepictionEngine
             return !_locked && IsDisposing();
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposed(disposeContext, pooled))
             {
                 OnDisposedLocked();
 

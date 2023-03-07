@@ -71,8 +71,7 @@ namespace DepictionEngine
         {
             get 
             { 
-                if (_indices == null)
-                    _indices = new List<Grid2DIndex>();
+                _indices ??= new List<Grid2DIndex>();
                 return _indices; 
             }
             set { SetValue(nameof(indices), value, ref _indices); }
@@ -82,8 +81,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_indexReferences == null)
-                    _indexReferences = new IndexReferencesDictionary();
+                _indexReferences ??= new IndexReferencesDictionary();
                 return _indexReferences;
             }
         }

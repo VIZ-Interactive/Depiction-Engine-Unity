@@ -1,8 +1,8 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. <contact@vizinteractive.io> | Licensed under MIT license (see LICENSE.md for details)
 
+using DepictionEngine.Editor;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -123,16 +123,16 @@ namespace DepictionEngine
         {
             if (cameraGridLoaderCenterOnLoadTrigger != null)
             {
-                cameraGridLoaderCenterOnLoadTrigger.CameraDisposeEvent += CameraGridLoaderCenterOnLoadTriggerDisposingHandler;
+                cameraGridLoaderCenterOnLoadTrigger.CameraDisposingEvent += CameraGridLoaderCenterOnLoadTriggerDisposingHandler;
                 cameraGridLoaderCenterOnLoadTrigger.QueueAutoUpdateEvent += CameraGridLoaderCenterOnLoadTriggerQueueAutoUpdateHandler;
             }
         }
 
         private void RemoveCameraGridLoaderCenterOnLoadTriggerDelegates(CameraGridLoaderCenterOnLoadTrigger cameraGridLoaderCenterOnLoadTrigger)
         {
-            if (!Object.ReferenceEquals(cameraGridLoaderCenterOnLoadTrigger, null))
+            if (cameraGridLoaderCenterOnLoadTrigger is not null)
             {
-                cameraGridLoaderCenterOnLoadTrigger.CameraDisposeEvent -= CameraGridLoaderCenterOnLoadTriggerDisposingHandler;
+                cameraGridLoaderCenterOnLoadTrigger.CameraDisposingEvent -= CameraGridLoaderCenterOnLoadTriggerDisposingHandler;
                 cameraGridLoaderCenterOnLoadTrigger.QueueAutoUpdateEvent -= CameraGridLoaderCenterOnLoadTriggerQueueAutoUpdateHandler;
             }
         }
@@ -276,8 +276,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_cameraGridLoaderCenterOnLoadTriggers == null)
-                    _cameraGridLoaderCenterOnLoadTriggers = new CameraGridLoaderCenterOnLoadTriggerDictionary();
+                _cameraGridLoaderCenterOnLoadTriggers ??= new CameraGridLoaderCenterOnLoadTriggerDictionary();
                 return _cameraGridLoaderCenterOnLoadTriggers; 
             }
         }
@@ -286,8 +285,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_cameraGrids == null)
-                    _cameraGrids = new List<CameraGrid2D>();
+                _cameraGrids ??= new List<CameraGrid2D>();
 
                 return _cameraGrids;
             }
@@ -301,14 +299,14 @@ namespace DepictionEngine
         private void RemoveCameraGridLoaderCenterOnLoadTrigger(CameraGridLoaderCenterOnLoadTrigger cameraGridLoaderCenterOnLoadTrigger)
         {
             Camera camera = cameraGridLoaderCenterOnLoadTrigger.camera;
-            if (!Object.ReferenceEquals(camera, null))
+            if (camera is not null)
             {
-                if (cameraGridLoaderCenterOnLoadTriggers.Remove(camera.GetInstanceID()))
+                if (cameraGridLoaderCenterOnLoadTriggers.Remove(camera.GetCameraInstanceID()))
                 {
                     RemoveCameraGridLoaderCenterOnLoadTriggerDelegates(cameraGridLoaderCenterOnLoadTrigger);
 
                     CameraGrid2D cameraGrid2D = cameraGrids.Find((cameraGrid2D) => { return cameraGrid2D.camera == camera; });
-                    if (!Object.ReferenceEquals(cameraGrid2D, null))
+                    if (cameraGrid2D is not null)
                         cameraGrids.Remove(cameraGrid2D);
 
                     QueueAutoUpdate();
@@ -322,12 +320,12 @@ namespace DepictionEngine
 
             if (camera != Disposable.NULL)
             {
-                if (!cameraGridLoaderCenterOnLoadTriggers.TryGetValue(camera.GetInstanceID(), out cameraGridLoaderCenterOnLoadTrigger))
+                if (!cameraGridLoaderCenterOnLoadTriggers.TryGetValue(camera.GetCameraInstanceID(), out cameraGridLoaderCenterOnLoadTrigger))
                 {
                     cameraGridLoaderCenterOnLoadTrigger = new CameraGridLoaderCenterOnLoadTrigger(this, camera);
                     AddCameraGridLoaderCenterOnLoadTriggerDelegates(cameraGridLoaderCenterOnLoadTrigger);
 
-                    cameraGridLoaderCenterOnLoadTriggers[camera.GetInstanceID()] = cameraGridLoaderCenterOnLoadTrigger;
+                    cameraGridLoaderCenterOnLoadTriggers[camera.GetCameraInstanceID()] = cameraGridLoaderCenterOnLoadTrigger;
 
                     cameraGrids.Add(CreateCameraGrid<CameraGrid2D>(camera));
 
@@ -383,12 +381,10 @@ namespace DepictionEngine
         private List<int> _visibleCameras;
         public void UpdateLoadScopeCameras(Index2DLoadScope indexLoadScope, IEnumerable<IGrid2D> grids = null)
         {
-            if (_visibleCameras == null)
-                _visibleCameras = new List<int>();
+            _visibleCameras ??= new List<int>();
             _visibleCameras.Clear();
 
-            if (grids == null)
-                grids = GetGrids();
+            grids ??= GetGrids();
 
             if (grids != null)
             {
@@ -399,12 +395,13 @@ namespace DepictionEngine
                         Grid2D grid2D = grid.IsInGrid(indexLoadScope.scopeIndex, indexLoadScope.scopeDimensions);
                         if (grid2D != null && grid2D.cameraGrid2D != null)
                         {
-                            _visibleCameras.Add(grid2D.cameraGrid2D.camera.GetCameraInstanceId());
+                            _visibleCameras.Add(grid2D.cameraGrid2D.camera.GetCameraInstanceID());
                             //_camerasCascade.Add(grid2D.cascade);
                         }
                     }
                 }
             }
+
 
             if (indexLoadScope.visibleCameras == null || !indexLoadScope.visibleCameras.SequenceEqual(_visibleCameras))
                 indexLoadScope.visibleCameras = _visibleCameras.ToArray();
@@ -422,8 +419,7 @@ namespace DepictionEngine
                     {
                         if (camera != Disposable.NULL)
                         {
-                            CameraGridLoaderCenterOnLoadTrigger cameraGridLoaderCenterOnLoadTrigger;
-                            if (cameraGridLoaderCenterOnLoadTriggers.TryGetValue(camera.GetInstanceID(), out cameraGridLoaderCenterOnLoadTrigger))
+                            if (cameraGridLoaderCenterOnLoadTriggers.TryGetValue(camera.GetCameraInstanceID(), out CameraGridLoaderCenterOnLoadTrigger cameraGridLoaderCenterOnLoadTrigger))
                             {
                                 TransformDouble centerOnTransform = cameraGridLoaderCenterOnLoadTrigger.centerOnTransform;
 
@@ -433,7 +429,7 @@ namespace DepictionEngine
                                 geoCoordinate.altitude = elevation;
 
                                 float sizeMultiplier = this.sizeMultiplier - cameraGridLoaderCenterOnLoadTrigger.dynamicSizeOffset;
-                        
+
                                 if (IsSpherical() && sizeLatitudeCompensation)
                                     sizeMultiplier *= (float)(parentGeoAstroObject.GetCircumferenceAtLatitude(geoCoordinate.latitude) / parentGeoAstroObject.size);
 
@@ -477,9 +473,9 @@ namespace DepictionEngine
             private GeoAstroObject _parentGeoAstroObject;
 
             /// <summary>
-            /// Dispatched when the <see cref="DepictionEngine.Camera"/> <see cref="DepictionEngine.IDisposable.OnDispose"/> is triggered.
+            /// Dispatched when the <see cref="DepictionEngine.Camera"/> <see cref="DepictionEngine.IDisposable.UpdateDestroyingContext"/> is triggered.
             /// </summary>
-            public Action<CameraGridLoaderCenterOnLoadTrigger> CameraDisposeEvent;
+            public Action<CameraGridLoaderCenterOnLoadTrigger> CameraDisposingEvent;
             /// <summary>
             /// Dispatched after changes requiring a <see cref="DepictionEngine.LoaderBase.QueueAutoUpdate"/> in the <see cref="DepictionEngine.CameraGrid2DLoader"/> are detected.
             /// </summary>
@@ -518,9 +514,9 @@ namespace DepictionEngine
 
             private void RemoveCameraDelegates(Camera camera)
             {
-                if (!Object.ReferenceEquals(camera, null))
+                if (camera is not null)
                 {
-                    camera.DisposeEvent -= CameraDisposeHandler;
+                    camera.DisposingEvent -= CameraDisposingHandler;
                     camera.PropertyAssignedEvent -= CameraPropertyAssignedHandler;
                 }
             }
@@ -529,18 +525,17 @@ namespace DepictionEngine
             {
                 if (camera != Disposable.NULL)
                 {
-                    camera.DisposeEvent += CameraDisposeHandler;
+                    camera.DisposingEvent += CameraDisposingHandler;
                     camera.PropertyAssignedEvent += CameraPropertyAssignedHandler;
                 }
             }
 
-            private void CameraDisposeHandler(IDisposable disposable)
+            private void CameraDisposingHandler(IDisposable disposable)
             {
                 dynamicSizeOffsetTimer = null;
 
                 UpdateAllDelegates(true);
-                if (CameraDisposeEvent != null)
-                    CameraDisposeEvent(this);
+                CameraDisposingEvent?.Invoke(this);
             }
 
             private void CameraPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
@@ -551,10 +546,10 @@ namespace DepictionEngine
 
             private void RemoveParentGeoAstroObjectDelegates(GeoAstroObject parentGeoAstroObject)
             {
-                if (!Object.ReferenceEquals(parentGeoAstroObject, null))
+                if (parentGeoAstroObject is not null)
                 {
                     parentGeoAstroObject.PropertyAssignedEvent -= ParentGeoAstroObjectPropertyAssignedHandler;
-                    if (!Object.ReferenceEquals(parentGeoAstroObject.transform, null))
+                    if (parentGeoAstroObject.transform is not null)
                         parentGeoAstroObject.transform.PropertyAssignedEvent -= ParentGeoAstroObjectTransformPropertyAssignedHandler;
                 }
             }
@@ -582,7 +577,7 @@ namespace DepictionEngine
 
             private void RemoveCenterOnTransformDelegates(TransformDouble centerOnTransform)
             {
-                if (!Object.ReferenceEquals(centerOnTransform, null))
+                if (centerOnTransform is not null)
                     centerOnTransform.PropertyAssignedEvent -= CenterOnTransformChangedHandler;
             }
 
@@ -649,8 +644,7 @@ namespace DepictionEngine
 
             private void DispatchQueueAutoUpdate()
             {
-                if (QueueAutoUpdateEvent != null)
-                    QueueAutoUpdateEvent();
+                QueueAutoUpdateEvent?.Invoke();
             }
 
             public void Update()
@@ -743,6 +737,7 @@ namespace DepictionEngine
                 {
                     if (Object.ReferenceEquals(_camera, value))
                         return;
+
                     RemoveCameraDelegates(_camera);
 
                     _camera = value;

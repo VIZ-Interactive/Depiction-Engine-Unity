@@ -60,16 +60,16 @@ namespace DepictionEngine
         private void RemoveTweenDelegates(Tween tween)
         {
             if (!Object.ReferenceEquals(tween, null))
-                tween.DisposeEvent -= TweenDisposeHandler;
+                tween.DisposingEvent -= TweenDisposingHandler;
         }
 
         private void AddTweenDelegates(Tween tween)
         {
             if (tween != Disposable.NULL)
-                tween.DisposeEvent += TweenDisposeHandler;
+                tween.DisposingEvent += TweenDisposingHandler;
         }
 
-        private void TweenDisposeHandler(IDisposable disposable)
+        private void TweenDisposingHandler(IDisposable disposable)
         {
             RemoveTween(disposable as Tween);
         }
@@ -148,9 +148,9 @@ namespace DepictionEngine
             IterateOverTweens((tween) => { DisposeManager.Dispose(tween); });
         }
 
-        public override bool OnDisposing()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposing())
+            if (base.OnDisposing(disposeContext))
             {
                 DisposeAllTweens();
 

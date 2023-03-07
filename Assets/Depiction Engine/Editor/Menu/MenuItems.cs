@@ -252,6 +252,11 @@ namespace DepictionEngine.Editor
         [MenuItem("GameObject/Depiction Engine/Managers", false, 84)]
         private static void CreateManagers(MenuCommand menuCommand)
         {
+            if (menuCommand is null)
+            {
+                throw new System.ArgumentNullException(nameof(menuCommand));
+            }
+
             SceneManager.Instance();
         }
 
@@ -262,7 +267,7 @@ namespace DepictionEngine.Editor
             CreateStarIfMissing(parent);
 
             //Planet
-            JSONObject planetJson = new JSONObject();
+            JSONObject planetJson = new();
 
             //Add Planet -> Color Texture Index2DLoader
             JSONArray colorTextureLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
@@ -285,7 +290,7 @@ namespace DepictionEngine.Editor
             Planet planet = CreatePlanet(parent, name, spherical, GeoAstroObject.DEFAULT_SIZE, AstroObject.DEFAULT_MASS, planetJson);
 
             //Add TerrainRoot -> TerrainGridMeshObject CameraGrid2DLoader
-            JSONObject terrainJson = new JSONObject();
+            JSONObject terrainJson = new();
 
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
@@ -317,7 +322,7 @@ namespace DepictionEngine.Editor
             "https://d-data.3dbuildings.com/");
 
             //Add Earth
-            JSONObject earthJson = new JSONObject();
+            JSONObject earthJson = new();
 
             //Add Earth -> Color Texture Index2DLoader
             JSONArray colorTextureLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
@@ -349,7 +354,7 @@ namespace DepictionEngine.Editor
             Planet earth = CreatePlanet(parent, name, spherical, GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Earth), GeoAstroObject.GetPlanetMass(AstroObject.PlanetType.Earth), earthJson);
 
             //Add TerrainRoot -> TerrainGridMeshObject CameraGrid2DLoader
-            JSONObject terrainJson = new JSONObject();
+            JSONObject terrainJson = new();
 
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
@@ -369,7 +374,7 @@ namespace DepictionEngine.Editor
             CreateLayer(earth, "Terrain", terrainJson);
 
             //Add BuildingsRoot -> BuildingGridMeshObject CameraGrid2DLoader
-            JSONObject buildingsJson = new JSONObject();
+            JSONObject buildingsJson = new();
 
             JSONArray buildingMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(BuildingGridMeshObject));
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
@@ -400,7 +405,7 @@ namespace DepictionEngine.Editor
             "https://d-data.3dbuildings.com/");
 
             //Add Earth
-            JSONObject earthJson = new JSONObject();
+            JSONObject earthJson = new();
 
             //Add Earth -> Color Texture Index2DLoader
             JSONArray colorTextureLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
@@ -451,7 +456,7 @@ namespace DepictionEngine.Editor
             Planet earth = CreatePlanet(parent, name, spherical, GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Earth), GeoAstroObject.GetPlanetMass(AstroObject.PlanetType.Earth), earthJson);
 
             //Add TerrainRoot -> TerrainGridMeshObject CameraGrid2DLoader
-            JSONObject terrainJson = new JSONObject();
+            JSONObject terrainJson = new();
 
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
@@ -470,7 +475,7 @@ namespace DepictionEngine.Editor
             CreateLayer(earth, "Terrain", terrainJson);
 
             //Add BuildingsRoot -> BuildingGridMeshObject CameraGrid2DLoader
-            JSONObject buildingsJson = new JSONObject();
+            JSONObject buildingsJson = new();
 
             JSONArray buildingMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(BuildingGridMeshObject));
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 5.0f;
@@ -496,7 +501,7 @@ namespace DepictionEngine.Editor
             RestDatasource arcGISDatasource = GetRestDatasource("https://tiles.arcgis.com/");
 
             //Planet
-            JSONObject planetJson = new JSONObject();
+            JSONObject planetJson = new();
 
             //Add Planet -> Color Texture Index2DLoader
             JSONArray colorTextureLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
@@ -523,7 +528,7 @@ namespace DepictionEngine.Editor
             Planet planet = CreatePlanet(parent, name, spherical, GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Moon), GeoAstroObject.GetPlanetMass(AstroObject.PlanetType.Moon), planetJson);
 
             //Add TerrainRoot -> TerrainGridMeshObject CameraGrid2DLoader
-            JSONObject terrainJson = new JSONObject();
+            JSONObject terrainJson = new();
 
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 3.0f;
@@ -636,6 +641,11 @@ namespace DepictionEngine.Editor
         [MenuItem(ALIGN_VIEW_TO_SELECTED_GEOASTROOBJECT_MENU_ITEM, false, 95)]
         private static void AlignViewToSelectedGeoAstroObject(MenuCommand menuCommand)
         {
+            if (menuCommand is null)
+            {
+                throw new System.ArgumentNullException(nameof(menuCommand));
+            }
+
             SceneViewDouble sceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
             if (sceneViewDouble != Disposable.NULL)
             {
@@ -674,6 +684,11 @@ namespace DepictionEngine.Editor
         [MenuItem(AUTO_SNAP_VIEW_TO_TERRAIN_MENU_ITEM, false, 96)]
         private static void AutoSnapViewToTerrain(MenuCommand menuCommand)
         {
+            if (menuCommand is null)
+            {
+                throw new System.ArgumentNullException(nameof(menuCommand));
+            }
+
             SceneViewDouble sceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
             if (sceneViewDouble != Disposable.NULL)
                 SetAlignViewToGeoAstroObject(sceneViewDouble, sceneViewDouble.camera, sceneViewDouble.alignViewToGeoAstroObject, !sceneViewDouble.autoSnapViewToTerrain);
@@ -724,6 +739,11 @@ namespace DepictionEngine.Editor
         [MenuItem("GameObject/Move View to GeoCoordinate", false, 97)]
         private static void MoveViewToGeoCoordinate(MenuCommand menuCommand)
         {
+            if (menuCommand is null)
+            {
+                throw new System.ArgumentNullException(nameof(menuCommand));
+            }
+
             GeoCoordinatePopup geoCoordiantePopup = ScriptableObject.CreateInstance<GeoCoordinatePopup>();
             geoCoordiantePopup.minSize = Vector2.zero;
             Rect mainWindowRect = EditorGUIUtility.GetMainWindowPosition();

@@ -107,8 +107,10 @@ namespace DepictionEngine
                                 {
                                     for (int x = 0; x < grid2DDimensions.x; x++)
                                     {
-                                        JSONObject jsonTransform = new JSONObject();
-                                        jsonTransform[nameof(TransformBase.parent)] = transform.id.ToString();
+                                        JSONObject jsonTransform = new()
+                                        {
+                                            [nameof(TransformBase.parent)] = transform.id.ToString()
+                                        };
 
                                         GeoCoordinate3Double geoCoordinate = MathPlus.GetGeoCoordinate3FromIndex(new Vector2Double(x, y) + MathPlus.HALF_INDEX, grid2DDimensions);
 
@@ -120,10 +122,11 @@ namespace DepictionEngine
                                         QuaternionDouble rotation = geoAstroObject.GetUpVectorFromGeoCoordinate(geoCoordinate);
                                         jsonTransform[nameof(TransformDouble.localRotation)] = JsonUtility.ToJson(QuaternionDouble.Inverse(transform.rotation) * rotation);
 
-                                        JSONObject json = new JSONObject();
-
-                                        json[nameof(IGrid2DIndex.grid2DDimensions)] = JsonUtility.ToJson(grid2DDimensions);
-                                        json[nameof(Object.transform)] = jsonTransform;
+                                        JSONObject json = new()
+                                        {
+                                            [nameof(IGrid2DIndex.grid2DDimensions)] = JsonUtility.ToJson(grid2DDimensions),
+                                            [nameof(Object.transform)] = jsonTransform
+                                        };
 
                                         List<PropertyModifier> propertyModifiers = null;
 
@@ -139,8 +142,10 @@ namespace DepictionEngine
 
                                             if (propertyModifier != Disposable.NULL)
                                             {
-                                                propertyModifiers = new List<PropertyModifier>();
-                                                propertyModifiers.Add(propertyModifier);
+                                                propertyModifiers = new List<PropertyModifier>
+                                                {
+                                                    propertyModifier
+                                                };
                                             }
                                         }
 

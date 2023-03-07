@@ -96,8 +96,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_idLoadScopes == null)
-                    _idLoadScopes = new IdLoadScopeDictionary();
+                _idLoadScopes ??= new IdLoadScopeDictionary();
                 return _idLoadScopes; 
             }
             set { _idLoadScopes = value; }
@@ -111,8 +110,7 @@ namespace DepictionEngine
         {
             get 
             { 
-                if (_ids == null)
-                    _ids = new List<SerializableGuid>();
+                _ids ??= new List<SerializableGuid>();
                 return _ids; 
             }
             set { SetValue(nameof(ids), value, ref _ids); }
@@ -122,8 +120,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_idReferences == null)
-                    _idReferences = new IdReferencesDictionary();
+                _idReferences ??= new IdReferencesDictionary();
                 return _idReferences;
             }
         }
@@ -271,7 +268,7 @@ namespace DepictionEngine
                     load = reload;
                 else if (createIfMissing)
                 {
-                    if (!Object.ReferenceEquals(loadScope, null))
+                    if (loadScope is not null)
                         RemoveLoadScope(loadScope);
 
                     loadScope = CreateIdLoadScope(id);
@@ -300,8 +297,7 @@ namespace DepictionEngine
             {
                 if (GetLoadScope(out IdLoadScope loadScope, id, reload, true))
                 {
-                    if (loadScopes == null)
-                        loadScopes = new List<LoadScope>();
+                    loadScopes ??= new List<LoadScope>();
                     loadScopes.Add(loadScope);
                 }
             }

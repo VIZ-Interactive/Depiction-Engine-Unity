@@ -69,8 +69,8 @@ namespace DepictionEngine
         [Serializable]
         private class MeshRendererMaterialDictionary : SerializableDictionary<int, Material> { };
 
-        private static readonly Vector2 ZERO_ONE = new Vector2(0.0f, 1.0f);
-        private static readonly Vector2 ONE_ZERO = new Vector2(1.0f, 0.0f);
+        private static readonly Vector2 ZERO_ONE = new(0.0f, 1.0f);
+        private static readonly Vector2 ONE_ZERO = new(1.0f, 0.0f);
 
         private Dictionary<int, Vector2> _meshRendererHighlightIndexRange;
 
@@ -86,8 +86,6 @@ namespace DepictionEngine
             if (_meshRendererHighlightIndexRange != null)
                 _meshRendererHighlightIndexRange.Clear();
 
-            DisposeAllMaterials();
-
             if (_materialsDictionary != null)
                 _materialsDictionary.Clear();
         }
@@ -98,6 +96,9 @@ namespace DepictionEngine
 
             if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
             {
+                if (_meshRendererHighlightIndexRange != null)
+                    _meshRendererHighlightIndexRange.Clear();
+
                 if (_materialsDictionary != null)
                     _materialsDictionary.Clear();
             }
@@ -117,7 +118,7 @@ namespace DepictionEngine
 
         private void RemoveFeatureDelgates(Feature feature)
         {
-            if (!Object.ReferenceEquals(feature, null))
+            if (feature is not null)
                 feature.PropertyAssignedEvent -= FeaturePropertyAssignedHandler;
         }
 
@@ -160,8 +161,7 @@ namespace DepictionEngine
 
         private void UpdateHighlightIndexRange(RaycastHitDouble hit)
         {
-            if (_meshRendererHighlightIndexRange == null)
-                _meshRendererHighlightIndexRange = new Dictionary<int, Vector2>();
+            _meshRendererHighlightIndexRange ??= new Dictionary<int, Vector2>();
 
             _meshRendererHighlightIndexRange.Clear();
 
@@ -242,12 +242,8 @@ namespace DepictionEngine
         {
             if (initialized)
             {
-                if (meshRendererVisualDirtyFlags is FeatureGridMeshObjectVisualDirtyFlags)
-                {
-                    FeatureGridMeshObjectVisualDirtyFlags featureMeshRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as FeatureGridMeshObjectVisualDirtyFlags;
-
-                    featureMeshRendererVisualDirtyFlags.FeatureChanged();
-                }
+                if (meshRendererVisualDirtyFlags is not null)
+                    meshRendererVisualDirtyFlags.Recreate();
             }
         }
 
@@ -308,8 +304,7 @@ namespace DepictionEngine
             {
                 int meshRendererInstanceId = meshRendererVisual.meshRenderer.GetInstanceID();
 
-                if (_materialsDictionary == null)
-                    _materialsDictionary = new MeshRendererMaterialDictionary();
+                _materialsDictionary ??= new MeshRendererMaterialDictionary();
 
                 _materialsDictionary.TryGetValue(meshRendererInstanceId, out material);
                 _materialsDictionary[meshRendererInstanceId] = UpdateMaterial(ref material, shaderPath);
@@ -335,20 +330,19 @@ namespace DepictionEngine
             }
         }
 
-        private void DisposeAllMaterials()
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            if (_materialsDictionary != null)
+            if (base.OnDisposed(disposeContext, pooled))
             {
-                foreach (Material material in _materialsDictionary.Values)
-                    Dispose(material);
+                if (_materialsDictionary != null)
+                {
+                    foreach (Material material in _materialsDictionary.Values)
+                        Dispose(material, disposeContext);
+                }
+
+                return true;
             }
-        }
-
-        public override void OnDestroy()
-        {
-            base.OnDestroy();
-
-            DisposeAllMaterials();
+            return false;
         }
 
         protected class FeatureParameters : ElevationGridMeshObjectParameters
@@ -548,8 +542,8 @@ namespace DepictionEngine
 
             protected static void AddPolygon(MeshObjectProcessorOutput meshObjectProcessorOutput, VectorPolygon[] polygons, float zPos, Color32 color)
             {
-                List<float> vertexBuffer = new List<float>();
-                List<int> vectorIndex = new List<int>();
+                List<float> vertexBuffer = new();
+                List<int> vectorIndex = new();
 
                 int index = 0;
                 for (int i = 0; i < polygons.Length; i++)
@@ -590,14 +584,14 @@ namespace DepictionEngine
 
             protected static void AddCube(MeshObjectProcessorOutput meshObjectProcessorOutput, float sizeX, float sizeY, float sizeZ, float X, float Y, float zPos, Color32 color)
             {
-                Vector3 a = new Vector3(X, Y, zPos);
-                Vector3 b = new Vector3(X + sizeX, Y, zPos);
-                Vector3 c = new Vector3(X + sizeX, Y + sizeY, zPos);
-                Vector3 d = new Vector3(X, Y + sizeY, zPos);
-                Vector3 A = new Vector3(X, Y, zPos + sizeZ);
-                Vector3 B = new Vector3(X + sizeX, Y, zPos + sizeZ);
-                Vector3 C = new Vector3(X + sizeX, Y + sizeY, zPos + sizeZ);
-                Vector3 D = new Vector3(X, Y + sizeY, zPos + sizeZ);
+                Vector3 a = new(X, Y, zPos);
+                Vector3 b = new(X + sizeX, Y, zPos);
+                Vector3 c = new(X + sizeX, Y + sizeY, zPos);
+                Vector3 d = new(X, Y + sizeY, zPos);
+                Vector3 A = new(X, Y, zPos + sizeZ);
+                Vector3 B = new(X + sizeX, Y, zPos + sizeZ);
+                Vector3 C = new(X + sizeX, Y + sizeY, zPos + sizeZ);
+                Vector3 D = new(X, Y + sizeY, zPos + sizeZ);
 
                 AddQuad(meshObjectProcessorOutput, b, a, d, c, color);
                 AddQuad(meshObjectProcessorOutput, A, B, C, D, color);

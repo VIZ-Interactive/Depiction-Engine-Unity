@@ -117,8 +117,8 @@ namespace DepictionEngine
                 request = UnityWebRequest.Put(uri, bodyData);
             else if (httpMethod == HTTPMethod.Post || httpMethod == HTTPMethod.Delete)
             {
-#if UNITY_2023_1_OR_NEWER
-				request = UnityWebRequest.Post(uri, "", "application/json");
+#if UNITY_2022_2_OR_NEWER
+                request = UnityWebRequest.PostWwwForm(uri, "");
 #else
                 request = UnityWebRequest.Post(uri, "");
 #endif

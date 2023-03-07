@@ -140,7 +140,7 @@ namespace DepictionEngine
 
         protected override void InitializeMaterial(MeshRendererVisual meshRendererVisual, Material material = null)
         {
-            base.InitializeMaterial(meshRendererVisual, UpdateMaterial(ref this._material, shaderPath));
+            base.InitializeMaterial(meshRendererVisual, UpdateMaterial(ref _material, shaderPath));
         }
 
         /// <summary>
@@ -330,8 +330,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_terrainGridCache == null)
-                    _terrainGridCache = new TerrainGridCache().Initialize();
+                _terrainGridCache ??= new TerrainGridCache().Initialize();
                 return _terrainGridCache;
             }
         }
@@ -474,8 +473,7 @@ namespace DepictionEngine
                 meshRendererVisualModifiers[1].SetTypes(typeof(TerrainEdgeMeshRendererVisualNoCollider), typeof(TerrainEdgeMeshRendererVisualBoxCollider), typeof(TerrainEdgeMeshRendererVisualMeshCollider));
             }
 
-            if (completedCallback != null)
-                completedCallback(meshRendererVisualDirtyFlags);
+            completedCallback?.Invoke(meshRendererVisualDirtyFlags);
         }
 
         protected override int GetCacheHash(MeshRendererVisualModifier meshRendererVisualModifier)
@@ -565,7 +563,7 @@ namespace DepictionEngine
                 {
                     for (int x = 0; x < 2; x++)
                     {
-                        Vector2Int quadrantIndex = new Vector2Int(x, y);
+                        Vector2Int quadrantIndex = new(x, y);
                         float alphaQuadrant = GetTerrainGridMeshObjectAlpha(terrainGridCache, quadrantIndex, Vector2Int.zero, camera);
                         for (int row = -1; row <= 1; row++)
                         {
@@ -625,11 +623,16 @@ namespace DepictionEngine
             }
         }
 
-        public override void OnDestroy()
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            base.OnDestroy();
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                if (!pooled)
+                    Dispose(_material, disposeContext);
 
-            Dispose(_material);
+                return true;
+            }
+            return false;
         }
 
         protected class TerrainGridMeshObjectParameters : ElevationGridMeshObjectParameters
@@ -735,9 +738,9 @@ namespace DepictionEngine
                 get { return _normalsDirty; }
             }
 
-            protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+            public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
             {
-                if (base.OnDisposed(destroyContext))
+                if (base.OnDisposing(disposeContext))
                 {
                     _subdivision = 0;
                     _subdivisionSize = 0.0f;
@@ -780,8 +783,7 @@ namespace DepictionEngine
             {
                 Dirty();
 
-                if (_grid2DIndexTerrainGridMeshObjects == null)
-                    _grid2DIndexTerrainGridMeshObjects = new Grid2DIndexTerrainGridMeshObjects[GRID_SIZE];
+                _grid2DIndexTerrainGridMeshObjects ??= new Grid2DIndexTerrainGridMeshObjects[GRID_SIZE];
 
                 return this;
             }
@@ -802,7 +804,7 @@ namespace DepictionEngine
 
             private void RemoveGrid2DIndexTerrainGridMeshObjectDelegate(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject)
             {
-                if (!Object.ReferenceEquals(grid2DIndexTerrainGridMeshObject, null))
+                if (grid2DIndexTerrainGridMeshObject is not null)
                 {
                     grid2DIndexTerrainGridMeshObject.TerrainGridMeshObjectPropertyAssignedEvent -= TerrainGridMeshObjectPropertyAssignedHandler;
                     grid2DIndexTerrainGridMeshObject.TerrainGridMeshObjectAddedEvent -= TerrainGridMeshObjectAddedHandler;
@@ -854,7 +856,7 @@ namespace DepictionEngine
 
             private void RemoveParentGeoAstroObjectDelegate(GeoAstroObject parentGeoAstroObject)
             {
-                if (!Object.ReferenceEquals(parentGeoAstroObject, null))
+                if (parentGeoAstroObject is not null)
                 {
                     parentGeoAstroObject.TerrainGridMeshObjectAddedEvent -= ParentGeoAstroObjectTerrainGridMeshAddedHandler;
                     parentGeoAstroObject.TerrainGridMeshObjectRemovedEvent -= ParentGeoAstroObjectTerrainGridMeshRemovedHandler;
@@ -951,7 +953,7 @@ namespace DepictionEngine
                         {
                             for (int x = 0; x < 4; x++)
                             {
-                                Vector2Int relativeGrid2DIndex = new Vector2Int(x, y);
+                                Vector2Int relativeGrid2DIndex = new(x, y);
                                 AddTerrain(_parentGeoAstroObject.GetGrid2DIndexTerrainGridMeshObject(zoom, _upperLeft + relativeGrid2DIndex), GetIndexFromRelativeGrid2DIndex(relativeGrid2DIndex));
                             }
                         }
@@ -1010,7 +1012,7 @@ namespace DepictionEngine
 
             public Grid2DIndexTerrainGridMeshObjects GetTerrainGridMeshObject(int index)
             {
-                return _grid2DIndexTerrainGridMeshObjects != null ? _grid2DIndexTerrainGridMeshObjects[index] : null;
+                return _grid2DIndexTerrainGridMeshObjects?[index];
             }
 
             private int GetIndexFromGrid2DIndex(Vector2Int grid2DIndex)

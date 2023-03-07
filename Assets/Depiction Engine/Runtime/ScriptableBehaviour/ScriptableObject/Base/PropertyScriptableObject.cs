@@ -93,7 +93,7 @@ namespace DepictionEngine
         protected override bool AddToInstanceManager()
         {
             if (base.AddToInstanceManager())
-                return AddInstanceToManager() ? instanceManager.Add(this) : true;
+                return !AddInstanceToManager() || instanceManager.Add(this);
             return false;
         }
 
@@ -147,8 +147,7 @@ namespace DepictionEngine
                     UserPropertyAssigned(iJson, name, jsonAttribute, propertyInfo);
             }
 
-            if (PropertyAssignedEvent != null)
-                PropertyAssignedEvent(property, name, newValue, oldValue);
+            PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -178,9 +177,9 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposed(disposeContext, pooled))
             {
                 if (instanceAdded && AddInstanceToManager())
                 {
@@ -192,7 +191,7 @@ namespace DepictionEngine
                     }
                 }
 
-                _propertyAssignedEvent = null;
+                PropertyAssignedEvent = null;
 
                 return true;
             }

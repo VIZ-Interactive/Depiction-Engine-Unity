@@ -153,7 +153,7 @@ namespace DepictionEngine
             string stackName = "Stack";
             if (gameObject.transform.Find(stackName) == null)
             {
-                GameObject stackGO = new GameObject(stackName);
+                GameObject stackGO = new(stackName);
                 UndoManager.RegisterCreatedObjectUndo(stackGO, initializingContext);
                 UndoManager.SetTransformParent(stackGO.transform, gameObject.transform, false, initializingContext);
 
@@ -171,7 +171,7 @@ namespace DepictionEngine
                 int distancePass = GetDefaultDistancePass();
                 for (int i = distancePass - 1; i >= 0; i--)
                 {
-                    GameObject cameraGO = new GameObject("DistancePass_" + (i + 1));
+                    GameObject cameraGO = new("DistancePass_" + (i + 1));
                     UndoManager.RegisterCreatedObjectUndo(cameraGO, initializingContext);
                     UndoManager.SetTransformParent(cameraGO.transform, stackGO.transform, false, initializingContext);
 
@@ -215,8 +215,7 @@ namespace DepictionEngine
 
         private int UpdateStacks(ref List<Stack> stacks)
         {
-            if (stacks == null)
-                stacks = new List<Stack>();
+            stacks ??= new List<Stack>();
             stacks.Clear();
             gameObject.transform.GetComponentsInChildren(stacks);
             return stacks.Count;
@@ -244,12 +243,7 @@ namespace DepictionEngine
         {
             if (base.UpdateHideFlags())
             {
-                bool debug = false;
-
-                if (!SceneManager.IsSceneBeingDestroyed())
-                    debug = sceneManager.debug;
-
-                if (!debug)
+                if (!SceneManager.Debugging())
                 {
                     if (unityCamera != null)
                         unityCamera.hideFlags = HideFlags.HideInInspector;
@@ -355,7 +349,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_environmentCubemap, value))
                     return;
 
-                Dispose(_environmentCubemap);
+                DisposeManager.Dispose(_environmentCubemap);
 
                 _environmentCubemap = value;
             }
@@ -366,9 +360,11 @@ namespace DepictionEngine
             int textureSize = Mathf.ClosestPowerOfTwo(environmentTextureSize);
             if (environmentCubemap == null || _environmentCubemap.width != textureSize || _environmentCubemap.height != textureSize)
             {
-                environmentCubemap = new RenderTexture(textureSize, textureSize, 0, RenderTextureFormat.ARGB32, 0);
-                environmentCubemap.dimension = TextureDimension.Cube;
-                environmentCubemap.name = name + "_Dynamic_Skybox_Cubemap";
+                environmentCubemap = new(textureSize, textureSize, 0, RenderTextureFormat.ARGB32, 0)
+                {
+                    dimension = TextureDimension.Cube,
+                    name = name + "_Dynamic_Skybox_Cubemap"
+                };
             }
             return environmentCubemap;
         }
@@ -644,9 +640,9 @@ namespace DepictionEngine
             }
         }
 
-        public virtual int GetCameraInstanceId()
+        public virtual int GetCameraInstanceID()
         {
-            return GetInstanceID(); ;
+            return GetInstanceID();
         }
 
         private Vector3Double _origin;
@@ -662,7 +658,7 @@ namespace DepictionEngine
             return unityCamera.GetUniversalAdditionalCameraData();
         }
 
-        private readonly Rect VIEWPORT_UPPER_RIGHT = new Rect(0.0f, 0.0f, 1.0f, 1.0f);
+        private readonly Rect VIEWPORT_UPPER_RIGHT = new(0.0f, 0.0f, 1.0f, 1.0f);
         public void CalculateFrustumCorners(Vector3[] outCorners)
         {
             CalculateFrustumCorners(VIEWPORT_UPPER_RIGHT, 500.0f, UnityEngine.Camera.MonoOrStereoscopicEye.Mono, outCorners);
@@ -866,7 +862,7 @@ namespace DepictionEngine
         {
             UniversalAdditionalCameraData unityCameraUniversalAdditionalCameraData = unityCamera.GetUniversalAdditionalCameraData();
             if (unityCameraUniversalAdditionalCameraData != null)
-                unityCameraUniversalAdditionalCameraData.renderPostProcessing = i == 0 ? postProcessing : false;
+                unityCameraUniversalAdditionalCameraData.renderPostProcessing = i == 0 && postProcessing;
         }
 
         private void ApplyAspectPropertyToUnityCamera(UnityEngine.Camera unityCamera)
@@ -930,11 +926,15 @@ namespace DepictionEngine
             }
         }
 
-        public override void OnDestroy()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            base.OnDestroy();
+            if (base.OnDisposing(disposeContext))
+            {
+                DisposeManager.Dispose(_environmentCubemap);
 
-            Dispose(_environmentCubemap);
-        }
+                return true;
+            }
+            return false;
+        } 
     }
 }

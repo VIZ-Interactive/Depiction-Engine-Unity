@@ -58,8 +58,10 @@ namespace DepictionEngine
 
             ApplyPropertiesToRTTUnityCamera(camera, applyPropertiesToUnityCamera);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             UnityEngine.Rendering.Universal.UniversalRenderPipeline.RenderSingleCamera(context, unityCamera);
-            
+#pragma warning restore CS0618 // Type or member is obsolete
+
             ResetUnityCamera(resetUnityCamera);
 
             unityCamera.targetTexture = null;

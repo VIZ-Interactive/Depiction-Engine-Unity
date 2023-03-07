@@ -89,8 +89,7 @@ namespace DepictionEngine
                     Debug.LogError(loadingResults.errorMsg);
 #endif
 
-                if (_operationResultCallback != null)
-                    _operationResultCallback(loadingResults.success, loadingResults.operationResult);
+                _operationResultCallback?.Invoke(loadingResults.success, loadingResults.operationResult);
 
                 KillLoading();
             }
@@ -111,21 +110,12 @@ namespace DepictionEngine
             _operationResultCallback = null;
         }
 
-        public override bool OnDispose()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDispose())
+            if (base.OnDisposing(disposeContext))
             {
                 KillLoading();
 
-                return true;
-            }
-            return false;
-        }
-
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
-        {
-            if (base.OnDisposed(destroyContext))
-            {
                 OperationDone(new OperationDoneResult(true));
 
                 return true;
@@ -218,8 +208,7 @@ namespace DepictionEngine
 
         public void Add(ResultData responseData)
         {
-            if (resultsData == null)
-                resultsData = new List<ResultData>();
+            resultsData ??= new List<ResultData>();
 
             resultsData.Add(responseData);
         }
@@ -247,9 +236,9 @@ namespace DepictionEngine
             return resultsData.Count;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
                 if (resultsData != null)
                 {
@@ -314,9 +303,9 @@ namespace DepictionEngine
             get { return _children; }
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
                 if (_propertyModifiers != null)
                 {

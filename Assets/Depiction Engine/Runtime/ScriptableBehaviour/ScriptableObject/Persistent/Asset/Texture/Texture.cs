@@ -62,7 +62,7 @@ namespace DepictionEngine
             if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
             {
                 if (unityTexture != null)
-                    unityTexture = Duplicate(unityTexture);
+                    unityTexture = InstanceManager.Duplicate(unityTexture, InstanceManager.InitializationContext.Programmatically);
             }
 
             InitValue(value => wrapMode = value, TextureWrapMode.Clamp, initializingContext);
@@ -319,11 +319,16 @@ namespace DepictionEngine
             a = 255;
         }
 
-        public override void OnDestroy()
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
         {
-            base.OnDestroy();
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                if (!pooled)
+                    Dispose(unityTexture, disposeContext);
 
-            Dispose(unityTexture);
+                return true;
+            }
+            return false;
         }
     }
 
@@ -379,11 +384,11 @@ namespace DepictionEngine
             }
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
-                DisposeManager.Dispose(textureModifier);
+                DisposeManager.Dispose(_textureModifier);
 
                 return true;
             }
@@ -453,9 +458,9 @@ namespace DepictionEngine
                 texture.SetData(_textureBytes, _isRawTextureBytes, _width, _height, _format, _mipChain, _linear);
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
                 DisposeManager.Destroy(_texture2D);
 

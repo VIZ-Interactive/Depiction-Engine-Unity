@@ -35,8 +35,8 @@ namespace DepictionEngine
             Auto
         };
 
-        private static readonly List<int> EMPTY_TRIANGLES = new List<int>();
-        private static readonly List<Vector3> EMPTY_VERTICES = new List<Vector3>();
+        private static readonly List<int> EMPTY_TRIANGLES = new();
+        private static readonly List<Vector3> EMPTY_VERTICES = new();
 
         [BeginFoldout("Mesh")]
         [SerializeField, EndFoldout]
@@ -80,11 +80,8 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
 
             if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
-            {
-                if (unityMesh != null)
-                    unityMesh = Duplicate(unityMesh);
-            }
-
+                unityMesh = InstanceManager.Duplicate(unityMesh, initializingContext);
+            
             //InstanceId can change between execution
             UpdateUnityMeshInstanceId();
         }
@@ -107,15 +104,15 @@ namespace DepictionEngine
 
         private void AddMeshObjectDelegate(MeshObjectBase meshObject)
         {
-            meshObject.DisposeEvent += MeshObjectDisposeHandler;
+            meshObject.DisposingEvent += MeshObjectDisposingHandler;
         }
 
         private void RemoveMeshObjectDelegate(MeshObjectBase meshObject)
         {
-            meshObject.DisposeEvent -= MeshObjectDisposeHandler;
+            meshObject.DisposingEvent -= MeshObjectDisposingHandler;
         }
 
-        private void MeshObjectDisposeHandler(IDisposable disposable)
+        private void MeshObjectDisposingHandler(IDisposable disposable)
         {
             RemoveModifying(disposable as MeshObjectBase);
         }
@@ -124,8 +121,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_meshObjectModifying == null)
-                    _meshObjectModifying = new List<MeshObjectBase>();
+                _meshObjectModifying ??= new List<MeshObjectBase>();
                 return _meshObjectModifying;
             }
         }
@@ -252,7 +248,7 @@ namespace DepictionEngine
             }
         }
 
-        public void SetData(List<int> triangles, List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs, List<Color32> colors, Bounds? bounds = null, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public void SetData(List<int> triangles, List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs, List<Color32> colors, Bounds? bounds = null, InstanceManager.InitializationContext _ = InstanceManager.InitializationContext.Programmatically)
         {
             SetData(triangles, vertices, normals, uvs, colors, !bounds.HasValue);
             if (bounds.HasValue)
@@ -610,11 +606,18 @@ namespace DepictionEngine
             return false;
         }
 
-        public override void OnDestroy()
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
         {
-            base.OnDestroy();
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                if (!pooled)
+                    Dispose(unityMesh, disposeContext);
 
-            Dispose(unityMesh);
+                ModificationPendingChangedEvent = null;
+
+                return true;
+            }
+            return false;
         }
     }
 
@@ -757,9 +760,7 @@ namespace DepictionEngine
         {
             for (int i = 0; i < triangles.Count; i += 3)
             {
-                int temp = triangles[i];
-                triangles[i] = triangles[i + 1];
-                triangles[i + 1] = temp;
+                (triangles[i + 1], triangles[i]) = (triangles[i], triangles[i + 1]);
             }
         }
 

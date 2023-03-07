@@ -100,7 +100,7 @@ namespace DepictionEngine
             {
                 if (parent != newParent)
                 {
-                    TransformComponents3Double components = new TransformComponents3Double(localPosition, localRotation, localScale);
+                    TransformComponents3Double components = new(localPosition, localRotation, localScale);
 
                     if (parent != Disposable.NULL)
                     {
@@ -169,8 +169,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_localPositionParam == null)
-                    _localPositionParam = new LocalPositionParam();
+                _localPositionParam ??= new LocalPositionParam();
                 return _localPositionParam; 
             }
         }
@@ -179,8 +178,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_localRotationParam == null)
-                    _localRotationParam = new LocalRotationParam();
+                _localRotationParam ??= new LocalRotationParam();
                 return _localRotationParam; 
             }
         }
@@ -189,8 +187,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_localScaleParam == null)
-                    _localScaleParam = new LocalScaleParam();
+                _localScaleParam ??= new LocalScaleParam();
                 return _localScaleParam; 
             }
         }
@@ -647,7 +644,7 @@ namespace DepictionEngine
         {
             base.DetectChanges();
 
-            if (DetectDirectTransformManipulation())
+            if (DetectDirectTransformLocalPositionManipulation() || DetectDirectTransformLocalRotationManipulation() || DetectDirectTransformLocalScaleManipulation())
             {
                 SetComponents(CaptureLocalPosition(), CaptureLocalRotation(), CaptureLocalScale());
 
@@ -733,8 +730,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private Component SetComponents(LocalPositionParam localPosition, LocalRotationParam localRotation, LocalScaleParam localScale, Camera camera = null, bool forceDeriveLocalPosition = false, bool triggerTransformChanged = true)
         {
-            if (ObjectCallback != null)
-                ObjectCallback(localPosition, localRotation, localScale, camera);
+            ObjectCallback?.Invoke(localPosition, localRotation, localScale, camera);
 
             Component changedComponents = Component.None;
             Component capturedComponents = Component.None;
@@ -769,8 +765,7 @@ namespace DepictionEngine
         private static HashSet<int> _originShiftDirty;
         private static void OriginShiftDirty(TransformDouble transformDouble)
         {
-            if (_originShiftDirty == null)
-                _originShiftDirty = new HashSet<int>();
+            _originShiftDirty ??= new HashSet<int>();
             _originShiftDirty.Add(transformDouble.GetInstanceID());
         }
 
@@ -1045,7 +1040,7 @@ namespace DepictionEngine
                 //LocalRotation
                 QuaternionDouble newLocalRotation = relativeRotation.ReflectQuaternionAroundAxes(parentNegativeAxes).FlipQuaternionAroundAxes(parentNegativeAxes);
 
-                Vector3Double parentZeroScaleAxes = new Vector3Double(parentLocalToWorldMatrix.GetRow(0).magnitude, parentLocalToWorldMatrix.GetRow(1).magnitude, parentLocalToWorldMatrix.GetRow(2).magnitude);
+                Vector3Double parentZeroScaleAxes = new(parentLocalToWorldMatrix.GetRow(0).magnitude, parentLocalToWorldMatrix.GetRow(1).magnitude, parentLocalToWorldMatrix.GetRow(2).magnitude);
 
                 parentLocalToWorldMatrix = parentLocalToWorldMatrix.Negate3x3Columns(parentNegativeAxes);
                 Matrix4x4Double parentLocalToWorldNoZeroMatrix = parentLocalToWorldMatrix.Set3x3Rows(parentZeroScaleAxes, 0.00000001d);
@@ -1066,7 +1061,7 @@ namespace DepictionEngine
                 relativeRotationScaleMatrix = relativeRotationScaleMatrix.Negate3x3Rows(parentNegativeAxes);
 
                 //LocalScale
-                Vector3Double newLocalScale = new Vector3Double(relativeRotationScaleMatrix.GetColumn(0).magnitude, relativeRotationScaleMatrix.GetColumn(1).magnitude, relativeRotationScaleMatrix.GetColumn(2).magnitude);
+                Vector3Double newLocalScale = new(relativeRotationScaleMatrix.GetColumn(0).magnitude, relativeRotationScaleMatrix.GetColumn(1).magnitude, relativeRotationScaleMatrix.GetColumn(2).magnitude);
                 Matrix4x4Double newMat = Matrix4x4Double.TRS(Vector3Double.zero, newLocalRotation, newLocalScale);
                 double x = Vector3Double.Dot(newMat.GetColumn(0), relativeRotationScaleMatrix.GetColumn(0));
                 double y = Vector3Double.Dot(newMat.GetColumn(1), relativeRotationScaleMatrix.GetColumn(1));
@@ -1142,9 +1137,9 @@ namespace DepictionEngine
             return value;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposed(disposeContext, pooled))
             {
                 RemoveOriginShiftDirty(GetInstanceID());
 

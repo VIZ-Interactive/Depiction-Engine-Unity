@@ -77,8 +77,8 @@ namespace DepictionEngine
             {
                 if (Object.ReferenceEquals(_forwardVectorTween, value))
                     return;
-                
-                Dispose(_forwardVectorTween);
+
+                DisposeManager.Dispose(_forwardVectorTween);
 
                 _forwardVectorTween = value;
             }
@@ -144,8 +144,8 @@ namespace DepictionEngine
             {
                 if (Object.ReferenceEquals(_distanceTween, value))
                     return;
-                
-                Dispose(_distanceTween);
+
+                DisposeManager.Dispose(_distanceTween);
 
                 _distanceTween = value;
             }

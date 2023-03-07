@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Rendering;
 using System.Reflection;
+using System.Linq;
 
 namespace DepictionEngine
 {
@@ -153,7 +154,7 @@ namespace DepictionEngine
         protected override bool AddToInstanceManager()
         {
             if (base.AddToInstanceManager())
-                return AddInstanceToManager() ? instanceManager.Add(this) : true;
+                return !AddInstanceToManager() || instanceManager.Add(this);
             return false;
         }
 
@@ -163,8 +164,7 @@ namespace DepictionEngine
 
         protected virtual bool UpdateRelations(Action beforeParentInitializeCallback = null, Action beforeSiblingsInitializeCallback = null)
         {
-            if (beforeParentInitializeCallback != null)
-                beforeParentInitializeCallback();
+            beforeParentInitializeCallback?.Invoke();
 
             if (ParentHasChanged())
                 UpdateParent();
@@ -172,8 +172,7 @@ namespace DepictionEngine
             if (Disposable.IsDisposed(this))
                 return false;
 
-            if (beforeSiblingsInitializeCallback != null)
-                beforeSiblingsInitializeCallback();
+            beforeSiblingsInitializeCallback?.Invoke();
 
             if (SiblingsHasChanged())
                 UpdateSiblings();
@@ -233,7 +232,7 @@ namespace DepictionEngine
 
         protected virtual bool RemoveParentDelegates(PropertyMonoBehaviour parent)
         {
-            return !Object.ReferenceEquals(parent, null);
+            return parent is not null;
         }
 
         protected virtual bool AddParentDelegates(PropertyMonoBehaviour parent)
@@ -270,7 +269,7 @@ namespace DepictionEngine
                 Component[] siblings = transform.GetComponents(siblingType);
                 if (siblings != null)
                 {
-                    foreach (PropertyMonoBehaviour sibling in siblings)
+                    foreach (PropertyMonoBehaviour sibling in siblings.Cast<PropertyMonoBehaviour>())
                     {
                         if (sibling != this && sibling != Disposable.NULL)
                         {
@@ -293,15 +292,14 @@ namespace DepictionEngine
                 {
                     foreach (Transform childTransform in transform)
                     {
-                        if (children == null)
-                            children = new List<Component>();
+                        children ??= new List<Component>();
                         children.AddRange(childTransform.GetComponents(childType));
                     }
                 }
 
                 if (children != null)
                 {
-                    foreach (PropertyMonoBehaviour child in children)
+                    foreach (PropertyMonoBehaviour child in children.Cast<PropertyMonoBehaviour>())
                     {
                         if (child != Disposable.NULL)
                         {
@@ -349,8 +347,7 @@ namespace DepictionEngine
                 T component = GetComponentFromId<T>(id);
                 if (component != null)
                 {
-                    if (components == null)
-                        components = new List<T>();
+                    components ??= new List<T>();
                     components.Add(component);
                 }
             }
@@ -452,8 +449,7 @@ namespace DepictionEngine
 
         private void SetPropertyDirty(string name)
         {
-            if (_dirtyKeys == null)
-                _dirtyKeys = new HashSet<int>();
+            _dirtyKeys ??= new HashSet<int>();
             _dirtyKeys.Add(GetPropertyKey(name));
             _hasDirtyFlags = true;
         }
@@ -492,8 +488,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_children == null)
-                    _children = new List<PropertyMonoBehaviour>();
+                _children ??= new List<PropertyMonoBehaviour>();
                 return _children; 
             }
         }
@@ -851,7 +846,7 @@ namespace DepictionEngine
 
         protected virtual void IterateOverChildrenAndSiblings(Action<PropertyMonoBehaviour> callback = null)
         {
-            if (SceneManager.sceneExecutionState != SceneManager.UpdateExecutionState.HierarchicalActivate)
+            if (SceneManager.sceneExecutionState != SceneManager.ExecutionState.HierarchicalActivate)
             {
                 //Apply to Siblings before Children
                 ApplyBeforeChildren(callback);
@@ -860,7 +855,7 @@ namespace DepictionEngine
             //Apply to Children
             IterateOverChildren(callback);
 
-            if (SceneManager.sceneExecutionState != SceneManager.UpdateExecutionState.HierarchicalActivate)
+            if (SceneManager.sceneExecutionState != SceneManager.ExecutionState.HierarchicalActivate)
             {
                 //Apply to Siblings after Children
                 ApplyAfterChildren(callback);
@@ -906,10 +901,7 @@ namespace DepictionEngine
             try
             {
                 if (child != Disposable.NULL)
-                {
-                    if (callback != null)
-                        callback(child);
-                }
+                    callback?.Invoke(child);
                 else
                     return true;
             }
@@ -948,9 +940,9 @@ namespace DepictionEngine
             }
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposed(disposeContext, pooled))
             {
                 if (instanceAdded && AddInstanceToManager())
                 {
@@ -962,7 +954,7 @@ namespace DepictionEngine
                     }
                 }
 
-                _propertyAssignedEvent = null;
+                PropertyAssignedEvent = null;
 
                 SetParent(null);
 

@@ -108,7 +108,7 @@ namespace DepictionEngine
         /// <summary>
         /// Dispatched when a <see cref="DepictionEngine.LoadScope"/> is Disposing.
         /// </summary>
-        public Action<LoadScope> LoadScopeDisposeEvent;
+        public Action<LoadScope> LoadScopeDisposingEvent;
 
 #if UNITY_EDITOR
         protected virtual bool GetShowWaitBetweenLoad()
@@ -190,7 +190,7 @@ namespace DepictionEngine
 
             //Problem: When undoing a "Add Component"(Loader) action done in the inspector and redoing it, some null loadScopes can be found in the LoadScope Dictionary for some reason
             //Fix: If this initialization is the result of an Undo/Redo operation, we look for null LoadScope in the Dictionary and Clear it all if we find some
-            if (!clearLoadScopes && initializingContext == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo)
+            if (!clearLoadScopes && initializingContext == InstanceManager.InitializationContext.Existing)
             {
                 if (DetectNullLoadScope())
                 {
@@ -302,7 +302,7 @@ namespace DepictionEngine
 
         private void RemovePersistentDelegates(IPersistent persistent)
         {
-            if (!Object.ReferenceEquals(persistent, null))
+            if (persistent is not null)
                 persistent.DisposedEvent -= PersistentDisposedHandler;
         }
 
@@ -319,9 +319,9 @@ namespace DepictionEngine
 
         private void RemoveLoadScopeDelegates(LoadScope loadScope)
         {
-            if (!Object.ReferenceEquals(loadScope, null))
+            if (loadScope is not null)
             {
-                loadScope.DisposeEvent -= LoadScopeDisposeHandler;
+                loadScope.DisposingEvent -= LoadScopeDisposingHandler;
                 loadScope.DisposedEvent -= LoadScopeDisposedHandler;
             }
         }
@@ -330,17 +330,16 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && loadScope != Disposable.NULL)
             {
-                loadScope.DisposeEvent += LoadScopeDisposeHandler;
+                loadScope.DisposingEvent += LoadScopeDisposingHandler;
                 loadScope.DisposedEvent += LoadScopeDisposedHandler;
             }
         }
 
-        private void LoadScopeDisposeHandler(IDisposable disposable)
+        private void LoadScopeDisposingHandler(IDisposable disposable)
         {
             LoadScope loadScope = disposable as LoadScope;
 
-            if (LoadScopeDisposeEvent != null)
-                LoadScopeDisposeEvent(loadScope);
+            LoadScopeDisposingEvent?.Invoke(loadScope);
         }
 
         private void LoadScopeDisposedHandler(IDisposable disposable)
@@ -384,8 +383,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_persistents == null)
-                    _persistents = new SerializableIPersistentList();
+                _persistents ??= new SerializableIPersistentList();
                 return _persistents;
             }
         }
@@ -650,8 +648,8 @@ namespace DepictionEngine
             {
                 if (Object.ReferenceEquals(_waitBetweenLoadTimer, value))
                     return;
-                
-                Dispose(_waitBetweenLoadTimer);
+
+                DisposeManager.Dispose(_waitBetweenLoadTimer);
 
                 _waitBetweenLoadTimer = value;
             }
@@ -665,7 +663,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_loadDelayTimer, value))
                     return;
 
-                Dispose(_loadDelayTimer);
+                DisposeManager.Dispose(_loadDelayTimer);
 
                 _loadDelayTimer = value;
             }
@@ -690,8 +688,8 @@ namespace DepictionEngine
             {
                 if (Object.ReferenceEquals(_autoReloadIntervalTimer, value))
                     return;
-                
-                Dispose(_autoReloadIntervalTimer);
+
+                DisposeManager.Dispose(_autoReloadIntervalTimer);
                 
                 _autoReloadIntervalTimer = value;
             }
@@ -898,11 +896,11 @@ namespace DepictionEngine
         /// <summary>
         /// Dispose all the <see cref="DepictionEngine.LoadScope"/>(s).
         /// </summary>
-        public void DisposeLoadScopes()
+        public void DisposeLoadScopes(DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Programmatically, DisposeManager.DisposeDelay disposeDelay = DisposeManager.DisposeDelay.None)
         {
             IterateOverLoadScopes((loadScope) =>
             {
-                DisposeLoadScope(loadScope);
+                DisposeLoadScope(loadScope, disposeContext, disposeDelay);
 
                 return true;
             });
@@ -911,27 +909,33 @@ namespace DepictionEngine
         /// <summary>
         /// Dispose the <see cref="DepictionEngine.LoadScope"/>.
         /// </summary>
-        protected void DisposeLoadScope(LoadScope loadScope)
+        protected void DisposeLoadScope(LoadScope loadScope, DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Programmatically, DisposeManager.DisposeDelay disposeDelay = DisposeManager.DisposeDelay.None)
         {
-            Dispose(loadScope, DisposeManager.DestroyDelay.Delayed);
+            Dispose(loadScope, disposeContext, disposeDelay);
         }
 
-        public override bool OnDisposing()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposing())
+            if (base.OnDisposing(disposeContext))
             {
                 KillTimers();
+
+                DisposeLoadScopes(disposeContext, DisposeManager.DisposeDelay.Delayed);
 
                 return true;
             }
             return false;
         }
 
-        public override void OnDestroy()
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            base.OnDestroy();
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                LoadScopeDisposingEvent = null;
 
-            DisposeLoadScopes();
+                return true;
+            }
+            return false;
         }
 
         [Serializable]

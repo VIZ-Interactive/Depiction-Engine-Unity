@@ -1,5 +1,6 @@
 // Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
+using System;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -8,6 +9,13 @@ namespace DepictionEngine
     public class AssetReference : ReferenceBase
     {
         private AssetBase _asset;
+
+        public override void Recycle()
+        {
+            base.Recycle();
+
+            _asset = null;
+        }
 
         protected override void DataChanged(PersistentScriptableObject newValue, PersistentScriptableObject oldValue)
         {
@@ -21,24 +29,11 @@ namespace DepictionEngine
             get { return _asset; }
             private set
             {
-                AssetBase oldValue = _asset;
-                AssetBase newValue = value;
-                if (newValue == oldValue)
+                if (_asset == value)
                     return;
 
                 _asset = value;
             }
-        }
-
-        public override bool OnDispose()
-        {
-            if (base.OnDispose())
-            {
-                asset = null;
-
-                return true;
-            }
-            return false;
         }
     }
 }

@@ -104,8 +104,7 @@ namespace DepictionEngine
 
         private void InitGrid2DIndexTerrainGridMeshObjects()
         {
-            if (_grid2DIndexTerrainGridMeshObjects == null)
-                _grid2DIndexTerrainGridMeshObjects = new Grid2DIndexTerrainGridMeshObjectDictionary[31];
+            _grid2DIndexTerrainGridMeshObjects ??= new Grid2DIndexTerrainGridMeshObjectDictionary[31];
         }
 
         protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
@@ -202,9 +201,8 @@ namespace DepictionEngine
         {
             base.InstanceAddedHandler(property);
 
-            if (property is TerrainGridMeshObject)
+            if (property is TerrainGridMeshObject terrainGridMeshObject)
             {
-                TerrainGridMeshObject terrainGridMeshObject = (TerrainGridMeshObject)property;
                 if (Object.ReferenceEquals(terrainGridMeshObject.parentGeoAstroObject, this))
                     AddTerrainGridMeshObject(terrainGridMeshObject);
             }
@@ -240,18 +238,18 @@ namespace DepictionEngine
         private void RemoveChildTerrainGridMeshObjectDelegates(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject)
         {
             grid2DIndexTerrainGridMeshObject.TerrainGridMeshObjectPropertyAssignedEvent -= ChildTerrainGridMeshObjectPropertyAssigned;
-            grid2DIndexTerrainGridMeshObject.DisposeEvent -= Grid2DIndexTerrainGridMeshObjectDisposeHandler;
+            grid2DIndexTerrainGridMeshObject.DisposingEvent -= Grid2DIndexTerrainGridMeshObjectDisposingHandler;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AddChildTerrainGridMeshObjectDelegates(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject)
         {
             grid2DIndexTerrainGridMeshObject.TerrainGridMeshObjectPropertyAssignedEvent += ChildTerrainGridMeshObjectPropertyAssigned;
-            grid2DIndexTerrainGridMeshObject.DisposeEvent += Grid2DIndexTerrainGridMeshObjectDisposeHandler;
+            grid2DIndexTerrainGridMeshObject.DisposingEvent += Grid2DIndexTerrainGridMeshObjectDisposingHandler;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Grid2DIndexTerrainGridMeshObjectDisposeHandler(IDisposable disposable)
+        private void Grid2DIndexTerrainGridMeshObjectDisposingHandler(IDisposable disposable)
         {
             Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject = disposable as Grid2DIndexTerrainGridMeshObjects;
 
@@ -268,8 +266,7 @@ namespace DepictionEngine
             {
                 RemoveChildTerrainGridMeshObjectDelegates(grid2DIndexTerrainGridMeshObject);
 
-                if (TerrainGridMeshObjectRemovedEvent != null)
-                    TerrainGridMeshObjectRemovedEvent(grid2DIndexTerrainGridMeshObject, grid2DIndexTerrainGridMeshObject.grid2DDimensions, grid2DIndexTerrainGridMeshObject.grid2DIndex);
+                TerrainGridMeshObjectRemovedEvent?.Invoke(grid2DIndexTerrainGridMeshObject, grid2DIndexTerrainGridMeshObject.grid2DDimensions, grid2DIndexTerrainGridMeshObject.grid2DIndex);
             }
         }
 
@@ -305,10 +302,8 @@ namespace DepictionEngine
                     _grid2DIndexTerrainGridMeshObjects[zoom][(Vector2Int)newValue] = grid2DIndexTerrainGridMeshObjects;
                 }
 
-                if (TerrainGridMeshObjectRemovedEvent != null)
-                    TerrainGridMeshObjectRemovedEvent(grid2DIndexTerrainGridMeshObjects, oldGrid2DDimensions, oldGrid2DIndex);
-                if (TerrainGridMeshObjectAddedEvent != null)
-                    TerrainGridMeshObjectAddedEvent(grid2DIndexTerrainGridMeshObjects, newGrid2DDimensions, newGrid2DIndex);
+                TerrainGridMeshObjectRemovedEvent?.Invoke(grid2DIndexTerrainGridMeshObjects, oldGrid2DDimensions, oldGrid2DIndex);
+                TerrainGridMeshObjectAddedEvent?.Invoke(grid2DIndexTerrainGridMeshObjects, newGrid2DDimensions, newGrid2DIndex);
             }
         }
 
@@ -329,17 +324,15 @@ namespace DepictionEngine
                 _grid2DIndexTerrainGridMeshObjects[zoom] = grid2DIndexTerrainGridMeshObjects;
             }
 
-            Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject;
             Vector2Int key = grid2DIndex;
-            if (!grid2DIndexTerrainGridMeshObjects.TryGetValue(key, out grid2DIndexTerrainGridMeshObject))
+            if (!grid2DIndexTerrainGridMeshObjects.TryGetValue(key, out Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject))
             {
                 grid2DIndexTerrainGridMeshObjects[key] = grid2DIndexTerrainGridMeshObject = instanceManager.CreateInstance<Grid2DIndexTerrainGridMeshObjects>();
                 grid2DIndexTerrainGridMeshObject.Init(grid2DDimensions, grid2DIndex);
 
                 AddChildTerrainGridMeshObjectDelegates(grid2DIndexTerrainGridMeshObject);
 
-                if (TerrainGridMeshObjectAddedEvent != null)
-                    TerrainGridMeshObjectAddedEvent(grid2DIndexTerrainGridMeshObject, grid2DDimensions, grid2DIndex);
+                TerrainGridMeshObjectAddedEvent?.Invoke(grid2DIndexTerrainGridMeshObject, grid2DDimensions, grid2DIndex);
             }
 
             if (!grid2DIndexTerrainGridMeshObject.Contains(terrainGridMeshObject))
@@ -364,9 +357,8 @@ namespace DepictionEngine
                 Grid2DIndexTerrainGridMeshObjectDictionary grid2DIndexTerrainGridMeshObjects = _grid2DIndexTerrainGridMeshObjects[zoom];
                 if (grid2DIndexTerrainGridMeshObjects != null)
                 {
-                    Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject;
                     Vector2Int key = grid2DIndex;
-                    if (grid2DIndexTerrainGridMeshObjects.TryGetValue(key, out grid2DIndexTerrainGridMeshObject))
+                    if (grid2DIndexTerrainGridMeshObjects.TryGetValue(key, out Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject))
                     {
                         if (grid2DIndexTerrainGridMeshObject.Remove(terrainGridMeshObject))
                             return true;
@@ -419,7 +411,7 @@ namespace DepictionEngine
                         Grid2DIndexTerrainGridMeshObjects firstGrid2DIndexTerrainGridMeshObject = grid2DIndexTerrainGridMeshObjectsDictionary.First().Value;
 
                         Vector2Double grid2DIndex = firstGrid2DIndexTerrainGridMeshObject.GetGrid2DIndexFromGeoCoordinate(geoCoordinate);
-                        Vector2Int grid2DIndexInt = new Vector2Int((int)Math.Truncate(grid2DIndex.x), (int)Math.Truncate(grid2DIndex.y));
+                        Vector2Int grid2DIndexInt = new((int)Math.Truncate(grid2DIndex.x), (int)Math.Truncate(grid2DIndex.y));
 
                         if (grid2DIndexTerrainGridMeshObjectsDictionary.TryGetValue(grid2DIndexInt, out Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject))
                         {
@@ -558,7 +550,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_sphericalRatioTween, value))
                     return;
 
-                Dispose(_sphericalRatioTween);
+                DisposeManager.Dispose(_sphericalRatioTween);
 
                 _sphericalRatioTween = value;
             }
@@ -817,11 +809,23 @@ namespace DepictionEngine
             return _updateCount > 2;
         }
 
-        public override bool OnDisposing()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposing())
+            if (base.OnDisposing(disposeContext))
             {
                 sphericalRatioTween = null;
+
+                return true;
+            }
+            return false;
+        }
+
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
+        {
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                TerrainGridMeshObjectAddedEvent = null;
+                TerrainGridMeshObjectRemovedEvent = null;
 
                 return true;
             }
@@ -873,8 +877,7 @@ namespace DepictionEngine
         {
             base.InitializeFields();
 
-            if (_terrainGridMeshObjects == null)
-                _terrainGridMeshObjects = new List<TerrainGridMeshObject>();
+            _terrainGridMeshObjects ??= new List<TerrainGridMeshObject>();
         }
 
         public override void UpdateAllDelegates()
@@ -916,8 +919,7 @@ namespace DepictionEngine
 
                 AddTerrainGridMeshObject(terrainGridMeshObject);
 
-                if (TerrainGridMeshObjectAddedEvent != null)
-                    TerrainGridMeshObjectAddedEvent(terrainGridMeshObject);
+                TerrainGridMeshObjectAddedEvent?.Invoke(terrainGridMeshObject);
             }
         }
 
@@ -927,8 +929,7 @@ namespace DepictionEngine
             {
                 RemoveTerrainGridMeshObject(terrainGridMeshObject);
 
-                if (TerrainGridMeshObjectRemovedEvent != null)
-                    TerrainGridMeshObjectRemovedEvent(terrainGridMeshObject);
+                TerrainGridMeshObjectRemovedEvent?.Invoke(terrainGridMeshObject);
 
                 if (_terrainGridMeshObjects.Count == 0)
                     DisposeManager.Dispose(this);
@@ -955,7 +956,7 @@ namespace DepictionEngine
             terrainGridMeshObject.PropertyAssignedEvent += TerrainGridMeshObjectPropertyAssignedHandler;
             terrainGridMeshObject.ChildAddedEvent += TerrainGridMeshObjectChildAddedHandler;
             terrainGridMeshObject.ChildRemovedEvent += TerrainGridMeshObjectChildRemovedHandler;
-            terrainGridMeshObject.DisposeEvent += TerrainGridMeshObjectDisposeHandler;
+            terrainGridMeshObject.DisposingEvent += TerrainGridMeshObjectDisposingHandler;
         }
 
         private void RemoveTerrainGridMeshObject(TerrainGridMeshObject terrainGridMeshObject)
@@ -963,28 +964,25 @@ namespace DepictionEngine
             terrainGridMeshObject.PropertyAssignedEvent -= TerrainGridMeshObjectPropertyAssignedHandler;
             terrainGridMeshObject.ChildAddedEvent -= TerrainGridMeshObjectChildAddedHandler;
             terrainGridMeshObject.ChildRemovedEvent -= TerrainGridMeshObjectChildRemovedHandler;
-            terrainGridMeshObject.DisposeEvent -= TerrainGridMeshObjectDisposeHandler;
+            terrainGridMeshObject.DisposingEvent -= TerrainGridMeshObjectDisposingHandler;
         }
 
         protected void TerrainGridMeshObjectPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
-            if (TerrainGridMeshObjectPropertyAssignedEvent != null)
-                TerrainGridMeshObjectPropertyAssignedEvent(this, name, newValue, oldValue);
+            TerrainGridMeshObjectPropertyAssignedEvent?.Invoke(this, name, newValue, oldValue);
         }
 
         protected void TerrainGridMeshObjectChildAddedHandler(Object objectBase, PropertyMonoBehaviour child)
         {
-            if (TerrainGridMeshObjectChildAddedEvent != null)
-                TerrainGridMeshObjectChildAddedEvent(objectBase, child);
+            TerrainGridMeshObjectChildAddedEvent?.Invoke(objectBase, child);
         }
 
         protected void TerrainGridMeshObjectChildRemovedHandler(Object objectBase, PropertyMonoBehaviour child)
         {
-            if (TerrainGridMeshObjectChildRemovedEvent != null)
-                TerrainGridMeshObjectChildRemovedEvent(objectBase, child);
+            TerrainGridMeshObjectChildRemovedEvent?.Invoke(objectBase, child);
         }
 
-        protected void TerrainGridMeshObjectDisposeHandler(IDisposable disposable)
+        protected void TerrainGridMeshObjectDisposingHandler(IDisposable disposable)
         {
             Remove(disposable as TerrainGridMeshObject);
         }
@@ -1051,15 +1049,30 @@ namespace DepictionEngine
             return a.grid2DDimensions.x > b.grid2DDimensions.x;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
                 _grid2DDimensions = Vector2Int.zero;
                 _grid2DIndex = Vector2Int.zero;
 
                 if (_terrainGridMeshObjects != null)
                     _terrainGridMeshObjects.Clear();
+
+                return true;
+            }
+            return false;
+        }
+
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
+        {
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                TerrainGridMeshObjectPropertyAssignedEvent = null;
+                TerrainGridMeshObjectChildAddedEvent = null;
+                TerrainGridMeshObjectChildRemovedEvent = null;
+                TerrainGridMeshObjectAddedEvent = null;
+                TerrainGridMeshObjectRemovedEvent = null;
 
                 return true;
             }

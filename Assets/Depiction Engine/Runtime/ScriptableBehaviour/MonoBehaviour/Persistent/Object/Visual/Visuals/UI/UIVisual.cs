@@ -20,7 +20,7 @@ namespace DepictionEngine
 
         public bool AddCamera(Camera camera)
         {
-            int cameraInstanceID = camera.GetInstanceID();
+            int cameraInstanceID = camera.GetCameraInstanceID();
             if (!cameras.Contains(cameraInstanceID))
             {
                 cameras.Add(cameraInstanceID);

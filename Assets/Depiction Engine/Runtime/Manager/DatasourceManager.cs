@@ -259,9 +259,14 @@ namespace DepictionEngine
             return false;
         }
 
-        public static Datasource CreateDatasource()
+        public static Datasource CreateDatasource(string name, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
         {
-            return InstanceManager.Instance().CreateInstance<Datasource>().Init();
+            JSONObject json = new()
+            {
+                [nameof(Datasource.name)] = name
+            };
+
+            return InstanceManager.Instance().CreateInstance<Datasource>(null, json, null, initializingContext).Init();
         }
     }
 }

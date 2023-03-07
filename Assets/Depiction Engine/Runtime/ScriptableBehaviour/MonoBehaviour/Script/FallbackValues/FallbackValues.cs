@@ -78,8 +78,7 @@ namespace DepictionEngine
             {
                 DisposeFallbackValuesObject();
 
-                if (_jsonCache == null)
-                    _jsonCache = new Dictionary<Type, JSONObject>();
+                _jsonCache ??= new Dictionary<Type, JSONObject>();
 
                 if (!_jsonCache.TryGetValue(type, out JSONObject fallbackValuesJson))
                 {
@@ -215,7 +214,7 @@ namespace DepictionEngine
 
         public bool GetProperty<T>(out T value, string name)
         {
-            value = default(T);
+            value = default;
             return fallbackValuesJson != null && JsonUtility.FromJson(out value, fallbackValuesJson[name]);
         }
 
@@ -267,10 +266,9 @@ namespace DepictionEngine
             }
         }
 
-        private void DisposeFallbackValuesObject()
+        private void DisposeFallbackValuesObject(DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Programmatically)
         {
-            if (!Disposable.IsDisposed(fallbackValuesObject))
-                Dispose(fallbackValuesObject is MonoBehaviour ? (fallbackValuesObject as MonoBehaviour).gameObject : fallbackValuesObject);
+            Dispose(_fallbackValuesObject is MonoBehaviour ? (_fallbackValuesObject as MonoBehaviour).gameObject : _fallbackValuesObject, disposeContext);
             fallbackValuesObject = null;
 
             _fallbackValuesObjectReferences = 0;
@@ -419,11 +417,11 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposed(disposeContext, pooled))
             {
-                DisposeFallbackValuesObject();
+                DisposeFallbackValuesObject(disposeContext);
 
                 return true;
             }

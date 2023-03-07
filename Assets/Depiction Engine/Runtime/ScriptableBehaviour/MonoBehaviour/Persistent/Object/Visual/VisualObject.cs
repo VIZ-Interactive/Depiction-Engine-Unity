@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
@@ -31,6 +32,11 @@ namespace DepictionEngine
         private static readonly double EARTH_RADIUS = MathPlus.GetRadiusFromCircumference(GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Earth));
 
         [BeginFoldout("Visual")]
+        [SerializeField, Tooltip("When enabled the visuals will be instantiated automatically when the object is created or when the dependencies change.")]
+#if UNITY_EDITOR
+        [ConditionalShow(nameof(GetShowAutoInstantiate))]
+#endif
+        private bool _autoInstantiate;
         [SerializeField, Tooltip("When enabled the child 'Visual' will not be saved as part of the Scene."), EndFoldout]
 #if UNITY_EDITOR
         [ConditionalShow(nameof(GetShowDontSaveVisualsToScene))]
@@ -59,6 +65,11 @@ namespace DepictionEngine
         private float _popupT;
 
 #if UNITY_EDITOR
+        protected virtual bool GetShowAutoInstantiate()
+        {
+            return false;
+        }
+
         protected virtual bool GetShowDontSaveVisualsToScene()
         {
             return true;
@@ -95,18 +106,35 @@ namespace DepictionEngine
         {
             base.InitializeFields(initializingContext);
 
-            if (meshRendererVisualDirtyFlags == null)
-                meshRendererVisualDirtyFlags = ScriptableObject.CreateInstance(GetMeshRendererVisualDirtyFlagType()) as VisualObjectVisualDirtyFlags;
+            bool duplicating = initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate;
 
-            if (initializingContext == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo)
-                meshRendererVisualDirtyFlags.Recreate();
+            if (duplicating || meshRendererVisualDirtyFlags == null)
+            {
+                if (duplicating)
+                    meshRendererVisualDirtyFlags = InstanceManager.Duplicate(meshRendererVisualDirtyFlags);
+                else if (meshRendererVisualDirtyFlags == null)
+                    meshRendererVisualDirtyFlags = ScriptableObject.CreateInstance(GetMeshRendererVisualDirtyFlagType()) as VisualObjectVisualDirtyFlags;
 
-            //Dont Popup if the object was duplicated or already existed
+#if UNITY_EDITOR
+                Editor.UndoManager.RegisterCreatedObjectUndo(meshRendererVisualDirtyFlags, initializingContext);
+                Editor.UndoManager.RecordObject(meshRendererVisualDirtyFlags, initializingContext);
+#endif
+                if (duplicating)
+                    meshRendererVisualDirtyFlags.Recreate();
+                else
+                    meshRendererVisualDirtyFlags.AllDirty();
+#if UNITY_EDITOR
+                Editor.UndoManager.FlushUndoRecordObjects();
+#endif
+            }
+
+            //Dont Popup if the object was duplicated or already exists
             popup = initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Programmatically;
             
             if (!popup)
                 DetectCompromisedPopup();
         }
+
 
         public override void ExplicitOnEnable()
         {
@@ -130,6 +158,7 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
+            InitValue(value => autoInstantiate = value, true, initializingContext);
             InitValue(value => dontSaveVisualsToScene = value, GetDefaultDontSaveVisualsToScene(), initializingContext);
             InitValue(value => alpha = value, GetDefaultAlpha(), initializingContext);
             InitValue(value => popupType = value, GetDefaultPopupType(), initializingContext);
@@ -216,8 +245,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_meshRenderers == null)
-                    _meshRenderers = new List<MeshRenderer>();
+                _meshRenderers ??= new List<MeshRenderer>();
                 return _meshRenderers;
             }
         }
@@ -226,9 +254,25 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_materialPropertyBlock == null)
-                    _materialPropertyBlock = new MaterialPropertyBlock();
+                _materialPropertyBlock ??= new MaterialPropertyBlock();
                 return _materialPropertyBlock; 
+            }
+        }
+
+        /// <summary>
+        /// When enabled the visuals will be instantiated automatically when the object is created or when the dependencies change.
+        /// </summary>
+        [Json]
+        public bool autoInstantiate
+        {
+            get { return _autoInstantiate; }
+            set
+            {
+                SetValue(nameof(autoInstantiate), value, ref _autoInstantiate, (newValue, oldValue) =>
+                {
+                    if (initialized && newValue)
+                        meshRendererVisualDirtyFlags.Recreate();
+                });
             }
         }
 
@@ -276,9 +320,9 @@ namespace DepictionEngine
             set
             {
 #if UNITY_EDITOR
-                //Demo the effect if the change was done in the inspector
-                if (IsUserChangeContext())
-                    _popup = true;
+                //Demo the effect if the change was done in the inspector and was not the result of "Paste Component Values".
+                if (IsUserChangeContext() && SceneManager.sceneExecutionState != SceneManager.ExecutionState.PastingComponentValues)
+                    popup = true;
 #endif
                 SetValue(nameof(popupType), value, ref _popupType);
             }
@@ -309,7 +353,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_popupTween, value))
                     return;
 
-                Dispose(_popupTween);
+                DisposeManager.Dispose(_popupTween);
 
                 _popupTween = value;
             }
@@ -503,7 +547,8 @@ namespace DepictionEngine
             {
                 UpdateMeshRendererDirtyFlags(meshRendererVisualDirtyFlags);
 
-                UpdateMeshRendererVisuals(meshRendererVisualDirtyFlags);
+                if (autoInstantiate)
+                    UpdateMeshRendererVisuals(meshRendererVisualDirtyFlags);
 
                 if (GetMeshRenderersInitialized())
                 {
@@ -608,7 +653,7 @@ namespace DepictionEngine
             Shader shader = RenderingManager.LoadShader(shaderPath);
             if (material == null || material.shader != shader)
             {
-                Dispose(material);
+                DisposeManager.Dispose(material);
                 material = InstantiateMaterial(shader);
             }
 
@@ -669,24 +714,23 @@ namespace DepictionEngine
             });
         }
 
-        protected virtual T CreateMeshRendererVisual<T>(string name = null, Transform parent = null) where T : MeshRendererVisual
+        protected Visual GetVisual(int index)
         {
-            return CreateVisual<T>(name, parent);
+            Visual visual = null;
+            if (index < transform.children.Count)
+                visual = transform.children[index] as Visual;
+            return visual;
         }
 
-        protected virtual MeshRendererVisual CreateMeshRendererVisual(Type type, string name = null, Transform parent = null)
+        protected MeshRendererVisual CreateMeshRendererVisual(Type type, string name = null, Transform parent = null)
         {
-            return CreateVisual(type, name, parent) as MeshRendererVisual;
-        }
-
-        protected T CreateVisual<T>(string name = null, Transform parent = null, List<PropertyModifier> propertyModifers = null) where T : Visual
-        {
-            return (T)CreateVisual(typeof(T), name, parent, propertyModifers);
+            return typeof(MeshRendererVisual).IsAssignableFrom(type) ? CreateVisual(type, name, parent) as MeshRendererVisual : null;
         }
 
         protected Visual CreateVisual(Type type, string name = null, Transform parent = null, List<PropertyModifier> propertyModifers = null)
         {
-            return CreateChild(type, name, parent, InstanceManager.InitializationContext.Programmatically, propertyModifers) as Visual;
+            Debug.Log(name);
+            return typeof(Visual).IsAssignableFrom(type) ? CreateChild(type, name, parent, InstanceManager.InitializationContext.Programmatically, propertyModifers) as Visual : null;
         }
 
         public void AddAllChildMeshRenderers()
@@ -738,7 +782,7 @@ namespace DepictionEngine
             Vector3Double closestGeoAstroObjectCenterOS = Vector3Double.zero;
             Vector3Double closestGeoAstroObjectCenterWS = Vector3Double.zero;
 
-            Vector3Double shadowPositionWS = new Vector3Double(0.0d, -10000000000000000.0d, 0.0d);
+            Vector3Double shadowPositionWS = new(0.0d, -10000000000000000.0d, 0.0d);
             QuaternionDouble shadowDirectionWS = QuaternionDouble.identity;
             float shadowAttenuationDistance = 100000000000.0f;
 
@@ -780,12 +824,10 @@ namespace DepictionEngine
                 }
                 edgePosition += closestGeoAstroObjectCenterWS;
 
-                if (_shadowRay == null)
-                    _shadowRay = new RayDouble();
+                _shadowRay ??= new RayDouble();
                 _shadowRay.Init(starPosition, (edgePosition - starPosition).normalized);
 
-                Vector3Double intersection;
-                if (Vector3Double.Dot(upVector, forwardVector) <= 0.0d && MathGeometry.LinePlaneIntersection(out intersection, surfacePoint, QuaternionDouble.LookRotation(upVector, (surfacePoint - starPosition).normalized) * QuaternionDouble.Euler(90.0d, 0.0d, 0.0d) * Vector3Double.forward, _shadowRay, false))
+                if (Vector3Double.Dot(upVector, forwardVector) <= 0.0d && MathGeometry.LinePlaneIntersection(out Vector3Double intersection, surfacePoint, QuaternionDouble.LookRotation(upVector, (surfacePoint - starPosition).normalized) * QuaternionDouble.Euler(90.0d, 0.0d, 0.0d) * Vector3Double.forward, _shadowRay, false))
                 {
                     shadowPositionWS = intersection;
                     shadowDirectionWS = closestGeoAstroObject.GetUpVectorFromPoint(edgePosition);
@@ -840,7 +882,7 @@ namespace DepictionEngine
                         SetFloatToMaterial("_InnerRadius", (float)geoAstroObjectRadius, material, materialPropertyBlock);
                         SetFloatToMaterial("_InnerRadius2", (float)geoAstroObjectRadius * (float)geoAstroObjectRadius, material, materialPropertyBlock);
 
-                        Vector3 invWaveLength4 = new Vector3(1.0f / Mathf.Pow(effect.waveLength.r, 4.0f), 1.0f / Mathf.Pow(effect.waveLength.g, 4.0f), 1.0f / Mathf.Pow(effect.waveLength.b, 4.0f));
+                        Vector3 invWaveLength4 = new(1.0f / Mathf.Pow(effect.waveLength.r, 4.0f), 1.0f / Mathf.Pow(effect.waveLength.g, 4.0f), 1.0f / Mathf.Pow(effect.waveLength.b, 4.0f));
                         SetVectorToMaterial("_InvWavelength", invWaveLength4, material, materialPropertyBlock);
 
                         float atmosphereScale = (float)(1.0d / effect.GetAtmosphereAltitude());
@@ -877,32 +919,32 @@ namespace DepictionEngine
             SetColorToMaterial("_BaseColor", color, material, materialPropertyBlock);
         }
 
-        protected void SetFloatToMaterial(string name, float value, Material material, MaterialPropertyBlock materialPropertyBlock)
+        protected void SetFloatToMaterial(string name, float value, Material material, MaterialPropertyBlock _)
         {
             material.SetFloat(name, value);
         }
 
-        protected void SetIntToMaterial(string name, int value, Material material, MaterialPropertyBlock materialPropertyBlock)
+        protected void SetIntToMaterial(string name, int value, Material material, MaterialPropertyBlock _)
         {
             material.SetInt(name, value);
         }
 
-        protected void SetColorToMaterial(string name, Color value, Material material, MaterialPropertyBlock materialPropertyBlock)
+        protected void SetColorToMaterial(string name, Color value, Material material, MaterialPropertyBlock _)
         {
             material.SetColor(name, value);
         }
 
-        protected void SetVectorToMaterial(string name, Vector4 value, Material material, MaterialPropertyBlock materialPropertyBlock)
+        protected void SetVectorToMaterial(string name, Vector4 value, Material material, MaterialPropertyBlock _)
         {
             material.SetVector(name, value);
         }
 
-        protected void SetVectorToMaterial(string name, Vector3 value, Material material, MaterialPropertyBlock materialPropertyBlock)
+        protected void SetVectorToMaterial(string name, Vector3 value, Material material, MaterialPropertyBlock _)
         {
             material.SetVector(name, value);
         }
 
-        protected void SetVectorToMaterial(string name, Vector2 value, Material material, MaterialPropertyBlock materialPropertyBlock)
+        protected void SetVectorToMaterial(string name, Vector2 value, Material material, MaterialPropertyBlock _)
         {
             material.SetVector(name, value);
         }
@@ -912,7 +954,7 @@ namespace DepictionEngine
             SetTextureToMaterial(name, value != Disposable.NULL ? value.unityTexture : defaultTexture, material, materialPropertyBlock);
         }
 
-        protected void SetTextureToMaterial(string name, UnityEngine.Texture value, Material material, MaterialPropertyBlock materialPropertyBlock)
+        protected void SetTextureToMaterial(string name, UnityEngine.Texture value, Material material, MaterialPropertyBlock _)
         {
             if (value != null)
                 material.SetTexture(name, value);
@@ -941,9 +983,9 @@ namespace DepictionEngine
         /// <summary>
         /// Dispose all children visuals.
         /// </summary>
-        /// <param name="destroyDelay"></param>
+        /// <param name="disposeDelay"></param>
         /// <returns></returns>
-        protected bool DisposeAllChildren(DisposeManager.DestroyDelay destroyDelay = DisposeManager.DestroyDelay.None)
+        protected virtual bool DisposeAllChildren(DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Programmatically, DisposeManager.DisposeDelay disposeDelay = DisposeManager.DisposeDelay.None)
         {
             if (initialized && transform != null)
             {
@@ -951,7 +993,7 @@ namespace DepictionEngine
                 {
                     Transform child = transform.transform.GetChild(i);
                     if (child != null)
-                        Dispose(child.gameObject, destroyDelay);
+                        Dispose(child.gameObject, disposeContext, disposeDelay);
                 }
 
                 return true;
@@ -959,25 +1001,27 @@ namespace DepictionEngine
             return false;
         }
 
-        public override bool OnDisposing()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposing())
+            if (base.OnDisposing(disposeContext))
             {
                 popupTween = null;
+
+                //We dispose the visuals manualy in case only the Component is disposed and not the entire GameObject and its children
+                //The delay is required during a Dispose of the Object since we do not know wether it is only the Component being disposed or the entire GameObject. 
+                //If the Entire GameObject is being disposed in the Editor then some Destroy Undo operations will be registered by the Editor automaticaly. By the time the delayed dispose will be performed the children will already be Destroyed and we will not register additional Undo Operations
+                DisposeAllChildren(disposeContext, DisposeManager.DisposeDelay.Delayed);
 
                 return true;
             }
             return false;
         }
 
-        public override bool OnDispose()
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            if (base.OnDispose())
+            if (base.OnDisposed(disposeContext, pooled))
             {
-                //We dispose the visuals manualy in case only the Component is disposed and not the entire GameObject and its children
-                //The delay is required during a Dispose of the Object since we do not know wether it is only the Component being disposed or the entire GameObject. 
-                //If the Entire GameObject is being disposed in the Editor then some Destroy Undo operations will be registered by the Editor automaticaly. By the time the delayed dispose will be performed the children will already be Destroyed and we will not register additional Undo Operations
-                DisposeAllChildren(DisposeManager.DestroyDelay.Delayed);
+                Dispose(_meshRendererVisualDirtyFlags, disposeContext);
 
                 return true;
             }

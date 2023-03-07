@@ -64,7 +64,7 @@ namespace DepictionEngine.Editor
                         persistentTypes.AddRange(GetAllTypeThatInheritType(typeof(PersistentScriptableObject)));
                         persistentTypes.AddRange(GetAllTypeThatInheritType(typeof(Script)));
 
-                        List<string> instanceTypes = new List<string>();
+                        List<string> instanceTypes = new();
 
                         foreach (Type type in persistentTypes)
                         {

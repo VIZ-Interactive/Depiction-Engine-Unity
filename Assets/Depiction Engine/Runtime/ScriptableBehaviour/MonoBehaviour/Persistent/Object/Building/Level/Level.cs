@@ -71,7 +71,7 @@ namespace DepictionEngine
             {
                 if (localPositionParam.changed)
                 {
-                    Vector3Double localPosition = new Vector3Double(0.0d, groundY, 0.0d);
+                    Vector3Double localPosition = new(0.0d, groundY, 0.0d);
                     if (!localPositionParam.isGeoCoordinate)
                         localPositionParam.SetValue(localPosition);
                     else
@@ -273,7 +273,7 @@ namespace DepictionEngine
             {
                 Interior interior = this.interior;
                 if (interior != Disposable.NULL)
-                    interior.gameObjectActiveSelf = showInteriorOnOpenOnly ? IsOpened() : true;
+                    interior.gameObjectActiveSelf = !showInteriorOnOpenOnly || IsOpened();
             }
         }
     }

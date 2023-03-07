@@ -106,8 +106,7 @@ namespace DepictionEngine
         {
             base.UpdateMeshRendererVisualModifiers(completedCallback, meshRendererVisualDirtyFlags);
 
-            if (completedCallback != null)
-                completedCallback(meshRendererVisualDirtyFlags);
+            completedCallback?.Invoke(meshRendererVisualDirtyFlags);
         }
 
         protected override void ModifyMesh(MeshRendererVisualModifier meshRendererVisualModifier, Mesh mesh, Action meshModified, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags, bool disposeMeshModifier = true)
@@ -127,13 +126,20 @@ namespace DepictionEngine
             base.InitializeMaterial(meshRendererVisual, material);
         }
 
-        public override void OnDestroy()
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            base.OnDestroy();
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                if (!pooled)
+                {
+                    Dispose(_floorMaterial, disposeContext);
+                    Dispose(_wallsMaterial, disposeContext);
+                    Dispose(_ceilingMaterial, disposeContext);
+                }
 
-            Dispose(_floorMaterial);
-            Dispose(_wallsMaterial);
-            Dispose(_ceilingMaterial);
+                return true;
+            }
+            return false;
         }
     }
 
@@ -141,6 +147,11 @@ namespace DepictionEngine
     {
         public static void ParseJSON(JSONNode json, LevelModifier levelModifier, CancellationTokenSource cancellationTokenSource)
         {
+            if (cancellationTokenSource is null)
+            {
+                throw new ArgumentNullException(nameof(cancellationTokenSource));
+            }
+
             AddMeshModifierToData(levelModifier.meshObjectProcessorOutput, json["floorBuffers"], LevelMeshObject.FLOOR_MESH_RENDERER_VISUAL_NAME);
             AddMeshModifierToData(levelModifier.meshObjectProcessorOutput, json["wallsBuffers"], LevelMeshObject.WALLS_MESH_RENDERER_VISUAL_NAME);
             AddMeshModifierToData(levelModifier.meshObjectProcessorOutput, json["ceilingBuffers"], LevelMeshObject.CEILING_MESH_RENDERER_VISUAL_NAME, true);
@@ -200,9 +211,9 @@ namespace DepictionEngine
             }
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
                 DisposeManager.Dispose(meshObjectProcessorOutput);
 

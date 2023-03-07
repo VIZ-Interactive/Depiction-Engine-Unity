@@ -103,7 +103,7 @@ namespace DepictionEngine
 
         private void InputManagerOnMouseClicked(RaycastHitDouble hit)
         {
-            MeshRendererVisual meshRendererVisual = hit != null ? hit.meshRendererVisual : null;
+            MeshRendererVisual meshRendererVisual = hit?.meshRendererVisual;
 
             if (meshRendererVisual != Disposable.NULL && meshRendererVisual.visualObject.parentGeoAstroObject != Disposable.NULL && target != Disposable.NULL)
             {
@@ -275,8 +275,8 @@ namespace DepictionEngine
             {
                 if (Object.ReferenceEquals(_distanceTween, value))
                     return;
-                
-                Dispose(_distanceTween);
+
+                DisposeManager.Dispose(_distanceTween);
 
                 _distanceTween = value;
             }
@@ -289,8 +289,8 @@ namespace DepictionEngine
             {
                 if (Object.ReferenceEquals(_inertiaTween, value))
                     return;
-                
-                Dispose(_inertiaTween);
+
+                DisposeManager.Dispose(_inertiaTween);
 
                 _inertiaTween = value;
             }
@@ -379,7 +379,7 @@ namespace DepictionEngine
                     {
                         double fromDistance = base.distance;
 
-                        AnimationCurve animationCurve = new AnimationCurve();
+                        AnimationCurve animationCurve = new();
                         animationCurve.AddKey(new Keyframe(0.0f, (float)fromDistance));
                         animationCurve.AddKey(new Keyframe(0.5f, (float)Math.Max(Vector3Double.Distance(targetTransform.position, position) * 0.5d, fromDistance + (toDistance - fromDistance) * 0.5d)));
                         animationCurve.AddKey(new Keyframe(1.0f, (float)toDistance));
@@ -528,8 +528,7 @@ namespace DepictionEngine
                     {
                         StopAllAnimation();
 
-                        if (_collisionSnapshot == null)
-                            _collisionSnapshot = new CollisionSnapShot();
+                        _collisionSnapshot ??= new CollisionSnapShot();
                         if (!_collisionSnapshot.ready)
                         {
                             RaycastHitDouble[] hits = PhysicsDouble.TerrainFiltered(PhysicsDouble.CameraRaycastAll(camera, screenPoint, (float)raycastMaxDistance), camera);
@@ -546,8 +545,7 @@ namespace DepictionEngine
                             }
                         }
 
-                        Vector3Double newCollisionPosition;
-                        if (_collisionSnapshot.ready && _collisionSnapshot.GetNewLocalPosition(out newCollisionPosition, screenPoint))
+                        if (_collisionSnapshot.ready && _collisionSnapshot.GetNewLocalPosition(out Vector3Double newCollisionPosition, screenPoint))
                         {
                             newPosition = targetParentGeoAstroObject.transform.TransformPoint(newCollisionPosition);
                             SetInertia(newPosition.Value - targetTransform.position);
@@ -641,9 +639,9 @@ namespace DepictionEngine
             return closestHit != null && closestHit.transform != Disposable.NULL && closestHit.transform.objectBase != Disposable.NULL && closestHit.transform.objectBase is UIBase;
         }
 
-        public override bool OnDisposing()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposing())
+            if (base.OnDisposing(disposeContext))
             {
                 inertiaTween = null;
                 distanceTween = null;
@@ -655,7 +653,7 @@ namespace DepictionEngine
 
         private class CollisionSnapShot
         {
-            private static readonly Vector3Double MIRROR_VECTOR = new Vector3Double(-1.0d, 1.0d, -1.0d);
+            private static readonly Vector3Double MIRROR_VECTOR = new(-1.0d, 1.0d, -1.0d);
 
             private bool _ready;
 

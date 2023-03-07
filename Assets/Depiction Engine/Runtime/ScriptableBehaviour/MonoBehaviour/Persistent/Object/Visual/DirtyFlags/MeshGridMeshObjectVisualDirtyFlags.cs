@@ -7,30 +7,30 @@ namespace DepictionEngine
     public class MeshGridMeshObjectVisualDirtyFlags : FeatureGridMeshObjectVisualDirtyFlags
     {
         [SerializeField]
-        private UnityEngine.Mesh[] _unityMeshes;
+        private AssetBase _asset;
 
         public override void Recycle()
         {
             base.Recycle();
 
-            _unityMeshes = null;
+            _asset = null;
         }
 
-        public UnityEngine.Mesh[] unityMeshes
+        public AssetBase asset
         {
-            get { return _unityMeshes; }
+            get { return _asset; }
             set
             {
-                if (_unityMeshes == value)
+                if (_asset == value)
                     return;
 
-                _unityMeshes = value;
+                _asset = value;
              
-                UnityMeshesChanged();
+                AssetChanged();
             }
         }
 
-        public void UnityMeshesChanged()
+        public void AssetChanged()
         {
             isDirty = true;
         }

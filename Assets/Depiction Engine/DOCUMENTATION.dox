@@ -98,17 +98,12 @@
  *
  * - __Disposing / Destroying__ \n 
  * \n 
- *    Whether pooled or destroyed OnDisposing, OnDispose and OnDisposed will always be called, however OnDestroy will be called only when the object is destroyed and not when pooled. \n 
+ *    Whether pooled or destroyed OnDisposing and OnDisposed will always be called. \n 
  * \n 
  *   + **OnDisposing**: \n 
  *     `DepictionEngine.IDisposable.OnDisposing`
- *   + **OnDispose**: \n 
- *     `DepictionEngine.IDisposable.OnDispose`
  *   + **OnDisposed**: \n 
  *     `DepictionEngine.MonoBehaviourDisposable.OnDisposed` `DepictionEngine.ScriptableObjectDisposable.OnDisposed` `DepictionEngine.Disposable.OnDisposed` \n 
- *    \n 
- *   + **OnDestroy**: \n 
- *     `DepictionEngine.IScriptableBehaviour.OnDestroy`
  * .
  *
  *

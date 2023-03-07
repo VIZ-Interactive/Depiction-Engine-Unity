@@ -37,8 +37,8 @@ namespace DepictionEngine
                                 json.Add(itemJson);
                         }
                     }
-                    else if (obj is bool)
-                        json = new JSONBool((bool)obj);
+                    else if (obj is bool boolean)
+                        json = new JSONBool(boolean);
                     else if (obj is uint || obj is int || obj is double || obj is float)
                         json = new JSONNumber(Convert.ToDouble(obj));
                     else if (obj is string || obj is SerializableGuid || obj is Guid)
@@ -72,7 +72,7 @@ namespace DepictionEngine
             }
             else
             {
-                value = default(T);
+                value = default;
                 return false;
             }
         }
@@ -150,14 +150,10 @@ namespace DepictionEngine
                                 if (jsonStr.StartsWith("PPtr<$"))
                                     jsonStr = jsonStr.Substring(6, jsonStr.Length - 7);
 
-                                if (parsedValue == null)
-                                    parsedValue = Type.GetType(jsonStr);
-                                if (parsedValue == null)
-                                    parsedValue = Type.GetType("System." + jsonStr);
-                                if (parsedValue == null)
-                                    parsedValue = Type.GetType(typeof(JsonUtility).Namespace + "." + jsonStr);
-                                if (parsedValue == null)
-                                    parsedValue = Type.GetType("UnityEngine." + jsonStr + ", UnityEngine");
+                                parsedValue ??= Type.GetType(jsonStr);
+                                parsedValue ??= Type.GetType("System." + jsonStr);
+                                parsedValue ??= Type.GetType(typeof(JsonUtility).Namespace + "." + jsonStr);
+                                parsedValue ??= Type.GetType("UnityEngine." + jsonStr + ", UnityEngine");
                                 if (parsedValue == null)
                                 {
                                     switch (jsonStr)
@@ -321,7 +317,7 @@ namespace DepictionEngine
                                             JSONNode filterNode = GetFilterNode(filter, name);
                                             if (property is ICollection)
                                             {
-                                                JSONArray jsonArray = new JSONArray();
+                                                JSONArray jsonArray = new();
                                                 ICollection collection = property as ICollection;
                                                 foreach (object propertyItem in collection)
                                                     jsonArray.Add(GetJson(iJson, propertyItem, outOfSynchDatasource, filterNode));
@@ -350,7 +346,7 @@ namespace DepictionEngine
                 filter = filter[propertyName];
                 if (filter.IsArray)
                 {
-                    JSONObject mergedFilter = new JSONObject();
+                    JSONObject mergedFilter = new();
 
                     foreach (JSONNode filterChild in filter.AsArray)
                     {

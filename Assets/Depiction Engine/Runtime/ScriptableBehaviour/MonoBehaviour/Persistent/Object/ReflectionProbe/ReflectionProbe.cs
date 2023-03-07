@@ -90,16 +90,8 @@ namespace DepictionEngine
         {
             if (base.UpdateHideFlags())
             {
-                bool debug = false;
-
-                if (!SceneManager.IsSceneBeingDestroyed())
-                    debug = sceneManager.debug;
-
-                if (!debug)
-                {
-                    if (reflectionProbe != null)
-                        reflectionProbe.hideFlags = HideFlags.HideInInspector;
-                }
+                if (!SceneManager.Debugging() && reflectionProbe != null)
+                    reflectionProbe.hideFlags = HideFlags.HideInInspector;
 
                 return true;
             }

@@ -15,9 +15,6 @@ namespace DepictionEngine
 
         public static Component AddSafeComponent(this GameObject go, Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
-            if (initializingContext == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo)
-                initializingContext = InstanceManager.InitializationContext.Editor;
-
             Component component = null;
 
             InstanceManager.InitializingContext(() => 
@@ -85,7 +82,7 @@ namespace DepictionEngine
             return GetDisposableInComponents(go, go.GetComponents<Component>());
         }
 
-        public static IDisposable GetDisposableInComponents(this GameObject go, Component[] components)
+        public static IDisposable GetDisposableInComponents(this GameObject _, Component[] components)
         {
             foreach (Component component in components)
             {

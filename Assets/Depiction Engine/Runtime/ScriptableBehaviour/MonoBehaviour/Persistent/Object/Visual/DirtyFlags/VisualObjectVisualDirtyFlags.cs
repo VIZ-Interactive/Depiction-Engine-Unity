@@ -13,12 +13,12 @@ namespace DepictionEngine
         private int[] _cameraInstanceIds;
         [SerializeField]
         private bool _isDirty;
+        [SerializeField]
+        private bool _disposeAllVisuals;
 
         private bool _colliderTypeDirty;
 
         private bool _disableMultithreading;
-
-        private bool _disposeAllVisuals;
 
         public virtual void Recycle()
         {

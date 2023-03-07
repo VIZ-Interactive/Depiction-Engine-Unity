@@ -165,7 +165,7 @@ namespace DepictionEngine
         /// <returns>The newly created <see cref="DepictionEngine.JSONArray"/> containing the components initialization values.</returns>
         public static JSONArray GetLoaderJson(Type loaderType, Type fallbackType)
         {
-            JSONArray components = new JSONArray();
+            JSONArray components = new();
 
             SerializableGuid fallbackValuesId = SerializableGuid.NewGuid();
 
@@ -180,11 +180,10 @@ namespace DepictionEngine
 
             if (typeof(Object).IsAssignableFrom(fallbackType))
             {
-                if (_requiredComponentTypes == null)
-                    _requiredComponentTypes = new List<Type>();
+                _requiredComponentTypes ??= new List<Type>();
                 MemberUtility.GetRequiredComponentTypes(ref _requiredComponentTypes, fallbackType);
 
-                List<SerializableGuid> assetReferencesFallbackValuesId = new List<SerializableGuid>();
+                List<SerializableGuid> assetReferencesFallbackValuesId = new();
 
                 foreach (Type type in _requiredComponentTypes)
                 {
@@ -215,10 +214,12 @@ namespace DepictionEngine
         /// <param name="type">The component type.</param>
         /// <param name="id">An Optional component id. If ommited a new guid will be generated.</param>
         /// <returns>The newly create <see cref="DepictionEngine.JSONObject"/> containing the component initialization values.</returns>
-        public static JSONObject GetComponentJson(Type type, SerializableGuid id = default(SerializableGuid))
+        public static JSONObject GetComponentJson(Type type, SerializableGuid id = default)
         {
-            JSONObject json = new JSONObject();
-            json[nameof(Object.type)] = JsonUtility.ToJson(type);
+            JSONObject json = new()
+            {
+                [nameof(Object.type)] = JsonUtility.ToJson(type)
+            };
             if (id == SerializableGuid.Empty)
                 id = SerializableGuid.NewGuid();
             json[nameof(Object.id)] = JsonUtility.ToJson(id);

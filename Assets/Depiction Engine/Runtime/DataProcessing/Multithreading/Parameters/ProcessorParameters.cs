@@ -16,8 +16,7 @@ namespace DepictionEngine
         {
             base.Initializing();
 
-            if (_locked == null)
-                _locked = new List<MultithreadSafeScriptableObject>();
+            _locked ??= new List<MultithreadSafeScriptableObject>();
         }
 
         public ProcessorParameters Init(CancellationTokenSource cancellationTokenSource, Processor.ProcessingType processingType)
@@ -43,9 +42,9 @@ namespace DepictionEngine
             _locked.Add(multithreaded);
             multithreaded.locked = true;
         }
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposed(disposeContext, pooled))
             {
                 foreach (MultithreadSafeScriptableObject multithreaded in _locked)
                     multithreaded.locked = false;

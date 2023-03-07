@@ -46,7 +46,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_groundSnapOffsetTween, value))
                     return;
 
-                Dispose(_groundSnapOffsetTween);
+                DisposeManager.Dispose(_groundSnapOffsetTween);
 
                 _groundSnapOffsetTween = value;
             }

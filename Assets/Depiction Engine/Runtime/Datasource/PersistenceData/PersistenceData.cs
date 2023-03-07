@@ -90,7 +90,7 @@ namespace DepictionEngine
 
         protected virtual bool RemovePersistentDelegates(IPersistent persistent)
         {
-            if (!Object.ReferenceEquals(persistent, null))
+            if (persistent is not null)
             {
                 persistent.DisposedEvent -= PersistentDisposedHandler;
                 persistent.PropertyAssignedEvent -= PersistentPropertyAssignedHandler;
@@ -138,8 +138,7 @@ namespace DepictionEngine
             if (name == nameof(PersistentMonoBehaviour.autoDispose))
                 UpdateCanBeAutoDisposed();
 
-            if (PropertyAssignedEvent != null)
-                PropertyAssignedEvent(property, name, newValue, oldValue);
+            PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
         }
 
         private void PersistentUserPropertyAssignedHandler(IJson iJson, PropertyInfo propertyInfo)
@@ -153,20 +152,17 @@ namespace DepictionEngine
 
         private void PersistenceSaveOperationHandler(IPersistent persistent, Action callback)
         {
-            if (PersistenceOperationEvent != null)
-                PersistenceOperationEvent(Datasource.OperationType.Save, persistent, callback);
+            PersistenceOperationEvent?.Invoke(Datasource.OperationType.Save, persistent, callback);
         }
 
         private void PersistenceSynchronizeOperationHandler(IPersistent persistent, Action callback)
         {
-            if (PersistenceOperationEvent != null)
-                PersistenceOperationEvent(Datasource.OperationType.Synchronize, persistent, callback);
+            PersistenceOperationEvent?.Invoke(Datasource.OperationType.Synchronize, persistent, callback);
         }
 
         private void PersistenceDeleteOperationHandler(IPersistent persistent, Action callback)
         {
-            if (PersistenceOperationEvent != null)
-                PersistenceOperationEvent(Datasource.OperationType.Delete, persistent, callback);
+            PersistenceOperationEvent?.Invoke(Datasource.OperationType.Delete, persistent, callback);
         }
 
         public Datasource datasource
@@ -253,8 +249,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_outOfSyncDictionary == null)
-                    _outOfSyncDictionary = new OutOfSyncDictionary();
+                _outOfSyncDictionary ??= new OutOfSyncDictionary();
                 return _outOfSyncDictionary; 
             }
         }
@@ -289,8 +284,7 @@ namespace DepictionEngine
             { 
                 SetValue(nameof(canBeAutoDisposed), value, ref _canBeAutoDisposed, (oldValue, newValue) => 
                 {
-                    if (CanBeAutoDisposedChangedEvent != null)
-                        CanBeAutoDisposedChangedEvent(this);
+                    CanBeAutoDisposedChangedEvent?.Invoke(this);
                 }); 
             }
         }
@@ -336,7 +330,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetAllSync(IJson iJson = null)
         {
-            if (Object.ReferenceEquals(iJson, null))
+            if (iJson is null)
             {
                 outOfSyncDictionary.Clear();
 
@@ -412,6 +406,19 @@ namespace DepictionEngine
             }
 
             return true;
+        }
+
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
+        {
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                PropertyAssignedEvent = null;
+                PersistenceOperationEvent = null;
+                CanBeAutoDisposedChangedEvent = null;
+
+                return true;
+            }
+            return false;
         }
     }
 }

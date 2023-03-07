@@ -43,9 +43,10 @@ namespace DepictionEngine
 
         protected virtual JSONObject GetDataJson()
         {
-            JSONObject json = new JSONObject();
-
-            json["type"] = GetType().FullName;
+            JSONObject json = new()
+            {
+                ["type"] = GetType().FullName
+            };
 
             return json;
         }
@@ -72,7 +73,7 @@ namespace DepictionEngine
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             for (int i = 0; i < geometries.Length; i++)
             {
                 sb.Append(geometries[i]);
@@ -112,7 +113,7 @@ namespace DepictionEngine
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             for (int i = 0; i < _polygons.Length; i++)
             {
                 sb.Append(_polygons[i]);
@@ -222,9 +223,7 @@ namespace DepictionEngine
             for (int i = 0; i < latitudeLongitude.Length / 2; i++)
             {
                 int index = i * 2;
-                double tmp = latitudeLongitude[index];
-                latitudeLongitude[index] = latitudeLongitude[index + 1];
-                latitudeLongitude[index + 1] = tmp;
+                (latitudeLongitude[index + 1], latitudeLongitude[index]) = (latitudeLongitude[index], latitudeLongitude[index + 1]);
             }
         }
 
@@ -242,7 +241,7 @@ namespace DepictionEngine
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             for (int i = 0; i < latitudeLongitude.Length; i += 2)
             {
                 sb.Append("Lat: ");
@@ -278,7 +277,7 @@ namespace DepictionEngine
     [Serializable]
     public struct SphericalBBox
     {
-        public static SphericalBBox empty = new SphericalBBox(new VectorPolygon(new List<Vector3>()));
+        public static SphericalBBox empty = new(new VectorPolygon(new List<Vector3>()));
       
         [SerializeField]
         private Vector2 _center;
@@ -329,7 +328,7 @@ namespace DepictionEngine
 
     public class OSMColors
     {
-        private static Dictionary<string, string> w3cColors = new Dictionary<string, string>()
+        private static Dictionary<string, string> w3cColors = new()
             {
                 { "aliceblue", "#f0f8ff" },
                 { "antiquewhite", "#faebd7" },
@@ -486,8 +485,7 @@ namespace DepictionEngine
             if (!string.IsNullOrEmpty(str))
             {
                 str = str.ToLower();
-                string w3cColor;
-                if (str[0] != '#' && w3cColors.TryGetValue(str, out w3cColor))
+                if (str[0] != '#' && w3cColors.TryGetValue(str, out string w3cColor))
                     str = w3cColor;
 
                 if (!string.IsNullOrEmpty(str))

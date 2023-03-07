@@ -26,10 +26,10 @@ namespace DepictionEngine
         /// The initialization was triggered programmatically and the object is a duplicate. <br/><br/>
         /// <b><see cref="Editor"/>:</b> <br/>
         /// The initialization was triggered in the editor. <br/><br/>
-        /// <b><see cref="Existing_Or_Editor_UndoRedo"/>:</b> <br/>
-        /// The initialization was triggered by a loading scene or was triggered in the editor as a result of an undo or redo action. <br/><br/>
         /// <b><see cref="Editor_Duplicate"/>:</b> <br/>
         /// The initialization was triggered in the editor and the object is a duplicate. Duplication can come from a copy paste / duplicate menu item or draging droping of a component. <br/><br/>
+        /// <b><see cref="Existing"/>:</b> <br/>
+        /// The initialization was triggered by a loading scene or was triggered in the editor as a result of an undo or redo action. <br/><br/>
         /// <b><see cref="Reset"/>:</b> <br/>
         /// The object properties are reseted to their default values.
         /// </summary> 
@@ -39,8 +39,8 @@ namespace DepictionEngine
             Programmatically,
             Programmatically_Duplicate,
             Editor,
-            Existing_Or_Editor_UndoRedo,
             Editor_Duplicate,
+            Existing,
             Reset
         };
 
@@ -156,8 +156,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_transforms == null)
-                    _transforms = new TransformDictionary();
+                _transforms ??= new TransformDictionary();
                 return _transforms;
             }
         }
@@ -170,8 +169,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_persistentMonoBehaviours == null)
-                    _persistentMonoBehaviours = new PersistentMonoBehaviourDictionary();
+                _persistentMonoBehaviours ??= new PersistentMonoBehaviourDictionary();
                 return _persistentMonoBehaviours;
             }
         }
@@ -184,8 +182,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_persistentScriptableObjects == null)
-                    _persistentScriptableObjects = new PersistentScriptableObjectDictionary();
+                _persistentScriptableObjects ??= new PersistentScriptableObjectDictionary();
                 return _persistentScriptableObjects;
             }
         }
@@ -198,8 +195,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_terrainGridMeshObjects == null)
-                    _terrainGridMeshObjects = new TerrainGridMeshObjectDictionary();
+                _terrainGridMeshObjects ??= new TerrainGridMeshObjectDictionary();
                 return _terrainGridMeshObjects; 
             }
         }
@@ -212,8 +208,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_astroObjects == null)
-                    _astroObjects = new AstroObjectDictionary();
+                _astroObjects ??= new AstroObjectDictionary();
                 return _astroObjects; 
             }
         }
@@ -226,8 +221,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_starSystems == null)
-                    _starSystems = new List<StarSystem>();
+                _starSystems ??= new List<StarSystem>();
                 return _starSystems; 
             }
         }
@@ -240,8 +234,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_stars == null)
-                    _stars = new List<Star>();
+                _stars ??= new List<Star>();
                 return _stars; 
             }
         }
@@ -254,8 +247,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_visualObjects == null)
-                    _visualObjects = new VisualObjectDictionary();
+                _visualObjects ??= new VisualObjectDictionary();
                 return _visualObjects; 
             }
         }
@@ -268,8 +260,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_animators == null)
-                    _animators = new AnimatorDictionary();
+                _animators ??= new AnimatorDictionary();
                 return _animators; 
             }
         }
@@ -282,8 +273,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_controllers == null)
-                    _controllers = new ControllerDictionary();
+                _controllers ??= new ControllerDictionary();
                 return _controllers; 
             }
         }
@@ -296,8 +286,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_generators == null)
-                    _generators = new GeneratorDictionary();
+                _generators ??= new GeneratorDictionary();
                 return _generators; 
             }
         }
@@ -310,8 +299,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_references == null)
-                    _references = new ReferenceDictionary();
+                _references ??= new ReferenceDictionary();
                 return _references; 
             }
         }
@@ -324,8 +312,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_effects == null)
-                    _effects = new EffectDictionary();
+                _effects ??= new EffectDictionary();
                 return _effects; 
             }
         }
@@ -338,8 +325,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_fallbackValues == null)
-                    _fallbackValues = new FallbackValuesDictionary();
+                _fallbackValues ??= new FallbackValuesDictionary();
                 return _fallbackValues; 
             }
         }
@@ -352,8 +338,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_datasources == null)
-                    _datasources = new DatasourceDictionary();
+                _datasources ??= new DatasourceDictionary();
                 return _datasources; 
             }
         }
@@ -365,8 +350,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_camerasInstanceIds == null)
-                    _camerasInstanceIds = new List<int>();
+                _camerasInstanceIds ??= new List<int>();
                 return _camerasInstanceIds; 
             }
         }
@@ -379,8 +363,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_cameras == null)
-                    _cameras = new List<Camera>();
+                _cameras ??= new List<Camera>();
                 return _cameras; 
             }
         }
@@ -393,8 +376,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_managers == null)
-                    _managers = new ManagerDictionary();
+                _managers ??= new ManagerDictionary();
                 return _managers; 
             }
         }
@@ -791,7 +773,7 @@ namespace DepictionEngine
                             if (!cameras.Contains(camera))
                             {
                                 cameras.Add(camera);
-                                camerasInstanceIds.Add(camera.GetInstanceID());
+                                camerasInstanceIds.Add(camera.GetCameraInstanceID());
                                 added = true;
                             }
                         }
@@ -897,8 +879,7 @@ namespace DepictionEngine
 
             if (added)
             {
-                if (AddedEvent != null)
-                    AddedEvent(property);
+                AddedEvent?.Invoke(property);
             }
             else
             {
@@ -922,7 +903,7 @@ namespace DepictionEngine
                     Debug.LogError(errorMsg);
 
                     property.ResetId();
-                    DisposeManager.Dispose(unityObject, DisposeManager.DestroyContext.Programmatically);
+                    DisposeManager.Dispose(unityObject, DisposeManager.DisposeContext.Programmatically);
                 }
             }
 
@@ -1034,11 +1015,8 @@ namespace DepictionEngine
             }
 
             if (removed)
-            {
-                if (RemovedEvent != null)
-                    RemovedEvent(property);
-            }
-
+                RemovedEvent?.Invoke(property);
+            
             return removed;
         }
 
@@ -1076,22 +1054,20 @@ namespace DepictionEngine
             if (type == null)
                 return null;
 
-            if (initializingContext == InitializationContext.Existing_Or_Editor_UndoRedo)
-                initializingContext = InitializationContext.Editor;
+            if (initializingContext == InitializationContext.Existing)
+                initializingContext = InitializationContext.Programmatically;
 
             bool isMonoBehaviourType = type.IsSubclassOf(typeof(MonoBehaviour));
-#if UNITY_EDITOR
-            if (isMonoBehaviourType)
-                Editor.UndoManager.PreGetMonoBehaviourInstance();
-#endif
 
             if (json != null)
             {
                 if (json is JSONString)
                 {
                     string name = json;
-                    json = new JSONObject();
-                    json[nameof(IPersistent.name)] = name;
+                    json = new JSONObject
+                    {
+                        [nameof(IPersistent.name)] = name
+                    };
                 }
                 if (json[nameof(Object.transform)] != null && !string.IsNullOrEmpty(json[nameof(Object.transform)][nameof(TransformBase.parent)]))
                 {
@@ -1105,18 +1081,18 @@ namespace DepictionEngine
 
             IDisposable disposable = null;
 
-            if (initializingContext != InitializationContext.Editor && initializingContext != InitializationContext.Editor_Duplicate && initializingContext != InitializationContext.Existing_Or_Editor_UndoRedo)
+            if (initializingContext != InitializationContext.Editor && initializingContext != InitializationContext.Editor_Duplicate)
             {
                 PoolManager poolManager = PoolManager.Instance();
                 if (poolManager != Disposable.NULL)
                     disposable = poolManager.GetFromPool(type);
             }
 
-            if (Object.ReferenceEquals(disposable, null))
+            if (disposable is null)
             {
                 if (isMonoBehaviourType)
                 {
-                    GameObject go = new GameObject();
+                    GameObject go = new ();
                     InitializeGameObject(go, parent, setParentAndAlign, moveToView);
 
 #if UNITY_EDITOR
@@ -1176,12 +1152,7 @@ namespace DepictionEngine
                     (disposable as IScriptableBehaviour).ExplicitOnEnable();
             }
 
-#if UNITY_EDITOR
-            if (isMonoBehaviourType)
-                Editor.UndoManager.PostGetMonoBehaviourInstance();
-#endif
-
-            void InitializeGameObject(GameObject gameObject, Transform newParent, bool setParentAndAlign, bool moveToView)
+            static void InitializeGameObject(GameObject gameObject, Transform newParent, bool setParentAndAlign, bool moveToView)
             {
                 Transform goTransform = gameObject.transform;
 #if UNITY_EDITOR
@@ -1207,7 +1178,7 @@ namespace DepictionEngine
         /// <param name="objectToDuplicate">The UnityEngine.Object instance to duplicate.</param>
         /// <param name="initializingContext"></param>
         /// <returns>The duplicated object</returns>
-        public static T Duplicate<T>(T objectToDuplicate, InitializationContext initializingContext) where T : UnityEngine.Object
+        public static T Duplicate<T>(T objectToDuplicate, InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Object
         {
             T duplicatedObject = null;
 

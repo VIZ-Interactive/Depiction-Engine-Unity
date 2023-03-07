@@ -14,7 +14,7 @@ namespace DepictionEngine
         [Serializable]
         private class CamerasSmoothElevationDictionary : SerializableDictionary<int, CameraSmoothElevation> { };
 
-        private static Vector3 NON_ZERO_NORMAL = new Vector3(0.0f, 0.0001f, 0.0f);
+        private static Vector3 NON_ZERO_NORMAL = new(0.0f, 0.0001f, 0.0f);
 
         [BeginFoldout("Surface")]
         [SerializeField, Tooltip("An offset added to the surface altitude at which the reflection render is made."), EndFoldout]
@@ -52,14 +52,14 @@ namespace DepictionEngine
 
         private void RemoveCameraSmoothElevationDelegates(CameraSmoothElevation cameraSmoothElevation)
         {
-            if (!Object.ReferenceEquals(cameraSmoothElevation, null))
-                cameraSmoothElevation.CameraDisposeEvent -= CameraSmoothElevationCameraDisposingHandler;
+            if (cameraSmoothElevation is not null)
+                cameraSmoothElevation.CameraDisposingEvent -= CameraSmoothElevationCameraDisposingHandler;
         }
 
         private void AddCameraSmoothElevationDelegates(CameraSmoothElevation cameraSmoothElevation)
         {
             if (!IsDisposing() && cameraSmoothElevation != Disposable.NULL)
-                cameraSmoothElevation.CameraDisposeEvent += CameraSmoothElevationCameraDisposingHandler;
+                cameraSmoothElevation.CameraDisposingEvent += CameraSmoothElevationCameraDisposingHandler;
         }
 
         private void CameraSmoothElevationCameraDisposingHandler(CameraSmoothElevation cameraSmoothElevation)
@@ -71,7 +71,7 @@ namespace DepictionEngine
                     RemoveCameraSmoothElevationDelegates(cameraSmoothElevation);
                     _camerasSmoothElevation.Remove(key);
 
-                    Dispose(cameraSmoothElevation);
+                    DisposeManager.Dispose(cameraSmoothElevation);
 
                     break;
                 }
@@ -119,7 +119,7 @@ namespace DepictionEngine
                 Vector3 pos = TransformDouble.SubtractOrigin(cameraSurfacePosition);
                 Vector3 normal = !cameraSurfaceUpVector.Equals(Vector3Double.zero) ? cameraSurfaceUpVector : NON_ZERO_NORMAL;
 
-                Vector4 reflectionPlane = new Vector4(normal.x, normal.y, normal.z, -Vector3.Dot(normal, pos) - surfaceAltitudeRenderOffset);
+                Vector4 reflectionPlane = new(normal.x, normal.y, normal.z, -Vector3.Dot(normal, pos) - surfaceAltitudeRenderOffset);
 
                 if (_reflectionMat == null)
                     _reflectionMat = new Matrix4x4();
@@ -197,14 +197,12 @@ namespace DepictionEngine
         private double GetSmoothAltitude(Camera camera, GeoAstroObject geoAstroObject)
         {
             //Ugly approximation, SSR is really the way to go when elevation is actived
-            CameraSmoothElevation cameraSmoothElevation;
 
             int instanceId = camera.GetInstanceID();
 
-            if (_camerasSmoothElevation == null)
-                _camerasSmoothElevation = new CamerasSmoothElevationDictionary();
+            _camerasSmoothElevation ??= new CamerasSmoothElevationDictionary();
 
-            if (!_camerasSmoothElevation.TryGetValue(instanceId, out cameraSmoothElevation) || cameraSmoothElevation.camera == Disposable.NULL)
+            if (!_camerasSmoothElevation.TryGetValue(instanceId, out CameraSmoothElevation cameraSmoothElevation) || cameraSmoothElevation.camera == Disposable.NULL)
             {
                 cameraSmoothElevation = instanceManager.CreateInstance<CameraSmoothElevation>().Init(camera, geoAstroObject);
 
@@ -215,14 +213,14 @@ namespace DepictionEngine
             return cameraSmoothElevation.GetSmoothElevation();
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
                 if (_camerasSmoothElevation != null)
                 {
                     foreach (CameraSmoothElevation cameraSmoothElevation in _camerasSmoothElevation.Values)
-                        Dispose(cameraSmoothElevation);
+                        DisposeManager.Dispose(cameraSmoothElevation);
                     _camerasSmoothElevation.Clear();
                 }
 
@@ -245,9 +243,9 @@ namespace DepictionEngine
             private List<double> _elevations;
 
             /// <summary>
-            /// Dispatched when the <see cref="DepictionEngine.Camera"/> <see cref="DepictionEngine.IDisposable.OnDispose"/> is triggered.
+            /// Dispatched when the <see cref="DepictionEngine.Camera"/> <see cref="DepictionEngine.IDisposable.UpdateDestroyingContext"/> is triggered.
             /// </summary>
-            public Action<CameraSmoothElevation> CameraDisposeEvent;
+            public Action<CameraSmoothElevation> CameraDisposingEvent;
 
             public CameraSmoothElevation Init(Camera camera, GeoAstroObject parentGeoAstroObject)
             {
@@ -272,10 +270,10 @@ namespace DepictionEngine
 
             private void RemoveCameraDelegates(Camera camera)
             {
-                if (!Object.ReferenceEquals(camera, null))
+                if (camera is not null)
                 {
-                    camera.DisposeEvent -= CameraDisposeHandler;
-                    if (!Object.ReferenceEquals(camera.transform, null))
+                    camera.DisposingEvent -= CameraDisposingHandler;
+                    if (camera.transform is not null)
                         camera.transform.PropertyAssignedEvent -= CameraTransformPropertyAssigned;
                 }
             }
@@ -284,15 +282,14 @@ namespace DepictionEngine
             {
                 if (!IsDisposing() && camera != Disposable.NULL)
                 {
-                    camera.DisposeEvent += CameraDisposeHandler;
+                    camera.DisposingEvent += CameraDisposingHandler;
                     camera.transform.PropertyAssignedEvent += CameraTransformPropertyAssigned;
                 }
             }
 
-            private void CameraDisposeHandler(IDisposable disposable)
+            private void CameraDisposingHandler(IDisposable disposable)
             {
-                if (CameraDisposeEvent != null)
-                    CameraDisposeEvent(this);
+                CameraDisposingEvent?.Invoke(this);
             }
 
             private void CameraTransformPropertyAssigned(IProperty property, string name, object newValue, object oldValue)
@@ -303,7 +300,7 @@ namespace DepictionEngine
 
             private void RemoveParentGeoAstroObjectDelegate(GeoAstroObject parentGeoAstroObject)
             {
-                if (!Object.ReferenceEquals(parentGeoAstroObject, null))
+                if (parentGeoAstroObject is not null)
                 {
                     parentGeoAstroObject.TerrainGridMeshObjectRemovedEvent -= ParentGeoAstroObjectTerrainGridMeshObjectChangedHandler;
                     parentGeoAstroObject.TerrainGridMeshObjectAddedEvent -= ParentGeoAstroObjectTerrainGridMeshObjectChangedHandler;
@@ -390,8 +387,7 @@ namespace DepictionEngine
             {
                 get
                 {
-                    if (_elevations == null)
-                        _elevations = new List<double>();
+                    _elevations ??= new List<double>();
                     return _elevations;
                 }
             }

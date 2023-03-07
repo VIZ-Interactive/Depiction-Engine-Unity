@@ -56,7 +56,7 @@ namespace DepictionEngine
         /// <param name="isUserChange">Whether the current code execution was triggered by a user action.</param>
         void IsUserChange(Action callback, bool isUserChange = true);
 
-        DisposeManager.DestroyContext GetDestroyContext();
+        DisposeManager.DisposeContext GetDisposeContext();
 
         /// <summary>
         /// This is where you destroy any remaining dependencies.

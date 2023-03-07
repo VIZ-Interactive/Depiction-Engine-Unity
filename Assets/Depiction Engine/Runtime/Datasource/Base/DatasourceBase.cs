@@ -137,11 +137,11 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
+            if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
+                _datasource = null;
+
             if (datasource == Disposable.NULL)
-            {
-                datasource = DatasourceManager.CreateDatasource();
-                datasource.name = GetType().Name;
-            }
+                datasource = DatasourceManager.CreateDatasource(GetType().Name, initializingContext);
         }
 
         protected override bool UpdateAllDelegates()
@@ -169,7 +169,7 @@ namespace DepictionEngine
 
         private void RemoveDatasourcePersistenceDataDelegates()
         {
-            if (!Object.ReferenceEquals(datasource, null))
+            if (datasource is not null)
             {
                 datasource.PersistenceDataRemovedEvent -= DatasourcePersistenceDataRemovedHandler;
                 datasource.PersistenceDataAddedEvent -= DatasourcePersistenceDataAddedHandler;
@@ -197,7 +197,7 @@ namespace DepictionEngine
 
         private void RemovePersistenceDataDelegates(PersistenceData persistenceData)
         {
-            if (!Object.ReferenceEquals(persistenceData, null))
+            if (persistenceData is not null)
                 persistenceData.PersistenceOperationEvent -= PersistenceOperationHandler;
         }
 
@@ -287,8 +287,7 @@ namespace DepictionEngine
             {
                 if (!persistent.containsCopyrightedMaterial)
                 {
-                    if (_savePersistenceOperationDatas == null)
-                        _savePersistenceOperationDatas = new Dictionary<Guid, Datasource.PersistenceOperationData>();
+                    _savePersistenceOperationDatas ??= new Dictionary<Guid, Datasource.PersistenceOperationData>();
 
                     if (!_savePersistenceOperationDatas.ContainsKey(id))
                     {
@@ -343,14 +342,12 @@ namespace DepictionEngine
         {
             if (datasource.SupportsOperationType(Datasource.OperationType.Synchronize))
             {
-                if (_synchronizePersistenceOperationDatas == null)
-                    _synchronizePersistenceOperationDatas = new Dictionary<Guid, Datasource.PersistenceOperationData>();
+                _synchronizePersistenceOperationDatas ??= new Dictionary<Guid, Datasource.PersistenceOperationData>();
 
                 if (!_synchronizePersistenceOperationDatas.ContainsKey(id))
                 {
                     SerializableGuid id = persistent.id;
-
-                    bool isInDatasource = datasource.GetPersistenceData(id, out PersistenceData persistenceData);
+                    bool isInDatasource = datasource.GetPersistenceData(id, out _);
                     if (isInDatasource)
                     {
                         _synchronizePersistenceOperationDatas[id] = new Datasource.PersistenceOperationData(persistent);
@@ -388,14 +385,12 @@ namespace DepictionEngine
         {
             if (datasource.SupportsOperationType(Datasource.OperationType.Delete))
             {
-                if (_deletePersistenceOperationDatas == null)
-                    _deletePersistenceOperationDatas = new Dictionary<Guid, Datasource.PersistenceOperationData>();
+                _deletePersistenceOperationDatas ??= new Dictionary<Guid, Datasource.PersistenceOperationData>();
 
                 if (!_deletePersistenceOperationDatas.ContainsKey(id))
                 {
                     SerializableGuid id = persistent.id;
-
-                    bool isInDatasource = datasource.GetPersistenceData(id, out PersistenceData persistenceData);
+                    bool isInDatasource = datasource.GetPersistenceData(id, out _);
                     if (isInDatasource)
                     {
                         _deletePersistenceOperationDatas[id] = new Datasource.PersistenceOperationData(persistent);
@@ -534,12 +529,16 @@ namespace DepictionEngine
             return instanceManager.CreateInstance<T>();
         }
 
-        public override void OnDestroy()
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            base.OnDestroy();
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                if (!pooled)
+                    Dispose(_datasource, disposeContext);
 
-            if (_datasource != Disposable.NULL)
-                Dispose(_datasource);
+                return true;
+            }
+            return false;
         }
     }
 }

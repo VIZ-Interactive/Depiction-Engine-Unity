@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UIElements;
+using static DepictionEngine.DisposeManager;
 
 namespace DepictionEngine
 {
@@ -88,8 +89,9 @@ namespace DepictionEngine
         [SerializeField, Tooltip("A min and max clamping values for the '"+nameof(dynamicFocusDistance)+"' calculations. "), EndFoldout]
         private Vector2 _minMaxFocusDistance;
 
-        [SerializeField, HideInInspector]
         private Material _dynamicSkyboxMaterial;
+
+        private MeshesDictionary _meshCache;
 
         private ScriptableRendererFeature _ambientOcclusionRendererFeature;
         private Bloom _bloom;
@@ -104,8 +106,6 @@ namespace DepictionEngine
         private SerializableIPersistentList _customEffects;
         private SerializableIPersistentList[] _layersCustomEffects;
         private ComputeBuffer[] _layersCustomEffectComputeBuffer;
-
-        private MeshesDictionary _meshCache;
 
         private List<Font> _fonts;
 
@@ -187,7 +187,7 @@ namespace DepictionEngine
             string path = embededURPPackageResolvedPath + "/ShaderLibrary/Lighting.hlsl";
 
             string lightingContent;
-            using (StreamReader reader = new StreamReader(path))
+            using (StreamReader reader = new(path))
             {
                 lightingContent = reader.ReadToEnd();
                 reader.Close();
@@ -195,31 +195,29 @@ namespace DepictionEngine
 
             if (!string.IsNullOrEmpty(lightingContent))
             {
-                using (StreamWriter writer = new StreamWriter(path))
-                {
-                    PatchResult lineChangeResult = PatchResult.AlreadyPatched;
+                using StreamWriter writer = new(path);
+                PatchResult lineChangeResult = PatchResult.AlreadyPatched;
 
-                    lineChangeResult = AddBeforeLine(ref lightingContent,
-                        "half4 UniversalFragmentPBR(InputData inputData, SurfaceData surfaceData)",
-                        "float3 _MainLightDirection;" + StringUtility.NewLine + "half _MainLightDirectionEnabled;", lineChangeResult);
+                lineChangeResult = AddBeforeLine(ref lightingContent,
+                    "half4 UniversalFragmentPBR(InputData inputData, SurfaceData surfaceData)",
+                    "float3 _MainLightDirection;" + StringUtility.NewLine + "half _MainLightDirectionEnabled;", lineChangeResult);
 
-                    lineChangeResult = AddAfterLine(ref lightingContent,
-                        "Light mainLight = GetMainLight(inputData, shadowMask, aoFactor);",
-                        "mainLight.direction = _MainLightDirectionEnabled ? _MainLightDirection : mainLight.direction;", lineChangeResult);
+                lineChangeResult = AddAfterLine(ref lightingContent,
+                    "Light mainLight = GetMainLight(inputData, shadowMask, aoFactor);",
+                    "mainLight.direction = _MainLightDirectionEnabled ? _MainLightDirection : mainLight.direction;", lineChangeResult);
 
-                    lineChangeResult = AddBeforeLine(ref lightingContent,
-                        "half3 LightingPhysicallyBased(BRDFData brdfData, BRDFData brdfDataClearCoat,",
-                        "float _MainLightRadiance;" + StringUtility.NewLine + "half _MainLightRadianceEnabled;", lineChangeResult);
+                lineChangeResult = AddBeforeLine(ref lightingContent,
+                    "half3 LightingPhysicallyBased(BRDFData brdfData, BRDFData brdfDataClearCoat,",
+                    "float _MainLightRadiance;" + StringUtility.NewLine + "half _MainLightRadianceEnabled;", lineChangeResult);
 
-                    lineChangeResult = AddAfterLine(ref lightingContent,
-                        "half3 radiance = lightColor * (lightAttenuation * NdotL);",
-                        "radiance *= _MainLightRadianceEnabled ? _MainLightRadiance : 1;", lineChangeResult);
+                lineChangeResult = AddAfterLine(ref lightingContent,
+                    "half3 radiance = lightColor * (lightAttenuation * NdotL);",
+                    "radiance *= _MainLightRadianceEnabled ? _MainLightRadiance : 1;", lineChangeResult);
 
-                    writer.Write(lightingContent);
-                    writer.Close();
+                writer.Write(lightingContent);
+                writer.Close();
 
-                    patchedResult = lineChangeResult;
-                }
+                patchedResult = lineChangeResult;
             }
 
             if (_displayPatchedResultInDialog)
@@ -324,8 +322,7 @@ namespace DepictionEngine
             StartURPPatching();
 #endif
 
-            if (_fonts == null)
-                _fonts = new List<Font>();
+            _fonts ??= new List<Font>();
 
             foreach (string fontName in FONT_NAMES)
             {
@@ -423,15 +420,15 @@ namespace DepictionEngine
 
         private void RemoveMeshDelegate(Mesh mesh)
         {
-            mesh.DisposeEvent -= MeshDisposeHandler;
+            mesh.DisposingEvent -= MeshDisposingHandler;
         }
 
         private void AddMeshDelegate(Mesh mesh)
         {
-            mesh.DisposeEvent += MeshDisposeHandler;
+            mesh.DisposingEvent += MeshDisposingHandler;
         }
 
-        private void MeshDisposeHandler(IDisposable disposable)
+        private void MeshDisposingHandler(IDisposable disposable)
         {
 
         }
@@ -460,7 +457,7 @@ namespace DepictionEngine
             base.InstanceRemovedHandler(property);
 
             ICustomEffect customEffect = property as ICustomEffect;
-            if (!Object.ReferenceEquals(customEffect, null))
+            if (customEffect is not null)
                 RemoveCustomEffect(customEffect);
         }
 
@@ -522,8 +519,10 @@ namespace DepictionEngine
             {
                 if (_dynamicSkyboxMaterial == null)
                 {
-                    _dynamicSkyboxMaterial = new Material(Shader.Find("Skybox/Cubemap"));
-                    _dynamicSkyboxMaterial.name = "DynamicSkybox";
+                    _dynamicSkyboxMaterial = new(Shader.Find("Skybox/Cubemap"))
+                    {
+                        name = "DynamicSkybox"
+                    };
                     _dynamicSkyboxMaterial.SetFloat("_Exposure", 1.0f);
                 }
                 return _dynamicSkyboxMaterial;
@@ -534,8 +533,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_customEffects == null)
-                    _customEffects = new SerializableIPersistentList();
+                _customEffects ??= new SerializableIPersistentList();
                 return _customEffects; 
             }
         }
@@ -544,8 +542,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_layersCustomEffects == null)
-                    _layersCustomEffects = new SerializableIPersistentList[32];
+                _layersCustomEffects ??= new SerializableIPersistentList[32];
                 return _layersCustomEffects;
             }
         }
@@ -554,8 +551,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_layersCustomEffectComputeBuffer == null)
-                    _layersCustomEffectComputeBuffer = new ComputeBuffer[32];
+                _layersCustomEffectComputeBuffer ??= new ComputeBuffer[32];
                 return _layersCustomEffectComputeBuffer;
             }
         }
@@ -570,7 +566,7 @@ namespace DepictionEngine
             }
         }
 
-        private void RemoveCustomEffectFromLayers(LayerMask layers, ICustomEffect customEffect)
+        private void RemoveCustomEffectFromLayers(LayerMask _, ICustomEffect customEffect)
         {
             for (int layer = 0; layer <= 31; layer++)
             {
@@ -763,8 +759,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_meshCache == null)
-                    _meshCache = new MeshesDictionary();
+                _meshCache ??= new MeshesDictionary();
                 return _meshCache;
             }
         }
@@ -801,57 +796,49 @@ namespace DepictionEngine
             {
                 if (depthOfField == null)
                 {
-                    DepthOfField volumeDepthOfField;
-                    if (postProcessVolume.profile.TryGet(out volumeDepthOfField))
+                    if (postProcessVolume.profile.TryGet(out DepthOfField volumeDepthOfField))
                         depthOfField = volumeDepthOfField;
                 }
 
                 if (bloom == null)
                 {
-                    Bloom volumeBloom;
-                    if (postProcessVolume.profile.TryGet(out volumeBloom))
+                    if (postProcessVolume.profile.TryGet(out Bloom volumeBloom))
                         bloom = volumeBloom;
                 }
 
                 if (colorAdjustments == null)
                 {
-                    ColorAdjustments volumeColorAdjustments;
-                    if (postProcessVolume.profile.TryGet(out volumeColorAdjustments))
+                    if (postProcessVolume.profile.TryGet(out ColorAdjustments volumeColorAdjustments))
                         colorAdjustments = volumeColorAdjustments;
                 }
 
                 if (colorCurves == null)
                 {
-                    ColorCurves volumeColorCurves;
-                    if (postProcessVolume.profile.TryGet(out volumeColorCurves))
+                    if (postProcessVolume.profile.TryGet(out ColorCurves volumeColorCurves))
                         colorCurves = volumeColorCurves;
                 }
 
                 if (chromaticAberration == null)
                 {
-                    ChromaticAberration volumeChromaticAberration;
-                    if (postProcessVolume.profile.TryGet(out volumeChromaticAberration))
+                    if (postProcessVolume.profile.TryGet(out ChromaticAberration volumeChromaticAberration))
                         chromaticAberration = volumeChromaticAberration;
                 }
 
                 if (vignette == null)
                 {
-                    Vignette volumeVignette;
-                    if (postProcessVolume.profile.TryGet(out volumeVignette))
+                    if (postProcessVolume.profile.TryGet(out Vignette volumeVignette))
                         vignette = volumeVignette;
                 }
 
                 if (toneMapping == null)
                 {
-                    Tonemapping volumeToneMapping;
-                    if (postProcessVolume.profile.TryGet(out volumeToneMapping))
+                    if (postProcessVolume.profile.TryGet(out Tonemapping volumeToneMapping))
                         toneMapping = volumeToneMapping;
                 }
 
                 if (motionBlur == null)
                 {
-                    MotionBlur volumeMotionBlur;
-                    if (postProcessVolume.profile.TryGet(out volumeMotionBlur))
+                    if (postProcessVolume.profile.TryGet(out MotionBlur volumeMotionBlur))
                         motionBlur = volumeMotionBlur;
                 }
             }
@@ -991,7 +978,7 @@ namespace DepictionEngine
         [Json]
         public bool ambientOcclusionActive
         {
-            get { return ambientOcclusionRendererFeature != null ? ambientOcclusionRendererFeature.isActive : false; }
+            get { return ambientOcclusionRendererFeature != null && ambientOcclusionRendererFeature.isActive; }
             set
             {
                 if (ambientOcclusionRendererFeature != null)
@@ -1005,7 +992,7 @@ namespace DepictionEngine
         [Json]
         public bool depthOfFieldActive
         {
-            get { return depthOfField != null ? depthOfField.active : false; }
+            get { return depthOfField != null && depthOfField.active; }
             set
             {
                 if (depthOfField != null)
@@ -1033,7 +1020,7 @@ namespace DepictionEngine
         [Json]
         public bool vignetteActive
         {
-            get { return vignette != null ? vignette.active : false; }
+            get { return vignette != null && vignette.active; }
             set
             {
                 if (vignette != null)
@@ -1047,7 +1034,7 @@ namespace DepictionEngine
         [Json]
         public bool toneMappingActive
         {
-            get { return toneMapping != null ? toneMapping.active : false; }
+            get { return toneMapping != null && toneMapping.active; }
             set
             {
                 if (toneMapping != null)
@@ -1061,7 +1048,7 @@ namespace DepictionEngine
         [Json]
         public bool motionBlurActive
         {
-            get { return motionBlur != null ? motionBlur.active : false; }
+            get { return motionBlur != null && motionBlur.active; }
             set
             {
                 if (motionBlur != null)
@@ -1075,7 +1062,7 @@ namespace DepictionEngine
         [Json]
         public bool bloomActive
         {
-            get { return bloom != null ? bloom.active : false; }
+            get { return bloom != null && bloom.active; }
             set
             {
                 if (bloom != null)
@@ -1089,7 +1076,7 @@ namespace DepictionEngine
         [Json]
         public bool colorAdjustmentsActive
         {
-            get { return colorAdjustments != null ? colorAdjustments.active : false; }
+            get { return colorAdjustments != null && colorAdjustments.active; }
             set
             {
                 if (colorAdjustments != null)
@@ -1103,7 +1090,7 @@ namespace DepictionEngine
         [Json]
         public bool colorCurvesActive
         {
-            get { return colorCurves != null ? colorCurves.active : false; }
+            get { return colorCurves != null && colorCurves.active; }
             set
             {
                 if (colorCurves != null)
@@ -1117,7 +1104,7 @@ namespace DepictionEngine
         [Json]
         public bool chromaticAberrationActive
         {
-            get { return chromaticAberration != null ? chromaticAberration.active : false; }
+            get { return chromaticAberration != null && chromaticAberration.active; }
             set
             {
                 if (chromaticAberration != null)
@@ -1130,7 +1117,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_outlineOnLocalKeyword == default(LocalKeyword))
+                if (_outlineOnLocalKeyword == default)
                     _outlineOnLocalKeyword = new LocalKeyword(Shader.Find("TextMeshPro/Mobile/Distance Field"), "OUTLINE_ON");
                 return _outlineOnLocalKeyword;
             }
@@ -1162,8 +1149,8 @@ namespace DepictionEngine
             {
                 if (Object.ReferenceEquals(_environmentTimer, value))
                     return;
-                
-                Dispose(_environmentTimer);
+
+                DisposeManager.Dispose(_environmentTimer);
 
                 _environmentTimer = value;
             }
@@ -1239,8 +1226,7 @@ namespace DepictionEngine
                     _headerTextures = new Texture2D[11];
 
                     //Transform
-                    Color color;
-                    if (ColorUtility.ColorFromString(out color, "#dd1265"))
+                    if (ColorUtility.ColorFromString(out Color color, "#dd1265"))
                         GenerateGradientHeaderTextures(_headerTextures, 0, color);
                     //Persistent
                     if (ColorUtility.ColorFromString(out color, "#fdb60d"))
@@ -1264,15 +1250,17 @@ namespace DepictionEngine
 
         private void GenerateGradientHeaderTextures(Texture2D[] headerTextures, int index, Color color)
         {
-            Texture2D headerTexture = new Texture2D(100, 1);
-            headerTexture.wrapMode = TextureWrapMode.Clamp;
+            Texture2D headerTexture = new(100, 1)
+            {
+                wrapMode = TextureWrapMode.Clamp
+            };
             color.a = 0.3f;
             for (int i = 0; i < headerTexture.width; i++)
                 headerTexture.SetPixel(i, 0, Color.Lerp(Color.clear, color, Easing.CircEaseOut((float)i / headerTexture.width, 0, 1, 1)));
             headerTexture.Apply();
             headerTextures[index] = headerTexture;
 
-            Texture2D headerLineTexture = new Texture2D(1, 1);
+            Texture2D headerLineTexture = new(1, 1);
             color.a = 0.5f;
             headerLineTexture.SetPixel(0, 0, color);
             headerLineTexture.Apply();
@@ -1281,8 +1269,10 @@ namespace DepictionEngine
 
         private void GenerateHeaderTexture(Texture2D[] headerTextures, int index, Color color)
         {
-            Texture2D headerTexture = new Texture2D(1, 1);
-            headerTexture.wrapMode = TextureWrapMode.Clamp;
+            Texture2D headerTexture = new(1, 1)
+            {
+                wrapMode = TextureWrapMode.Clamp
+            };
             color.a = 0.3f;
             headerTexture.SetPixel(0, 0, color);
             headerTexture.Apply();
@@ -1376,8 +1366,7 @@ namespace DepictionEngine
             }
 
             //Custom Effect
-            if (_layersCustomEffectComputeBufferData == null)
-                _layersCustomEffectComputeBufferData = new float[32][];
+            _layersCustomEffectComputeBufferData ??= new float[32][];
 
             for (int layer = 0; layer <= 31; layer++)
             {
@@ -1397,9 +1386,8 @@ namespace DepictionEngine
                     int startIndex = 0;
                     for (int i = 0; i < layerCustomEffects.Count; i++)
                     {
-                        ICustomEffect layerCustomEffect = layerCustomEffects[i] as ICustomEffect;
                         //Null check is required for when a CustomEffect MonoBehaviour Component is removed directly in the Editor instead of deleting the whole GameObject
-                        if (layerCustomEffect != null)
+                        if (layerCustomEffects[i] is ICustomEffect layerCustomEffect)
                             startIndex += layerCustomEffect.AddToComputeBufferData(startIndex, layerCustomEffectComputeBufferData);
                     }
                 }
@@ -1456,7 +1444,7 @@ namespace DepictionEngine
                 });
         }
 
-        public void EndCameraDistancePassRendering(Camera camera, UnityEngine.Camera unityCamera)
+        public void EndCameraDistancePassRendering(Camera _, UnityEngine.Camera _1)
         {
             RenderSettings.fogDensity = _fogDensity;
             RenderSettings.fogStartDistance = _fogStartDistance;
@@ -1535,23 +1523,12 @@ namespace DepictionEngine
             return Resources.Load<Shader>(path);
         }
 
-#if UNITY_EDITOR
-        private void DisposeAllHeaderTextures()
-        {
-            if (_headerTextures != null)
-            {
-                foreach (Texture2D headerTexture in _headerTextures)
-                    Dispose(headerTexture);
-            }
-        }
-#endif
-
         public void DisposeAllCachedMesh()
         {
             if (_meshCache != null)
             {
                 foreach (Mesh mesh in _meshCache.Values)
-                    Dispose(mesh);
+                    DisposeManager.Dispose(mesh);
                 _meshCache.Clear();
             }
         }
@@ -1573,35 +1550,35 @@ namespace DepictionEngine
                 computeBuffer.Dispose();
         }
 
-        public override bool OnDisposing()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposing())
+            if (base.OnDisposing(disposeContext))
             {
                 environmentTimer = null;
+
+                DisposeManager.Dispose(_rttCamera);
+
+                DisposeManager.Dispose(_emptyTexture);
+
+                DisposeManager.Dispose(_quadMesh);
+
+                DisposeManager.Dispose(_dynamicSkyboxMaterial);
+
+                DisposeAllCachedMesh();
+
+                DisposeAllComputeBuffers();
+
+#if UNITY_EDITOR
+                if (_headerTextures != null)
+                {
+                    foreach (Texture2D headerTexture in _headerTextures)
+                        DisposeManager.Dispose(headerTexture);
+                }
+#endif
 
                 return true;
             }
             return false;
-        }
-
-        public override void OnDestroy()
-        {
-            base.OnDestroy();
-
-            Dispose(_rttCamera);
-
-            Dispose(_emptyTexture);
-
-            Dispose(_quadMesh);
-
-            Dispose(_dynamicSkyboxMaterial);
-
-            DisposeAllCachedMesh();
-
-#if UNITY_EDITOR
-            DisposeAllHeaderTextures();
-#endif
-            DisposeAllComputeBuffers();
         }
     }
 }

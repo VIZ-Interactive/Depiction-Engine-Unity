@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -205,7 +206,7 @@ namespace DepictionEngine
             "\ue8a2", "\ue8a3", "\ue8a4", "\ue8a5", "\ue8a6", "\ue8a7", "\ue8a8", "\ue8a9", "\ue8aa", "\ue8ab", "\ue8ac", "\ue8ad", "\ue8ae"
         };
 
-        private static readonly Vector2 BADGE_SCALE = new Vector2(22.0f, 32.0f);
+        private static readonly Vector2 BADGE_SCALE = new(22.0f, 32.0f);
 
         private const string BADGE_MESH_NAME = "BadgeMeshRendererVisual";
         private const string LINE_MESH_NAME = "LineMeshMeshRendererVisual";
@@ -259,6 +260,7 @@ namespace DepictionEngine
                 _markerBadgeMaterial = null;
                 _markerLineMaterial = null;
                 _markerShadowMaterial = null;
+                _badgeMesh = null;
             }
 
             InitValue(value => color = value, new Color(188.0f / 255.0f, 22.0f / 255.0f, 22.0f / 255.0f), initializingContext);
@@ -300,17 +302,17 @@ namespace DepictionEngine
 
         protected void RemoveBuildingDelegates()
         {
-            if (!Object.ReferenceEquals(building, null))
-                building.DisposeEvent -= BuildingDisposeHandler;
+            if (building is not null)
+                building.DisposingEvent -= BuildingDisposingHandler;
         }
 
         private void AddBuildingDelegates()
         {
             if (building != Disposable.NULL)
-                building.DisposeEvent += BuildingDisposeHandler;
+                building.DisposingEvent += BuildingDisposingHandler;
         }
 
-        private void BuildingDisposeHandler(IDisposable disposable)
+        private void BuildingDisposingHandler(IDisposable disposable)
         {
             building = null;
         }
@@ -337,7 +339,7 @@ namespace DepictionEngine
 
                         if (hasBuildingFallbackValues)
                         {
-                            Dispose(_buildingLoadScope);
+                            DisposeManager.Dispose(_buildingLoadScope);
 
                             idLoader.GetLoadScope(out _buildingLoadScope, buildingId, false, true);
 
@@ -381,13 +383,15 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         protected UnityEngine.Object[] GetUIVisualTransformsAdditionalRecordObjects()
         {
-            List<UnityEngine.Object> transforms = new List<UnityEngine.Object>();
+            List<UnityEngine.Object> transforms = new();
 
             transform.IterateOverChildren<UIVisual>((uiVisual) =>
             {
-                foreach (MeshRendererVisual meshRendererVisual in uiVisual.children)
+                foreach (MeshRendererVisual meshRendererVisual in uiVisual.children.Cast<MeshRendererVisual>())
+                {
                     transforms.Add(meshRendererVisual.transform);
-          
+                }
+
                 return true;
             });
 
@@ -478,12 +482,11 @@ namespace DepictionEngine
         {
             UIVisual uiVisual = base.CreateUIVisual(visualType, useCollider);
 
-            Mesh quadMesh = renderingManager.quadMesh;
             if (_badgeMesh == Disposable.NULL)
-                _badgeMesh = Duplicate(quadMesh);
+                _badgeMesh = InstanceManager.Duplicate(renderingManager.quadMesh, InstanceManager.InitializationContext.Programmatically);
             CreateMeshRendererVisual(useCollider ? typeof(UIMeshRendererVisualBoxCollider) : typeof(UIMeshRendererVisualNoCollider), BADGE_MESH_NAME, uiVisual.transform).sharedMesh = _badgeMesh.unityMesh;
-            CreateMeshRendererVisual(typeof(UIMeshRendererVisualNoCollider), LINE_MESH_NAME, uiVisual.transform).sharedMesh = quadMesh.unityMesh;
-            CreateMeshRendererVisual(typeof(UIMeshRendererVisualNoCollider), SHADOW_MESH_NAME, uiVisual.transform).sharedMesh = quadMesh.unityMesh;
+            CreateMeshRendererVisual(typeof(UIMeshRendererVisualNoCollider), LINE_MESH_NAME, uiVisual.transform).sharedMesh = renderingManager.quadMesh.unityMesh;
+            CreateMeshRendererVisual(typeof(UIMeshRendererVisualNoCollider), SHADOW_MESH_NAME, uiVisual.transform).sharedMesh = renderingManager.quadMesh.unityMesh;
 
             return uiVisual;
         }
@@ -511,7 +514,7 @@ namespace DepictionEngine
 
             transform.IterateOverChildren<UIVisual>((uiVisual) =>
             {
-                foreach (MeshRendererVisual meshRendererVisual in uiVisual.children)
+                foreach (MeshRendererVisual meshRendererVisual in uiVisual.children.Cast<MeshRendererVisual>())
                 {
                     if (meshRendererVisual.name == BADGE_MESH_NAME)
                     {
@@ -534,7 +537,7 @@ namespace DepictionEngine
             {
                 transform.IterateOverChildren<UIVisual>((uiVisual) =>
                 {
-                    foreach (MeshRendererVisual meshRendererVisual in uiVisual.children)
+                    foreach (MeshRendererVisual meshRendererVisual in uiVisual.children.Cast<MeshRendererVisual>())
                     {
                         if (meshRendererVisual.name == BADGE_MESH_NAME)
                         {
@@ -569,7 +572,7 @@ namespace DepictionEngine
                 {
                     CharacterInfo characterInfo = this.characterInfo;
 
-                    Vector2 scale = new Vector2(0.35f * BADGE_SCALE.y / BADGE_SCALE.x, 0.35f);
+                    Vector2 scale = new(0.35f * BADGE_SCALE.y / BADGE_SCALE.x, 0.35f);
                     if (characterInfo.glyphWidth != 0 && characterInfo.glyphHeight != 0)
                     {
                         if (characterInfo.glyphWidth > characterInfo.glyphHeight)
@@ -578,37 +581,37 @@ namespace DepictionEngine
                             scale.x *= (float)characterInfo.glyphWidth / (float)characterInfo.glyphHeight;
                     }
 
-                    Vector2 bottomLeft = new Vector2(Mathf.Min(Mathf.Min(characterInfo.uvBottomLeft.x, characterInfo.uvBottomRight.x), Mathf.Min(characterInfo.uvTopLeft.x, characterInfo.uvTopRight.x)), Mathf.Min(Mathf.Min(characterInfo.uvBottomLeft.y, characterInfo.uvBottomRight.y), Mathf.Min(characterInfo.uvTopLeft.y, characterInfo.uvTopRight.y)));
-                    Vector2 topRight = new Vector2(Mathf.Max(Mathf.Max(characterInfo.uvBottomLeft.x, characterInfo.uvBottomRight.x), Mathf.Max(characterInfo.uvTopLeft.x, characterInfo.uvTopRight.x)), Mathf.Max(Mathf.Max(characterInfo.uvBottomLeft.y, characterInfo.uvBottomRight.y), Mathf.Max(characterInfo.uvTopLeft.y, characterInfo.uvTopRight.y)));
+                    Vector2 bottomLeft = new(Mathf.Min(Mathf.Min(characterInfo.uvBottomLeft.x, characterInfo.uvBottomRight.x), Mathf.Min(characterInfo.uvTopLeft.x, characterInfo.uvTopRight.x)), Mathf.Min(Mathf.Min(characterInfo.uvBottomLeft.y, characterInfo.uvBottomRight.y), Mathf.Min(characterInfo.uvTopLeft.y, characterInfo.uvTopRight.y)));
+                    Vector2 topRight = new (Mathf.Max(Mathf.Max(characterInfo.uvBottomLeft.x, characterInfo.uvBottomRight.x), Mathf.Max(characterInfo.uvTopLeft.x, characterInfo.uvTopRight.x)), Mathf.Max(Mathf.Max(characterInfo.uvBottomLeft.y, characterInfo.uvBottomRight.y), Mathf.Max(characterInfo.uvTopLeft.y, characterInfo.uvTopRight.y)));
 
-                    Vector2 size = new Vector2(topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
+                    Vector2 size = new (topRight.x - bottomLeft.x, topRight.y - bottomLeft.y);
                     Vector2 halfSize = size / 2.0f;
-                    Vector2 center = new Vector2(bottomLeft.x + halfSize.x, bottomLeft.y + halfSize.y);
+                    Vector2 center = new (bottomLeft.x + halfSize.x, bottomLeft.y + halfSize.y);
 
                     Vector2[] matrix = new Vector2[] { characterInfo.uvBottomLeft - center, characterInfo.uvTopLeft - center, characterInfo.uvTopRight - center, characterInfo.uvBottomRight - center };
                     Vector2 vec;
                     for (int i = 0; i < matrix.Length; i++)
                     {
                         vec = matrix[i];
-                        vec = new Vector2(vec.x > 0.0f ? 1.0f : -1.0f, vec.y > 0.0f ? 1.0f : -1.0f);
+                        vec = new (vec.x > 0.0f ? 1.0f : -1.0f, vec.y > 0.0f ? 1.0f : -1.0f);
                         matrix[i] = vec;
                     }
 
                     bool flipped = characterInfo.uvBottomLeft.x != characterInfo.uvBottomRight.x;
 
-                    Vector2 offset = new Vector2(0.0f, 0.155f);
+                    Vector2 offset = new (0.0f, 0.155f);
                     offset = Rotate(flipped, offset, true);
-                    offset = new Vector2(offset.x * size.x, offset.y * size.y);
+                    offset = new (offset.x * size.x, offset.y * size.y);
                     scale = Rotate(flipped, scale);
 
                     int vertexCount = 4;
-                    List<Vector4> uv2 = new List<Vector4>(vertexCount);
-                    List<Vector4> uv3 = new List<Vector4>(vertexCount);
+                    List<Vector4> uv2 = new (vertexCount);
+                    List<Vector4> uv3 = new (vertexCount);
 
                     for (int i = 0; i < vertexCount; ++i)
                     {
                         uv2.Add(center + (((halfSize * matrix[i]) + offset) / scale));
-                        uv3.Add(new Vector4(bottomLeft.x, bottomLeft.y, topRight.x, topRight.y));
+                        uv3.Add(new (bottomLeft.x, bottomLeft.y, topRight.x, topRight.y));
                     }
 
                     _badgeMesh.SetUVs(uv2, 2);
@@ -653,13 +656,21 @@ namespace DepictionEngine
             }
         }
 
-        public override void OnDestroy()
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            base.OnDestroy();
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                if (!pooled)
+                {
+                    Dispose(_markerBadgeMaterial, disposeContext);
+                    Dispose(_markerLineMaterial, disposeContext);
+                    Dispose(_markerShadowMaterial, disposeContext);
+                    Dispose(_badgeMesh, disposeContext);
+                }
 
-            Dispose(_markerBadgeMaterial);
-            Dispose(_markerLineMaterial);
-            Dispose(_markerShadowMaterial);
+                return true;
+            }
+            return false;
         }
     }
 }

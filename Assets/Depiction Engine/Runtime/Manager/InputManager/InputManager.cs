@@ -77,15 +77,13 @@ namespace DepictionEngine
 
             if (_eventSystem == null)
             {
-                _eventSystem = gameObject.GetComponent<EventSystem>();
-                if (_eventSystem == null)
+                if (!gameObject.TryGetComponent<EventSystem>(out _eventSystem))
                     _eventSystem = gameObject.AddComponent<EventSystem>();
             }
 
             if (_leanTouch == null)
             {
-                _leanTouch = gameObject.GetComponent<LeanTouch>();
-                if (_leanTouch == null)
+                if (!gameObject.TryGetComponent<LeanTouch>(out _leanTouch))
                 {
                     _leanTouch = gameObject.AddComponent<LeanTouch>();
                     _leanTouch.UseHover = false;
@@ -112,48 +110,42 @@ namespace DepictionEngine
             if (mouseClickTween == Disposable.NULL)
                 _isClick = false;
 
-            if (OnMouseMoveEvent != null)
-                OnMouseMoveEvent(hit);
+            OnMouseMoveEvent?.Invoke(hit);
             if (hit != null && hit.meshRendererVisual != Disposable.NULL)
                 hit.meshRendererVisual.OnMouseMoveHit(hit);
         }
 
         private void MouseEnter(MeshRendererVisual meshRendererVisual, RaycastHitDouble hit)
         {
-            if (OnMouseEnterEvent != null)
-                OnMouseEnterEvent(hit);
+            OnMouseEnterEvent?.Invoke(hit);
             if (meshRendererVisual != Disposable.NULL)
                 meshRendererVisual.OnMouseEnterHit(hit);
         }
 
         private void MouseExit(MeshRendererVisual meshRendererVisual, RaycastHitDouble hit)
         {
-            if (OnMouseExitEvent != null)
-                OnMouseExitEvent(hit);
+            OnMouseExitEvent?.Invoke(hit);
             if (meshRendererVisual != Disposable.NULL)
                 meshRendererVisual.OnMouseExitHit(hit);
         }
 
         private void MouseDown(MeshRendererVisual meshRendererVisual, RaycastHitDouble hit)
         {
-            if (OnMouseDownEvent != null)
-                OnMouseDownEvent(hit);
+            OnMouseDownEvent?.Invoke(hit);
             if (meshRendererVisual != Disposable.NULL)
                 meshRendererVisual.OnMouseDownHit(hit);
         }
 
         private void MouseUp(MeshRendererVisual meshRendererVisual, RaycastHitDouble hit)
         {
-            if (OnMouseUpEvent != null)
-                OnMouseUpEvent(hit);
+            OnMouseUpEvent?.Invoke(hit);
             if (meshRendererVisual != Disposable.NULL)
                 meshRendererVisual.OnMouseUpHit(hit);
         }
 
         private void MouseClicked(MeshRendererVisual meshRendererVisual, RaycastHitDouble hit)
         {
-            if (OnMouseClickedEvent != null)
-                OnMouseClickedEvent(hit);
+            OnMouseClickedEvent?.Invoke(hit);
             if (meshRendererVisual != Disposable.NULL)
                 meshRendererVisual.OnMouseClickedHit(hit);
         }
@@ -188,7 +180,7 @@ namespace DepictionEngine
 
         private bool SetMouseOver(RaycastHitDouble value)
         {
-            MeshRendererVisual meshRendererVisual = value != null ? value.meshRendererVisual : null;
+            MeshRendererVisual meshRendererVisual = value?.meshRendererVisual;
             
             if (Object.ReferenceEquals(_mouseOver, meshRendererVisual))
                 return false;
@@ -213,7 +205,7 @@ namespace DepictionEngine
             
             _isMouseDown = true;
 
-            MeshRendererVisual meshRendererVisual = value != null ? value.meshRendererVisual : null;
+            MeshRendererVisual meshRendererVisual = value?.meshRendererVisual;
 
             MouseDown(meshRendererVisual, value);
 
@@ -228,7 +220,7 @@ namespace DepictionEngine
             
             _isMouseDown = false;
 
-            MeshRendererVisual meshRendererVisual = value != null ? value.meshRendererVisual : null;
+            MeshRendererVisual meshRendererVisual = value?.meshRendererVisual;
 
             MouseUp(meshRendererVisual, value);
 
@@ -248,7 +240,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(value, _mouseClickTween))
                     return;
 
-                Dispose(_mouseClickTween);
+                DisposeManager.Dispose(_mouseClickTween);
 
                 _mouseClickTween = value;
             }
@@ -377,9 +369,9 @@ namespace DepictionEngine
             }
         }
 
-        public override bool OnDisposing()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposing())
+            if (base.OnDisposing(disposeContext))
             {
                 mouseClickTween = null;
 

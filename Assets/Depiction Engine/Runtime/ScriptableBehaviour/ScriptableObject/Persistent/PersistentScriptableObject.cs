@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static UnityEngine.Rendering.DebugUI;
 
 namespace DepictionEngine
 {
@@ -125,8 +126,7 @@ namespace DepictionEngine
         {
             base.UserPropertyAssigned(iJson, name, jsonAttribute, propertyInfo);
 
-            if (UserPropertyAssignedEvent != null)
-                UserPropertyAssignedEvent(iJson, propertyInfo);
+            UserPropertyAssignedEvent?.Invoke(iJson, propertyInfo);
         }
 
         protected override void Saving(Scene scene, string path)
@@ -141,17 +141,8 @@ namespace DepictionEngine
         {
             if (base.UpdateHideFlags())
             {
-
-                if (IsFallbackValues())
-                {
-                    bool debug = false;
-
-                    if (!SceneManager.IsSceneBeingDestroyed())
-                        debug = sceneManager.debug;
-
-                    if (!debug)
-                        hideFlags |= HideFlags.HideInHierarchy;
-                }
+                if (IsFallbackValues() && !SceneManager.Debugging())
+                    hideFlags |= HideFlags.HideInHierarchy;
 
                 return true;
             }
@@ -304,8 +295,7 @@ namespace DepictionEngine
         {
             int saved = 0;
 
-            if (PersistenceSaveOperationEvent != null)
-                PersistenceSaveOperationEvent(this, () => { saved++; });
+            PersistenceSaveOperationEvent?.Invoke(this, () => { saved++; });
 
             return saved;
         }
@@ -314,9 +304,8 @@ namespace DepictionEngine
         {
             int synchronized = 0;
 
-            if (PersistenceSynchronizeOperationEvent != null)
-                PersistenceSynchronizeOperationEvent(this, () => { synchronized++; });
-
+            PersistenceSynchronizeOperationEvent?.Invoke(this, () => { synchronized++; });
+            
             return synchronized;
         }
 
@@ -324,17 +313,30 @@ namespace DepictionEngine
         {
             int deleted = 0;
 
-            if (PersistenceDeleteOperationEvent != null)
-                PersistenceDeleteOperationEvent(this, () => { deleted++; });
+            PersistenceDeleteOperationEvent?.Invoke(this, () => { deleted++; });
 
             return deleted;
         }
 
-        public override bool OnDispose()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDispose())
+            if (base.OnDisposing(disposeContext))
             {
                 autoSynchronizeIntervalTimer = null;
+
+                return true;
+            }
+            return false;
+        }
+
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
+        {
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                PersistenceSaveOperationEvent = null;
+                PersistenceSynchronizeOperationEvent = null;
+                PersistenceDeleteOperationEvent = null;
+                UserPropertyAssignedEvent = null;
 
                 return true;
             }

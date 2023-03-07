@@ -57,8 +57,6 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            DisposeAllPersistenceData();
-
             if (_loaders != null)
                 _loaders.Clear();
 
@@ -86,8 +84,7 @@ namespace DepictionEngine
             {
                 if (persistenceDataDictionary.TryGetValue(key, out PersistenceData persistenceData) && Disposable.IsDisposed(persistenceData.persistent))
                 {
-                    if (nullPersistenceData == null)
-                        nullPersistenceData = new List<SerializableGuid>();
+                    nullPersistenceData ??= new List<SerializableGuid>();
                     nullPersistenceData.Add(key);
                 }
             }
@@ -156,24 +153,24 @@ namespace DepictionEngine
 
         private void RemoveLoaderDelegates(LoaderBase loader)
         {
-            if (!Object.ReferenceEquals(loader, null))
-                loader.LoadScopeDisposeEvent -= LoadScopeDisposeHandler;
+            if (loader is not null)
+                loader.LoadScopeDisposingEvent -= LoadScopeDisposingHandler;
         }
 
         private void AddLoaderDelegates(LoaderBase loader)
         {
             if (!IsDisposing() && loader != Disposable.NULL)
-                loader.LoadScopeDisposeEvent += LoadScopeDisposeHandler;
+                loader.LoadScopeDisposingEvent += LoadScopeDisposingHandler;
         }
 
-        private void LoadScopeDisposeHandler(IDisposable disposable)
+        private void LoadScopeDisposingHandler(IDisposable disposable)
         {
             AutoDisposePersistents(disposable as LoadScope);
         }
 
         private void RemovePersistenceDataDelegates(PersistenceData persistenceData)
         {
-            if (!Object.ReferenceEquals(persistenceData, null))
+            if (persistenceData is not null)
             {
                 persistenceData.DisposedEvent -= PersistenceDataDisposedHandler;
                 persistenceData.CanBeAutoDisposedChangedEvent -= PersistenceDataCanBeAutoDisposedChangedHandler;
@@ -326,8 +323,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_persistenceDataDictionary == null)
-                    _persistenceDataDictionary = new PersistenceDataDictionary();
+                _persistenceDataDictionary ??= new PersistenceDataDictionary();
                 return _persistenceDataDictionary;
             }
         }
@@ -355,8 +351,7 @@ namespace DepictionEngine
                 persistenceData.supportsSynchronize = supportsSynchronize;
                 persistenceData.supportsDelete = supportsDelete;
 
-                if (PersistenceDataAddedEvent != null)
-                    PersistenceDataAddedEvent(persistenceData);
+                PersistenceDataAddedEvent?.Invoke(persistenceData);
             }
         }
 
@@ -370,8 +365,7 @@ namespace DepictionEngine
             {
                 RemovePersistenceDataDelegates(persistenceData);
 
-                if (PersistenceDataRemovedEvent != null)
-                    PersistenceDataRemovedEvent(persistenceData);
+                PersistenceDataRemovedEvent?.Invoke(persistenceData);
             }
         }
 
@@ -379,8 +373,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_loaders == null)
-                    _loaders = new List<LoaderBase>();
+                _loaders ??= new List<LoaderBase>();
                 return _loaders;
             }
         }
@@ -434,8 +427,7 @@ namespace DepictionEngine
                         if (success)
                             persistents = CreatePersistents(loadScope.loader, operationResult);
 
-                        if (resultCallback != null)
-                            resultCallback(persistents);
+                        resultCallback?.Invoke(persistents);
                     });
             }
         }
@@ -459,8 +451,7 @@ namespace DepictionEngine
                             successCount = SyncOperationResult(operationResult);
                         }
 
-                        if (resultCallback != null)
-                            resultCallback(successCount);
+                        resultCallback?.Invoke(successCount);
                     });
             }
         }
@@ -484,8 +475,7 @@ namespace DepictionEngine
                             successCount = SyncOperationResult(operationResult);
                         }
 
-                        if (resultCallback != null)
-                            resultCallback(successCount);
+                        resultCallback?.Invoke(successCount);
                     });
             }
         }
@@ -524,8 +514,7 @@ namespace DepictionEngine
                             });
                         }
 
-                        if (resultCallback != null)
-                            resultCallback(successCount);
+                        resultCallback?.Invoke(successCount);
                     });
             }
         }
@@ -538,7 +527,7 @@ namespace DepictionEngine
             {
                 if (operationResult.resultsData != null && operationResult.resultsData.Count > 0)
                 {
-                    foreach (LoadResultData loadResultData in operationResult.resultsData)
+                    foreach (LoadResultData loadResultData in operationResult.resultsData.Cast<LoadResultData>())
                     {
                         List<IPersistent> createdPersistents = CreateObjectAndChildren(loader, loadResultData);
                         if (persistents == null)
@@ -554,7 +543,7 @@ namespace DepictionEngine
 
         private List<IPersistent> CreateObjectAndChildren(LoaderBase loader, LoadResultData loadResultData)
         {
-            List<IPersistent> persistents = new List<IPersistent>();
+            List<IPersistent> persistents = new();
 
             MergeJson(loadResultData.jsonResult, loadResultData.jsonFallback);
 
@@ -587,13 +576,11 @@ namespace DepictionEngine
 
         private IPersistent CreatePersistent(LoaderBase loader, Type type, JSONNode json, List<PropertyModifier> propertyModifiers = null)
         {
-            PersistenceData persistentData;
-
             if (json != null && json[nameof(IPersistent.id)] != null)
             {
                 if (SerializableGuid.TryParse(json[nameof(IPersistent.id)], out SerializableGuid id))
                 {
-                    if (GetPersistenceData(id, out persistentData))
+                    if (GetPersistenceData(id, out PersistenceData persistentData))
                         return persistentData.persistent;
                 }
             }
@@ -678,7 +665,7 @@ namespace DepictionEngine
 
                 if (dispose)
                 {
-                    Dispose(persistent is PersistentMonoBehaviour ? (persistent as PersistentMonoBehaviour).gameObject : persistent, DisposeManager.DestroyDelay.Delayed);
+                    Dispose(persistent is PersistentMonoBehaviour ? (persistent as PersistentMonoBehaviour).gameObject : persistent, DisposeManager.DisposeContext.Programmatically, DisposeManager.DisposeDelay.Delayed);
 
                     return true;
                 }
@@ -687,20 +674,22 @@ namespace DepictionEngine
             return false;
         }
 
-        private void DisposeAllPersistenceData()
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
         {
-            if (_persistenceDataDictionary != null)
+            if (base.OnDisposed(disposeContext, pooled))
             {
-                foreach (PersistenceData persistenceData in _persistenceDataDictionary.Values)
-                    Dispose(persistenceData);
+                if (_persistenceDataDictionary != null)
+                {
+                    foreach (PersistenceData persistenceData in _persistenceDataDictionary.Values)
+                        Dispose(persistenceData, disposeContext);
+                }
+
+                PersistenceDataAddedEvent = null;
+                PersistenceDataRemovedEvent = null;
+
+                return true;
             }
-        }
-
-        public override void OnDestroy()
-        {
-            base.OnDestroy();
-
-            DisposeAllPersistenceData();
+            return false;
         }
 
         /// <summary>

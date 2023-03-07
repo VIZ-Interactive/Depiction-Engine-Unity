@@ -41,7 +41,6 @@ namespace DepictionEngine
            
             sharedMaterial = null;
             sharedMesh = null;
-            colliderType = ColliderType.None;
         }
 
         protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
@@ -60,8 +59,7 @@ namespace DepictionEngine
 
             if (_meshFilter == null)
             {
-                _meshFilter = gameObject.GetComponent<MeshFilter>();
-                if (_meshFilter == null)
+                if (!gameObject.TryGetComponent<MeshFilter>(out _meshFilter))
                     _meshFilter = gameObject.AddComponent<MeshFilter>();
                 return true;
             }
@@ -75,8 +73,7 @@ namespace DepictionEngine
 
             if (_meshRenderer == null)
             {
-                _meshRenderer = gameObject.GetComponent<MeshRenderer>();
-                if (_meshRenderer == null)
+                if (!gameObject.TryGetComponent<MeshRenderer>(out _meshRenderer))
                     _meshRenderer = gameObject.AddComponent<MeshRenderer>();
                 return true;
             }
@@ -85,10 +82,7 @@ namespace DepictionEngine
 
         private void InitCollider()
         {
-            if (_colliderInternal == null)
-                _colliderInternal = gameObject.GetComponent<Collider>();
-
-            if (_colliderInternal != null)
+            if (gameObject.TryGetComponent<Collider>(out _colliderInternal))
             {
                 if (_colliderInternal is BoxCollider)
                     _colliderType = ColliderType.Box;
@@ -111,7 +105,7 @@ namespace DepictionEngine
         {
             if (base.SetVisualObject(oldValue, newValue))
             {
-                if (!Object.ReferenceEquals(oldValue, null))
+                if (oldValue is not null)
                     oldValue.RemoveMeshRenderer(meshRenderer);
                 if (newValue != null)
                     newValue.AddMeshRenderer(meshRenderer);
@@ -301,7 +295,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_colliderInternal, value))
                     return;
 
-                Dispose(_colliderInternal);
+                DisposeManager.Dispose(_colliderInternal);
 
                 _colliderInternal = value;
 
@@ -377,9 +371,9 @@ namespace DepictionEngine
             }
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
                 DisposeManager.Dispose(_meshModifier);
 
@@ -529,14 +523,12 @@ namespace DepictionEngine
         {
             if (processingFunction != null)
             {
-                if (meshModifierProcessor == null)
-                    meshModifierProcessor = InstanceManager.Instance(false).CreateInstance<Processor>();
+                meshModifierProcessor ??= InstanceManager.Instance(false).CreateInstance<Processor>();
                 
                 meshModifierProcessor.StartProcessing(processingFunction, typeof(MeshRendererVisualProcessorOutput), parametersType, parametersCallback,
                     (data, errorMsg) =>
                     {
-                        if (processingCompleted != null)
-                            processingCompleted(data as MeshRendererVisualProcessorOutput);
+                        processingCompleted?.Invoke(data as MeshRendererVisualProcessorOutput);
                     }, processingType);
             }
         }
@@ -552,9 +544,9 @@ namespace DepictionEngine
                 meshModifierProcessor.Dispose();
         }
 
-        public override bool OnDispose()
+        public override bool UpdateDestroyingContext()
         {
-            if (base.OnDispose())
+            if (base.UpdateDestroyingContext())
             {
                 if (_meshModifierProcessor != null)
                     _meshModifierProcessor.Dispose();
@@ -564,12 +556,10 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
-                sharedMesh = null;
-
                 DisposeMeshModifier();
 
                 return true;

@@ -126,6 +126,7 @@ namespace DepictionEngine
             }
         }
 
+        private List<Camera> _uiVisualCameras;
         protected override void UpdateMeshRendererVisuals(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
         {
             base.UpdateMeshRendererVisuals(meshRendererVisualDirtyFlags);
@@ -208,7 +209,7 @@ namespace DepictionEngine
 
             transform.IterateOverChildren<UIVisual>((uiVisual) =>
             {
-                if (uiVisual.cameras.Contains(camera.GetInstanceID()))
+                if (uiVisual.cameras.Contains(camera.GetCameraInstanceID()))
                 {
                     matchingUIVisual = uiVisual;
                     return false;
@@ -247,7 +248,7 @@ namespace DepictionEngine
                 if (visual is UIVisual)
                 {
                     UIVisual uiVisual = visual as UIVisual;
-                    if (uiVisual.cameras.Contains(camera.GetInstanceID()))
+                    if (uiVisual.cameras.Contains(camera.GetCameraInstanceID()))
                     {
                         //Leave the layer to 'Ignore Render' for Visuals that are are not in the current window to prevent them from dispatching mouse events and to hide the outline in the Editor
                         Camera currentCamera = cameraManager.GetMouseOverWindowCamera();

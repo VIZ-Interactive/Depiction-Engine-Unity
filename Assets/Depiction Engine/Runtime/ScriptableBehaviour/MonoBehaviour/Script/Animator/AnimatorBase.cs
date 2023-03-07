@@ -81,10 +81,10 @@ namespace DepictionEngine
         {
         }
 
-        public override bool OnDisposing()
-		{
-			if (base.OnDisposing())
-			{
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        {
+            if (base.OnDisposing(disposeContext))
+            {
 				StopAllAnimations();
 
 				return true;

@@ -79,8 +79,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_persisents == null)
-                    _persisents = new SerializableIPersistentList();
+                _persisents ??= new SerializableIPersistentList();
                 return _persisents;
             }
         }
@@ -106,10 +105,7 @@ namespace DepictionEngine
             }
 
             if (added)
-            {
-                if (PersistentAddedEvent != null)
-                    PersistentAddedEvent(this);
-            }
+                PersistentAddedEvent?.Invoke(this);
 
             return added;
         }
@@ -163,7 +159,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_loadIntervalTween, value))
                     return;
 
-                Dispose(_loadIntervalTween);
+                DisposeManager.Dispose(_loadIntervalTween);
 
                 _loadIntervalTween = value;
             }
@@ -177,7 +173,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_datasourceOperation, value))
                     return;
 
-                Dispose(_datasourceOperation);
+                DisposeManager.Dispose(_datasourceOperation);
 
                 _datasourceOperation = value;
 
@@ -195,8 +191,7 @@ namespace DepictionEngine
 
                 _loadingState = value;
 
-                if (LoadingStateChangedEvent != null)
-                    LoadingStateChangedEvent(this);
+                LoadingStateChangedEvent?.Invoke(this);
             }
         }
 
@@ -207,7 +202,7 @@ namespace DepictionEngine
 
         public JSONArray GetPersistentFallbackValuesJson()
         {
-            JSONArray persistentFallbackValues = new JSONArray();
+            JSONArray persistentFallbackValues = new();
 
             foreach (SerializableGuid persistentFallbackValuesId in loader.fallbackValuesId)
             {
@@ -218,7 +213,7 @@ namespace DepictionEngine
                     Type type = persistentFallbackValue.GetFallbackValuesType();
                     if (type != null && (typeof(PersistentMonoBehaviour).IsAssignableFrom(type) || typeof(PersistentScriptableObject).IsAssignableFrom(type)))
                     {
-                        JSONObject persistentFallbackValueJson = new JSONObject();
+                        JSONObject persistentFallbackValueJson = new();
 
                         string idName = nameof(PropertyMonoBehaviour.id);
                         persistentFallbackValueJson[idName] = JsonUtility.ToJson(persistentFallbackValue.id);
@@ -239,7 +234,7 @@ namespace DepictionEngine
 
         public virtual JSONObject GetLoadScopeFallbackValuesJson()
         {
-            JSONObject loadScopeFallbackValuesJson = new JSONObject();
+            JSONObject loadScopeFallbackValuesJson = new();
 
             loadScopeFallbackValuesJson[nameof(Object.name)] += " " + ToString();
 
@@ -314,9 +309,19 @@ namespace DepictionEngine
             return false;
         }
 
-        public override bool OnDispose()
+        public override string ToString()
         {
-            if (base.OnDispose())
+            return PropertiesToString() + " (" + GetType().FullName + ")";
+        }
+
+        protected virtual string PropertiesToString()
+        {
+            return "";
+        }
+
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        {
+            if (base.OnDisposing(disposeContext))
             {
                 loadIntervalTween = null;
                 datasourceOperation = null;
@@ -326,14 +331,16 @@ namespace DepictionEngine
             return false;
         }
 
-        public override string ToString()
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
         {
-            return PropertiesToString()+" (" + GetType().FullName + ")";
-        }
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                LoadingStateChangedEvent = null;
+                PersistentAddedEvent = null;
 
-        protected virtual string PropertiesToString()
-        {
-            return "";
+                return true;
+            }
+            return false;
         }
     }
 }

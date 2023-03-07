@@ -164,8 +164,7 @@ namespace DepictionEngine
 
         private void InitRequiredComponentTypes()
         {
-            if (_requiredComponentTypes == null)
-                _requiredComponentTypes = new List<Type>();
+            _requiredComponentTypes ??= new List<Type>();
             _requiredComponentTypes.Clear();
         }
 
@@ -188,7 +187,7 @@ namespace DepictionEngine
 
         public List<Type> GetRequiredComponentTypes()
         {
-            List<Type> requiredComponentTypes = new List<Type>();
+            List<Type> requiredComponentTypes = new();
             GetRequiredComponentTypes(ref requiredComponentTypes);
             return requiredComponentTypes;
         }
@@ -215,8 +214,7 @@ namespace DepictionEngine
         {
             base.UserPropertyAssigned(iJson, name, jsonAttribute, propertyInfo);
 
-            if (UserPropertyAssignedEvent != null)
-                UserPropertyAssignedEvent(iJson, propertyInfo);
+            UserPropertyAssignedEvent?.Invoke(iJson, propertyInfo);
         }
 
         protected override void Saving(Scene scene, string path)
@@ -233,16 +231,8 @@ namespace DepictionEngine
             {
                 gameObject.hideFlags = hideFlags;
 
-                if (isFallbackValues)
-                {
-                    bool debug = false;
-
-                    if (!SceneManager.IsSceneBeingDestroyed())
-                        debug = sceneManager.debug;
-
-                    if (!debug)
-                        gameObject.hideFlags |= HideFlags.HideInHierarchy;
-                }
+                if (isFallbackValues && !SceneManager.Debugging())
+                    gameObject.hideFlags |= HideFlags.HideInHierarchy;
 
                 return true;
             }
@@ -386,7 +376,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_autoSynchronizeIntervalTimer, value))
                     return;
 
-                Dispose(_autoSynchronizeIntervalTimer);
+                DisposeManager.Dispose(_autoSynchronizeIntervalTimer);
 
                 _autoSynchronizeIntervalTimer = value;
             }
@@ -396,8 +386,7 @@ namespace DepictionEngine
         {
             int saved = 0;
 
-            if (PersistenceSaveOperationEvent != null)
-                PersistenceSaveOperationEvent(this, () => { saved++; });
+            PersistenceSaveOperationEvent?.Invoke(this, () => { saved++; });
 
             return saved;
         }
@@ -406,8 +395,7 @@ namespace DepictionEngine
         {
             int synchronized = 0;
 
-            if (PersistenceSynchronizeOperationEvent != null)
-                PersistenceSynchronizeOperationEvent(this, () => { synchronized++; });
+            PersistenceSynchronizeOperationEvent?.Invoke(this, () => { synchronized++; });
 
             return synchronized;
         }
@@ -416,44 +404,45 @@ namespace DepictionEngine
         {
             int deleted = 0;
 
-            if (PersistenceDeleteOperationEvent != null)
-                PersistenceDeleteOperationEvent(this, () => { deleted++; });
+            PersistenceDeleteOperationEvent?.Invoke(this, () => { deleted++; });
 
             return deleted;
         }
 
-        public override bool OnDispose()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDispose())
+            if (base.OnDisposing(disposeContext))
             {
                 autoSynchronizeIntervalTimer = null;
+
+                InitRequiredComponentTypes();
+                GetRequiredComponentTypes(ref _requiredComponentTypes);
+
+                MonoBehaviour[] components = gameObject.GetComponents<MonoBehaviour>();
+                for (int i = components.Length - 1; i >= 0; i--)
+                {
+                    MonoBehaviour component = components[i];
+                    if (component != this)
+                    {
+                        Type componentType = component.GetType();
+                        if (!_requiredComponentTypes.Remove(componentType))
+                            Dispose(component, disposeContext, DisposeManager.DisposeDelay.Delayed);
+                    }
+                }
 
                 return true;
             }
             return false;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            if (base.OnDisposed(destroyContext))
-            { 
-                if (destroyContext == DisposeManager.DestroyContext.Unknown)
-                {
-                    InitRequiredComponentTypes();
-                    GetRequiredComponentTypes(ref _requiredComponentTypes);
-
-                    MonoBehaviour[] components = gameObject.GetComponents<MonoBehaviour>();
-                    for (int i = components.Length - 1; i >= 0; i--)
-                    {
-                        MonoBehaviour component = components[i];
-                        if (component != this)
-                        {
-                            Type componentType = component.GetType();
-                            if (!_requiredComponentTypes.Remove(componentType))
-                                Dispose(component);
-                        }
-                    }
-                }
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                PersistenceSaveOperationEvent = null;
+                PersistenceSynchronizeOperationEvent = null;
+                PersistenceDeleteOperationEvent = null;
+                UserPropertyAssignedEvent = null;
 
                 return true;
             }

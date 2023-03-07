@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.SceneManagement;
 
 namespace DepictionEngine
 {
@@ -24,9 +23,6 @@ namespace DepictionEngine
         private bool _castShadow;
         [SerializeField, Tooltip("When enabled the meshes '"+nameof(MeshRenderer)+ "' will have '"+nameof(Renderer.receiveShadows)+"' set to this value."), EndFoldout]
         private bool _receiveShadows;
-
-        [SerializeField, HideInInspector]
-        private MeshRendererVisual.ColliderType _colliderType;
 
         [SerializeField]
 #if UNITY_EDITOR
@@ -66,10 +62,8 @@ namespace DepictionEngine
 
             if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
             {
-                meshes.Clear();
-                isSharedMeshFlags.Clear();
-
-                meshRendererVisualDirtyFlags.Recreate();
+                _meshes.Clear();
+                _isSharedMeshFlags.Clear();
             }
 
             InitValue(value => useCollider = value, GetDefaultUseCollider(), initializingContext);
@@ -213,8 +207,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_meshes == null)
-                    _meshes = new List<Mesh>();
+                _meshes ??= new List<Mesh>();
                 return _meshes; 
             }
         }
@@ -223,8 +216,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_isSharedMeshFlags == null)
-                    _isSharedMeshFlags = new List<bool>();
+                _isSharedMeshFlags ??= new List<bool>();
                 return _isSharedMeshFlags;
             }
         }
@@ -233,8 +225,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_meshRendererVisualModifiers == null)
-                    _meshRendererVisualModifiers = new List<MeshRendererVisualModifier>();
+                _meshRendererVisualModifiers ??= new List<MeshRendererVisualModifier>();
                 return _meshRendererVisualModifiers; 
             }
             set 
@@ -251,14 +242,6 @@ namespace DepictionEngine
         protected Type GetMeshRendererType(MeshRendererVisual.ColliderType colliderType, Type meshRendererVisualNoCollider, Type meshRendererVisualBoxCollider, Type meshRendererVisualMeshCollider)
         {
             return colliderType == MeshRendererVisual.ColliderType.None ? meshRendererVisualNoCollider : colliderType == MeshRendererVisual.ColliderType.Box ? meshRendererVisualBoxCollider : meshRendererVisualMeshCollider;
-        }
-
-        private MeshRendererVisual GetMeshRendererVisual(int index)
-        {
-            MeshRendererVisual meshRendererVisual = null;
-            if (index < transform.children.Count)
-                meshRendererVisual = transform.children[index] as MeshRendererVisual;
-            return meshRendererVisual;
         }
 
         private Mesh GetMeshFromCache(MeshRendererVisualModifier meshRendererVisualModifier)
@@ -322,7 +305,7 @@ namespace DepictionEngine
                 {
                     MeshRendererVisualModifier meshRendererVisualModifier = meshRendererVisualModifiers[i];
 
-                    MeshRendererVisual meshRendererVisual = GetMeshRendererVisual(i);
+                    MeshRendererVisual meshRendererVisual = GetVisual(i) as MeshRendererVisual;
                     if (meshRendererVisual == Disposable.NULL)
                         meshRendererVisual = CreateMeshRendererVisual(meshRendererVisualDirtyFlags.colliderType, meshRendererVisualModifier);
 
@@ -348,8 +331,7 @@ namespace DepictionEngine
                     Mesh mesh = GetMeshFromUnityMesh(meshRendererVisual.sharedMesh, false);
                     if (mesh != Disposable.NULL && mesh.PhysicsBakedMeshDirty(physicsBakeMesh))
                     {
-                        if (_meshParameters == null)
-                            _meshParameters = new List<MeshParameters>();
+                        _meshParameters ??= new List<MeshParameters>();
                         _meshParameters.Add(new MeshParameters(mesh, physicsBakeMesh));
                     }
                     return true;
@@ -357,8 +339,7 @@ namespace DepictionEngine
 
                 if (_meshParameters != null)
                 {
-                    if (meshDataProcessor == null)
-                        meshDataProcessor = InstanceManager.Instance(false).CreateInstance<Processor>();
+                    meshDataProcessor ??= InstanceManager.Instance(false).CreateInstance<Processor>();
 
                     meshDataProcessor.StartProcessing(MeshProcessingFunctions.ModifyMeshes, null, typeof(MeshesParameters), 
                         (parameters) => 
@@ -368,10 +349,7 @@ namespace DepictionEngine
                         (data, errorMsg) => 
                         {
                             if (string.IsNullOrEmpty(errorMsg))
-                            {
-                                if (ProcessingCompletedEvent != null)
-                                    ProcessingCompletedEvent();
-                            }
+                                ProcessingCompletedEvent?.Invoke();
                         }, sceneManager.enableMultithreading ? Processor.ProcessingType.AsyncTask : Processor.ProcessingType.Sync);
                     _meshParameters = null;
                 }
@@ -395,9 +373,9 @@ namespace DepictionEngine
 
         private MeshRendererVisual CreateMeshRendererVisual(MeshRendererVisual.ColliderType colliderType, MeshRendererVisualModifier meshRendererVisualModifier)
         {
-            Type typeNoCollider = meshRendererVisualModifier.typeNoCollider != null ? meshRendererVisualModifier.typeNoCollider : typeof(MeshRendererVisualNoCollider);
-            Type typeBoxCollider = meshRendererVisualModifier.typeBoxCollider != null ? meshRendererVisualModifier.typeBoxCollider : typeof(MeshRendererVisualBoxCollider);
-            Type typeMeshCollider = meshRendererVisualModifier.typeMeshCollider != null ? meshRendererVisualModifier.typeMeshCollider : typeof(MeshRendererVisualMeshCollider);
+            Type typeNoCollider = meshRendererVisualModifier.typeNoCollider ?? typeof(MeshRendererVisualNoCollider);
+            Type typeBoxCollider = meshRendererVisualModifier.typeBoxCollider ?? typeof(MeshRendererVisualBoxCollider);
+            Type typeMeshCollider = meshRendererVisualModifier.typeMeshCollider ?? typeof(MeshRendererVisualMeshCollider);
             Type type = GetMeshRendererType(colliderType, typeNoCollider, typeBoxCollider, typeMeshCollider);
 
             return CreateVisual(type, meshRendererVisualModifier.name, null, new List<PropertyModifier>() { meshRendererVisualModifier }) as MeshRendererVisual;
@@ -434,7 +412,7 @@ namespace DepictionEngine
 
                     Type meshType = meshRendererVisualModifier.GetMeshType();
                     if (mesh == Disposable.NULL || mesh.GetType() != meshType)
-                        mesh = Mesh.CreateMesh(meshType, GetInitializeContext());
+                        mesh = Mesh.CreateMesh(meshType);
 
                     isSharedMesh = AddMeshToCache(meshRendererVisualModifier, mesh);
                 }
@@ -458,8 +436,7 @@ namespace DepictionEngine
                 if (disposeMeshModifier)
                     meshRendererVisualModifier.DisposeMeshModifier();
 
-                if (meshModifiedCallback != null)
-                    meshModifiedCallback();
+                meshModifiedCallback?.Invoke();
             }
         }
 
@@ -505,31 +482,6 @@ namespace DepictionEngine
             });
         }
 
-        [NonSerialized]
-        private List<Mesh> _lastMeshes;
-        [NonSerialized]
-        private List<bool> _lastIsSharedMeshFlags;
-        protected override void Saving(Scene scene, string path)
-        {
-            base.Saving(scene, path);
-
-            _lastMeshes = _meshes;
-            _lastIsSharedMeshFlags = _isSharedMeshFlags;
-            if (dontSaveVisualsToScene)
-            {
-                _meshes = null;
-                _isSharedMeshFlags = null;
-            }
-        }
-
-        protected override void Saved(Scene scene)
-        {
-            base.Saved(scene);
-
-            _meshes = _lastMeshes;
-            _isSharedMeshFlags = _lastIsSharedMeshFlags;
-        }
-
         protected void DisposeAllMeshRendererVisualModifiers()
         {
             if (_meshRendererVisualModifiers != null)
@@ -545,42 +497,39 @@ namespace DepictionEngine
             DisposeManager.Dispose(meshRendererVisualModifier);
         }
 
-        private void DisposeAllMeshes(DisposeManager.DestroyDelay destroyDelay = DisposeManager.DestroyDelay.None)
-        {
-            if (_meshes != null)
-            {
-                for (int i = _meshes.Count - 1; i >= 0; i--)
-                    DisposeMesh(i, destroyDelay);
-            }
-        }
-
-        private void DisposeMesh(int index, DisposeManager.DestroyDelay destroyDelay = DisposeManager.DestroyDelay.None)
+        private void DisposeMesh(int index, DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Programmatically)
         {
             if (_meshes != null && _isSharedMeshFlags != null)
             {
                 if (!_isSharedMeshFlags[index])
-                    Dispose(_meshes[index], destroyDelay);
+                    Dispose(_meshes[index], disposeContext);
             }
         }
 
-        public override bool OnDispose()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDispose())
+            if (base.OnDisposing(disposeContext))
             {
                 DisposeDataProcessor(_meshDataProcessor);
 
-                DisposeAllMeshes(DisposeManager.DestroyDelay.Delayed);
+                meshRendererVisualModifiers = null;
+
+                ProcessingCompletedEvent = null;
 
                 return true;
             }
             return false;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposed(disposeContext, pooled))
             {
-                meshRendererVisualModifiers = null;
+                if (_meshes != null)
+                {
+                    for (int i = _meshes.Count - 1; i >= 0; i--)
+                        DisposeMesh(i, disposeContext);
+                }
 
                 ProcessingCompletedEvent = null;
 
@@ -650,7 +599,7 @@ namespace DepictionEngine
                 yield return enumeration;
         }
 
-        protected static IEnumerable ModifyMeshes(object data, MeshesParameters parameters)
+        protected static IEnumerable ModifyMeshes(object _, MeshesParameters parameters)
         {
             foreach (object enumeration in parameters.ApplyPhysicsBakeMeshToMesh())
                 yield return enumeration;
@@ -670,7 +619,7 @@ namespace DepictionEngine
 
         public MeshRendererVisualModifier currentMeshRendererVisualModifier
         {
-            get { return meshRendererVisualModifiers.Count == 0 ? null : meshRendererVisualModifiers[meshRendererVisualModifiers.Count - 1]; }
+            get { return meshRendererVisualModifiers.Count == 0 ? null : meshRendererVisualModifiers[^1]; }
         }
 
         public int meshRendererVisualModifiersCount
@@ -682,8 +631,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_meshRendererVisualModifiers == null)
-                    _meshRendererVisualModifiers = new List<MeshRendererVisualModifier>();
+                _meshRendererVisualModifiers ??= new List<MeshRendererVisualModifier>();
                 return _meshRendererVisualModifiers; 
             }
             private set
@@ -698,7 +646,7 @@ namespace DepictionEngine
         {
             if (meshRendererVisualModifiers.Count > 0)
             {
-                FeatureMeshModifier featureMeshModifier = meshRendererVisualModifiers[meshRendererVisualModifiers.Count - 1].meshModifier as FeatureMeshModifier;
+                FeatureMeshModifier featureMeshModifier = meshRendererVisualModifiers[^1].meshModifier as FeatureMeshModifier;
                 if (featureMeshModifier != Disposable.NULL)
                     featureMeshModifier.FeatureComplete();
             }
@@ -710,9 +658,9 @@ namespace DepictionEngine
             _meshRendererVisualModifiers = null;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
                 if (_meshRendererVisualModifiers != null)
                 {

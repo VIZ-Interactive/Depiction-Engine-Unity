@@ -17,17 +17,8 @@ namespace DepictionEngine
 
         [SerializeField, HideInInspector]
         private Material _material;
-        [SerializeField, HideInInspector]
-        private UnityEngine.Mesh[] _unityMeshes;
 
-        private AssetBase _mesh;
-
-        public override void Recycle()
-        {
-            base.Recycle();
-
-            unityMeshes = null;
-        }
+        private AssetBase _asset;
 
         protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
         {
@@ -39,20 +30,12 @@ namespace DepictionEngine
             InitValue(value => shaderPath = value, RenderingManager.SHADER_BASE_PATH + "BuildingGrid", initializingContext);
         }
 
-        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
-        {
-            base.Initialized(initializingContext);
-
-            if (unityMeshes == null || unityMeshes.Length == 0)
-                UdateUnityMeshes();
-        }
-
         protected override bool UpdateAllDelegates()
         {
             if (base.UpdateAllDelegates())
             {
-                RemoveAssetDelgates(mesh);
-                AddAssetDelegates(mesh);
+                RemoveAssetDelgates(asset);
+                AddAssetDelegates(asset);
 
                 return true;
             }
@@ -61,7 +44,7 @@ namespace DepictionEngine
 
         private void RemoveAssetDelgates(AssetBase assetBase)
         {
-            if (!Object.ReferenceEquals(assetBase, null))
+            if (assetBase is not null)
                 assetBase.PropertyAssignedEvent -= AssetPropertyAssignedHandler;
         }
 
@@ -74,14 +57,14 @@ namespace DepictionEngine
         private void AssetPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             if (name == nameof(AssetBase.data))
-                MeshChanged();
+                AssetChanged();
         }
 
         protected override bool UpdateReferences(bool forceUpdate = false)
         {
             if (base.UpdateReferences(forceUpdate))
             {
-                UpdateMesh();
+                UpdateAsset();
 
                 return true;
             }
@@ -113,7 +96,7 @@ namespace DepictionEngine
 
         protected override bool AssetLoaded()
         {
-            return base.AssetLoaded() && mesh != Disposable.NULL;
+            return base.AssetLoaded() && asset != Disposable.NULL;
         }
 
         protected override Type GetMeshRendererVisualDirtyFlagType()
@@ -129,7 +112,7 @@ namespace DepictionEngine
             {
                 MeshGridMeshObjectVisualDirtyFlags meshGridMeshObjectRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as MeshGridMeshObjectVisualDirtyFlags;
 
-                meshGridMeshObjectRendererVisualDirtyFlags.unityMeshes = unityMeshes;
+                meshGridMeshObjectRendererVisualDirtyFlags.asset = asset;
             }
         }
 
@@ -146,7 +129,7 @@ namespace DepictionEngine
             {
                 MeshGridMeshObjectVisualDirtyFlags meshGridMeshObjectVisualDirtyFlags = meshRendererVisualDirtyFlags as MeshGridMeshObjectVisualDirtyFlags;
 
-                (parameters as MeshGridMeshObjectParameters).Init(meshGridMeshObjectVisualDirtyFlags.unityMeshes);
+                (parameters as MeshGridMeshObjectParameters).Init(meshGridMeshObjectVisualDirtyFlags.asset);
             }
         }
 
@@ -155,17 +138,17 @@ namespace DepictionEngine
             get { return AppendToReferenceComponentName(GetReferenceAt(2), typeof(Mesh).Name) as AssetReference; }
         }
 
-        private void UpdateMesh()
+        private void UpdateAsset()
         {
-            mesh = meshAssetReference != Disposable.NULL && meshAssetReference.data is IUnityMeshAsset ? featureAssetReference.data as AssetBase: null;
+            asset = meshAssetReference != Disposable.NULL && meshAssetReference.data is IUnityMeshAsset ? featureAssetReference.data as AssetBase: null;
         }
 
-        protected AssetBase mesh
+        protected AssetBase asset
         {
-            get { return _mesh; }
+            get { return _asset; }
             private set
             {
-                AssetBase oldValue = _mesh;
+                AssetBase oldValue = _asset;
                 AssetBase newValue = value;
 
                 if (oldValue == newValue)
@@ -174,54 +157,22 @@ namespace DepictionEngine
                 RemoveAssetDelgates(oldValue);
                 AddAssetDelegates(newValue);
 
-                _mesh = newValue;
+                _asset = newValue;
 
-                MeshChanged();
+                AssetChanged();
             }
         }
 
-        private void MeshChanged()
+        private void AssetChanged()
         {
             if (initialized)
             {
-                UdateUnityMeshes();
-
                 if (meshRendererVisualDirtyFlags is MeshGridMeshObjectVisualDirtyFlags)
                 {
                     MeshGridMeshObjectVisualDirtyFlags featureMeshRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as MeshGridMeshObjectVisualDirtyFlags;
 
-                    featureMeshRendererVisualDirtyFlags.UnityMeshesChanged();
+                    featureMeshRendererVisualDirtyFlags.AssetChanged();
                 }
-            }
-        }
-
-        private void UdateUnityMeshes()
-        {
-            List<UnityEngine.Mesh> newUnityMeshes = new List<UnityEngine.Mesh>();
-
-            if (mesh != null)
-            {
-                IUnityMeshAsset iUnityMesh = mesh as IUnityMeshAsset;
-                iUnityMesh.IterateOverUnityMesh((unityMesh) =>
-                {
-                    newUnityMeshes.Add(Object.Instantiate(unityMesh));
-                });
-            }
-
-            unityMeshes = newUnityMeshes.ToArray();
-        }
-
-        protected UnityEngine.Mesh[] unityMeshes
-        {
-            get { return _unityMeshes; }
-            private set 
-            {
-                if (_unityMeshes == value)
-                    return;
-
-                DisposeUnityMeshes();
-
-                _unityMeshes = value; 
             }
         }
 
@@ -234,8 +185,7 @@ namespace DepictionEngine
 
             if (meshGridMeshObjectVisualDirtyFlags != null)
             {
-                if (meshRendererVisualModifiersProcessor == null)
-                    meshRendererVisualModifiersProcessor = InstanceManager.Instance(false).CreateInstance<Processor>();
+                meshRendererVisualModifiersProcessor ??= InstanceManager.Instance(false).CreateInstance<Processor>();
 
                 meshGridMeshObjectVisualDirtyFlags.SetProcessing(true, meshRendererVisualModifiersProcessor);
 
@@ -251,8 +201,7 @@ namespace DepictionEngine
 
                             meshObjectProcessorOutput.Clear();
 
-                            if (completedCallback != null)
-                                completedCallback(meshRendererVisualDirtyFlags);
+                            completedCallback?.Invoke(meshRendererVisualDirtyFlags);
                         }
 
                     }, GetProcessingType(meshRendererVisualDirtyFlags));
@@ -286,18 +235,9 @@ namespace DepictionEngine
             });
         }
 
-        private void DisposeUnityMeshes()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (_unityMeshes != null)
-            {
-                for (int i = _unityMeshes.Length; i >= 0; i--)
-                    Dispose(_unityMeshes[i]);
-            }
-        }
-
-        public override bool OnDispose()
-        {
-            if (base.OnDispose())
+            if (base.OnDisposing(disposeContext))
             {
                 DisposeDataProcessor(_meshRendererVisualModifiersProcessor);
 
@@ -306,28 +246,33 @@ namespace DepictionEngine
             return false;
         }
 
-        public override void OnDestroy()
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            base.OnDestroy();
-
-            Dispose(_material);
-            DisposeUnityMeshes();
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                if (!pooled)
+                    Dispose(_material, disposeContext);
+                
+                return true;
+            }
+            return false;
         }
 
         protected class MeshGridMeshObjectParameters : FeatureParameters
         {
-            private UnityEngine.Mesh[] _meshes;
+            private AssetBase _asset;
 
             public override void Recycle()
             {
                 base.Recycle();
 
-                _meshes = null;
+                _asset = null;
             }
 
-            public MeshGridMeshObjectParameters Init(UnityEngine.Mesh[] meshes)
+            public MeshGridMeshObjectParameters Init(AssetBase asset)
             {
-                _meshes = meshes;
+                Lock(asset);
+                _asset = asset;
 
                 return this;
             }
@@ -337,9 +282,9 @@ namespace DepictionEngine
                 return false;
             }
 
-            public UnityEngine.Mesh[] meshes
+            public AssetBase asset
             {
-                get { return _meshes; }
+                get { return _asset; }
             }
         }
 
@@ -356,40 +301,43 @@ namespace DepictionEngine
                 PointFeature pointFeature = parameters.feature as PointFeature;
                 if (pointFeature != null)
                 {
-                    List<int> triangles = new List<int>();
-                    List<Vector3> vertices = new List<Vector3>();
-                    List<Vector3> normals = new List<Vector3>();
-                    List<Vector2> uvs = new List<Vector2>();
+                    List<int> triangles = new();
+                    List<Vector3> vertices = new();
+                    List<Vector3> normals = new();
+                    List<Vector2> uvs = new();
 
                     for (int i = 0; i < pointFeature.featureCount; i++)
                     {
-                        UnityEngine.Mesh mesh = parameters.meshes[i];
 
-                        if (mesh != null)
+                        if (parameters.asset is IUnityMeshAsset)
                         {
-                            mesh.GetTriangles(triangles, 0);
-                            mesh.GetVertices(vertices);
-                            mesh.GetUVs(0, uvs);
-
-                            GeoCoordinate3Double geoCoordinate = pointFeature.GetGeoCoordinate(i);
-
-                            Vector3 point = parameters.TransformGeoCoordinateToVector(geoCoordinate.latitude, geoCoordinate.longitude);
-
-                            float elevationDelta = 0.0f;
-                            double elevation = 0.0d;
-                            if (GetElevation(parameters, point, ref elevation))
-                                elevationDelta = (float)(elevation - parameters.centerElevation);
-
-                            for (int e = 0; e < vertices.Count; e++)
+                            IUnityMeshAsset iUnityMesh = parameters.asset as IUnityMeshAsset;
+                            iUnityMesh.IterateOverUnityMesh((unityMesh) =>
                             {
-                                Vector3 vertex = vertices[e];
-                                vertex.x += point.x;
-                                vertex.y += elevationDelta;
-                                vertex.z += point.z;
-                                vertices[e] = vertex;
-                            }
+                                unityMesh.GetTriangles(triangles, 0);
+                                unityMesh.GetVertices(vertices);
+                                unityMesh.GetUVs(0, uvs);
 
-                            AddBuffers(meshObjectProcessorOutput, triangles, vertices, normals, uvs);
+                                GeoCoordinate3Double geoCoordinate = pointFeature.GetGeoCoordinate(i);
+
+                                Vector3 point = parameters.TransformGeoCoordinateToVector(geoCoordinate.latitude, geoCoordinate.longitude);
+
+                                float elevationDelta = 0.0f;
+                                double elevation = 0.0d;
+                                if (GetElevation(parameters, point, ref elevation))
+                                    elevationDelta = (float)(elevation - parameters.centerElevation);
+
+                                for (int e = 0; e < vertices.Count; e++)
+                                {
+                                    Vector3 vertex = vertices[e];
+                                    vertex.x += point.x;
+                                    vertex.y += elevationDelta;
+                                    vertex.z += point.z;
+                                    vertices[e] = vertex;
+                                }
+
+                                AddBuffers(meshObjectProcessorOutput, triangles, vertices, normals, uvs);
+                            });
                         }
                     }
 

@@ -1,6 +1,5 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
-using DepictionEngine.Editor;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -278,7 +277,7 @@ namespace DepictionEngine
 
         private void RemoveAstroObjectDelegates(AstroObject astroObject)
         {
-            if (!Object.ReferenceEquals(astroObject, null))
+            if (astroObject is not null)
                 astroObject.PropertyAssignedEvent -= AstroObjectPropertyAssignedHandler;
         }
 
@@ -340,8 +339,7 @@ namespace DepictionEngine
             if (!HasChanged(oldValue, newValue))
                 return;
 
-            if (ChildPropertyAssignedEvent != null)
-                ChildPropertyAssignedEvent(property as TransformBase, name, newValue, oldValue);
+            ChildPropertyAssignedEvent?.Invoke(property as TransformBase, name, newValue, oldValue);
         }
 
         public override bool IsDynamicProperty(int key)
@@ -411,8 +409,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_unityTransformComponents == null)
-                    _unityTransformComponents = new TransformComponents3();
+                _unityTransformComponents ??= new TransformComponents3();
                 return _unityTransformComponents; 
             }
         }
@@ -605,8 +602,7 @@ namespace DepictionEngine
                         if (child is TransformBase)
                             AddChildDelegates(child as TransformBase);
 
-                        if (ChildAddedEvent != null)
-                            ChildAddedEvent(this, child);
+                        ChildAddedEvent?.Invoke(this, child);
                     }
                 }
             }, child);
@@ -639,10 +635,9 @@ namespace DepictionEngine
 
                         if (child is TransformBase)
                             RemoveChildDelegates(child as TransformBase);
-                   
 
-                        if (ChildRemovedEvent != null)
-                            ChildRemovedEvent(this, child);
+
+                        ChildRemovedEvent?.Invoke(this, child);
                     }
                 }
             }, child);
@@ -810,7 +805,7 @@ namespace DepictionEngine
                         if (IsUserChangeContext())
                         {
                             parentChanged = true;
-                            UndoManager.SetTransformParent(transform, newTransform);
+                            Editor.UndoManager.SetTransformParent(transform, newTransform);
                         }
 #endif
                         if (!parentChanged)
@@ -864,11 +859,6 @@ namespace DepictionEngine
         protected Vector3 CaptureLocalScaleDelta()
         {
             return transformLocalScale - _lastTransformLocalScale;
-        }
-
-        protected bool DetectDirectTransformManipulation()
-        {
-            return DetectDirectTransformLocalPositionManipulation() || DetectDirectTransformLocalRotationManipulation() || DetectDirectTransformLocalScaleManipulation();
         }
 
         protected bool DetectDirectTransformLocalPositionManipulation()
@@ -1065,7 +1055,7 @@ namespace DepictionEngine
         {
             bool containsDisposed = base.ApplyBeforeChildren(callback);
 
-            if (!Object.ReferenceEquals(_objectBase, null) && TriggerCallback(_objectBase, callback))
+            if (_objectBase is not null && TriggerCallback(_objectBase, callback))
                 containsDisposed = true;
 
             return containsDisposed;
@@ -1102,9 +1092,9 @@ namespace DepictionEngine
             UninhibitEnableDisableAll();
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposed(disposeContext, pooled))
             {
                 ChildAddedEvent = null;
                 ChildRemovedEvent = null;
@@ -1116,13 +1106,13 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override DisposeManager.DestroyContext GetDestroyingContext()
+        protected override DisposeManager.DisposeContext GetDestroyingContext()
         {
-            DisposeManager.DestroyContext overrideDestroyingContext = base.GetDestroyingContext();
+            DisposeManager.DisposeContext overrideDestroyingContext = base.GetDestroyingContext();
 
 #if UNITY_EDITOR
             if (_objectBase != Disposable.NULL && _objectBase is Editor.SceneCamera)
-                overrideDestroyingContext = DisposeManager.DestroyContext.Programmatically;
+                overrideDestroyingContext = DisposeManager.DisposeContext.Programmatically;
 #endif
 
             return overrideDestroyingContext;

@@ -64,8 +64,7 @@ namespace DepictionEngine
 
                 _progress = value;
 
-                if (_onUpdateCallback != null)
-                    _onUpdateCallback(currentValue);
+                _onUpdateCallback?.Invoke(currentValue);
 
                 if (IsDisposing())
                     return;
@@ -125,18 +124,16 @@ namespace DepictionEngine
         {
             _playing = false;
 
-            if (_onCompleteCallback != null)
-                _onCompleteCallback();
+            _onCompleteCallback?.Invoke();
 
             DisposeManager.Dispose(this);
         }
 
-        public override bool OnDisposing()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposing())
+            if (base.OnDisposing(disposeContext))
             {
-                if (_onKillCallback != null)
-                    _onKillCallback();
+                _onKillCallback?.Invoke();
 
                 return true;
             }

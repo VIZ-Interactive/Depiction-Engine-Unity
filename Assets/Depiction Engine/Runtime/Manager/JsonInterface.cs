@@ -160,8 +160,10 @@ namespace DepictionEngine
                 if (_mouseEventJson == null)
                     _mouseEventJson = new JSONObject();
                 _mouseEventJson[POINT] = JsonUtility.ToJson(raycastHitDouble.point);
-                JSONObject transformJson = new JSONObject();
-                transformJson[ID] = raycastHitDouble.transform.id.ToString();
+                JSONObject transformJson = new()
+                {
+                    [ID] = raycastHitDouble.transform.id.ToString()
+                };
                 _mouseEventJson[TRANSFORM] = transformJson;
                 _mouseEventJson[MESHRENDERER_VISUAL] = raycastHitDouble.meshRendererVisual.id.ToString();
                 if (_mouseEventVisualObjectJson == null)
@@ -484,7 +486,7 @@ namespace DepictionEngine
                     if (obj is MonoBehaviour && operation[GAME_OBJECT] != null && operation[GAME_OBJECT].AsBool)
                         obj = (obj as MonoBehaviour).gameObject;
                     DisposeManager.Dispose(obj);
-                    result = !Object.ReferenceEquals(obj, null) ? operation[ID] : ID_NOT_FOUND_ERROR_MSG;
+                    result = obj is not null ? operation[ID] : ID_NOT_FOUND_ERROR_MSG;
                     break;
             }
             return result;

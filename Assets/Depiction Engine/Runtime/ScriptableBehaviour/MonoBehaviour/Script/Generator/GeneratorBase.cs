@@ -161,7 +161,7 @@ namespace DepictionEngine
 
         protected bool GeneratePersistent(Type type, JSONNode json, List<PropertyModifier> propertyModifiers = null)
         {
-            return GeneratePersistent(out IPersistent persistent, type, json, propertyModifiers);
+            return GeneratePersistent(out _, type, json, propertyModifiers);
         }
 
         public bool GeneratePersistent(out IPersistent persistent, Type type, JSONNode json, List<PropertyModifier> propertyModifiers = null)
@@ -225,9 +225,9 @@ namespace DepictionEngine
             this.propertyModifier = propertyModifier;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
                 DisposeManager.Dispose(propertyModifier);
 
@@ -264,9 +264,9 @@ namespace DepictionEngine
             this.grid2DDimensions = grid2DDimensions;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposing(disposeContext))
             {
                 grid2DIndex = Vector2Int.zero;
                 grid2DDimensions = Vector2Int.zero;

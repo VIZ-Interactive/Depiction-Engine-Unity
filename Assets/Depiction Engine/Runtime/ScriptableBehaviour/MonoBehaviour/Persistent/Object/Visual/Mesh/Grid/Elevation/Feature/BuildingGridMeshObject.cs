@@ -339,9 +339,9 @@ namespace DepictionEngine
             return shaderPath;
         }
 
-        public override bool OnDispose()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDispose())
+            if (base.OnDisposing(disposeContext))
             {
                 DisposeDataProcessor(_meshRendererVisualModifiersProcessor);
 

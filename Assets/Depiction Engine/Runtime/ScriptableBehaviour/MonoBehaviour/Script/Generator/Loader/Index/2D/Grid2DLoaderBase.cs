@@ -167,13 +167,13 @@ namespace DepictionEngine
         {
             base.GetLoadInterval(grid2DIndex, grid2DDimensions, centerIndex);
 
-            Vector2Int xyDelta = new Vector2Int(
+            Vector2Int xyDelta = new(
                 Math.Abs(grid2DIndex.x - centerIndex.x),
                 Math.Abs(grid2DIndex.y - centerIndex.y));
 
             if (IsSpherical())
             {
-                xyDelta = new Vector2Int(
+                xyDelta = new(
                     Math.Min(xyDelta.x, Math.Abs(grid2DIndex.x + (grid2DIndex.x < centerIndex.x ? grid2DDimensions.x : -grid2DDimensions.x) - centerIndex.x)),
                     Math.Min(xyDelta.y, Math.Abs(grid2DIndex.y + (grid2DIndex.y < centerIndex.y ? grid2DDimensions.y : -grid2DDimensions.y) - centerIndex.y)));
             }

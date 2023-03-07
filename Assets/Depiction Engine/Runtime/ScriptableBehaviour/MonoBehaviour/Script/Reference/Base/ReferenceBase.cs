@@ -173,7 +173,7 @@ namespace DepictionEngine
         {
             if (!Object.ReferenceEquals(loadScope, null))
             {
-                loadScope.DisposeEvent -= LoadScopeDisposeHandler;
+                loadScope.DisposingEvent -= LoadScopeDisposingHandler;
                 loadScope.LoadingStateChangedEvent -= LoadScopeChangedHandler;
                 loadScope.PersistentAddedEvent -= LoadScopeChangedHandler;
             }
@@ -183,13 +183,13 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && loadScope != Disposable.NULL)
             {
-                loadScope.DisposeEvent += LoadScopeDisposeHandler;
+                loadScope.DisposingEvent += LoadScopeDisposingHandler;
                 loadScope.LoadingStateChangedEvent += LoadScopeChangedHandler;
                 loadScope.PersistentAddedEvent += LoadScopeChangedHandler;
             }
         }
 
-        private void LoadScopeDisposeHandler(IDisposable disposable)
+        private void LoadScopeDisposingHandler(IDisposable disposable)
         {
             SetLoadScope(null);
         }
@@ -202,16 +202,16 @@ namespace DepictionEngine
         private void RemoveDataDelegates(ScriptableObjectDisposable data)
         {
             if (!Object.ReferenceEquals(data, null))
-                data.DisposeEvent -= DataDisposeHandler;
+                data.DisposingEvent -= DataDisposingHandler;
         }
 
         private void AddDataDelegates(ScriptableObjectDisposable data)
         {
             if (!IsDisposing() && data != Disposable.NULL)
-                data.DisposeEvent += DataDisposeHandler;
+                data.DisposingEvent += DataDisposingHandler;
         }
 
-        private void DataDisposeHandler(IDisposable disposable)
+        private void DataDisposingHandler(IDisposable disposable)
         {
             SetData(null);
         }
@@ -414,8 +414,7 @@ namespace DepictionEngine
 
         protected virtual void DataChanged(PersistentScriptableObject newValue, PersistentScriptableObject oldValue)
         {
-            if (DataChangedEvent != null)
-                DataChangedEvent(this, newValue, oldValue);
+            DataChangedEvent?.Invoke(this, newValue, oldValue);
         }
 
         private bool WasLoaded()
@@ -448,11 +447,23 @@ namespace DepictionEngine
             }
         }
 
-        public override bool OnDisposing()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposing())
+            if (base.OnDisposing(disposeContext))
             {
                 RemoveReferenceFromLoader(loadScope);
+
+                return true;
+            }
+            return false;
+        }
+
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
+        {
+            if (base.OnDisposed(disposeContext, pooled))
+            {
+                DataChangedEvent = null;
+                LoaderPropertyAssignedChangedEvent = null;
 
                 return true;
             }

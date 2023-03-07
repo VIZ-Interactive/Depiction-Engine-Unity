@@ -50,8 +50,10 @@ namespace DepictionEngine
                 atmosphereLoader.zoomRange = Vector2Int.zero;
                 atmosphereLoader.fallbackValuesId = new List<SerializableGuid> { atmosphereGridMeshObjectFallbackValuesId };
 
-                JSONObject json = new JSONObject();
-                json[nameof(PropertyMonoBehaviour.id)] = JsonUtility.ToJson(atmosphereGridMeshObjectFallbackValuesId);
+                JSONObject json = new()
+                {
+                    [nameof(PropertyMonoBehaviour.id)] = JsonUtility.ToJson(atmosphereGridMeshObjectFallbackValuesId)
+                };
                 FallbackValues atmosphereGridMeshObjectFallbackValues = datasourceRoot.gameObject.AddSafeComponent<FallbackValues>(initializingContext, json);
                 atmosphereGridMeshObjectFallbackValues.SetFallbackJsonFromType(typeof(AtmosphereGridMeshObject).FullName);
                 atmosphereGridMeshObjectFallbackValues.SetProperty(nameof(AtmosphereGridMeshObject.dontSaveToScene), true);
@@ -176,9 +178,9 @@ namespace DepictionEngine
                 atmosphereLoader.gameObject.SetActive(!IsDisposing() && activeAndEnabled);
         }
 
-        public override bool OnDisposing()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposing())
+            if (base.OnDisposing(disposeContext))
             {
                 UpdateAtmosphereLoaderActive();
 

@@ -6,7 +6,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection;
-using System.Drawing;
+using UnityEngine.UIElements;
+using System.Text.RegularExpressions;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Microsoft.Design", "IDE1006",
@@ -39,6 +40,8 @@ namespace DepictionEngine
         /// The hierarchy is traversed and dirty flags are cleared. <br/><br/>
         /// <b><see cref="HierarchicalActivate"/>:</b> <br/>
         /// The hierarchy is traversed and gameObjects that have never been active are temporarly activated and deactivated to allow for their Awake to be called. <br/><br/>
+        /// <b><see cref="PastingComponentValues"/>:</b> <br/>
+        /// Pasting component values from the inspector(Editor only). <br/><br/>
         /// <b><see cref="UnityInitialized"/>:</b> <br/>
         /// Marks all newly initialized objects as 'UnityInitialized'. <br/><br/>
         /// <b><see cref="DelayedOnDestroy"/>:</b> <br/>
@@ -48,7 +51,7 @@ namespace DepictionEngine
         /// <b><see cref="DelayedDisposeLate"/>:</b> <br/>
         /// Objects that were waiting to be disposed late are disposed.
         /// </summary> 
-        public enum UpdateExecutionState
+        public enum ExecutionState
         {
             None,
             LateInitialize,
@@ -57,6 +60,7 @@ namespace DepictionEngine
             PostHierarchicalUpdate,
             HierarchicalClearDirtyFlags,
             HierarchicalActivate,
+            PastingComponentValues,
             UnityInitialized,
             DelayedOnDestroy,
             DelayedDispose,
@@ -66,15 +70,17 @@ namespace DepictionEngine
         public const string NAMESPACE = "DepictionEngine";
         public const string SCENE_MANAGER_NAME = "Managers (Required)";
 
-        [BeginFoldout("Debug")]
-        [SerializeField, Tooltip("When enabled some hidden properties and objects will be exposed to help with debugging."), EndFoldout]
-        public bool _debug;
+        [BeginFoldout("Editor")]
+        [SerializeField, Tooltip("When enabled some hidden properties and objects will be exposed to help with debugging.")]
+        private bool _debug;
+        [SerializeField, Tooltip("When enabled some log entries will be disable such as 'Child GameObject ... became dangling during undo'."), EndFoldout]
+        private bool _logConsoleFiltering;
 
         [BeginFoldout("Performance")]
         [SerializeField, Tooltip("Should the player be running when the application is in the background?")]
-        public bool _runInBackground;
+        private bool _runInBackground;
         [SerializeField, Tooltip("When enabled some "+nameof(Processor)+"'s will perform their work on seperate threads."), EndFoldout]
-        public bool _enableMultithreading;
+        private bool _enableMultithreading;
 
 #if UNITY_EDITOR
         [BeginFoldout("Asset Bundle")]
@@ -119,7 +125,7 @@ namespace DepictionEngine
 
         private static bool _activateAll;
 
-        private static UpdateExecutionState _sceneExecutionState;
+        private static ExecutionState _sceneExecutionState;
 
         private static bool _sceneClosing;
 
@@ -205,12 +211,10 @@ namespace DepictionEngine
             UpdateRunInBackground();
         }
 
-
 #if UNITY_EDITOR
         private void InitSceneCameraTransforms()
         {
-            if (_sceneCameraTransforms == null)
-                _sceneCameraTransforms = new List<TransformBase>();
+            _sceneCameraTransforms ??= new List<TransformBase>();
         }
 #endif
 
@@ -219,6 +223,7 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
 
             InitValue(value => debug = value, false, initializingContext);
+            InitValue(value => logConsoleFiltering = value, true, initializingContext);
             InitValue(value => runInBackground = value, true, initializingContext);
             InitValue(value => enableMultithreading = value, true, initializingContext);
 #if UNITY_EDITOR
@@ -250,21 +255,23 @@ namespace DepictionEngine
                 }
 
 #if UNITY_EDITOR
-                UnityEditor.EditorApplication.pauseStateChanged -= EditorPauseStateChanged;
+                Application.logMessageReceived -= LogMessageReceivedHandler;
+                UnityEditor.EditorApplication.pauseStateChanged -= EditorPauseStateChangedHandler;
                 UnityEditor.EditorApplication.playModeStateChanged -= PlayModeStateChangedHandler;
                 UnityEditor.SceneManagement.EditorSceneManager.sceneClosing -= SceneClosingHandler;
-                UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= SceneSaving;
-                UnityEditor.SceneManagement.EditorSceneManager.sceneSaved -= SceneSaved;
+                UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= SceneSavingHandler;
+                UnityEditor.SceneManagement.EditorSceneManager.sceneSaved -= SceneSavedHandler;
                 UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= BeforeAssemblyReloadHandler;
                 UnityEditor.AssemblyReloadEvents.afterAssemblyReload -= AfterAssemblyReloadHandler;
                 UnityEditor.Selection.selectionChanged -= SelectionChangedHandler;
                 if (!IsDisposing())
                 {
-                    UnityEditor.EditorApplication.pauseStateChanged += EditorPauseStateChanged;
+                    Application.logMessageReceived += LogMessageReceivedHandler;
+                    UnityEditor.EditorApplication.pauseStateChanged += EditorPauseStateChangedHandler;
                     UnityEditor.EditorApplication.playModeStateChanged += PlayModeStateChangedHandler;
                     UnityEditor.SceneManagement.EditorSceneManager.sceneClosing += SceneClosingHandler;
-                    UnityEditor.SceneManagement.EditorSceneManager.sceneSaving += SceneSaving;
-                    UnityEditor.SceneManagement.EditorSceneManager.sceneSaved += SceneSaved;
+                    UnityEditor.SceneManagement.EditorSceneManager.sceneSaving += SceneSavingHandler;
+                    UnityEditor.SceneManagement.EditorSceneManager.sceneSaved += SceneSavedHandler;
                     UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReloadHandler;
                     UnityEditor.AssemblyReloadEvents.afterAssemblyReload += AfterAssemblyReloadHandler;
                     UnityEditor.Selection.selectionChanged += SelectionChangedHandler;
@@ -304,8 +311,7 @@ namespace DepictionEngine
         {
             playModeState = state;
 
-            if (PlayModeStateChangedEvent != null)
-                PlayModeStateChangedEvent(state);
+            PlayModeStateChangedEvent?.Invoke(state);
         }
 
         public static UnityEditor.PlayModeStateChange playModeState
@@ -321,12 +327,12 @@ namespace DepictionEngine
         }
 
         private static bool _saving;
-        private void SceneSaving(UnityEngine.SceneManagement.Scene scene, string path)
+        private void SceneSavingHandler(UnityEngine.SceneManagement.Scene scene, string path)
         {
             saving = true;
         }
 
-        private void SceneSaved(UnityEngine.SceneManagement.Scene scene)
+        private void SceneSavedHandler(UnityEngine.SceneManagement.Scene scene)
         {
             saving = false;
         }
@@ -354,16 +360,19 @@ namespace DepictionEngine
             tweenManager.DisposeAllTweens();
             poolManager.ClearPool();
 
-            if (BeforeAssemblyReloadEvent != null)
-                BeforeAssemblyReloadEvent();
+            BeforeAssemblyReloadEvent?.Invoke();
         }
 
         private void AfterAssemblyReloadHandler()
         {
             Resources.UnloadUnusedAssets();
 
-            if (AfterAssemblyReloadEvent != null)
-                AfterAssemblyReloadEvent();
+            AfterAssemblyReloadEvent?.Invoke();
+        }
+
+        private void SelectionChangedHandler()
+        {
+            Editor.Selection.SelectionChanged();
         }
 
         private void SceneClosingHandler(UnityEngine.SceneManagement.Scene scene, bool removingScene)
@@ -373,8 +382,7 @@ namespace DepictionEngine
                 UnityEditor.SceneManagement.EditorSceneManager.sceneClosed += SceneClosed;
                 _sceneClosing = true;
 
-                if (SceneClosingEvent != null)
-                    SceneClosingEvent();
+                SceneClosingEvent?.Invoke();
             }
         }
 
@@ -391,7 +399,7 @@ namespace DepictionEngine
 
             if (!reloadingAssembly && !IsDisposing())
             {
-                if (Object.ReferenceEquals(_harmony, null))
+                if (_harmony is null)
                 {
                     _harmony = new HarmonyLib.Harmony(harmonyId);
 
@@ -441,17 +449,23 @@ namespace DepictionEngine
                     MethodInfo postSetupArcMaterial = typeof(Editor.SceneViewDouble).GetMethod("PatchedPostSetupArcMaterial", BindingFlags.Static | BindingFlags.NonPublic);
                     _harmony.Patch(unitySetupArcMaterial, null, new HarmonyLib.HarmonyMethod(postSetupArcMaterial));
 
-                    MethodInfo unityAddCursorRect = typeof(UnityEditor.SceneView).GetMethod("AddCursorRect", BindingFlags.Static | BindingFlags.NonPublic);
-                    MethodInfo preAddCursorRect = typeof(Editor.SceneViewDouble).GetMethod("PatchedPreAddCursorRect", BindingFlags.Static | BindingFlags.NonPublic);
-                    _harmony.Patch(unityAddCursorRect, new HarmonyLib.HarmonyMethod(preAddCursorRect));
-
                     MethodInfo unityHandleMouseUp = Editor.SceneViewMotion.GetUnitySceneViewMotionType().GetMethod("HandleMouseUp", BindingFlags.Static | BindingFlags.NonPublic);
                     MethodInfo preHandleMouseUp = typeof(Editor.SceneViewMotion).GetMethod("PatchedPreHandleMouseUp", BindingFlags.Static | BindingFlags.NonPublic);
                     _harmony.Patch(unityHandleMouseUp, new HarmonyLib.HarmonyMethod(preHandleMouseUp));
 
-                    MethodInfo unityGetInspectorTitle = typeof(UnityEditor.ObjectNames).GetMethod("GetInspectorTitle", BindingFlags.Static | BindingFlags.Public);
-                    MethodInfo postGetInspectorTitle = typeof(Editor.ObjectNames).GetMethod("PatchedPostGetInspectorTitle", BindingFlags.Static | BindingFlags.NonPublic);
-                    _harmony.Patch(unityGetInspectorTitle, null, new HarmonyLib.HarmonyMethod(postGetInspectorTitle));
+                    MethodInfo unityHandleMouseDrag = Editor.SceneViewMotion.GetUnitySceneViewMotionType().GetMethod("HandleMouseDrag", BindingFlags.Static | BindingFlags.NonPublic);
+                    MethodInfo preHandleMouseDrag = typeof(Editor.SceneViewMotion).GetMethod("PatchedPreHandleMouseDrag", BindingFlags.Static | BindingFlags.NonPublic);
+                    _harmony.Patch(unityHandleMouseDrag, new HarmonyLib.HarmonyMethod(preHandleMouseDrag));
+
+                    Type consoleWindowType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.ConsoleWindow");
+                    MethodInfo unityConsoleWindowOnGUI = consoleWindowType.GetMethod("OnGUI", BindingFlags.NonPublic | BindingFlags.Instance);
+                    MethodInfo preConsoleWindowOnGUI = typeof(SceneManager).GetMethod("PatchedPreConsoleWindowOnGUI", BindingFlags.NonPublic | BindingFlags.Static);
+                    _harmony.Patch(unityConsoleWindowOnGUI, new HarmonyLib.HarmonyMethod(preConsoleWindowOnGUI));
+
+                    Type appStatusBarType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.AppStatusBar");
+                    MethodInfo unityAppStatusBarOnGUI = appStatusBarType.GetMethod("OldOnGUI", BindingFlags.NonPublic | BindingFlags.Instance);
+                    MethodInfo preAppStatusBarOnGUI = typeof(SceneManager).GetMethod("PatchedPreAppStatusBarOnGUI", BindingFlags.NonPublic | BindingFlags.Static);
+                    _harmony.Patch(unityAppStatusBarOnGUI, new HarmonyLib.HarmonyMethod(preAppStatusBarOnGUI));
 
                     //Fix for a Unity Bug where a null item is sent to the DoItemGUI method in TreeViewController causing it to spam NullReferenceException.
                     //The bug usually occurs when a GameObject foldout is opened in the SceneHierarchy while new child objects are being added/created quickly by a loader or anything else. 
@@ -464,7 +478,7 @@ namespace DepictionEngine
             }
             else
             {
-                if (!Object.ReferenceEquals(_harmony, null))
+                if (_harmony is not null)
                 {
                     _harmony.UnpatchAll(harmonyId);
                     _harmony = null;
@@ -472,12 +486,7 @@ namespace DepictionEngine
             }
         }
 
-        private void SelectionChangedHandler()
-        {
-            Editor.Selection.SelectionChanged();
-        }
-
-        private void EditorPauseStateChanged(UnityEditor.PauseState state)
+        private void EditorPauseStateChangedHandler(UnityEditor.PauseState state)
         {
             UpdateUpdateDelegate();
         }
@@ -489,9 +498,53 @@ namespace DepictionEngine
                 UnityEditor.EditorApplication.update += Update;
         }
 
-        private static bool PatchedPreDoItemGUI(UnityEditor.IMGUI.Controls.TreeViewItem item, int row, float rowWidth, bool hasFocus)
+        private static bool PatchedPreDoItemGUI(UnityEditor.IMGUI.Controls.TreeViewItem item)
         {
             return item != null;
+        }
+
+        private static bool PatchedPreConsoleWindowOnGUI()
+        {
+            RemoveFilteredLogEntries();
+            return true;
+        }
+
+        private static bool PatchedPreAppStatusBarOnGUI()
+        {
+            RemoveFilteredLogEntries();
+            return true;
+        }
+
+        private static HashSet<int> _removeEntryRows = new();
+        private static Regex _logConsoleFilterRegEx = new("dangling during");
+        private void LogMessageReceivedHandler(string logString, string stackTrace, LogType type)
+        {
+            if (logConsoleFiltering && _logConsoleFilterRegEx.IsMatch(logString))
+            {
+                string filteringText = null; bool collapse = false; bool log = false; bool warning = false; bool error = false; bool showTimestamp = false;
+                Editor.LogEntries.GetConsoleFlags(ref filteringText, ref collapse, ref log, ref warning, ref error, ref showTimestamp);
+
+                Editor.LogEntries.SetFilteringText("");
+                Editor.LogEntries.SetConsoleFlag(Editor.LogEntries.COLLAPSE_FLAG, false);
+                Editor.LogEntries.SetConsoleFlag(Editor.LogEntries.LOG_FLAG, true);
+                Editor.LogEntries.SetConsoleFlag(Editor.LogEntries.WARNING_FLAG, true);
+                Editor.LogEntries.SetConsoleFlag(Editor.LogEntries.ERROR_FLAG, true);
+
+                _removeEntryRows.Add(Editor.LogEntries.StartGettingEntries());
+                Editor.LogEntries.EndGettingEntries();
+
+                Editor.LogEntries.SetFilteringText(filteringText);
+                Editor.LogEntries.SetConsoleFlag(Editor.LogEntries.COLLAPSE_FLAG, collapse);
+                Editor.LogEntries.SetConsoleFlag(Editor.LogEntries.LOG_FLAG, log);
+                Editor.LogEntries.SetConsoleFlag(Editor.LogEntries.WARNING_FLAG, warning);
+                Editor.LogEntries.SetConsoleFlag(Editor.LogEntries.ERROR_FLAG, error);
+            }
+        }
+
+        private static void RemoveFilteredLogEntries()
+        {
+            if (Editor.LogEntries.RemoveEntries(_removeEntryRows) != 0)
+                _removeEntryRows.Clear();
         }
 
         public static bool IsEditorNamespace(Type type)
@@ -533,8 +586,7 @@ namespace DepictionEngine
 
             if (!siblingChanged)
             {
-                if (_managerList == null)
-                    _managerList = new List<ManagerBase>();
+                _managerList ??= new List<ManagerBase>();
                 GetComponents(_managerList);
                 int unityManagerCount = _managerList.Count;
                 foreach (ManagerBase manager in _managerList) 
@@ -669,8 +721,7 @@ namespace DepictionEngine
             UnityEngine.SceneManagement.Scene scene = gameObject.scene;
             if (scene != null && scene.isLoaded)
             {
-                if (_rootGameObjects == null)
-                    _rootGameObjects = new List<GameObject>();
+                _rootGameObjects ??= new List<GameObject>();
                 //GetRootGameObjects does not include HideAndDontSave gameObjects
                 scene.GetRootGameObjects(_rootGameObjects);
 
@@ -703,7 +754,7 @@ namespace DepictionEngine
             get { return _sceneClosing; }
         }
 
-        public static UpdateExecutionState sceneExecutionState
+        public static ExecutionState sceneExecutionState
         {
             get { return _sceneExecutionState; }
             set { _sceneExecutionState = value; }
@@ -713,8 +764,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_sceneChildren == null)
-                    _sceneChildren = new List<TransformBase>();
+                _sceneChildren ??= new List<TransformBase>();
                 return _sceneChildren; 
             }
         }
@@ -743,6 +793,17 @@ namespace DepictionEngine
                 });
             }
         }
+
+        /// <summary>
+        /// When enabled some log entries will be disable such as 'Child GameObject ... became dangling during undo'.
+        /// </summary>
+        [Json]
+        public bool logConsoleFiltering
+        {
+            get { return _logConsoleFiltering; }
+            set { SetValue(nameof(logConsoleFiltering), value, ref _logConsoleFiltering); }
+        }
+
 
         /// <summary>
         /// Should the player be running when the application is in the background?
@@ -813,6 +874,16 @@ namespace DepictionEngine
             if (_sceneCameraTransforms.Remove(sceneCameraTransform))
                 return true;
             return false;
+        }
+
+        public static bool Debugging()
+        {
+            bool debug = false;
+
+            if (!IsSceneBeingDestroyed())
+                debug = SceneManager.Instance().debug;
+
+            return debug;
         }
 #endif
 
@@ -917,8 +988,7 @@ namespace DepictionEngine
         private static List<Tuple<UnityEngine.Object[], string>> _queuedRecordObjects;
         public static void RecordObjects(UnityEngine.Object[] targetObjects, string undoGroupName = null)
         {
-            if (_queuedRecordObjects == null)
-                _queuedRecordObjects = new List<Tuple<UnityEngine.Object[], string>>();
+            _queuedRecordObjects ??= new List<Tuple<UnityEngine.Object[], string>>();
 
             _queuedRecordObjects.Add(Tuple.Create(targetObjects, undoGroupName));
         }
@@ -926,8 +996,7 @@ namespace DepictionEngine
         private static List<Tuple<UnityEngine.Object, string>> _queuedRecordObject;
         public static void RecordObject(UnityEngine.Object targetObject, string undoGroupName = null)
         {
-            if (_queuedRecordObject == null)
-                _queuedRecordObject = new List<Tuple<UnityEngine.Object, string>>();
+            _queuedRecordObject ??= new List<Tuple<UnityEngine.Object, string>>();
 
             _queuedRecordObject.Add(Tuple.Create(targetObject, undoGroupName));
         }
@@ -935,8 +1004,7 @@ namespace DepictionEngine
         private static List<Tuple<IScriptableBehaviour, PropertyInfo, object>> _queuedPropertyValueChanges;
         public static void QueuePropertyValueChange(IScriptableBehaviour scriptableBehaviour, PropertyInfo propertyInfo, object value)
         {
-            if (_queuedPropertyValueChanges == null)
-                _queuedPropertyValueChanges = new List<Tuple<IScriptableBehaviour, PropertyInfo, object>>();
+            _queuedPropertyValueChanges ??= new List<Tuple<IScriptableBehaviour, PropertyInfo, object>>();
 
             _queuedPropertyValueChanges.Add(Tuple.Create(scriptableBehaviour, propertyInfo, value));
         }
@@ -966,10 +1034,9 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                     Editor.UndoManager.Update();
 #endif
-                    sceneExecutionState = UpdateExecutionState.LateInitialize;
+                    sceneExecutionState = ExecutionState.LateInitialize;
                     LateInitialize();
-                    if (PostLateInitializeEvent != null)
-                        PostLateInitializeEvent();
+                    PostLateInitializeEvent?.Invoke();
 #if UNITY_EDITOR
                     Editor.UndoManager.PostInitialize();
 
@@ -1001,14 +1068,16 @@ namespace DepictionEngine
 
                     if (_queuedPropertyValueChanges != null)
                     {
-                        foreach (Tuple<IScriptableBehaviour, PropertyInfo, object> queuedPropertyValue in _queuedPropertyValueChanges)
+                        foreach (var queuedPropertyValue in _queuedPropertyValueChanges)
                         {
                             IScriptableBehaviour targetObject = queuedPropertyValue.Item1;
                             if (!Disposable.IsDisposed(targetObject))
                             {
                                 try 
                                 {
-                                    targetObject.IsUserChange(() => { queuedPropertyValue.Item2.SetValue(targetObject, queuedPropertyValue.Item3); });
+#pragma warning disable UNT0018 // System.Reflection features in performance critical messages
+                                    targetObject.IsUserChange(callback: () => { queuedPropertyValue.Item2.SetValue(targetObject, queuedPropertyValue.Item3); });
+#pragma warning restore UNT0018 // System.Reflection features in performance critical messages
                                 }
                                 catch(Exception)
                                 {
@@ -1021,18 +1090,18 @@ namespace DepictionEngine
                     }
 #endif
 
-                    sceneExecutionState = UpdateExecutionState.PreHierarchicalUpdate;
+                    sceneExecutionState = ExecutionState.PreHierarchicalUpdate;
                     PreHierarchicalUpdate();
-                    sceneExecutionState = UpdateExecutionState.HierarchicalUpdate;
+                    sceneExecutionState = ExecutionState.HierarchicalUpdate;
                     HierarchicalUpdate();
-                    sceneExecutionState = UpdateExecutionState.PostHierarchicalUpdate;
+                    sceneExecutionState = ExecutionState.PostHierarchicalUpdate;
                     PostHierarchicalUpdate();
-                    sceneExecutionState = UpdateExecutionState.HierarchicalClearDirtyFlags;
+                    sceneExecutionState = ExecutionState.HierarchicalClearDirtyFlags;
                     HierarchicalClearDirtyFlags();
 
                     if (_activateAll)
                     {
-                        sceneExecutionState = UpdateExecutionState.HierarchicalActivate;
+                        sceneExecutionState = ExecutionState.HierarchicalActivate;
                         HierarchicalActivate();
                         _activateAll = false;
                     }
@@ -1097,16 +1166,14 @@ namespace DepictionEngine
         private static List<UnityEngine.Object> _resetingObjects;
         public static void Reseting(UnityEngine.Object scriptableBehaviour)
         {
-            if (_resetingObjects == null)
-                _resetingObjects = new List<UnityEngine.Object>();
+            _resetingObjects ??= new List<UnityEngine.Object>();
             _resetingObjects.Add(scriptableBehaviour);
         }
 
         private static List<(IJson, JSONObject)> _pastingComponentValuesToObjects;
         public static void PastingComponentValues(IJson iJson, JSONObject json)
         {
-            if (_pastingComponentValuesToObjects == null)
-                _pastingComponentValuesToObjects = new List<(IJson, JSONObject)>();
+            _pastingComponentValuesToObjects ??= new List<(IJson, JSONObject)>();
             
             if (json[nameof(IProperty.id)] != null)
                 json.Remove(nameof(IProperty.id));
@@ -1114,6 +1181,7 @@ namespace DepictionEngine
             _pastingComponentValuesToObjects.Add((iJson, json));
         }
 #endif
+
         public void LateUpdate()
         {
 #if UNITY_EDITOR
@@ -1126,13 +1194,17 @@ namespace DepictionEngine
                 Editor.UndoManager.SetCurrentGroupName(groupName);
                 
                 Editor.UndoManager.RecordObjects(_resetingObjects.ToArray());
-                
-                foreach (IScriptableBehaviour unityObject in _resetingObjects)
-                    unityObject.InspectorReset();
+
+                foreach (UnityEngine.Object unityObject in _resetingObjects)
+                {
+                    if (unityObject is IScriptableBehaviour)
+                        (unityObject as IScriptableBehaviour).InspectorReset();
+                }
 
                 _resetingObjects.Clear();
             }
 
+            sceneExecutionState = ExecutionState.PastingComponentValues;
             if (_pastingComponentValuesToObjects != null && _pastingComponentValuesToObjects.Count > 0)
             {
                 //We assume that all the objects are of the same type
@@ -1158,14 +1230,15 @@ namespace DepictionEngine
                 }
                 _pastingComponentValuesToObjects.Clear();
             }
+            sceneExecutionState = ExecutionState.None;
 #endif
 
-            InvokeAction(ref UnityInitializedEvent, "UnityInitialized", UpdateExecutionState.UnityInitialized);
+            InvokeAction(ref UnityInitializedEvent, "UnityInitialized", ExecutionState.UnityInitialized);
 
             DisposeManager.DestroyingContext(() => 
             {
-                InvokeAction(ref DelayedOnDestroyEvent, "DelayedOnDestroy", UpdateExecutionState.DelayedOnDestroy);
-            }, DisposeManager.DestroyContext.Editor);
+                InvokeAction(ref DelayedOnDestroyEvent, "DelayedOnDestroy", ExecutionState.DelayedOnDestroy);
+            }, DisposeManager.DisposeContext.Editor);
 
             DisposeManager.InvokeActions();
 
@@ -1178,7 +1251,7 @@ namespace DepictionEngine
             _updated = false;
         }
 
-        private void InvokeAction(ref Action action, string actionName, UpdateExecutionState sceneExecutionState, bool clear = true)
+        private void InvokeAction(ref Action action, string actionName, ExecutionState sceneExecutionState, bool clear = true)
         {
             if (action != null)
             {
@@ -1188,7 +1261,7 @@ namespace DepictionEngine
 
                 SceneManager.sceneExecutionState = sceneExecutionState;
                 action();
-                SceneManager.sceneExecutionState = UpdateExecutionState.None;
+                SceneManager.sceneExecutionState = ExecutionState.None;
 
 #if UNITY_EDITOR
                 if (delegatesCount != action.GetInvocationList().Length)
@@ -1229,7 +1302,7 @@ namespace DepictionEngine
             else
             {
                 Camera parentCamera = unityCamera.GetComponentInParent<Camera>();
-                if (!(parentCamera is RTTCamera) && parentCamera != Disposable.NULL)
+                if ((parentCamera is not RTTCamera) && parentCamera != Disposable.NULL)
                     renderingManager.BeginCameraDistancePassRendering(parentCamera, unityCamera);
             }
         }
@@ -1317,7 +1390,7 @@ namespace DepictionEngine
                     _stackedCameraCount--;
 
                     Camera parentCamera = unityCamera.GetComponentInParent<Camera>();
-                    if (!(parentCamera is RTTCamera) && parentCamera != Disposable.NULL)
+                    if ((parentCamera is not RTTCamera) && parentCamera != Disposable.NULL)
                         renderingManager.EndCameraDistancePassRendering(parentCamera, unityCamera);
 
                     if (_stackedCameraCount == 0)
@@ -1343,17 +1416,17 @@ namespace DepictionEngine
         {
             bool containsDisposed = base.ApplyBeforeChildren(callback);
 
-            if (!Object.ReferenceEquals(_tweenManager, null) && TriggerCallback(_tweenManager, callback))
+            if (_tweenManager is not null && TriggerCallback(_tweenManager, callback))
                 containsDisposed = true;
-            if (!Object.ReferenceEquals(_poolManager, null) && TriggerCallback(_poolManager, callback))
+            if (_poolManager is not null && TriggerCallback(_poolManager, callback))
                 containsDisposed = true;
-            if (!Object.ReferenceEquals(_cameraManager, null) && TriggerCallback(_cameraManager, callback))
+            if (_cameraManager is not null && TriggerCallback(_cameraManager, callback))
                 containsDisposed = true;
-            if (!Object.ReferenceEquals(_inputManager, null) && TriggerCallback(_inputManager, callback))
+            if (_inputManager is not null && TriggerCallback(_inputManager, callback))
                 containsDisposed = true;
-            if (!Object.ReferenceEquals(_instanceManager, null) && TriggerCallback(_instanceManager, callback))
+            if (_instanceManager is not null && TriggerCallback(_instanceManager, callback))
                 containsDisposed = true;
-            if (!Object.ReferenceEquals(_jsonInterface, null) && TriggerCallback(_jsonInterface, callback))
+            if (_jsonInterface is not null && TriggerCallback(_jsonInterface, callback))
                 containsDisposed = true;
 
             return containsDisposed;
@@ -1363,24 +1436,12 @@ namespace DepictionEngine
         {
             bool containsDisposed = base.ApplyAfterChildren(callback);
 
-            if (!Object.ReferenceEquals(_datasourceManager, null) && TriggerCallback(_datasourceManager, callback))
+            if (_datasourceManager is not null && TriggerCallback(_datasourceManager, callback))
                 containsDisposed = true;
-            if (!Object.ReferenceEquals(_renderingManager, null) && TriggerCallback(_renderingManager, callback))
+            if (_renderingManager is not null && TriggerCallback(_renderingManager, callback))
                 containsDisposed = true;
 
             return containsDisposed;
-        }
-
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
-        {
-            if (base.OnDisposed(destroyContext))
-            {
-#if UNITY_EDITOR
-                Editor.AssetManager.SaveAssets();
-#endif
-                return true;
-            }
-            return false;
         }
     }
 }

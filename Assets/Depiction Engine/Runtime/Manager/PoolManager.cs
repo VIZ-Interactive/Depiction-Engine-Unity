@@ -23,10 +23,10 @@ namespace DepictionEngine
 
         [BeginFoldout("Pool")]
         [SerializeField, Tooltip("When enabled, pooling improves performance by reusing the instances to reduce the number of expensive operations such as object creation or garbage collection. The trade-off is an increased memory footprint.")]
-        public bool _enablePooling;
+        private bool _enablePooling;
 #if UNITY_EDITOR
         [SerializeField, Button(nameof(ClearPoolBtn)), ConditionalShow(nameof(GetShowClearPool)), Tooltip("Destroy all pooled objects."), EndFoldout]
-        public bool _clearPool;
+        private bool _clearPool;
 #endif
 
         [BeginFoldout("Dynamic Resizing")]
@@ -58,8 +58,7 @@ namespace DepictionEngine
         { 
             get 
             {
-                if (_debug == null)
-                    _debug = new PoolStackDictionary();
+                _debug ??= new PoolStackDictionary();
                 return _debug; 
             }
         }
@@ -108,14 +107,12 @@ namespace DepictionEngine
 
         private void InitTypes()
         {
-            if (_types == null)
-                _types = new List<Type>();
+            _types ??= new List<Type>();
         }
 
         private void InitPools()
         {
-            if (_pools == null)
-                _pools = new Dictionary<int, List<IDisposable>>();
+            _pools ??= new Dictionary<int, List<IDisposable>>();
         }
 
         public override void ExplicitOnEnable()
@@ -198,7 +195,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_resizeTimer, value))
                     return;
 
-                Dispose(_resizeTimer);
+                DisposeManager.Dispose(_resizeTimer);
 
                 _resizeTimer = value;
             }
@@ -230,6 +227,7 @@ namespace DepictionEngine
 #endif
 
                     go.SetActive(false);
+                    go.hideFlags = HideFlags.HideAndDontSave;
                     go.transform.SetParent(transform, false);
 
 #if UNITY_EDITOR
@@ -245,13 +243,14 @@ namespace DepictionEngine
                 if (disposable != null)
                 {
                     int typeHashCode = GetHashCodeFromType(disposable.GetType());
-                    List<IDisposable> pool;
                     lock (_pools)
                     {
-                        if (!_pools.TryGetValue(typeHashCode, out pool))
+                        if (!_pools.TryGetValue(typeHashCode, out List<IDisposable> pool))
                             _pools[typeHashCode] = pool = new List<IDisposable>();
                         lock (pool)
                         {
+                            if (disposable is UnityEngine.Object)
+                                (disposable as UnityEngine.Object).hideFlags = HideFlags.HideAndDontSave;
                             pool.Add(disposable);
 #if UNITY_EDITOR
                             UpdateDebug(disposable.GetType(), pool);
@@ -271,10 +270,9 @@ namespace DepictionEngine
 
             if (_pools != null)
             {
-                List<IDisposable> pool;
                 lock (_pools)
                 {
-                    if (_pools.TryGetValue(GetHashCodeFromType(type), out pool))
+                    if (_pools.TryGetValue(GetHashCodeFromType(type), out List<IDisposable> pool))
                     {
                         lock (pool)
                         {
@@ -285,7 +283,7 @@ namespace DepictionEngine
                                 for (int i = pool.Count - 1; i >= 0; i--)
                                 {
                                     IDisposable disposed = pool[i];
-                                    if ((!(disposed is IMultithreadSafe) || !(disposed as IMultithreadSafe).locked) && disposed.disposedComplete)
+                                    if ((disposed is not IMultithreadSafe || !(disposed as IMultithreadSafe).locked) && disposed.disposedComplete)
                                     {
                                         index = i;
                                         break;
@@ -294,7 +292,7 @@ namespace DepictionEngine
 
                                 disposable = RemoveFromPool(pool, index);
 
-                                if (!Object.ReferenceEquals(disposable, null))
+                                if (disposable is not null)
                                 {
 #if UNITY_EDITOR
                                     UpdateDebug(type, pool);
@@ -461,22 +459,17 @@ namespace DepictionEngine
             ClearPool();
         }
 
-        public override bool OnDisposing()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposing())
+            if (base.OnDisposing(disposeContext))
             {
                 resizeTimer = null;
+
+                ClearPool();
 
                 return true;
             }
             return false;
-        }
-
-        public override void OnDestroy()
-        {
-            base.OnDestroy();
-
-            ClearPool();
         }
     }
 }

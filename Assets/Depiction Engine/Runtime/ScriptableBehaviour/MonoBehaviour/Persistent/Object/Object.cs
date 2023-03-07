@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace DepictionEngine
 {
@@ -582,7 +581,7 @@ namespace DepictionEngine
 
         protected virtual void RemoveTransformDelegate(TransformBase transform)
         {
-            if (!Object.ReferenceEquals(transform, null))
+            if (transform is not null)
             {
                 transform.PropertyAssignedEvent -= TransformPropertyAssignedHandler;
                 transform.ChangedEvent -= TransformChangedHandler;
@@ -648,16 +647,14 @@ namespace DepictionEngine
                     UpdateParentGeoAstroObject();
             }, property);
 
-            if (TransformPropertyAssignedEvent != null)
-                TransformPropertyAssignedEvent(property, name, newValue, oldValue);
+            TransformPropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
         }
 
         private void TransformChangedHandler(TransformBase.Component changedComponent, TransformBase.Component capturedComponent)
         {
             TransformChanged(changedComponent, capturedComponent);
 
-            if (TransformChangedEvent != null)
-                TransformChangedEvent(changedComponent, capturedComponent);
+            TransformChangedEvent?.Invoke(changedComponent, capturedComponent);
         }
 
         protected virtual bool TransformChanged(TransformBase.Component changedComponent, TransformBase.Component capturedComponent)
@@ -667,7 +664,7 @@ namespace DepictionEngine
 
         private void RemoveScriptDelegate(Script script)
         {
-            if (!Object.ReferenceEquals(script, null))
+            if (script is not null)
                 script.PropertyAssignedEvent -= ScriptPropertyAssignedHandler;
         }
 
@@ -692,15 +689,13 @@ namespace DepictionEngine
                 (string, object) localProperty = GetProperty(property);
                 PropertyAssigned(this, localProperty.Item1, localProperty.Item2, null);
 
-                if (ComponentPropertyAssignedEvent != null)
-                    ComponentPropertyAssignedEvent(property, name);
- 
+                ComponentPropertyAssignedEvent?.Invoke(property, name);
             }, property);
         }
 
         protected bool RemoveLoadScopeDataReferenceDelegate(ReferenceBase reference)
         {
-            if (!Object.ReferenceEquals(reference, null))
+            if (reference is not null)
             {
                 reference.DataChangedEvent -= ReferenceDataChangedHandler;
                 reference.LoaderPropertyAssignedChangedEvent -= ReferenceLoaderPropertyAssignedChangedHandler;
@@ -755,20 +750,18 @@ namespace DepictionEngine
                     AddObjectChildDelegates((child as TransformBase).objectBase);
             }
 
-            if (ChildAddedEvent != null)
-                ChildAddedEvent(this, child);
+            ChildAddedEvent?.Invoke(this, child);
         }
 
         protected virtual void TransformChildRemovedHandler(TransformBase transform, PropertyMonoBehaviour child)
         {
             if (child is TransformBase)
             {
-                if (!Object.ReferenceEquals(child, null))
+                if (child is not null)
                     RemoveObjectChildDelegates((child as TransformBase).objectBase);
             }
 
-            if (ChildRemovedEvent != null)
-                ChildRemovedEvent(this, child);
+            ChildRemovedEvent?.Invoke(this, child);
         }
 
         protected virtual void TransformChildPropertyChangedHandler(TransformBase transform, string name, object newValue, object oldValue)
@@ -782,7 +775,7 @@ namespace DepictionEngine
 
         private void RemoveObjectChildDelegates(Object objectBase)
         {
-            if (!Object.ReferenceEquals(objectBase, null))
+            if (objectBase is not null)
                 objectBase.PropertyAssignedEvent -= ChildObjectPropertyAssignedHandler;
         }
 
@@ -797,8 +790,7 @@ namespace DepictionEngine
             if (!HasChanged(oldValue, newValue))
                 return;
 
-            if (ChildObjectPropertyAssignedEvent != null)
-                ChildObjectPropertyAssignedEvent(property, name);
+            ChildObjectPropertyAssignedEvent?.Invoke(property, name);
         }
 
         public virtual int GetAdditionalChildCount()
@@ -814,9 +806,8 @@ namespace DepictionEngine
         protected void TransformObjectCallbackHandler(LocalPositionParam localPositionParam, LocalRotationParam localRotationParam, LocalScaleParam localScaleParam, Camera camera = null)
         {
             TransformObjectCallback(localPositionParam, localRotationParam, localScaleParam, camera);
-            
-            if (TransformControllerCallback != null)
-                TransformControllerCallback(localPositionParam, localRotationParam, localScaleParam, camera);
+
+            TransformControllerCallback?.Invoke(localPositionParam, localRotationParam, localScaleParam, camera);
         }
 
         protected virtual bool TransformObjectCallback(LocalPositionParam localPositionParam, LocalRotationParam localRotationParam, LocalScaleParam localScaleParam, Camera camera = null)
@@ -826,7 +817,7 @@ namespace DepictionEngine
 
         protected virtual bool RemoveParentGeoAstroObjectDelegate(GeoAstroObject parentGeoAstroObject)
         {
-            if (!Object.ReferenceEquals(parentGeoAstroObject, null))
+            if (parentGeoAstroObject is not null)
             {
                 parentGeoAstroObject.PropertyAssignedEvent -= ParentGeoAstroObjectPropertyAssignedHandler;
             
@@ -848,8 +839,7 @@ namespace DepictionEngine
 
         protected void ParentGeoAstroObjectPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
-            if (ParentGeoAstroObjectPropertyAssignedEvent != null)
-                ParentGeoAstroObjectPropertyAssignedEvent(property, name, newValue, oldValue);
+            ParentGeoAstroObjectPropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
         }
 
         private void UpdateParentGeoAstroObject()
@@ -886,7 +876,7 @@ namespace DepictionEngine
 
         protected override bool IsFullyInitialized()
         {
-            return base.IsFullyInitialized() && transform.parentGeoAstroObject != Disposable.NULL ? transform.parentGeoAstroObject.GetLoadingInitialized() : true;
+            return !base.IsFullyInitialized() || transform.parentGeoAstroObject == Disposable.NULL || transform.parentGeoAstroObject.GetLoadingInitialized();
         }
 
         protected override Type GetParentType()
@@ -906,8 +896,7 @@ namespace DepictionEngine
 
             if (!siblingChanged)
             {
-                if (_scriptList == null)
-                    _scriptList = new List<Script>();
+                _scriptList ??= new List<Script>();
                 GetComponents(_scriptList);
                 int unityScriptCount = _scriptList.Count;
 
@@ -924,8 +913,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_visibleCameras == null)
-                    _visibleCameras = new VisibleCamerasDictionary();
+                _visibleCameras ??= new VisibleCamerasDictionary();
                 return _visibleCameras; 
             }
         }
@@ -1084,7 +1072,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createAnimatorIfMissing
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.createAnimatorIfMissing : false; }
+            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createAnimatorIfMissing; }
             set 
             { 
                 if (objectAdditionalFallbackValues != null)
@@ -1122,7 +1110,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createControllerIfMissing
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.createControllerIfMissing : false; }
+            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createControllerIfMissing; }
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1160,7 +1148,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createGeneratorIfMissing
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.createGeneratorIfMissing : false; }
+            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createGeneratorIfMissing; }
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1198,7 +1186,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createReferenceIfMissing
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.createReferenceIfMissing : false; }
+            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createReferenceIfMissing; }
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1236,7 +1224,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createEffectIfMissing
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.createEffectIfMissing : false; }
+            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createEffectIfMissing; }
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1274,7 +1262,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createFallbackValuesIfMissing
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.createFallbackValuesIfMissing : false; }
+            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createFallbackValuesIfMissing; }
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1312,7 +1300,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createDatasourceIfMissing
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.createDatasourceIfMissing : false; }
+            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createDatasourceIfMissing; }
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1381,8 +1369,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_generators == null)
-                    _generators = new List<GeneratorBase>();
+                _generators ??= new List<GeneratorBase>();
                 return _generators; 
             }
             private set { SetValue(nameof(generators), value, ref _generators); }
@@ -1396,8 +1383,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_references == null)
-                    _references = new List<ReferenceBase>();
+                _references ??= new List<ReferenceBase>();
                 return _references; 
             }
             private set { SetValue(nameof(references), value, ref _references); }
@@ -1411,8 +1397,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_effects == null)
-                    _effects = new List<EffectBase>();
+                _effects ??= new List<EffectBase>();
                 return _effects; 
             }
             private set { SetValue(nameof(effects), value, ref _effects); }
@@ -1426,8 +1411,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_fallbackValues == null)
-                    _fallbackValues = new List<FallbackValues>();
+                _fallbackValues ??= new List<FallbackValues>();
                 return _fallbackValues; 
             }
             private set { SetValue(nameof(fallbackValues), value, ref _fallbackValues); }
@@ -1441,8 +1425,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_datasources == null)
-                    _datasources = new List<DatasourceBase>();
+                _datasources ??= new List<DatasourceBase>();
                 return _datasources; 
             }
             private set { SetValue(nameof(datasources), value, ref _datasources); }
@@ -1759,8 +1742,7 @@ namespace DepictionEngine
 
             if (hasChanged)
             {
-                if (ScriptAddedEvent != null)
-                    ScriptAddedEvent(this, script);
+                ScriptAddedEvent?.Invoke(this, script);
 
                 AddScriptDelegate(script);
             }
@@ -1871,8 +1853,7 @@ namespace DepictionEngine
 
             if (hasChanged)
             {
-                if (ScriptRemovedEvent != null)
-                    ScriptRemovedEvent(this, script);
+                ScriptRemovedEvent?.Invoke(this, script);
 
                 RemoveScriptDelegate(script);
             }
@@ -2020,10 +2001,10 @@ namespace DepictionEngine
         {
             bool containsDisposed = base.ApplyBeforeChildren(callback);
 
-            if (!Object.ReferenceEquals(animator, null) && TriggerCallback(animator, callback))
+            if (animator is not null && TriggerCallback(animator, callback))
                 containsDisposed = true;
 
-            if (!Object.ReferenceEquals(controller, null) && TriggerCallback(controller, callback))
+            if (controller is not null && TriggerCallback(controller, callback))
                 containsDisposed = true;
 
             //Effects such as Atmosphere need to be executed before loaders
@@ -2123,8 +2104,7 @@ namespace DepictionEngine
         {
             get
             {
-                if (_forceUpdateTransformPending == null)
-                    _forceUpdateTransformPending = new ComponentChangedPending();
+                _forceUpdateTransformPending ??= new ComponentChangedPending();
                 return _forceUpdateTransformPending;
             }
         }
@@ -2169,7 +2149,7 @@ namespace DepictionEngine
 
         public bool ForceUpdateTransform(bool localPositionChanged = false, bool localRotationChanged = false, bool localScaleChanged = false, Camera camera = null)
         {
-            if (initialized && transform != Disposable.NULL && transform.ForceUpdateTransform(out TransformBase.Component changeComponents, localPositionChanged, localRotationChanged, localScaleChanged, camera))
+            if (initialized && transform != Disposable.NULL && transform.ForceUpdateTransform(out TransformBase.Component _, localPositionChanged, localRotationChanged, localScaleChanged, camera))
             {
                 forceUpdateTransformPending.Clear();
                 return true;
@@ -2181,16 +2161,8 @@ namespace DepictionEngine
         {
             if (base.UpdateHideFlags())
             {
-                if (isHiddenInHierarchy)
-                {
-                    bool debug = false;
-
-                    if (!SceneManager.IsSceneBeingDestroyed())
-                        debug = sceneManager.debug;
-
-                    if (!debug)
-                        gameObject.hideFlags |= HideFlags.HideInHierarchy;
-                }
+                if (!IsDisposing() && isHiddenInHierarchy && !SceneManager.Debugging())
+                    gameObject.hideFlags |= HideFlags.HideInHierarchy;
 
                 if (transform != Disposable.NULL)
                     transform.UpdateTransformHideFlags();
@@ -2206,17 +2178,29 @@ namespace DepictionEngine
                 dataProcessor.Dispose();
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposed(disposeContext, pooled))
             {
-                Dispose(objectAdditionalFallbackValues);
+                Dispose(_objectAdditionalFallbackValues, disposeContext);
+
+                ChildAddedEvent = null;
+                ChildRemovedEvent = null;
+                ChildObjectPropertyAssignedEvent = null;
+                ScriptAddedEvent = null;
+                ScriptRemovedEvent = null;
+                ComponentPropertyAssignedEvent = null;
+                TransformChangedEvent = null;
+                TransformPropertyAssignedEvent = null;
+                ParentGeoAstroObjectPropertyAssignedEvent = null;
+                TransformControllerCallback = null;
 
                 return true;
             }
             return false;
         }
     }
+
 
     [Serializable]
     public class VisibleCameras
@@ -2231,7 +2215,7 @@ namespace DepictionEngine
 
         public bool CameraVisible(Camera camera)
         {
-            return _values.Contains(camera.GetCameraInstanceId());
+            return _values.Contains(camera.GetCameraInstanceID());
         }
 
         public bool SequenceEqual(List<int> other)

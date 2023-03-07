@@ -14,8 +14,6 @@ namespace DepictionEngine
     public class InstantiatorVisualObject : VisualObject
     {
         [BeginFoldout("GameObjects")]
-        [SerializeField, Tooltip("When enabled '"+nameof(UpdateAllGameObjects)+"' will be called automatically when the object is created or when the assetBundle changes.")]
-        private bool _autoInstantiate;
 #if UNITY_EDITOR
         [SerializeField, Button(nameof(DisposeAllVisualsBtn)), ConditionalShow(nameof(IsNotFallbackValues)), Tooltip("Dispose all children.")]
         private bool _disposeAllGameObjects;
@@ -28,12 +26,17 @@ namespace DepictionEngine
         private AssetBundle _assetBundle;
 
 #if UNITY_EDITOR
+        protected override bool GetShowAutoInstantiate()
+        {
+            return true;
+        }
+
         private void DisposeAllVisualsBtn()
         {
             IsUserChange(() =>
             {
                 Editor.UndoManager.CreateNewGroup("Disposed All '" + name + "' Visuals");
-                DisposeAllGameObjects();
+                DisposeAllChildren();
             });
         }
 
@@ -54,32 +57,13 @@ namespace DepictionEngine
             _gameObjects = null;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
-        {
-            base.InitializeSerializedFields(initializingContext);
-
-            InitValue(value => autoInstantiate = value, true, initializingContext);
-        }
-
-        public override bool LateInitialize()
-        {
-            if (base.LateInitialize())
-            {
-                //Some 'Visuals' will not be persisted in the Scene so we need to recreate them
-                if (!GetMeshRenderersInitialized())
-                    AutoInstantiate();
-
-                return true;
-            }
-            return false;
-        }
-
-        protected override bool UpdateAllDelegates()
-        {
+        protected override bool UpdateAllDelegates() 
+        { 
             if (base.UpdateAllDelegates())
-            {
+            { 
                 RemoveAssetBundleDelegates();
-                AddAssetBundleDelegates();
+                if (!IsDisposing())
+                    AddAssetBundleDelegates();
 
                 return true;
             }
@@ -88,7 +72,7 @@ namespace DepictionEngine
 
         private bool RemoveAssetBundleDelegates()
         {
-            if (!Object.ReferenceEquals(assetBundle, null))
+            if (assetBundle is not null)
             {
                 assetBundle.PropertyAssignedEvent -= AssetBundlePropertyAssignedHandler;
                 return true;
@@ -98,7 +82,7 @@ namespace DepictionEngine
 
         private bool AddAssetBundleDelegates()
         {
-            if (!IsDisposing() && assetBundle != Disposable.NULL)
+            if (assetBundle != Disposable.NULL)
             {
                 assetBundle.PropertyAssignedEvent += AssetBundlePropertyAssignedHandler;
                 return true;
@@ -109,7 +93,7 @@ namespace DepictionEngine
         private void AssetBundlePropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             if (name == nameof(AssetBase.data))
-                AssetBundleChanged();
+                AssetChanged();
         }
 
         protected override bool UpdateReferences(bool forceUpdate = false)
@@ -121,22 +105,6 @@ namespace DepictionEngine
                 return true;
             }
             return false;
-        }
-
-        /// <summary>
-        /// When enabled <see cref="DepictionEngine.InstantiatorVisualObject.UpdateAllGameObjects"/> will be called automatically when the object is created or when the assetBundle changes.
-        /// </summary>
-        [Json]
-        public bool autoInstantiate
-        {
-            get { return _autoInstantiate; }
-            set
-            {
-                SetValue(nameof(autoInstantiate), value, ref _autoInstantiate, (newValue, oldValue) =>
-                {
-                    AutoInstantiate();
-                });
-            }
         }
 
         private AssetReference assetBundleAssetReference
@@ -154,27 +122,25 @@ namespace DepictionEngine
             get { return _assetBundle; }
             set
             {
-                AssetBundle oldValue = _assetBundle;
-                AssetBundle newValue = value;
-                if (newValue == oldValue)
+                if (_assetBundle == value)
                     return;
 
                 RemoveAssetBundleDelegates();
 
-                _assetBundle = newValue;
+                _assetBundle = value;
 
                 AddAssetBundleDelegates();
 
-                AssetBundleChanged();
+                AssetChanged();
             }
         }
 
-        private void AssetBundleChanged()
+        private void AssetChanged()
         {
-            if (initialized && activeAndEnabled)
+            if (initialized)
             {
-                DisposeAllGameObjects();
-                AutoInstantiate();
+                if (meshRendererVisualDirtyFlags is not null)
+                    meshRendererVisualDirtyFlags.Recreate();
             }
         }
 
@@ -200,25 +166,23 @@ namespace DepictionEngine
             return gameObject;
         }
 
-        /// <summary>
-        /// Dispose all children.
-        /// </summary>
-        /// <returns></returns>
-        public bool DisposeAllGameObjects()
+        protected override void UpdateMeshRendererVisuals(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
         {
-            if (!IsDisposing() && DisposeAllChildren())
+            base.UpdateMeshRendererVisuals(meshRendererVisualDirtyFlags);
+
+            if (meshRendererVisualDirtyFlags.isDirty)
+                UpdateAllGameObjects();
+        }
+
+        protected override bool DisposeAllChildren(DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Unknown, DisposeManager.DisposeDelay disposeDelay = DisposeManager.DisposeDelay.None)
+        {
+            if (!IsDisposing() && base.DisposeAllChildren(disposeContext, disposeDelay))
             {
                 _gameObjects = null;
 
                 return true;
             }
             return false;
-        }
-
-        private void AutoInstantiate()
-        {
-            if (autoInstantiate)
-                UpdateAllGameObjects();
         }
 
         /// <summary>
@@ -228,7 +192,7 @@ namespace DepictionEngine
         {
             if (initialized)
             {
-                List<GameObject> newGameObjects = new List<GameObject>();
+                List<GameObject> newGameObjects = new();
 
                 if (assetBundle != Disposable.NULL)
                 {

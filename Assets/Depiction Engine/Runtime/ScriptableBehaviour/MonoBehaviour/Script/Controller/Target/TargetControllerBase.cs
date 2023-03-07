@@ -76,7 +76,7 @@ namespace DepictionEngine
 
         private void RemoveTargetDelegate(Object target)
         {
-            if (!Object.ReferenceEquals(target, null))
+            if (target is not null)
                 target.PropertyAssignedEvent -= TargetPropertyAssignedHandler;
         }
 
@@ -94,7 +94,7 @@ namespace DepictionEngine
 
         private void RemoveTargetTransformDelegate(TransformDouble targetTransform)
         {
-            if (!Object.ReferenceEquals(targetTransform, null))
+            if (targetTransform is not null)
                 targetTransform.ChangedEvent -= TargetTransformChanged;
         }
 
@@ -199,7 +199,7 @@ namespace DepictionEngine
             SetValue(nameof(target), GetComponentFromId<Object>(targetId), ref _target, (newValue, oldValue) =>
             {
                 RemoveTargetDelegate(oldValue);
-                if (!Object.ReferenceEquals(oldValue, null))
+                if (oldValue is not null)
                     oldValue.targetController = null;
 
                 AddTargetDelegate(newValue);
@@ -434,9 +434,9 @@ namespace DepictionEngine
             return false;
         }
 
-        public override bool OnDisposing()
+        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
         {
-            if (base.OnDisposing())
+            if (base.OnDisposing(disposeContext))
             {
                 target = null;
 

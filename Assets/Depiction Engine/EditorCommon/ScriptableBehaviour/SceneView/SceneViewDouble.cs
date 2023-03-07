@@ -93,7 +93,7 @@ namespace DepictionEngine.Editor
 
             _sceneViewinitializingContext = initializingContext;
 
-            if (initializingContext == InstanceManager.InitializationContext.Existing_Or_Editor_UndoRedo)
+            if (initializingContext == InstanceManager.InitializationContext.Existing)
             {
                 if (SceneManager.playModeState == PlayModeStateChange.ExitingPlayMode)
                 {
@@ -137,8 +137,7 @@ namespace DepictionEngine.Editor
 
         public static void InitSceneViewDoubles(ref List<SceneViewDouble> sceneViewDoubles)
         {
-            if (sceneViewDoubles == null)
-                sceneViewDoubles = new List<SceneViewDouble>();
+            sceneViewDoubles ??= new List<SceneViewDouble>();
 
             foreach (SceneViewDouble sceneViewDouble in sceneViewDoubles)
             {
@@ -164,7 +163,7 @@ namespace DepictionEngine.Editor
                 if (sceneViewDouble == Disposable.NULL || sceneViewDouble.deleted)
                 {
                     sceneViewDoubles.RemoveAt(i);
-                    DisposeManager.Dispose(sceneViewDouble, DisposeManager.DestroyContext.Programmatically);
+                    DisposeManager.Dispose(sceneViewDouble, DisposeManager.DisposeContext.Programmatically);
                 }
             }
         }
@@ -188,7 +187,7 @@ namespace DepictionEngine.Editor
 
         private void InitSceneCamera(SceneCamera sceneCamera)
         {
-            if (!sceneCamera.sceneCameraController.wasFirstUpdatedBySceneViewDouble)
+            if (sceneCamera != Disposable.NULL && !sceneCamera.sceneCameraController.wasFirstUpdatedBySceneViewDouble)
             {
                 SceneView sceneView = GetSceneView(sceneCamera);
                 if (sceneView != null)
@@ -458,7 +457,20 @@ namespace DepictionEngine.Editor
             {
                 foreach (SceneViewDouble sceneViewDouble in sceneViewDoubles)
                 {
-                    if (sceneViewDouble.camera == camera)
+                    if (sceneViewDouble != Disposable.NULL && sceneViewDouble.camera == camera)
+                        return sceneViewDouble;
+                }
+            }
+            return null;
+        }
+
+        public static SceneViewDouble GetSceneViewDouble(int instanceId)
+        {
+            if (sceneViewDoubles != null)
+            {
+                foreach (SceneViewDouble sceneViewDouble in sceneViewDoubles)
+                {
+                    if (sceneViewDouble != Disposable.NULL && sceneViewDouble.GetInstanceID() == instanceId)
                         return sceneViewDouble;
                 }
             }
@@ -576,8 +588,7 @@ namespace DepictionEngine.Editor
         public void SetPivotTarget(Vector3Double value, float speed = 2.0f)
         {
             StopPivotAnimation();
-            if (_animPivot == null)
-                _animPivot = new AnimFloat(0.0f, AnimPivotChanged);
+            _animPivot ??= new AnimFloat(0.0f, AnimPivotChanged);
             if (_animPivot.valueChanged == null)
             {
                 _animPivot.valueChanged = new UnityEvent();
@@ -641,12 +652,9 @@ namespace DepictionEngine.Editor
         private AnimVector3 _sceneViewPivot;
         private void UpdateSceneViewPivot(SceneView sceneView)
         {
-            if (_sceneViewPivot == null)
-                _sceneViewPivot = new AnimVector3(Vector3.zero);
+            _sceneViewPivot ??= new AnimVector3(Vector3.zero);
 
-            Vector3 sceneViewPivotValue;
-            Vector3 sceneViewPivotTarget;
-            AnimVector3 sceneViewPivot = GetSceneViewPivot(out sceneViewPivotValue, out sceneViewPivotTarget, sceneView);
+            AnimVector3 sceneViewPivot = GetSceneViewPivot(out Vector3 sceneViewPivotValue, out Vector3 sceneViewPivotTarget, sceneView);
             if (sceneViewPivot.isAnimating)
             {
                 if (!_sceneViewPivot.isAnimating || _sceneViewPivot.target != sceneViewPivotTarget)
@@ -682,8 +690,7 @@ namespace DepictionEngine.Editor
         public void SetRotationTarget(QuaternionDouble value, float speed = 2.0f)
         {
             StopRotationAnimation();
-            if (_animRotation == null)
-                _animRotation = new AnimFloat(0.0f, AnimRotationChanged);
+            _animRotation ??= new AnimFloat(0.0f, AnimRotationChanged);
             if (_animRotation.valueChanged == null)
             {
                 _animRotation.valueChanged = new UnityEvent();
@@ -735,8 +742,7 @@ namespace DepictionEngine.Editor
         private AnimQuaternion _sceneViewRotation;
         private void UpdateSceneViewRotation(SceneView sceneView)
         {
-            if (_sceneViewRotation == null)
-                _sceneViewRotation = new AnimQuaternion(Quaternion.identity);
+            _sceneViewRotation ??= new AnimQuaternion(Quaternion.identity);
             AnimQuaternion sceneViewRotation = sceneView.GetType().GetField("m_Rotation", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(sceneView) as AnimQuaternion;
             if (sceneViewRotation.isAnimating)
             {
@@ -779,8 +785,7 @@ namespace DepictionEngine.Editor
         public void SetSizeTarget(double value, float speed = 2.0f)
         {
             StopSizeAnimation();
-            if (_animSize == null)
-                _animSize = new AnimFloat(0.0f, AnimSizeChanged);
+            _animSize ??= new AnimFloat(0.0f, AnimSizeChanged);
             if (_animSize.valueChanged == null)
             {
                 _animSize.valueChanged = new UnityEvent();
@@ -832,8 +837,7 @@ namespace DepictionEngine.Editor
         private AnimFloat _sceneViewSize;
         private void UpdateSceneViewSize(SceneView sceneView)
         {
-            if (_sceneViewSize == null)
-                _sceneViewSize = new AnimFloat(0.0f);
+            _sceneViewSize ??= new AnimFloat(0.0f);
             AnimFloat sceneViewSize = sceneView.GetType().GetField("m_Size", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(sceneView) as AnimFloat;
             if (sceneViewSize.isAnimating)
             {
@@ -1049,8 +1053,7 @@ namespace DepictionEngine.Editor
 
                 if (Selection.MoveOriginCloserToPoint(Tools.GetHandlePosition, (position) =>
                 {
-                    if (originShiftSnapshot == null)
-                        originShiftSnapshot = TransformDouble.GetOriginShiftSnapshot();
+                    originShiftSnapshot ??= TransformDouble.GetOriginShiftSnapshot();
 
                     return Tools.GetMostPreciseHandle(position);
                 }))
@@ -1127,9 +1130,8 @@ namespace DepictionEngine.Editor
                 Vector3Double dif = camera.transform.position - handlePosition;
                 
                 QuaternionDouble delta = QuaternionDouble.Inverse(UnityEditor.Selection.activeTransform.rotation) * camera.transform.rotation;
-                Vector3Double axis;
-                double angle;
-                delta.ToAngleAxis(out angle, out axis);
+
+                delta.ToAngleAxis(out double angle, out Vector3Double axis);
                 axis = UnityEditor.Selection.activeTransform.TransformDirection(axis);
 
                 UndoManager.SetCurrentGroupName("Align with view");
@@ -1297,7 +1299,7 @@ namespace DepictionEngine.Editor
         {
             SceneViewDouble sceneViewDouble = GetSceneViewDouble(__instance);
             if (sceneViewDouble != Disposable.NULL && sceneViewDouble == _currentSceneViewDouble)
-                sceneViewDouble.PreHandleSelectionAndOnSceneGUI(__instance);
+                sceneViewDouble.PreHandleSelectionAndOnSceneGUI();
         }
 
         //TransformDoubleEditor.OnSceneGUI()
@@ -1306,7 +1308,7 @@ namespace DepictionEngine.Editor
         {
             SceneViewDouble sceneViewDouble = GetSceneViewDouble(__instance);
             if (sceneViewDouble != Disposable.NULL && sceneViewDouble == _currentSceneViewDouble)
-                sceneViewDouble.PostHandleSelectionAndOnSceneGUI(__instance);
+                sceneViewDouble.PostHandleSelectionAndOnSceneGUI();
         }
 
         private static void PatchedPreDefaultHandles(SceneView __instance)
@@ -1320,7 +1322,7 @@ namespace DepictionEngine.Editor
         {
             SceneViewDouble sceneViewDouble = GetSceneViewDouble(__instance);
             if (sceneViewDouble != Disposable.NULL && sceneViewDouble == _currentSceneViewDouble)
-                sceneViewDouble.PostDefaultHandles(__instance);
+                sceneViewDouble.PostDefaultHandles();
         }
 
         private void onGUIStarted(SceneView sceneView)
@@ -1399,7 +1401,7 @@ namespace DepictionEngine.Editor
 
         private float _lastNearClipPlane;
         private float _lastFarClipPlane;
-        private void PreHandleSelectionAndOnSceneGUI(SceneView sceneView)
+        private void PreHandleSelectionAndOnSceneGUI()
         {
             if (renderingManager.originShifting)
             {
@@ -1416,7 +1418,7 @@ namespace DepictionEngine.Editor
 
         //TransformDoubleEditor.OnSceneGUI()
 
-        private void PostHandleSelectionAndOnSceneGUI(SceneView sceneView)
+        private void PostHandleSelectionAndOnSceneGUI()
         {
            if (renderingManager.originShifting)
             {
@@ -1449,8 +1451,7 @@ namespace DepictionEngine.Editor
                     {
                         Selection.ApplyOriginShifting(origin);
 
-                        if (_lastActiveSceneCameraTransforms == null)
-                            _lastActiveSceneCameraTransforms = new List<TransformDouble>();
+                        _lastActiveSceneCameraTransforms ??= new List<TransformDouble>();
                         _lastActiveSceneCameraTransforms.Clear();
                         if (lastActiveSceneViewDouble != Disposable.NULL)
                         {
@@ -1461,9 +1462,9 @@ namespace DepictionEngine.Editor
                         TransformDouble.ApplyOriginShifting(_lastActiveSceneCameraTransforms, origin);
                     }
 
-                    //The Rect Tool throws "Screen position out of view frustum" errors when the selected object is too far away so was disable it beyond a certain distance
+                    //The Rect Tool throws "Screen position out of view frustum" errors when the selected object is too far away so we disable it beyond a certain distance
                     _lastToolCurrent = Tools.current;
-                    if (Tools.current == Tool.Rect && !Tools.GetHandlePosition(out Vector3 handlePosition))
+                    if (Tools.current == Tool.Rect && !Tools.GetHandlePosition(out Vector3 _))
                         Tools.current = Tool.None;
 
                     Tools.hidden = sceneView.camera != lastActiveSceneViewDouble.camera.unityCamera;
@@ -1502,8 +1503,7 @@ namespace DepictionEngine.Editor
 
             InitSceneViewDoubleComponents();
 
-            if (_sceneViewDoubleComponentsDelta == null)
-                _sceneViewDoubleComponentsDelta = new SceneViewDoubleComponentsDelta();
+            _sceneViewDoubleComponentsDelta ??= new SceneViewDoubleComponentsDelta();
             _sceneViewDoubleComponentsDelta.targetParentGeoAstroObject = alignViewToGeoAstroObject;
 
             SceneCamera sceneCamera = GetSceneCamera(sceneView);
@@ -1557,7 +1557,7 @@ namespace DepictionEngine.Editor
                     sceneView.size = (float)GetSizeFromCameraDistance((float)Vector3Double.Distance(sceneCameraTargetPosition, sceneCameraPosition));
                 }
             }
-       
+
             UpdateLastSceneViewComponents();
 
             SetPivot(_sceneViewDoubleComponents.targetPosition);
@@ -1587,7 +1587,7 @@ namespace DepictionEngine.Editor
             return sceneCameraTarget;
         }
 
-        private void PostDefaultHandles(SceneView sceneView)
+        private void PostDefaultHandles()
         {
             sceneManager.HierarchicalDetectChanges();
 
@@ -1601,11 +1601,6 @@ namespace DepictionEngine.Editor
                 return;
 
             _currentSceneViewDouble = null;
-        }
-
-        private static void PatchedPreAddCursorRect(Rect rect, MouseCursor cursor)
-        {
-        
         }
 
         private MethodInfo _sceneViewMotionDoViewToolMethodInfo;
@@ -1629,9 +1624,7 @@ namespace DepictionEngine.Editor
 
                 float sceneViewCameraDistance = (float)GetCameraDistanceFromSize(sceneView.size);
                 sceneViewComponentDeltas.SetComponents(sceneView.pivot, TargetControllerBase.GetTargetPosition(sceneView.pivot, sceneView.rotation, -sceneViewCameraDistance), sceneView.rotation, sceneViewCameraDistance);
-                if (_sceneViewMotionDoViewToolMethodInfo == null)
-                    _sceneViewMotionDoViewToolMethodInfo = Assembly.GetAssembly(typeof(SceneView)).GetType("UnityEditor.SceneViewMotion").GetMethod("DoViewTool");
-                _sceneViewMotionDoViewToolMethodInfo.Invoke(null, new object[] { sceneView });
+                SceneViewMotion.DoViewTool(sceneView);
                 sceneViewCameraDistance = (float)GetCameraDistanceFromSize(sceneView.size);
                 sceneViewComponentDeltas.CalculateComponentDeltas(sceneView.pivot, TargetControllerBase.GetTargetPosition(sceneView.pivot, sceneView.rotation, -sceneViewCameraDistance), sceneView.rotation, sceneViewCameraDistance);
 
@@ -1727,9 +1720,9 @@ namespace DepictionEngine.Editor
 
         private void AddEditorDeltasToSceneViewDoubleComponents(TargetControllerComponents sceneViewDoubleComponents, SceneViewDoubleComponentsDelta sceneViewDoubleComponentsDeltas)
         {
-            sceneViewDoubleComponents.targetPosition = sceneViewDoubleComponents.targetPosition + sceneViewDoubleComponentsDeltas.targetPosition;
+            sceneViewDoubleComponents.targetPosition += sceneViewDoubleComponentsDeltas.targetPosition;
             sceneViewDoubleComponents.rotation = (sceneViewDoubleComponents.rotation * sceneViewDoubleComponentsDeltas.rotation).normalized;
-            sceneViewDoubleComponents.cameraDistance = sceneViewDoubleComponents.cameraDistance + sceneViewDoubleComponentsDeltas.cameraDistance;
+            sceneViewDoubleComponents.cameraDistance += sceneViewDoubleComponentsDeltas.cameraDistance;
         }
 
         private void UpdateLastSceneViewComponents()
@@ -1738,7 +1731,7 @@ namespace DepictionEngine.Editor
             UpdateSceneViewRotation(sceneView);
             UpdateSceneViewSize(sceneView);
 
-            GetSceneViewPivot(out Vector3 sceneViewPivotValue, out Vector3 sceneViewPivotTarget, sceneView);
+            GetSceneViewPivot(out Vector3 sceneViewPivotValue, out Vector3 _, sceneView);
             _lastSceneViewPivot = sceneViewPivotValue;
             _lastAnimSceneViewPivot = _sceneViewPivot.value;
 
@@ -1765,9 +1758,9 @@ namespace DepictionEngine.Editor
             return eulerRotation;
         }
 
-        protected override bool OnDisposed(DisposeManager.DestroyContext destroyContext)
+        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
         {
-            if (base.OnDisposed(destroyContext))
+            if (base.OnDisposed(disposeContext, pooled))
             {
                 SceneManager sceneManager = SceneManager.Instance(false);
                 if (sceneManager != Disposable.NULL)
@@ -1924,7 +1917,7 @@ namespace DepictionEngine.Editor
 
             public override string ToString()
             {
-                return targetPosition + ", " + cameraPosition + ", " + rotation + ", " + cameraDistance;
+                return "TargetPosition: "+targetPosition + ", CameraPosition:" + cameraPosition + ", Rotation:" + rotation + ", CameraDistance:" + cameraDistance;
             }
         }
     }

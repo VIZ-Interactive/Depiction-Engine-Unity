@@ -10,6 +10,17 @@ namespace DepictionEngine.Editor
 {
     public class SceneViewMotion
     {
+        private static int _s_ViewToolID;
+        private static int s_ViewToolID
+        {
+            get 
+            {
+                if (_s_ViewToolID == 0)
+                    _s_ViewToolID = (int)GetUnitySceneViewMotionType().GetField("s_ViewToolID", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+                return _s_ViewToolID; 
+            }
+        }
+
         public static void ResetMotion()
         {
             GetUnitySceneViewMotionType().GetMethod("ResetMotion", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
@@ -58,6 +69,22 @@ namespace DepictionEngine.Editor
                 }
             }
             return true;
+        }
+
+        private static bool _allowHandleMouseDrag;
+        private static bool PatchedPreHandleMouseDrag()
+        {
+            return _allowHandleMouseDrag;
+        }
+
+        private static MethodInfo _sceneViewMotionDoViewToolMethodInfo;
+        public static void DoViewTool(SceneView view)
+        {
+            if (_sceneViewMotionDoViewToolMethodInfo == null)
+                _sceneViewMotionDoViewToolMethodInfo = Assembly.GetAssembly(typeof(SceneView)).GetType("UnityEditor.SceneViewMotion").GetMethod("DoViewTool");
+            _allowHandleMouseDrag = true;
+            _sceneViewMotionDoViewToolMethodInfo.Invoke(null, new object[] { view });
+            _allowHandleMouseDrag = false;
         }
     }
 }

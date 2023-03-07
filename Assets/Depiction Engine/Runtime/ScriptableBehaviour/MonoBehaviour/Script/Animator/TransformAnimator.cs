@@ -149,8 +149,8 @@ namespace DepictionEngine
 			{
 				if (Object.ReferenceEquals(_localPositionTween, value))
 					return;
-				
-				Dispose(_localPositionTween);
+
+                DisposeManager.Dispose(_localPositionTween);
 
 				_localPositionTween = value;
 			}
@@ -335,8 +335,8 @@ namespace DepictionEngine
 			{
 				if (Object.ReferenceEquals(_localRotationTween, value))
 					return;
-				
-				Dispose(_localRotationTween);
+
+                DisposeManager.Dispose(_localRotationTween);
 
 				_localRotationTween = value;
 			}
@@ -405,8 +405,8 @@ namespace DepictionEngine
 			{
 				if (Object.ReferenceEquals(_localScaleTween, value))
 					return;
-				
-				Dispose(_localScaleTween);
+
+                DisposeManager.Dispose(_localScaleTween);
 
 				_localScaleTween = value;
 			}

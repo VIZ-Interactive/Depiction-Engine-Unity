@@ -75,15 +75,14 @@ namespace DepictionEngine
 
             transform.IterateOverChildrenObject<Level>((level) => 
             {
-                if (levels == null)
-                    levels = new List<UnityEngine.Object>();
+                levels ??= new List<UnityEngine.Object>();
 
                 levels.Add(level.gameObject);
                 levels.Add(level);
                 return true;
             });
 
-            return levels != null ? levels.ToArray() : null;
+            return levels?.ToArray();
         }
 #endif
 
@@ -175,7 +174,7 @@ namespace DepictionEngine
                 {
                     IterateOverLevels((level) =>
                     {
-                        level.gameObject.SetActive(currentLevel != Disposable.NULL ? level.transform.index >= currentLevel.transform.index : true);
+                        level.gameObject.SetActive(currentLevel == Disposable.NULL || level.transform.index >= currentLevel.transform.index);
                     });
 
                     float cumulativeHeight = 0.0f;
