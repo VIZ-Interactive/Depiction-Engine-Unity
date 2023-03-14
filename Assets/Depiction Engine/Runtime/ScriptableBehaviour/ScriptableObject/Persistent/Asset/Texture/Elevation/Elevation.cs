@@ -66,8 +66,8 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _elevation = null;
-            _rgbComponentOffset = 0;
+            _elevation = default;
+            _rgbComponentOffset = default;
         }
 
         protected override bool InitializeLastFields()
@@ -82,14 +82,14 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
 
             UpdateElevation();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
            
@@ -184,7 +184,7 @@ namespace DepictionEngine
             return dataType == LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw || dataType == LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw;
         }
 
-        public override void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public override void SetData(object value, LoaderBase.DataType dataType, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             base.SetData(value, dataType, initializingContext);
 
@@ -287,8 +287,8 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _minElevation = 0.0f;
-            _rgbComponentOffset = 0;
+            _minElevation = default;
+            _rgbComponentOffset = default;
         }
 
         public ElevationModifier Init(float minElevation, int rgbComponentOffset, Texture2D texture)

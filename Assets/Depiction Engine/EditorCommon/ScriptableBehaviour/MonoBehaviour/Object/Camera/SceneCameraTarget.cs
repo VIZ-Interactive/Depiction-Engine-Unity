@@ -12,7 +12,7 @@ namespace DepictionEngine.Editor
             return false;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
 
@@ -68,9 +68,9 @@ namespace DepictionEngine.Editor
             }
         }
 
-        protected override DisposeManager.DisposeContext GetDestroyingContext()
+        protected override DisposeContext GetDisposingContext()
         {
-            return DisposeManager.DisposeContext.Programmatically;
+            return DisposeContext.Programmatically_Destroy;
         }
     }
 }

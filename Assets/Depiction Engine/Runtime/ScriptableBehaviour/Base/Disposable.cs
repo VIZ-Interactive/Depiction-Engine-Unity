@@ -3,7 +3,6 @@
 using UnityEngine;
 using System;
 using System.Runtime.CompilerServices;
-using static UnityEngine.Rendering.DebugUI;
 
 namespace DepictionEngine
 {
@@ -15,20 +14,20 @@ namespace DepictionEngine
         private bool _initializing;
         private bool _initialized;
         private bool _disposing;
-        private bool _destroyingContextUpdated;
+        private bool _disposingContextUpdated;
         private bool _disposed;
-        private bool _disposedComplete;
+        private bool _poolComplete;
 
-        private DisposeManager.DisposeContext _destroyingContext;
+        private DisposeContext _disposingContext;
 
-        private Action _initializedEvent;
+        private Action<IDisposable> _initializedEvent;
         private Action<IDisposable> _disposingEvent;
-        private Action<IDisposable> _disposedEvent;
+        private Action<IDisposable, DisposeContext> _disposedEvent;
 
         public virtual void Recycle()
         {
-            _initializing = _initialized = _disposing = _destroyingContextUpdated = _disposed = _disposedComplete = false;
-            _destroyingContext = DisposeManager.DisposeContext.Unknown;
+            _initializing = _initialized = _disposing = _disposingContextUpdated = _disposed = _poolComplete = default;
+            _disposingContext = default;
         }
 
         public bool Initialize()
@@ -43,7 +42,7 @@ namespace DepictionEngine
                 UpdateAllDelegates();
 
                 Initialized();
-                InitializedEvent?.Invoke();
+                InitializedEvent?.Invoke(this);
 
                 return true;
             }
@@ -92,20 +91,20 @@ namespace DepictionEngine
             return _disposed;
         }
 
-        public bool disposedComplete
+        public bool poolComplete
         {
-            get { return _disposedComplete; }
-            set { _disposedComplete = value; }
+            get { return _poolComplete; }
+            set { _poolComplete = value; }
         }
 
         public bool IsDestroying()
         {
-            return _disposing && _destroyingContext != DisposeManager.DisposeContext.Unknown;
+            return _disposing && _disposingContext != DisposeContext.Programmatically_Pool;
         }
 
-        public DisposeManager.DisposeContext destroyingContext
+        public DisposeContext disposingContext
         {
-            get { return _destroyingContext; }
+            get { return _disposingContext; }
         }
 
         public bool hasEditorUndoRedo
@@ -113,7 +112,7 @@ namespace DepictionEngine
             get { return false; }
         }
 
-        public Action InitializedEvent
+        public Action<IDisposable> InitializedEvent
         {
             get { return _initializedEvent; }
             set { _initializedEvent = value; }
@@ -125,7 +124,7 @@ namespace DepictionEngine
             set { _disposingEvent = value; }
         }
 
-        public Action<IDisposable> DisposedEvent
+        public Action<IDisposable, DisposeContext> DisposedEvent
         {
             get { return _disposedEvent; }
             set { _disposedEvent = value; }
@@ -152,7 +151,7 @@ namespace DepictionEngine
             
         }
 
-        public virtual bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public bool OnDisposing()
         {
             if (!_disposing)
             {
@@ -166,55 +165,50 @@ namespace DepictionEngine
             return false;
         }
 
-        public virtual bool UpdateDestroyingContext()
+        public bool UpdateDisposingContext()
         {
-            if (!_destroyingContextUpdated)
+            if (!_disposingContextUpdated)
             {
-                _destroyingContextUpdated = true;
+                _disposingContextUpdated = true;
 
-                _destroyingContext = GetDestroyingContext();
+                _disposingContext = GetDisposingContext();
 
                 return true;
             }
             return false;
         }
 
-        public void OnDisposedInternal(DisposeManager.DisposeContext disposeContext, bool pooled = false)
+        public void OnDisposeInternal(DisposeContext disposeContext)
         {
-            OnDisposed(destroyingContext, pooled);
+            UpdateDisposingContext();
+            OnDispose(_disposingContext);
         }
 
-        /// <summary>
-        /// This is the last chance to clear or dipose any remaining references. It will be called immediately after the <see cref="DepictionEngine.IDisposable.UpdateDestroyingContext"/> unless a <see cref="DepictionEngine.DisposeManager.DisposeDelay"/> was passed to the <see cref="DepictionEngine.DisposeManager.Dispose"/> call.
-        /// </summary>
-        /// <param name="disposeContext">The context under which the object is being destroyed.</param>
-        /// <returns>False if the object was already disposed otherwise True.</returns>
-        protected virtual bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
+        public virtual bool OnDispose(DisposeContext disposeContext)
         {
             if (!_disposed)
             {
                 _disposed = true;
 
-                DisposedEvent?.Invoke(this);
-                DisposedEvent = null;
+                DisposedEvent?.Invoke(this, disposeContext);
+
+                UpdateAllDelegates();
 
                 InitializedEvent = null;
                 DisposingEvent = null;
                 DisposedEvent = null;
-
-                UpdateAllDelegates();
 
                 return true;
             }
             return false;
         }
 
-        protected virtual DisposeManager.DisposeContext GetDestroyingContext()
+        protected virtual DisposeContext GetDisposingContext()
         {
-            DisposeManager.DisposeContext destroyingContext = DisposeManager.disposingContext;
+            DisposeContext destroyingContext = DisposeManager.disposingContext;
 
             if (SceneManager.IsSceneBeingDestroyed())
-                destroyingContext = DisposeManager.DisposeContext.Programmatically;
+                destroyingContext = DisposeContext.Programmatically_Destroy;
 
             return destroyingContext;
         }
@@ -226,7 +220,7 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(Disposable lhs, Null rhs) => DisposeManager.IsNullOrDisposing(lhs);
+        public static bool operator ==(Disposable lhs, Null _) => DisposeManager.IsNullOrDisposing(lhs);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Null value)
@@ -255,7 +249,7 @@ namespace DepictionEngine
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool operator ==(Null lhs, IDisposable rhs) => DisposeManager.IsNullOrDisposing(rhs);
+            public static bool operator ==(Null _, IDisposable rhs) => DisposeManager.IsNullOrDisposing(rhs);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Equals(IDisposable value)

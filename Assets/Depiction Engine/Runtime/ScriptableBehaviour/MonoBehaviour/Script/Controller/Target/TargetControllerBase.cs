@@ -37,7 +37,7 @@ namespace DepictionEngine
                 callback(_targetId, UpdateTarget);
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
+        protected override bool Initialize(InitializationContext initializingContext)
         {
             if (base.Initialize(initializingContext))
             {
@@ -48,7 +48,7 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -434,9 +434,9 @@ namespace DepictionEngine
             return false;
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 target = null;
 

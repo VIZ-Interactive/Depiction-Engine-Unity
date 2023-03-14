@@ -10,7 +10,7 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private byte[] _bytes;
 
-        public override void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public override void SetData(object value, LoaderBase.DataType dataType, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             SetData(value as byte[]);
         }

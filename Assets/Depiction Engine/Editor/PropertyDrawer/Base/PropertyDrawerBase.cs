@@ -221,9 +221,7 @@ namespace DepictionEngine.Editor
                     {
                         if (serializedProperty.GetType() == typeof(GeoCoordinate3))
                         {
-                            float latitudeParsed;
-                            float longitudeParsed;
-                            if (latitudeLongitudeAltitude[0].Length != 0 && latitudeLongitudeAltitude[1].Length != 0 && float.TryParse(latitudeLongitudeAltitude[0], out latitudeParsed) && float.TryParse(latitudeLongitudeAltitude[1], out longitudeParsed))
+                            if (latitudeLongitudeAltitude[0].Length != 0 && latitudeLongitudeAltitude[1].Length != 0 && float.TryParse(latitudeLongitudeAltitude[0], out float latitudeParsed) && float.TryParse(latitudeLongitudeAltitude[1], out float longitudeParsed))
                             {
                                 latitude.floatValue = GeoCoordinate3.ValidateLatitude(latitudeParsed);
                                 longitude.floatValue = GeoCoordinate3.ValidateLongitude(longitudeParsed);
@@ -231,9 +229,7 @@ namespace DepictionEngine.Editor
                         }
                         else
                         {
-                            double latitudeParsed;
-                            double longitudeParsed;
-                            if (latitudeLongitudeAltitude[0].Length != 0 && latitudeLongitudeAltitude[1].Length != 0 && double.TryParse(latitudeLongitudeAltitude[0], out latitudeParsed) && double.TryParse(latitudeLongitudeAltitude[1], out longitudeParsed))
+                            if (latitudeLongitudeAltitude[0].Length != 0 && latitudeLongitudeAltitude[1].Length != 0 && double.TryParse(latitudeLongitudeAltitude[0], out double latitudeParsed) && double.TryParse(latitudeLongitudeAltitude[1], out double longitudeParsed))
                             {
                                 latitude.doubleValue = GeoCoordinate3Double.ValidateLatitude(latitudeParsed);
                                 longitude.doubleValue = GeoCoordinate3Double.ValidateLongitude(longitudeParsed);
@@ -247,14 +243,12 @@ namespace DepictionEngine.Editor
 
                         if (serializedProperty.GetType() == typeof(GeoCoordinate3))
                         {
-                            float altitudeParsed;
-                            if (latitudeLongitudeAltitude[2].Length != 0 && float.TryParse(latitudeLongitudeAltitude[2], out altitudeParsed))
+                            if (latitudeLongitudeAltitude[2].Length != 0 && float.TryParse(latitudeLongitudeAltitude[2], out float altitudeParsed))
                                 altitude.floatValue = altitudeParsed;
                         }
                         else
                         {
-                            double altitudeParsed;
-                            if (latitudeLongitudeAltitude[2].Length != 0 && double.TryParse(latitudeLongitudeAltitude[2], out altitudeParsed))
+                            if (latitudeLongitudeAltitude[2].Length != 0 && double.TryParse(latitudeLongitudeAltitude[2], out double altitudeParsed))
                                 altitude.doubleValue = altitudeParsed;
                         }
                     }
@@ -345,7 +339,7 @@ namespace DepictionEngine.Editor
             position.height = EditorGUIUtility.singleLineHeight;
 
             float totalHeight = 0.0f;
-            datasource.IterateOverPersistenceData((persistenceData) =>
+            datasource.IterateOverPersistenceData((persistentId, persistenceData) =>
             {
                 IPersistent persistent = persistenceData.persistent;
                 GUI.SetNextControlName(Selection.PERSISTENT_PREFIX + "" + persistent.id.ToString());
@@ -361,7 +355,7 @@ namespace DepictionEngine.Editor
             {
                 IPersistent persistent = Selection.GetSelectedDatasourcePersistent();
                 if (!Disposable.IsDisposed(persistent))
-                    DisposeManager.Dispose(persistent is MonoBehaviourDisposable ? (persistent as MonoBehaviourDisposable).gameObject : persistent, DisposeManager.DisposeContext.Editor);
+                    DisposeManager.Dispose(persistent is MonoBehaviourDisposable ? (persistent as MonoBehaviourDisposable).gameObject : persistent, DisposeContext.Editor_Destroy);
             }
 
             GUILayout.Space(20.0f);
@@ -514,7 +508,7 @@ namespace DepictionEngine.Editor
 
                     if (datasource != Disposable.NULL)
                     {
-                        datasource.IterateOverPersistenceData((persistent) =>
+                        datasource.IterateOverPersistenceData((persistentId, persistent) =>
                         {
                             totalHeight += GetDefaultSingleLineHeight();
 

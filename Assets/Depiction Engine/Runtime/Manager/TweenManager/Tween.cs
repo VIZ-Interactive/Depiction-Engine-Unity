@@ -24,10 +24,10 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _progress = 0.0f;
+            _progress = default;
 
-            _currentLerpTime = 0.0f;
-            _playing = false;
+            _currentLerpTime = default;
+            _playing = default;
         }
 
         public Tween Init(float from, float to, float duration, Action<float> onUpdate, Action onComplete, Action onKill, EasingType easing = EasingType.Linear)
@@ -129,9 +129,9 @@ namespace DepictionEngine
             DisposeManager.Dispose(this);
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 _onKillCallback?.Invoke();
 

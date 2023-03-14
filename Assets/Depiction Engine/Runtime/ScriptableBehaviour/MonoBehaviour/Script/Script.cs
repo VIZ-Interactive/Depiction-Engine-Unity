@@ -28,7 +28,7 @@ namespace DepictionEngine
 
         protected virtual bool RemoveObjectBaseDelegate(Object objectBase)
         {
-            if (!Object.ReferenceEquals(objectBase, null))
+            if (objectBase is not null)
             {
                 objectBase.InitializedEvent -= ObjectInitializedHandler;
                 objectBase.PropertyAssignedEvent -= ObjectBasePropertyAssignedHandler;
@@ -54,7 +54,7 @@ namespace DepictionEngine
             return false;
         }
 
-        private void ObjectInitializedHandler()
+        private void ObjectInitializedHandler(IDisposable disposable)
         {
             UpdateParentGeoAstroObject();
         }
@@ -67,7 +67,7 @@ namespace DepictionEngine
 
         protected virtual bool RemoveParentGeoAstroObjectDelegates(GeoAstroObject parentGeoAstroObject)
         {
-            if (!Object.ReferenceEquals(parentGeoAstroObject, null))
+            if (parentGeoAstroObject is not null)
             {
                 parentGeoAstroObject.PropertyAssignedEvent -= ParentGeoAstroObjectPropertyAssignedHandler;
 
@@ -133,7 +133,7 @@ namespace DepictionEngine
 
         protected override bool IsFullyInitialized()
         {
-            return base.IsFullyInitialized() && transform.parentGeoAstroObject != Disposable.NULL ? transform.parentGeoAstroObject.GetLoadingInitialized() : true;
+            return !base.IsFullyInitialized() || transform.parentGeoAstroObject == Disposable.NULL || transform.parentGeoAstroObject.GetLoadingInitialized();
         }
 
         public float GetSphericalRatio()
@@ -143,12 +143,12 @@ namespace DepictionEngine
 
         protected bool IsSpherical()
         {
-            return parentGeoAstroObject != Disposable.NULL ? parentGeoAstroObject.IsSpherical() : false;
+            return parentGeoAstroObject != Disposable.NULL && parentGeoAstroObject.IsSpherical();
         }
 
         protected bool IsFlat()
         {
-            return parentGeoAstroObject != Disposable.NULL ? parentGeoAstroObject.IsFlat() : true;
+            return parentGeoAstroObject == Disposable.NULL || parentGeoAstroObject.IsFlat();
         }
 
         protected override Type GetParentType()
@@ -217,7 +217,7 @@ namespace DepictionEngine
 
         public new TransformDouble transform
         {
-            get { return !Object.ReferenceEquals(objectBase, null) ? objectBase.transform : null; }
+            get { return objectBase is not null ? objectBase.transform : null; }
         }
     }
 }

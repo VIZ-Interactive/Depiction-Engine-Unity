@@ -24,7 +24,7 @@ namespace DepictionEngine
 
         private CamerasSmoothElevationDictionary _camerasSmoothElevation;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -213,9 +213,9 @@ namespace DepictionEngine
             return cameraSmoothElevation.GetSmoothElevation();
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 if (_camerasSmoothElevation != null)
                 {
@@ -243,7 +243,7 @@ namespace DepictionEngine
             private List<double> _elevations;
 
             /// <summary>
-            /// Dispatched when the <see cref="DepictionEngine.Camera"/> <see cref="DepictionEngine.IDisposable.UpdateDestroyingContext"/> is triggered.
+            /// Dispatched when the <see cref="DepictionEngine.Camera"/> <see cref="DepictionEngine.IDisposable.UpdateDisposingContext"/> is triggered.
             /// </summary>
             public Action<CameraSmoothElevation> CameraDisposingEvent;
 

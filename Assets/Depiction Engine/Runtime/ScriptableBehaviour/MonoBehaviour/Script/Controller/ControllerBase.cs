@@ -7,7 +7,7 @@ namespace DepictionEngine
 	[DisallowMultipleComponent]
 	public class ControllerBase : Script
 	{
-        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
+        protected override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
 

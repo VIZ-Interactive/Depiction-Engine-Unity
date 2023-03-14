@@ -13,7 +13,7 @@ namespace DepictionEngine
         [SerializeField, Mask, Tooltip("The layers to be masked by this effect."), EndFoldout]
         private int _maskedLayers;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 

@@ -1,7 +1,6 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -42,8 +41,6 @@ namespace DepictionEngine
         private bool _containsCopyrightedMaterial;
 
         private Tween _autoSynchronizeIntervalTimer;
-
-        private List<Type> _requiredComponentTypes;
 
         private Action<IPersistent, Action> _persistenceSaveOperationEvent;
         private Action<IPersistent, Action> _persistenceSynchronizeOperationEvent;
@@ -105,7 +102,7 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _containsCopyrightedMaterial = false;
+            _containsCopyrightedMaterial = default;
         }
 
         protected override bool AddInstanceToManager()
@@ -113,7 +110,7 @@ namespace DepictionEngine
             return true;
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
+        protected override bool Initialize(InitializationContext initializingContext)
         {
             if (base.Initialize(initializingContext))
             {
@@ -124,7 +121,7 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -133,68 +130,6 @@ namespace DepictionEngine
             InitValue(value => autoSynchronizeInterval = value, PersistentScriptableObject.DEFAULT_AUTO_SYNCHRONIZE_INTERVAL, initializingContext);
             InitValue(value => dontSaveToScene = value, GetDefaultDontSaveToScene(), initializingContext);
             InitValue(value => createPersistentIfMissing = value, true, initializingContext);
-        }
-
-        protected override void CreateComponents(InstanceManager.InitializationContext initializingContext)
-        {
-            base.CreateComponents(initializingContext);
-
-            InitRequiredComponentTypes();
-            GetRequiredComponentTypes(ref _requiredComponentTypes);
-            List<Type> requiredComponentTypes = _requiredComponentTypes;
-
-            if (requiredComponentTypes.Count > 0)
-            {
-                Component[] components = gameObject.GetComponents<Component>();
-
-                foreach (Type requiredComponentType in requiredComponentTypes)
-                {
-                    Component component = RemoveComponentFromList(requiredComponentType, components);
-                    if (Disposable.IsDisposed(component))
-                    {
-#if UNITY_EDITOR
-                        component = Editor.UndoManager.AddComponent(gameObject, requiredComponentType, initializingContext);
-#else
-                        component = gameObject.AddComponent(requiredComponentType);
-#endif
-                    }
-                }
-            }
-        }
-
-        private void InitRequiredComponentTypes()
-        {
-            _requiredComponentTypes ??= new List<Type>();
-            _requiredComponentTypes.Clear();
-        }
-
-        protected Component RemoveComponentFromList(Type type, Component[] components)
-        {
-            for (int i = 0; i < components.Length; i++)
-            {
-                Component component = components[i];
-                if (!Disposable.IsDisposed(component))
-                {
-                    if (type.IsAssignableFrom(component.GetType()))
-                    {
-                        components[i] = null;
-                        return component;
-                    }
-                }
-            }
-            return null;
-        }
-
-        public List<Type> GetRequiredComponentTypes()
-        {
-            List<Type> requiredComponentTypes = new();
-            GetRequiredComponentTypes(ref requiredComponentTypes);
-            return requiredComponentTypes;
-        }
-
-        public void GetRequiredComponentTypes(ref List<Type> types)
-        {
-            MemberUtility.GetRequiredComponentTypes(ref types, GetType(), !isFallbackValues);
         }
 
         protected override void DetectChanges()
@@ -409,36 +344,12 @@ namespace DepictionEngine
             return deleted;
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 autoSynchronizeIntervalTimer = null;
 
-                InitRequiredComponentTypes();
-                GetRequiredComponentTypes(ref _requiredComponentTypes);
-
-                MonoBehaviour[] components = gameObject.GetComponents<MonoBehaviour>();
-                for (int i = components.Length - 1; i >= 0; i--)
-                {
-                    MonoBehaviour component = components[i];
-                    if (component != this)
-                    {
-                        Type componentType = component.GetType();
-                        if (!_requiredComponentTypes.Remove(componentType))
-                            Dispose(component, disposeContext, DisposeManager.DisposeDelay.Delayed);
-                    }
-                }
-
-                return true;
-            }
-            return false;
-        }
-
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
-        {
-            if (base.OnDisposed(disposeContext, pooled))
-            {
                 PersistenceSaveOperationEvent = null;
                 PersistenceSynchronizeOperationEvent = null;
                 PersistenceDeleteOperationEvent = null;

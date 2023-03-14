@@ -16,7 +16,7 @@ namespace DepictionEngine
             _initializationJson = InstanceManager.initializeJSON;
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
+        protected override bool Initialize(InitializationContext initializingContext)
         {
             if (base.Initialize(initializingContext))
             {
@@ -40,7 +40,7 @@ namespace DepictionEngine
             get { return _initializationJson; }
         }
 
-        protected override SerializableGuid GetId(SerializableGuid id, InstanceManager.InitializationContext initializingContext)
+        protected override SerializableGuid GetId(SerializableGuid id, InitializationContext initializingContext)
         {
             if (_initializationJson != null)
             {

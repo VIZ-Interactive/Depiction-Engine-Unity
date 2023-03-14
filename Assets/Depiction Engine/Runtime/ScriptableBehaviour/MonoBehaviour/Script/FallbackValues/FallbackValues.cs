@@ -2,9 +2,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
-using static UnityEngine.Rendering.DebugUI;
 
 namespace DepictionEngine
 {
@@ -33,7 +31,7 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _fallbackValuesJson = null;
+            _fallbackValuesJson = default;
         }
 
         protected override bool InitializeLastFields()
@@ -48,14 +46,14 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
             DisposeFallbackValuesObject();
 
 #if UNITY_EDITOR
-            if (initializingContext == InstanceManager.InitializationContext.Reset)
+            if (initializingContext == InitializationContext.Reset)
                 fallbackValuesJson = null;
 #endif
         }
@@ -162,7 +160,18 @@ namespace DepictionEngine
         public JSONObject fallbackValuesJson
         {
             get { return _fallbackValuesJson; }
-            set { SetFallbackValuesJson(ValidateFallbackValuesJson(value)); }
+            set 
+            {
+                value = ValidateFallbackValuesJson(value);
+
+                string typeName = value[nameof(Object.type)];
+                if (!string.IsNullOrEmpty(typeName))
+                    SetFallbackJsonFromType(typeName);
+
+                MergeJson(_fallbackValuesJson, value);
+
+                SetFallbackValuesJson(value); 
+            }
         }
 
         private bool SetFallbackValuesJson(JSONObject value)
@@ -266,7 +275,7 @@ namespace DepictionEngine
             }
         }
 
-        private void DisposeFallbackValuesObject(DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Programmatically)
+        private void DisposeFallbackValuesObject(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
             Dispose(_fallbackValuesObject is MonoBehaviour ? (_fallbackValuesObject as MonoBehaviour).gameObject : _fallbackValuesObject, disposeContext);
             fallbackValuesObject = null;
@@ -417,9 +426,9 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (base.OnDispose(disposeContext))
             {
                 DisposeFallbackValuesObject(disposeContext);
 

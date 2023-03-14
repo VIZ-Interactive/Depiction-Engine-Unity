@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -18,6 +19,7 @@ namespace DepictionEngine
         [SerializeField, Tooltip("The list of ids to load."), EndFoldout]
         private List<SerializableGuid> _ids;
 
+        [SerializeField, HideInInspector]
         private IdReferencesDictionary _idReferences;
 
         [SerializeField]
@@ -26,20 +28,25 @@ namespace DepictionEngine
 #endif
         private IdLoadScopeDictionary _idLoadScopes;
 
-        protected override void ClearLoadScopes()
+        public override void Recycle()
         {
-            base.ClearLoadScopes();
+            base.Recycle();
 
-            if (_idReferences != null)
-                _idReferences.Clear();
-
-            if (_idLoadScopes != null)
-                _idLoadScopes.Clear();
+            _ids?.Clear();
+            _idReferences?.Clear();
+            _idLoadScopes?.Clear();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
+
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+            {
+                _ids?.Clear();
+                _idReferences?.Clear();
+                _idLoadScopes?.Clear();
+            }
 
             InitValue(value => ids = value, new List<SerializableGuid>(), initializingContext);
         }
@@ -71,25 +78,6 @@ namespace DepictionEngine
                 return true;
             }
             return false;
-        }
-
-        protected override bool DetectNullLoadScope()
-        {
-            bool nullDetected = base.DetectNullLoadScope();
-
-            if (!nullDetected)
-            {
-                foreach (LoadScope loadScope in idLoadScopes.Values)
-                {
-                    if (loadScope == Disposable.NULL)
-                    {
-                        nullDetected = true;
-                        break;
-                    }
-                }
-            }
-
-            return nullDetected;
         }
 
         private IdLoadScopeDictionary idLoadScopes
@@ -176,7 +164,7 @@ namespace DepictionEngine
             return false;
         }
 
-        public override bool RemoveReference(LoadScope loadScope, ReferenceBase reference)
+        public override bool RemoveReference(LoadScope loadScope, ReferenceBase reference, DisposeContext disposeContext)
         {
             IdLoadScope idLoadScope = loadScope as IdLoadScope;
             if (idLoadScope != Disposable.NULL)
@@ -187,7 +175,7 @@ namespace DepictionEngine
                     if (idReferences.TryGetValue(scopeId, out ReferencesList references) && references.Remove(reference))
                     {
                         if (references.IsEmpty() && RemoveId(scopeId))
-                            DisposeLoadScope(loadScope);
+                            DisposeLoadScope(loadScope, disposeContext);
 
                         return true;
                     }
@@ -311,8 +299,9 @@ namespace DepictionEngine
             {
                 if (callback != null)
                 {
-                    foreach (IdLoadScope loadScope in idLoadScopes.Values)
+                    for (int i = idLoadScopes.Count - 1; i >= 0; i--)
                     {
+                        IdLoadScope loadScope = idLoadScopes.ElementAt(i).Value;
                         if (loadScope != Disposable.NULL && !callback(loadScope))
                             return false;
                     }

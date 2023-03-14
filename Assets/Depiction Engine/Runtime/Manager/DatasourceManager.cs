@@ -50,6 +50,14 @@ namespace DepictionEngine
             return _instance;
         }
 
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
+        {
+            base.InitializeSerializedFields(initializingContext);
+
+            if (_sceneDatasource == Disposable.NULL)
+                _sceneDatasource = DatasourceManager.CreateDatasource("SceneDatasource", initializingContext);
+        }
+
         protected override bool UpdateAllDelegates()
         {
             if (base.UpdateAllDelegates())
@@ -101,7 +109,7 @@ namespace DepictionEngine
 
         private void RemoveLoaderDelegates(LoaderBase loader)
         {
-            if (!Object.ReferenceEquals(loader, null))
+            if (loader is not null)
                 loader.PropertyAssignedEvent -= LoaderPropertyAssignedHandler;
         }
 
@@ -119,22 +127,12 @@ namespace DepictionEngine
 
         private void DatasourceLoadersChanged(LoaderBase loader)
         {
-            if (DatasourceLoadersChangedEvent != null)
-                DatasourceLoadersChangedEvent(loader);
+            DatasourceLoadersChangedEvent?.Invoke(loader);
         }
 
         public Datasource sceneDatasource
         {
-            get 
-            {
-                if (_sceneDatasource == Disposable.NULL)
-                {
-                    _sceneDatasource = instanceManager.CreateInstance<Datasource>();
-                    _sceneDatasource.Init();
-                    _sceneDatasource.name = "SceneDatasource";
-                }
-                return _sceneDatasource;
-            }
+            get { return _sceneDatasource; }
         }
 
         public DatasourceOperationBase Load(Action<List<IPersistent>> operationResult, LoadScope loadScope)
@@ -157,7 +155,7 @@ namespace DepictionEngine
             return loadSceneDatasourceOperation;
         }
 
-        public static FileSystemDatasource GetFileSystemDatasource(string databaseNamespace, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public static FileSystemDatasource GetFileSystemDatasource(string databaseNamespace, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             FileSystemDatasource fileSystemDatasource = null;
 
@@ -186,7 +184,7 @@ namespace DepictionEngine
             return fileSystemDatasource;
         }
 
-        public static RestDatasource GetRestDatasource(string baseAddress, string baseAddress2, string baseAddress3, string baseAddress4, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public static RestDatasource GetRestDatasource(string baseAddress, string baseAddress2, string baseAddress3, string baseAddress4, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             RestDatasource restDatasource = null;
 
@@ -218,7 +216,7 @@ namespace DepictionEngine
             return restDatasource;
         }
 
-        private static T CreateDatasource<T>(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : DatasourceBase
+        private static T CreateDatasource<T>(InitializationContext initializingContext = InitializationContext.Programmatically) where T : DatasourceBase
         {
             T datasource = null;
 
@@ -259,14 +257,9 @@ namespace DepictionEngine
             return false;
         }
 
-        public static Datasource CreateDatasource(string name, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public static Datasource CreateDatasource(string name, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
-            JSONObject json = new()
-            {
-                [nameof(Datasource.name)] = name
-            };
-
-            return InstanceManager.Instance().CreateInstance<Datasource>(null, json, null, initializingContext).Init();
+            return InstanceManager.Instance().CreateInstance<Datasource>(null, new JSONObject() { [nameof(Datasource.name)] = name }, null, initializingContext);
         }
     }
 }

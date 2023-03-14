@@ -10,14 +10,10 @@ namespace DepictionEngine
     public interface IScriptableBehaviour : IDisposable
     {
 #if UNITY_EDITOR
-        /// <summary>
-        /// Resets all serialized fields to their default value.
-        /// </summary>
-        void InspectorReset();
         string inspectorComponentNameOverride { set; get; }
 #endif
 
-        InstanceManager.InitializationContext GetInitializeContext(InstanceManager.InitializationContext defaultState = InstanceManager.InitializationContext.Programmatically);
+        InitializationContext GetInitializeContext();
 
         string name { set; get; }
 
@@ -38,7 +34,6 @@ namespace DepictionEngine
         /// <param name="originator"></param>
         void Originator(Action callback, IScriptableBehaviour originator);
 
-        void ExplicitAwake();
         int GetInstanceID();
         void ExplicitOnEnable();
         void ExplicitOnDisable();
@@ -56,7 +51,7 @@ namespace DepictionEngine
         /// <param name="isUserChange">Whether the current code execution was triggered by a user action.</param>
         void IsUserChange(Action callback, bool isUserChange = true);
 
-        DisposeManager.DisposeContext GetDisposeContext();
+        DisposeContext GetDisposeContext();
 
         /// <summary>
         /// This is where you destroy any remaining dependencies.

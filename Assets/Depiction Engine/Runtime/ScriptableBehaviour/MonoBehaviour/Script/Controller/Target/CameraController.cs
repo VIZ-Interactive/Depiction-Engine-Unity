@@ -67,7 +67,7 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -639,9 +639,9 @@ namespace DepictionEngine
             return closestHit != null && closestHit.transform != Disposable.NULL && closestHit.transform.objectBase != Disposable.NULL && closestHit.transform.objectBase is UIBase;
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 inertiaTween = null;
                 distanceTween = null;

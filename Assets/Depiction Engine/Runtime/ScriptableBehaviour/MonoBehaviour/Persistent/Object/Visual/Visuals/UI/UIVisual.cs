@@ -14,8 +14,7 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            if (_cameras != null)
-                _cameras.Clear();
+            _cameras?.Clear();
         }
 
         public bool AddCamera(Camera camera)
@@ -33,8 +32,7 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_cameras == null)
-                    _cameras = new List<int>();
+                _cameras ??= new List<int>();
                 return _cameras; 
             }
         }

@@ -181,7 +181,7 @@ namespace DepictionEngine.Editor
         {
             UndoManager.CreateNewGroup("Create Camera Target");
 
-            Camera camera = InstanceUtility.CreateTargetCamera(GetContextTransform(menuCommand), InstanceManager.InitializationContext.Editor, true, true);
+            Camera camera = InstanceUtility.CreateTargetCamera(GetContextTransform(menuCommand), InitializationContext.Editor, true, true);
 
             InitMainCamera(camera);
 
@@ -601,7 +601,7 @@ namespace DepictionEngine.Editor
                 size,
                 mass,
                 scriptsJson,
-                InstanceManager.InitializationContext.Editor, 
+                InitializationContext.Editor, 
                 setParentAndAlign, 
                 moveToView);
 
@@ -613,12 +613,12 @@ namespace DepictionEngine.Editor
 
         private static DatasourceRoot CreateLayer(Planet planet, string name, JSONNode json)
         {
-            return InstanceUtility.CreateLayer(planet, name, json, InstanceManager.InitializationContext.Editor);
+            return InstanceUtility.CreateLayer(planet, name, json, InitializationContext.Editor);
         }
 
         private static T CreateObject<T>(Transform parent, string name = "", bool setParentAndAlign = true, bool moveToView = true, bool selectGameObject = true) where T : Object
         {
-            T objectBase = InstanceManager.Instance().CreateInstance<T>(parent, name, initializingContext: InstanceManager.InitializationContext.Editor, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
+            T objectBase = InstanceManager.Instance().CreateInstance<T>(parent, name, initializingContext: InitializationContext.Editor, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
 
             if (selectGameObject)
                 SelectObject(objectBase);
@@ -628,7 +628,7 @@ namespace DepictionEngine.Editor
 
         private static T CreateScript<T>(Object objectBase, JSONObject json = null) where T : Script
         {
-            return objectBase.CreateScript<T>(json, InstanceManager.InitializationContext.Editor);
+            return objectBase.CreateScript<T>(json, InitializationContext.Editor);
         }
 
         private static void SelectObject(Object objectBase)
@@ -775,12 +775,12 @@ namespace DepictionEngine.Editor
 
         private static T GetSafeComponent<T>(GameObject gameObject) where T : Component
         {
-            return gameObject.GetSafeComponent<T>(InstanceManager.InitializationContext.Editor);
+            return gameObject.GetSafeComponent<T>(InitializationContext.Editor);
         }
 
         private static RestDatasource GetRestDatasource(string baseAddress, string baseAddress2 = "", string baseAddress3 = "", string baseAddress4 = "")
         {
-            return DatasourceManager.GetRestDatasource(baseAddress, baseAddress2, baseAddress3, baseAddress4, InstanceManager.InitializationContext.Editor);
+            return DatasourceManager.GetRestDatasource(baseAddress, baseAddress2, baseAddress3, baseAddress4, InitializationContext.Editor);
         }
     }
 }

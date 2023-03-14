@@ -55,7 +55,7 @@ namespace DepictionEngine
 		}
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
 			base.InitializeSerializedFields(initializingContext);
 
@@ -66,7 +66,7 @@ namespace DepictionEngine
 			InitValue(value => upVector = value, Vector3.zero, initializingContext);
 		}
 
-		protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
+		protected override bool Initialize(InitializationContext initializingContext)
 		{
 			if (base.Initialize(initializingContext))
 			{

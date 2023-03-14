@@ -13,29 +13,13 @@ namespace DepictionEngine
                 if (_locked == value)
                     return;
                 _locked = value;
-                DisposingLocked();
                 OnDisposedLocked();
             }
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
-            {
-                DisposingLocked();
-                return true;
-            }
-            return false;
-        }
-
-        protected virtual bool DisposingLocked()
-        {
-            return !_locked && IsDisposing();
-        }
-
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
-        {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (base.OnDispose(disposeContext))
             {
                 OnDisposedLocked();
 

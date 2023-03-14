@@ -30,7 +30,7 @@ namespace DepictionEngine
 #endif
 
         [BeginFoldout("Dynamic Resizing")]
-        [SerializeField, Tooltip("How many instances of each type we can keep before we start destroying them.")]
+        [SerializeField, Tooltip("The maximum number of instances of each type we can keep. The excess instances will be deleted.")]
         private int _maxSize;
         [SerializeField, Tooltip("The interval (in seconds) at which we call the '"+nameof(ResizePools)+"' function.")]
         private float _resizeInterval;
@@ -122,7 +122,7 @@ namespace DepictionEngine
             StartDynamicResizing();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -131,6 +131,22 @@ namespace DepictionEngine
             InitValue(value => resizeInterval = value, 10.0f, initializingContext);
             InitValue(value => destroyCount = value, 50, initializingContext);
         }
+
+#if UNITY_EDITOR
+        protected override void DebugChanged()
+        {
+            base.DebugChanged();
+
+            if (_pools != null)
+            {
+                foreach (List<IDisposable> disposableList in _pools.Values)
+                {
+                    foreach (IDisposable disposable in disposableList)
+                        UpdateHideFlags(disposable);
+                }
+            }
+        }
+#endif
 
         /// <summary>
         /// When enabled, pooling improves performance by reusing the instances to reduce the number of expensive operations such as object creation or garbage collection. The trade-off is an increased memory footprint.
@@ -150,7 +166,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// How many instances of each type we can keep before we start destroying them.
+        /// The maximum number of instances of each type we can keep. The excess instances will be deleted.
         /// </summary>
         [Json]
         public int maxSize
@@ -178,7 +194,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// How many instances should we destroy at a time during each <see cref="DepictionEngine.PoolManager.ResizePools"/> calls.
+        /// How many instances should we destroy at a time during each <see cref="DepictionEngine.PoolManager.ResizePools"/> calls to bring use closer to our <see cref="DepictionEngine.PoolManager.maxSize"/>.
         /// </summary>
         [Json]
         public int destroyCount
@@ -214,50 +230,60 @@ namespace DepictionEngine
         public void AddToPool(IDisposable disposable)
         {
             InitPools();
-            if (_pools != null)
+            if (disposable != null)
             {
-                if (disposable is Object || disposable is Visual)
+                int typeHashCode = GetHashCodeFromType(disposable.GetType());
+                lock (_pools)
                 {
-                    GameObject go = (disposable as MonoBehaviour).gameObject;
-
-#if UNITY_EDITOR
-                    //Deselect the GameObject if it is Selected
-                    if (UnityEditor.Selection.activeGameObject == go)
-                        UnityEditor.Selection.activeGameObject = null;
-#endif
-
-                    go.SetActive(false);
-                    go.hideFlags = HideFlags.HideAndDontSave;
-                    go.transform.SetParent(transform, false);
-
-#if UNITY_EDITOR
-                    //Make sure GameObject is not expanded in the hierarchy
-                    if (InitSetExpandedMethod())
+                    if (!_pools.TryGetValue(typeHashCode, out List<IDisposable> pool))
+                        _pools[typeHashCode] = pool = new List<IDisposable>();
+                    lock (pool)
                     {
-                        _setExpandedRecursiveMethodInfo.Invoke(_hierarchyWindow, new object[] { go.GetInstanceID(), false });
-                        _setExpandedRecursiveMethodInfo.Invoke(_hierarchyWindow, new object[] { gameObject.GetInstanceID(), false });
-                    }
-#endif
-                }
+                        pool.Add(disposable);
 
-                if (disposable != null)
-                {
-                    int typeHashCode = GetHashCodeFromType(disposable.GetType());
-                    lock (_pools)
-                    {
-                        if (!_pools.TryGetValue(typeHashCode, out List<IDisposable> pool))
-                            _pools[typeHashCode] = pool = new List<IDisposable>();
-                        lock (pool)
+                        if (disposable is Object || disposable is Visual)
                         {
-                            if (disposable is UnityEngine.Object)
-                                (disposable as UnityEngine.Object).hideFlags = HideFlags.HideAndDontSave;
-                            pool.Add(disposable);
+                            GameObject go = (disposable as MonoBehaviour).gameObject;
+
 #if UNITY_EDITOR
-                            UpdateDebug(disposable.GetType(), pool);
+                            //Deselect the GameObject if it is Selected
+                            if (UnityEditor.Selection.activeGameObject == go)
+                                UnityEditor.Selection.activeGameObject = null;
+#endif
+
+                            go.SetActive(false);
+                            go.transform.SetParent(transform, false);
+
+#if UNITY_EDITOR
+                            //Make sure GameObject is not expanded in the hierarchy
+                            if (InitSetExpandedMethod())
+                            {
+                                _setExpandedRecursiveMethodInfo.Invoke(_hierarchyWindow, new object[] { go.GetInstanceID(), false });
+                                _setExpandedRecursiveMethodInfo.Invoke(_hierarchyWindow, new object[] { gameObject.GetInstanceID(), false });
+                            }
 #endif
                         }
+
+                        UpdateHideFlags(disposable);
+#if UNITY_EDITOR
+                        UpdateDebug(disposable.GetType(), pool);
+#endif
                     }
                 }
+            }
+        }
+
+        private static void UpdateHideFlags(IDisposable disposable)
+        {
+            if (disposable is UnityEngine.Object)
+            {
+                HideFlags hideFlags = SceneManager.Debugging() ? HideFlags.DontSave : HideFlags.HideAndDontSave;
+                
+                UnityEngine.Object unityObject = disposable as UnityEngine.Object;
+
+                unityObject.hideFlags = hideFlags;
+                if (unityObject is Object || unityObject is Visual)
+                    (unityObject as MonoBehaviour).gameObject.hideFlags = hideFlags;
             }
         }
 
@@ -283,7 +309,7 @@ namespace DepictionEngine
                                 for (int i = pool.Count - 1; i >= 0; i--)
                                 {
                                     IDisposable disposed = pool[i];
-                                    if ((disposed is not IMultithreadSafe || !(disposed as IMultithreadSafe).locked) && disposed.disposedComplete)
+                                    if ((disposed is not IMultithreadSafe || !(disposed as IMultithreadSafe).locked) && disposed.poolComplete)
                                     {
                                         index = i;
                                         break;
@@ -380,7 +406,7 @@ namespace DepictionEngine
                         if (i >= 0 && i < pool.Count)
                         {
                             IDisposable disposable = pool[i];
-                            if (disposable.disposedComplete)
+                            if (disposable.poolComplete)
                             {
                                 pool.RemoveAt(i);
                                 Destroy(disposable);
@@ -459,9 +485,9 @@ namespace DepictionEngine
             ClearPool();
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 resizeTimer = null;
 

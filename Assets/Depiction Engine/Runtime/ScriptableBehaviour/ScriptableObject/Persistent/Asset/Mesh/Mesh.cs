@@ -67,19 +67,18 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            if (unityMesh != null)
-                unityMesh.Clear();
+            unityMesh?.Clear();
 
-            _physicsBakeMesh = PhysicsBakeMeshType.None;
-            _calculatedBounds = false;
-            _normalsType = NormalsType.None;
+            _physicsBakeMesh = default;
+            _calculatedBounds = default;
+            _normalsType = default;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
-            if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
                 unityMesh = InstanceManager.Duplicate(unityMesh, initializingContext);
             
             //InstanceId can change between execution
@@ -104,15 +103,15 @@ namespace DepictionEngine
 
         private void AddMeshObjectDelegate(MeshObjectBase meshObject)
         {
-            meshObject.DisposingEvent += MeshObjectDisposingHandler;
+            meshObject.DisposedEvent += MeshObjectDisposedHandler;
         }
 
         private void RemoveMeshObjectDelegate(MeshObjectBase meshObject)
         {
-            meshObject.DisposingEvent -= MeshObjectDisposingHandler;
+            meshObject.DisposedEvent -= MeshObjectDisposedHandler;
         }
 
-        private void MeshObjectDisposingHandler(IDisposable disposable)
+        private void MeshObjectDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
             RemoveModifying(disposable as MeshObjectBase);
         }
@@ -238,7 +237,7 @@ namespace DepictionEngine
             return Encoding.ASCII.GetBytes(bytes);
         }
 
-        public override void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public override void SetData(object value, LoaderBase.DataType dataType, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             if (JsonUtility.FromJson(out UnityEngine.Mesh newUnityMesh, value as JSONNode))
             {
@@ -248,14 +247,14 @@ namespace DepictionEngine
             }
         }
 
-        public void SetData(List<int> triangles, List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs, List<Color32> colors, Bounds? bounds = null, InstanceManager.InitializationContext _ = InstanceManager.InitializationContext.Programmatically)
+        public void SetData(List<int> triangles, List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs, List<Color32> colors, Bounds? bounds = null, InitializationContext _ = InitializationContext.Programmatically)
         {
             SetData(triangles, vertices, normals, uvs, colors, !bounds.HasValue);
             if (bounds.HasValue)
                 this.bounds = bounds.Value;
         }
 
-        public bool SetData(int[] triangles = null, Vector3[] vertices = null, Vector3[] normals = null, List<Vector2> uvs = null, Color32[] colors = null, bool calculateBounds = true, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public bool SetData(int[] triangles = null, Vector3[] vertices = null, Vector3[] normals = null, List<Vector2> uvs = null, Color32[] colors = null, bool calculateBounds = true, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             CreateMeshIfRequired(initializingContext);
 
@@ -280,7 +279,7 @@ namespace DepictionEngine
             return false;
         }
 
-        public bool SetData(List<int> triangles = null, List<Vector3> vertices = null, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool calculateBounds = true, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public bool SetData(List<int> triangles = null, List<Vector3> vertices = null, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool calculateBounds = true, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             CreateMeshIfRequired(initializingContext);
 
@@ -304,12 +303,12 @@ namespace DepictionEngine
             return false;
         }
 
-        private void CreateMeshIfRequired(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        private void CreateMeshIfRequired(InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             bool requiresNewMesh = unityMesh == null;
 
 #if UNITY_EDITOR
-            if (initializingContext == InstanceManager.InitializationContext.Editor)
+            if (initializingContext == InitializationContext.Editor)
                 requiresNewMesh = true;
 #endif
 
@@ -319,7 +318,7 @@ namespace DepictionEngine
 
         public void SetData(UnityEngine.Mesh mesh)
         {
-            SetData(mesh, InstanceManager.InitializationContext.Programmatically);
+            SetData(mesh, InitializationContext.Programmatically);
 
             DataPropertyAssigned();
         }
@@ -501,7 +500,7 @@ namespace DepictionEngine
         }
 
 
-        private void SetData(UnityEngine.Mesh mesh, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        private void SetData(UnityEngine.Mesh mesh, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             UnityEngine.Mesh oldUnityMesh = unityMesh;
 
@@ -562,17 +561,17 @@ namespace DepictionEngine
             modificationPending = meshObjectModifying.Count != 0;
         }
 
-        public static T CreateMesh<T>(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : Mesh
+        public static T CreateMesh<T>(InitializationContext initializingContext = InitializationContext.Programmatically) where T : Mesh
         {
             return CreateMesh(typeof(T), initializingContext) as T;
         }
 
-        public static Mesh CreateMesh(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public static Mesh CreateMesh(InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             return CreateMesh(typeof(Mesh), initializingContext);
         }
 
-        public static Mesh CreateMesh(Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public static Mesh CreateMesh(Type type, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             Mesh mesh = InstanceManager.Instance().CreateInstance(type, initializingContext: initializingContext) as Mesh;
             mesh.name = typeof(Mesh).Name;
@@ -606,12 +605,12 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (base.OnDispose(disposeContext))
             {
-                if (!pooled)
-                    Dispose(unityMesh, disposeContext);
+                if (disposeContext != DisposeContext.Programmatically_Pool)
+                    Dispose(_unityMesh, disposeContext);
 
                 ModificationPendingChangedEvent = null;
 
@@ -651,23 +650,18 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            if (triangles != null)
-                triangles.Clear();
-            if (vertices != null)
-                vertices.Clear();
-            if (normals != null)
-                normals.Clear();
-            if (colors != null)
-                colors.Clear();
-            if (uvs != null)
-                uvs.Clear();
-            customData = null;
+            triangles?.Clear();
+            vertices?.Clear();
+            normals?.Clear();
+            colors?.Clear();
+            uvs?.Clear();
+            customData = default;
 
-            _verticesChanged = false;
-            _normalsChanged = false;
-            _trianglesChanged = false;
-            _uvsChanged = false;
-            _colorsChanged = false;
+            _verticesChanged = default;
+            _normalsChanged = default;
+            _trianglesChanged = default;
+            _uvsChanged = default;
+            _colorsChanged = default;
         }
 
         public virtual MeshModifier Init(int verticesCount = -1, int normalsCount = -1, int trianglesCount = -1, int uvsCount = -1, int colorsCount = -1)

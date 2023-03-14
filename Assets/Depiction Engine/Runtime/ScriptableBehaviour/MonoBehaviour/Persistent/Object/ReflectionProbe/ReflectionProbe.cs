@@ -8,6 +8,7 @@ namespace DepictionEngine
     /// Wrapper class for 'UnityEngine.ReflectionProbe' introducing better integrated functionality.
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/" + nameof(ReflectionProbe))]
+    [CreateComponent(typeof(UnityEngine.ReflectionProbe))]
     public class ReflectionProbe : Object
     {
         [BeginFoldout("ReflectionProbe")]
@@ -52,7 +53,7 @@ namespace DepictionEngine
 
         private UnityEngine.ReflectionProbe _reflectionProbe;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -76,15 +77,6 @@ namespace DepictionEngine
             InitValue(value => nearClipPlane = value, 0.3f, initializingContext);
             InitValue(value => farClipPlane = value, 1000.0f, initializingContext);
         }
-
-#if UNITY_EDITOR
-        protected override void RegisterInitializeObjectUndo(InstanceManager.InitializationContext initializingContext)
-        {
-            base.RegisterInitializeObjectUndo(initializingContext);
-
-            Editor.UndoManager.RegisterCreatedObjectUndo(reflectionProbe, initializingContext);
-        }
-#endif
 
         protected override bool UpdateHideFlags()
         {
@@ -128,24 +120,12 @@ namespace DepictionEngine
             reflectionProbe.RenderProbe();
         }
 
-        private void InitReflectionProbe()
-        {
-            if (!isFallbackValues)
-            {
-                if (_reflectionProbe == null)
-                {
-                    _reflectionProbe = GetComponent<UnityEngine.ReflectionProbe>();
-                    if (_reflectionProbe == null)
-                        _reflectionProbe = gameObject.AddComponent<UnityEngine.ReflectionProbe>();
-                }
-            }
-        }
-
         public UnityEngine.ReflectionProbe reflectionProbe
         {
             get 
             {
-                InitReflectionProbe();
+                if (_reflectionProbe == null)
+                    _reflectionProbe = GetComponent<UnityEngine.ReflectionProbe>();
                 return _reflectionProbe; 
             }
         }

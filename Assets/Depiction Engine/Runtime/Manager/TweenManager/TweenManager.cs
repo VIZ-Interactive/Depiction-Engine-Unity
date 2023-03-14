@@ -51,25 +51,24 @@ namespace DepictionEngine
         {
             get
             {
-                if (_tweens == null)
-                    _tweens = new List<Tween>();
+                _tweens ??= new List<Tween>();
                 return _tweens;
             }
         }
 
         private void RemoveTweenDelegates(Tween tween)
         {
-            if (!Object.ReferenceEquals(tween, null))
-                tween.DisposingEvent -= TweenDisposingHandler;
+            if (tween is not null)
+                tween.DisposedEvent -= TweenDisposedHandler;
         }
 
         private void AddTweenDelegates(Tween tween)
         {
             if (tween != Disposable.NULL)
-                tween.DisposingEvent += TweenDisposingHandler;
+                tween.DisposedEvent += TweenDisposedHandler;
         }
 
-        private void TweenDisposingHandler(IDisposable disposable)
+        private void TweenDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
             RemoveTween(disposable as Tween);
         }
@@ -127,8 +126,7 @@ namespace DepictionEngine
         {
             if (tweens != null)
             {
-                if (_tweenIterator == null)
-                    _tweenIterator = new List<Tween>();
+                _tweenIterator ??= new List<Tween>();
 
                 _tweenIterator.AddRange(tweens);
 
@@ -148,9 +146,9 @@ namespace DepictionEngine
             IterateOverTweens((tween) => { DisposeManager.Dispose(tween); });
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 DisposeAllTweens();
 

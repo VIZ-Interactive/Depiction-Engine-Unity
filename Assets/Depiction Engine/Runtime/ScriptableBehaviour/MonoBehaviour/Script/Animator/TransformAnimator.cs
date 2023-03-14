@@ -80,7 +80,7 @@ namespace DepictionEngine
 		}
 #endif
 
-		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+		protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
 			base.InitializeSerializedFields(initializingContext);
 

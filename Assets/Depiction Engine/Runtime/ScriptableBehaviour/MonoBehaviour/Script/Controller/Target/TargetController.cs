@@ -19,7 +19,7 @@ namespace DepictionEngine
         [SerializeField, Tooltip("A vector pointing from the target towards the object, in degrees."), EndFoldout]
         private Vector3Double _forwardVector;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 

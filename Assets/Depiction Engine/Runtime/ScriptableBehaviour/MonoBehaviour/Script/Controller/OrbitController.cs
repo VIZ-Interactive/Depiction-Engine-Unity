@@ -17,7 +17,7 @@ namespace DepictionEngine
 		[SerializeField, Tooltip("A value by which we multiply the distance of the orbiting object to move it further or closer."), EndFoldout]
 		private double _sizeMultiplier;
 
-		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+		protected override void InitializeSerializedFields(InitializationContext initializingContext)
 		{
 			base.InitializeSerializedFields(initializingContext);
 

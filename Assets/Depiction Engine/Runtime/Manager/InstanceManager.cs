@@ -7,6 +7,35 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
+    //Editor_Duplicate can be a Copy Paste / Duplicate Menu Item / Draging Droping Component
+    /// <summary>
+    /// The different types of initialization context. <br/><br/>
+    /// <b><see cref="Unknown"/>:</b> <br/>
+    /// The context is unknown. <br/><br/>
+    /// <b><see cref="Programmatically"/>:</b> <br/>
+    /// The initialization was triggered programmatically. <br/><br/>
+    /// <b><see cref="Programmatically_Duplicate"/>:</b> <br/>
+    /// The initialization was triggered programmatically and the object is a duplicate. <br/><br/>
+    /// <b><see cref="Editor"/>:</b> <br/>
+    /// The initialization was triggered in the editor. <br/><br/>
+    /// <b><see cref="Editor_Duplicate"/>:</b> <br/>
+    /// The initialization was triggered in the editor and the object is a duplicate. Duplication can come from a copy paste / duplicate menu item or draging droping of a component. <br/><br/>
+    /// <b><see cref="Existing"/>:</b> <br/>
+    /// The initialization was triggered by a loading scene or was triggered in the editor as a result of an undo or redo action. <br/><br/>
+    /// <b><see cref="Reset"/>:</b> <br/>
+    /// The object properties are reseted to their default values.
+    /// </summary> 
+    public enum InitializationContext
+    {
+        Unknown,
+        Programmatically,
+        Programmatically_Duplicate,
+        Editor,
+        Editor_Duplicate,
+        Existing,
+        Reset
+    };
+
     /// <summary>
     /// Singleton managing instances.
     /// </summary>
@@ -15,35 +44,6 @@ namespace DepictionEngine
     [DisallowMultipleComponent]
     public class InstanceManager : ManagerBase
     {
-        //Editor_Duplicate can be a Copy Paste / Duplicate Menu Item / Draging Droping Component
-        /// <summary>
-        /// The different types of initialization context. <br/><br/>
-        /// <b><see cref="Unknown"/>:</b> <br/>
-        /// The context is unknown. <br/><br/>
-        /// <b><see cref="Programmatically"/>:</b> <br/>
-        /// The initialization was triggered programmatically. <br/><br/>
-        /// <b><see cref="Programmatically_Duplicate"/>:</b> <br/>
-        /// The initialization was triggered programmatically and the object is a duplicate. <br/><br/>
-        /// <b><see cref="Editor"/>:</b> <br/>
-        /// The initialization was triggered in the editor. <br/><br/>
-        /// <b><see cref="Editor_Duplicate"/>:</b> <br/>
-        /// The initialization was triggered in the editor and the object is a duplicate. Duplication can come from a copy paste / duplicate menu item or draging droping of a component. <br/><br/>
-        /// <b><see cref="Existing"/>:</b> <br/>
-        /// The initialization was triggered by a loading scene or was triggered in the editor as a result of an undo or redo action. <br/><br/>
-        /// <b><see cref="Reset"/>:</b> <br/>
-        /// The object properties are reseted to their default values.
-        /// </summary> 
-        public enum InitializationContext
-        {
-            Unknown,
-            Programmatically,
-            Programmatically_Duplicate,
-            Editor,
-            Editor_Duplicate,
-            Existing,
-            Reset
-        };
-
         [Serializable]
         private class TransformDictionary : SerializableDictionary<SerializableGuid, TransformBase> { };
         [Serializable]
@@ -121,8 +121,6 @@ namespace DepictionEngine
         public static List<PropertyModifier> initializePropertyModifiers;
         [ThreadStatic]
         public static bool initializeIsFallbackValues;
-        [ThreadStatic]
-        public static bool inhibitExplicitAwake = false;
 
         /// <summary>
         /// Dispatched when a new instance was created and added to the Scene.
@@ -903,7 +901,7 @@ namespace DepictionEngine
                     Debug.LogError(errorMsg);
 
                     property.ResetId();
-                    DisposeManager.Dispose(unityObject, DisposeManager.DisposeContext.Programmatically);
+                    DisposeManager.Dispose(unityObject, DisposeContext.Programmatically_Destroy);
                 }
             }
 
@@ -1100,13 +1098,13 @@ namespace DepictionEngine
 #endif
 
                     disposable = go.AddSafeComponent(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
-                }
+                 }
                 else if (typeof(IDisposable).IsAssignableFrom(type))
                 {
                     InitializingContext(() =>
                     {
                         if (typeof(IScriptableBehaviour).IsAssignableFrom(type))
-                            InhibitExplicitAwake(() => { disposable = ScriptableObject.CreateInstance(type) as IScriptableBehaviour; }, true);
+                            disposable = ScriptableObject.CreateInstance(type) as IScriptableBehaviour;
                         else
                             disposable = Activator.CreateInstance(type) as IDisposable;
 
@@ -1114,8 +1112,6 @@ namespace DepictionEngine
                         Editor.UndoManager.RegisterCreatedObjectUndo(disposable as UnityEngine.Object, initializingContext);
 #endif
 
-                        if (disposable is IScriptableBehaviour)
-                            (disposable as IScriptableBehaviour).ExplicitAwake();
                         disposable.Initialize();
 
                     }, initializingContext, json, propertyModifiers, isFallbackValues);
@@ -1190,11 +1186,7 @@ namespace DepictionEngine
                 Editor.UndoManager.RegisterCreatedObjectUndo(duplicatedObject, initializingContext);
 #endif
                 if (duplicatedObject is IDisposable)
-                {
-                    if (duplicatedObject is IScriptableBehaviour)
-                        (duplicatedObject as IScriptableBehaviour).ExplicitAwake();
                     (duplicatedObject as IDisposable).Initialize();
-                }
             }, initializingContext);
 
             return duplicatedObject;
@@ -1211,12 +1203,7 @@ namespace DepictionEngine
         /// <returns>The object that was initialized.</returns>
         public static IDisposable Initialize(IDisposable disposable, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
-            InitializingContext(() =>
-            {
-                if (disposable is IScriptableBehaviour)
-                    (disposable as IScriptableBehaviour).ExplicitAwake();
-                disposable.Initialize();
-            }, initializingContext, json, propertyModifiers, isFallbackValues);
+            InitializingContext(() => { disposable.Initialize(); }, initializingContext, json, propertyModifiers, isFallbackValues);
 
             return disposable;
         }
@@ -1239,17 +1226,6 @@ namespace DepictionEngine
             InstanceManager.initializeJSON = lastInitializeJSON;
             InstanceManager.initializePropertyModifiers = lastInitializePropertyModifers;
             InstanceManager.initializeIsFallbackValues = lastIsFallbackValues;
-        }
-
-        public static void InhibitExplicitAwake(Action callback, bool inhibitExplicitAwake)
-        {
-            bool lastInhibitExplicitAwake = InstanceManager.inhibitExplicitAwake;
-            
-            InstanceManager.inhibitExplicitAwake = inhibitExplicitAwake;
-            
-            callback();
-            
-            InstanceManager.inhibitExplicitAwake = lastInhibitExplicitAwake;
         }
     }
 }

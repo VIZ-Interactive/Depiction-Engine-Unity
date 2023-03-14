@@ -32,11 +32,22 @@ namespace DepictionEngine
         [SerializeField, Button(nameof(DeleteSelectedBtn)), ConditionalShow(nameof(IsNotFallbackValues)), ConditionalEnable(nameof(GetEnableDeleteBtn)), Tooltip("Delete all the selected scene objects from the datasource (The scene objects will not be deleted)."), EndHorizontalGroup, EndFoldout]
         private bool _deleteSelected;
 #endif
+
+        [BeginFoldout("Load Scope")]
+        [SerializeField, Tooltip("The interval (in seconds) at which we call the " + nameof(ReloadAll) + " function. Automatically calling " + nameof(ReloadAll) + " can be useful to keep objects in synch. Set to zero to deactivate."), EndFoldout]
+        private float _autoReloadInterval;
+#if UNITY_EDITOR
+        [SerializeField, Button(nameof(ReloadAllBtn)), ConditionalShow(nameof(IsNotFallbackValues)), Tooltip("Create missing " + nameof(LoadScope) + "(s), reload existing ones and dispose those that are no longer required.")]
+        private bool _reloadAll;
+#endif
+
         [BeginFoldout("Persistents")]
         [SerializeField, ConditionalShow(nameof(IsNotFallbackValues)), EndFoldout]
         private Datasource _datasource;
 
         private DatasourceOperationBase _datasourceOperation;
+
+        private Tween _autoReloadIntervalTimer;
 
 #if UNITY_EDITOR
         private bool GetEnableSaveBtn()
@@ -123,6 +134,11 @@ namespace DepictionEngine
             if (!Disposable.IsDisposed(persistent))
                 callback(persistent);
         }
+
+        private void ReloadAllBtn()
+        {
+            ReloadAll();
+        }
 #endif
 
         public override void Recycle()
@@ -133,15 +149,25 @@ namespace DepictionEngine
                 _datasource.Recycle();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeFields(InitializationContext initializingContext)
+        {
+            base.InitializeFields(initializingContext);
+
+            KillTimers();
+            StartAutoReloadIntervalTimer();
+        }
+
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
-            if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
-                _datasource = null;
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+                _datasource = default;
 
-            if (datasource == Disposable.NULL)
-                datasource = DatasourceManager.CreateDatasource(GetType().Name, initializingContext);
+            if (_datasource == Disposable.NULL)
+                _datasource = DatasourceManager.CreateDatasource(GetType().Name, initializingContext);
+
+            InitValue(value => autoReloadInterval = value, 0.0f, initializingContext);
         }
 
         protected override bool UpdateAllDelegates()
@@ -153,7 +179,7 @@ namespace DepictionEngine
 
                 if (datasource != Disposable.NULL)
                 {
-                    datasource.IterateOverPersistenceData((persistenceData) =>
+                    datasource.IterateOverPersistenceData((persistentId, persistenceData) =>
                     {
                         RemovePersistenceDataDelegates(persistenceData);
                         AddPersistenceDataDelegates(persistenceData);
@@ -187,11 +213,17 @@ namespace DepictionEngine
 
         private void DatasourcePersistenceDataRemovedHandler(PersistenceData persistenceData)
         {
+#if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(this);
+#endif
             RemovePersistenceDataDelegates(persistenceData);
         }
 
         private void DatasourcePersistenceDataAddedHandler(PersistenceData persistenceData)
         {
+#if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(this);
+#endif      
             AddPersistenceDataDelegates(persistenceData);
         }
 
@@ -233,6 +265,53 @@ namespace DepictionEngine
             return true;
         }
 
+        /// <summary>
+        /// The interval (in seconds) at which we call the <see cref="DepictionEngine.LoaderBase.ReloadAll"/> function. Automatically calling <see cref="DepictionEngine.LoaderBase.ReloadAll"/> can be useful to keep objects in synch with a datasource. Set to zero to deactivate.
+        /// </summary>
+        [Json]
+        public float autoReloadInterval
+        {
+            get { return _autoReloadInterval; }
+            set
+            {
+                SetValue(nameof(autoReloadInterval), value, ref _autoReloadInterval, (newValue, oldValue) =>
+                {
+                    StartAutoReloadIntervalTimer();
+                });
+            }
+        }
+
+        private void StartAutoReloadIntervalTimer()
+        {
+            if (initialized)
+            {
+                autoReloadIntervalTimer = autoReloadInterval != 0.0f ? tweenManager.DelayedCall(autoReloadInterval, null, () =>
+                {
+                    ReloadAll();
+                    StartAutoReloadIntervalTimer();
+                }, () => autoReloadIntervalTimer = null) : null;
+            }
+        }
+
+        private Tween autoReloadIntervalTimer
+        {
+            get { return _autoReloadIntervalTimer; }
+            set
+            {
+                if (Object.ReferenceEquals(_autoReloadIntervalTimer, value))
+                    return;
+
+                DisposeManager.Dispose(_autoReloadIntervalTimer);
+
+                _autoReloadIntervalTimer = value;
+            }
+        }
+
+        private void KillTimers()
+        {
+            autoReloadIntervalTimer = null;
+        }
+
         public Datasource datasource
         {
             get { return _datasource; }
@@ -259,6 +338,15 @@ namespace DepictionEngine
         }
 
         /// <summary>
+        /// Create missing <see cref="DepictionEngine.LoadScope"/>(s), reload existing ones and dispose those that are no longer required.
+        /// </summary>
+        /// <returns></returns>
+        public void ReloadAll()
+        {
+            datasource.ReloadAll();
+        }
+
+        /// <summary>
         /// Add all the <see cref="DepictionEngine.IPersistent"/> found in the datasource to the save operation queue.
         /// </summary>
         /// <returns>The number of <see cref="DepictionEngine.IPersistent"/> succesfully added to the queue.</returns>
@@ -266,7 +354,7 @@ namespace DepictionEngine
         {
             int saving = 0;
 
-            datasource.IterateOverPersistenceData((persistenceData) =>
+            datasource.IterateOverPersistenceData((persistentId, persistenceData) =>
             {
                 if (Save(persistenceData.persistent))
                     saving++;
@@ -300,8 +388,8 @@ namespace DepictionEngine
                             if (json != null)
                             {
                                 json.Remove(nameof(IPersistent.dontSaveToScene));
-                                if (persistent is VisualObject)
-                                    json.Remove(nameof(VisualObject.dontSaveVisualsToScene));
+                                if (persistent is AutoGenerateVisualObject)
+                                    json.Remove(nameof(AutoGenerateVisualObject.dontSaveVisualsToScene));
 
                                 _savePersistenceOperationDatas[id] = new Datasource.PersistenceOperationData(persistent, json);
                                 return true;
@@ -323,7 +411,7 @@ namespace DepictionEngine
         {
             int synchronizing = 0;
 
-            datasource.IterateOverPersistenceData((persistenceData) =>
+            datasource.IterateOverPersistenceData((persistentId, persistenceData) =>
             {
                 if (Synchronize(persistenceData.persistent))
                     synchronizing++;
@@ -366,7 +454,7 @@ namespace DepictionEngine
         {
             int deleting = 0;
 
-            datasource.IterateOverPersistenceData((persistenceData) =>
+            datasource.IterateOverPersistenceData((persistentId, persistenceData) =>
             {
                 if (Delete(persistenceData.persistent))
                     deleting++;
@@ -529,11 +617,13 @@ namespace DepictionEngine
             return instanceManager.CreateInstance<T>();
         }
 
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (base.OnDispose(disposeContext))
             {
-                if (!pooled)
+                KillTimers();
+
+                if (disposeContext != DisposeContext.Programmatically_Pool)
                     Dispose(_datasource, disposeContext);
 
                 return true;

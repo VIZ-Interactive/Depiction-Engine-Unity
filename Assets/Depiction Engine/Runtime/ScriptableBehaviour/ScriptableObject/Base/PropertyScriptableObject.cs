@@ -43,32 +43,30 @@ namespace DepictionEngine
             _initializationPropertyModifiers = InstanceManager.initializePropertyModifiers;
         }
 
-        protected override void InitializeUID(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeUID(InitializationContext initializingContext)
         {
             base.InitializeUID(initializingContext);
           
            id = GetId(id, initializingContext);
         }
 
-        protected virtual SerializableGuid GetId(SerializableGuid id, InstanceManager.InitializationContext initializingContext)
+        protected virtual SerializableGuid GetId(SerializableGuid id, InitializationContext initializingContext)
         {
-            if (id == SerializableGuid.Empty || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (id == SerializableGuid.Empty || initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
                 return SerializableGuid.NewGuid();
             else
                 return id;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
-        {
-            base.InitializeFields(initializingContext);
-
-            InitializeLastFields();
-        }
-
-        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
+        protected override bool Initialize(InitializationContext initializingContext)
         {
             if (base.Initialize(initializingContext))
             {
+                if (!isFallbackValues)
+                    InitializeFields(initializingContext);
+
+                InitializeSerializedFields(initializingContext);
+
                 if (_initializationPropertyModifiers != null)
                 {
                     foreach (PropertyModifier propertyModifier in _initializationPropertyModifiers)
@@ -79,6 +77,24 @@ namespace DepictionEngine
                 return true;
             }
             return false;
+        }
+
+        protected virtual void InitializeFields(InitializationContext initializingContext)
+        {
+#if UNITY_EDITOR
+            RenderingManager.UpdateIcon(this);
+#endif
+
+            InitializeLastFields();
+        }
+
+        /// <summary>
+        /// Initialize SerializedField's to their default values.
+        /// </summary>
+        /// <param name="initializingContext"></param>
+        protected virtual void InitializeSerializedFields(InitializationContext initializingContext)
+        {
+
         }
 
         /// <summary>
@@ -119,7 +135,7 @@ namespace DepictionEngine
 
         public void ResetId()
         {
-            _id = SerializableGuid.Empty;
+            _id = default;
         }
 
         /// <summary>
@@ -147,7 +163,8 @@ namespace DepictionEngine
                     UserPropertyAssigned(iJson, name, jsonAttribute, propertyInfo);
             }
 
-            PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
+            if (initialized)
+                PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -175,11 +192,35 @@ namespace DepictionEngine
         {
             return true;
         }
+
+        public void Reset()
+        {
+            if (unityInitialized)
+            {
+                if (ResetAllowed())
+                    SceneManager.Reseting(this);
+
+                Editor.UndoManager.RevertAllInCurrentGroup();
+            }
+        }
+
+        protected virtual bool ResetAllowed()
+        {
+            return true;
+        }
+
+        public void InspectorReset()
+        {
+            IsUserChange(() =>
+            {
+                InitializeSerializedFields(InitializationContext.Reset);
+            });
+        }
 #endif
 
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (base.OnDispose(disposeContext))
             {
                 if (instanceAdded && AddInstanceToManager())
                 {

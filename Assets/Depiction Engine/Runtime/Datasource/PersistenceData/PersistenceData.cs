@@ -57,13 +57,12 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _persistentMonoBehaviour = null;
-            _persistentScriptableObject = null;
+            _persistentMonoBehaviour = default;
+            _persistentScriptableObject = default;
             
-            _datasource = null;
+            _datasource = default;
 
-            if (_outOfSyncDictionary != null)
-                _outOfSyncDictionary.Clear();
+            _outOfSyncDictionary?.Clear();
         }
 
         public PersistenceData Init(Datasource datasource, IPersistent persistent)
@@ -122,15 +121,15 @@ namespace DepictionEngine
                     persistent.PersistenceSynchronizeOperationEvent += PersistenceSynchronizeOperationHandler;
                 if (supportsDelete)
                     persistent.PersistenceDeleteOperationEvent += PersistenceDeleteOperationHandler;
-                
+
                 return true;
             }
             return false;
         }
 
-        private void PersistentDisposedHandler(IDisposable disposable)
+        private void PersistentDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
-            Dispose(this);
+            Dispose(this, disposeContext);
         }
 
         private void PersistentPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
@@ -408,9 +407,9 @@ namespace DepictionEngine
             return true;
         }
 
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (base.OnDispose(disposeContext))
             {
                 PropertyAssignedEvent = null;
                 PersistenceOperationEvent = null;

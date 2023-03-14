@@ -1,6 +1,5 @@
 // Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
-using System;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -8,6 +7,7 @@ namespace DepictionEngine
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Reference/" + nameof(AssetReference))]
     public class AssetReference : ReferenceBase
     {
+        [SerializeField, HideInInspector]
         private AssetBase _asset;
 
         public override void Recycle()
@@ -15,6 +15,14 @@ namespace DepictionEngine
             base.Recycle();
 
             _asset = null;
+        }
+
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
+        {
+            base.InitializeSerializedFields(initializingContext);
+
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+                _asset = default;
         }
 
         protected override void DataChanged(PersistentScriptableObject newValue, PersistentScriptableObject oldValue)

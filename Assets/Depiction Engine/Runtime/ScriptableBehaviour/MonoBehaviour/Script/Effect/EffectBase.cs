@@ -11,7 +11,7 @@ namespace DepictionEngine
         [SerializeField, Tooltip("How visible should the effect be."), EndFoldout]
         private float _alpha;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 

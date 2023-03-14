@@ -13,10 +13,5 @@ namespace DepictionEngine
         {
             return 0.0f;
         }
-
-        protected override bool GetDefaultAutoLoadWhenDisabled()
-        {
-            return true;
-        }
     }
 }

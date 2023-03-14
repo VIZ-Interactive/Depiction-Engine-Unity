@@ -45,7 +45,7 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            loadingState = LoadingState.None;
+            loadingState = default;
         }
 
         public virtual bool LoadingWasCompromised()
@@ -110,9 +110,9 @@ namespace DepictionEngine
             _operationResultCallback = null;
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 KillLoading();
 
@@ -196,8 +196,7 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            if (resultsData != null)
-                resultsData.Clear();
+            _resultsData?.Clear();
         }
 
         public List<ResultData> resultsData
@@ -236,9 +235,9 @@ namespace DepictionEngine
             return resultsData.Count;
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 if (resultsData != null)
                 {
@@ -303,9 +302,9 @@ namespace DepictionEngine
             get { return _children; }
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 if (_propertyModifiers != null)
                 {

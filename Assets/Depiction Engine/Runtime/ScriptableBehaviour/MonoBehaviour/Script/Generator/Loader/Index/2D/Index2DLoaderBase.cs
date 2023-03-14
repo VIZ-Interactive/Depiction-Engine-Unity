@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -38,40 +39,23 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void ClearLoadScopes()
+        public override void Recycle()
         {
             base.ClearLoadScopes();
 
-            if (_index2DLoadScopes != null)
-                _index2DLoadScopes.Clear();
+            _index2DLoadScopes?.Clear();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
+
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+                _index2DLoadScopes?.Clear();
 
             InitValue(value => minMaxZoom = value, new Vector2Int(0, 20), initializingContext);
             InitValue(value => indexUrlParamType = value, Index2DLoadScope.URLParametersType.ZoomXY, initializingContext);
             InitValue(value => xyTilesRatio = value, 1.0f, initializingContext);
-        }
-
-        protected override bool DetectNullLoadScope()
-        {
-            bool nullDetected = base.DetectNullLoadScope();
-
-            if (!nullDetected)
-            {
-                foreach (LoadScope loadScope in index2DLoadScopes.Values)
-                {
-                    if (loadScope == Disposable.NULL)
-                    {
-                        nullDetected = true;
-                        break;
-                    }
-                }
-            }
-
-            return nullDetected;
         }
 
         private IndexLoadScopeDictionary index2DLoadScopes
@@ -310,8 +294,9 @@ namespace DepictionEngine
             {
                 if (callback != null)
                 {
-                    foreach (Index2DLoadScope loadScope in index2DLoadScopes.Values)
+                    for (int i = index2DLoadScopes.Count - 1; i >= 0; i--)
                     {
+                        Index2DLoadScope loadScope = index2DLoadScopes.ElementAt(i).Value;
                         if (loadScope != Disposable.NULL && !callback(loadScope))
                             return false;
                     }

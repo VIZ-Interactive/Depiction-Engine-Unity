@@ -59,8 +59,6 @@ namespace DepictionEngine
         [BeginFoldout("Mesh Cache")]
         [SerializeField, ConditionalEnable(nameof(GetEnableCacheMeshCount)), Tooltip("The number of mesh that are currently cached.")]
         private int _cachedMeshCount;
-        [SerializeField, Button(nameof(ClearMeshCacheBtn)), ConditionalShow(nameof(IsNotFallbackValues)), EndFoldout]
-        private bool _clearMeshCache;
 #endif
 
         [BeginFoldout("UI")]
@@ -89,9 +87,10 @@ namespace DepictionEngine
         [SerializeField, Tooltip("A min and max clamping values for the '"+nameof(dynamicFocusDistance)+"' calculations. "), EndFoldout]
         private Vector2 _minMaxFocusDistance;
 
-        private Material _dynamicSkyboxMaterial;
-
+        [SerializeField]
         private MeshesDictionary _meshCache;
+
+        private Material _dynamicSkyboxMaterial;
 
         private ScriptableRendererFeature _ambientOcclusionRendererFeature;
         private Bloom _bloom;
@@ -281,17 +280,12 @@ namespace DepictionEngine
             return PatchResult.Failed;
         }
 
-        private void ClearMeshCacheBtn()
-        {
-            DisposeAllCachedMesh();
-        }
-
         private void GenerateAllMarkersBtn()
         {
             foreach (int i in Enum.GetValues(typeof(Marker.Icon)))
             {
                 Marker.Icon icon = (Marker.Icon)i;
-                Marker marker = instanceManager.CreateInstance<Marker>(json: icon.ToString(), initializingContext: InstanceManager.InitializationContext.Editor);
+                Marker marker = instanceManager.CreateInstance<Marker>(json: icon.ToString(), initializingContext: InitializationContext.Editor);
                 marker.icon = icon;
                 marker.color = UnityEngine.Random.ColorHSV(0.0f, 1.0f, 1.0f, 1.0f, 0.5f, 1.0f);
                 marker.transform.position = new Vector3Double(i * 25.0f, 0.0f, 0.0f);
@@ -312,7 +306,7 @@ namespace DepictionEngine
             return _instance;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
 
@@ -329,9 +323,12 @@ namespace DepictionEngine
                 if (GetFont(fontName) == null)
                     _fonts.Add(Resources.Load("Font/" + fontName) as Font);
             }
+
+            InitRTTCamera();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -345,7 +342,7 @@ namespace DepictionEngine
             InitValue(value => minMaxFocusDistance = value, new Vector2(0.0f, 500.0f), initializingContext);
         }
 
-        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
+        protected override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
 
@@ -420,15 +417,15 @@ namespace DepictionEngine
 
         private void RemoveMeshDelegate(Mesh mesh)
         {
-            mesh.DisposingEvent -= MeshDisposingHandler;
+            mesh.DisposedEvent -= MeshDisposedHandler;
         }
 
         private void AddMeshDelegate(Mesh mesh)
         {
-            mesh.DisposingEvent += MeshDisposingHandler;
+            mesh.DisposedEvent += MeshDisposedHandler;
         }
 
-        private void MeshDisposingHandler(IDisposable disposable)
+        private void MeshDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
 
         }
@@ -736,18 +733,23 @@ namespace DepictionEngine
         {
             get 
             {
-                if (_rttCamera == Disposable.NULL)
-                {
-                    string rttCameraName = nameof(RTTCamera);
-                    GameObject reflectionCameraGO = GameObject.Find(rttCameraName);
-                    if (reflectionCameraGO != null)
-                        _rttCamera = reflectionCameraGO.GetSafeComponent<RTTCamera>();
-                    if (_rttCamera == Disposable.NULL)
-                        _rttCamera = instanceManager.CreateInstance<RTTCamera>(null, rttCameraName);
-                }
+                InitRTTCamera();
                 return _rttCamera; 
             }
             set { _rttCamera = value; }
+        }
+
+        private void InitRTTCamera()
+        {
+            if (_rttCamera == Disposable.NULL)
+            {
+                string rttCameraName = nameof(RTTCamera);
+                GameObject reflectionCameraGO = GameObject.Find(rttCameraName);
+                if (reflectionCameraGO != null)
+                    _rttCamera = reflectionCameraGO.GetSafeComponent<RTTCamera>();
+                if (_rttCamera == Disposable.NULL)
+                    _rttCamera = instanceManager.CreateInstance<RTTCamera>(null, rttCameraName);
+            }
         }
 
         public List<Font> fonts
@@ -1426,18 +1428,18 @@ namespace DepictionEngine
             instanceManager.IterateOverInstances<VisualObject>(
                 (visualObject) =>
                 {
-                    visualObject.IterateOverMaterials((material, materialPropertyBlock, meshRenderer) =>
+                    visualObject.IterateOverManagedMeshRenderer((materialPropertyBlock, meshRenderer) =>
                     {
                         if (COMPUTE_BUFFER_SUPPORTED)
                         {
                             ComputeBuffer layerCustomEffectComputeBuffer = layersCustomEffectComputeBuffer[visualObject.layer];
-                            material.SetBuffer("_CustomEffectsBuffer", layerCustomEffectComputeBuffer);
-                            material.SetInteger("_CustomEffectsBufferDimensions", layerCustomEffectComputeBuffer != null ? layerCustomEffectComputeBuffer.count : 0);
+                            meshRenderer.sharedMaterial.SetBuffer("_CustomEffectsBuffer", layerCustomEffectComputeBuffer);
+                            meshRenderer.sharedMaterial.SetInteger("_CustomEffectsBufferDimensions", layerCustomEffectComputeBuffer != null ? layerCustomEffectComputeBuffer.count : 0);
 
-                            material.EnableKeyword("ENABLE_COMPUTE_BUFFER");
+                            meshRenderer.sharedMaterial.EnableKeyword("ENABLE_COMPUTE_BUFFER");
                         }
                         else
-                            material.DisableKeyword("ENABLE_COMPUTE_BUFFER");
+                            meshRenderer.sharedMaterial.DisableKeyword("ENABLE_COMPUTE_BUFFER");
                     });
 
                     return true;
@@ -1523,16 +1525,6 @@ namespace DepictionEngine
             return Resources.Load<Shader>(path);
         }
 
-        public void DisposeAllCachedMesh()
-        {
-            if (_meshCache != null)
-            {
-                foreach (Mesh mesh in _meshCache.Values)
-                    DisposeManager.Dispose(mesh);
-                _meshCache.Clear();
-            }
-        }
-
         private void DisposeAllComputeBuffers()
         {
             if (_layersCustomEffectComputeBuffer != null)
@@ -1550,9 +1542,18 @@ namespace DepictionEngine
                 computeBuffer.Dispose();
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public void DisposeAllCachedMeshes(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            if (base.OnDisposing(disposeContext))
+            if (_meshCache != null)
+            {
+                foreach (Mesh mesh in _meshCache.Values)
+                    Dispose(mesh, disposeContext);
+            }
+        }
+
+        public override bool OnDispose(DisposeContext disposeContext)
+        {
+            if (base.OnDispose(disposeContext))
             {
                 environmentTimer = null;
 
@@ -1564,8 +1565,6 @@ namespace DepictionEngine
 
                 DisposeManager.Dispose(_dynamicSkyboxMaterial);
 
-                DisposeAllCachedMesh();
-
                 DisposeAllComputeBuffers();
 
 #if UNITY_EDITOR
@@ -1575,6 +1574,7 @@ namespace DepictionEngine
                         DisposeManager.Dispose(headerTexture);
                 }
 #endif
+                DisposeAllCachedMeshes(disposeContext);
 
                 return true;
             }

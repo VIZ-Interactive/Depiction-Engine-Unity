@@ -2,10 +2,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.SceneManagement;
 
 namespace DepictionEngine
 {
@@ -31,48 +30,33 @@ namespace DepictionEngine
 
         private static readonly double EARTH_RADIUS = MathPlus.GetRadiusFromCircumference(GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Earth));
 
-        [BeginFoldout("Visual")]
-        [SerializeField, Tooltip("When enabled the visuals will be instantiated automatically when the object is created or when the dependencies change.")]
-#if UNITY_EDITOR
-        [ConditionalShow(nameof(GetShowAutoInstantiate))]
-#endif
-        private bool _autoInstantiate;
-        [SerializeField, Tooltip("When enabled the child 'Visual' will not be saved as part of the Scene."), EndFoldout]
-#if UNITY_EDITOR
-        [ConditionalShow(nameof(GetShowDontSaveVisualsToScene))]
-#endif
-        private bool _dontSaveVisualsToScene;
-
         [BeginFoldout("Opacity")]
         [SerializeField, Range(0.0f, 1.0f), Tooltip("How transparent should the object be."), EndFoldout]
         private float _alpha;
 
-        [BeginFoldout("Popup")]
-        [SerializeField, Tooltip("How the object should fade in. Alpha Popup requires an instanced Material to work.")]
-        private PopupType _popupType;
-        [SerializeField, Tooltip("The duration of the fade in animation."), EndFoldout]
-        private float _popupDuration;
+        [BeginFoldout("MeshRenderers")]
+        [SerializeField, Button("UpdateAllChildMeshRenderersBtn"), Tooltip("Automatically add all the child MeshRenderers so the VisualObject can manage their materials."), EndFoldout]
+#if UNITY_EDITOR
+        [ConditionalShow(nameof(GetShowUpdateAllChildMeshRenderers))]
+#endif
+        private bool _updateAllChildMeshRenderers;
 
         [SerializeField, HideInInspector]
-        private VisualObjectVisualDirtyFlags _meshRendererVisualDirtyFlags;
-
-        private List<MeshRenderer> _meshRenderers;
+        private List<MeshRenderer> _managedMeshRenderers;
 
         private static MaterialPropertyBlock _materialPropertyBlock;
 
-        private Tween _popupTween;
-        private bool _popup;
-        private float _popupT;
-
 #if UNITY_EDITOR
-        protected virtual bool GetShowAutoInstantiate()
-        {
-            return false;
-        }
-
-        protected virtual bool GetShowDontSaveVisualsToScene()
+        protected virtual bool GetShowUpdateAllChildMeshRenderers()
         {
             return true;
+        }
+
+        private void UpdateAllChildMeshRenderersBtn()
+        {
+            int found = UpdateAllChildManagedMeshRenderers();
+
+            EditorUtility.DisplayDialog("Updated", "Found "+found+" MeshRenderers.", "OK");
         }
 #endif
 
@@ -80,14 +64,8 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            if (_meshRendererVisualDirtyFlags != null)
-                _meshRendererVisualDirtyFlags.Recycle();
-
-            if (_materialPropertyBlock != null)
-                _materialPropertyBlock.Clear();
-
-            _popup = false;
-            _popupT = 0.0f;
+            _managedMeshRenderers?.Clear();
+            _materialPropertyBlock?.Clear();
         }
 
         protected override bool InitializeLastFields()
@@ -102,67 +80,14 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
-        {
-            base.InitializeFields(initializingContext);
-
-            bool duplicating = initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate;
-
-            if (duplicating || meshRendererVisualDirtyFlags == null)
-            {
-                if (duplicating)
-                    meshRendererVisualDirtyFlags = InstanceManager.Duplicate(meshRendererVisualDirtyFlags);
-                else if (meshRendererVisualDirtyFlags == null)
-                    meshRendererVisualDirtyFlags = ScriptableObject.CreateInstance(GetMeshRendererVisualDirtyFlagType()) as VisualObjectVisualDirtyFlags;
-
-#if UNITY_EDITOR
-                Editor.UndoManager.RegisterCreatedObjectUndo(meshRendererVisualDirtyFlags, initializingContext);
-                Editor.UndoManager.RecordObject(meshRendererVisualDirtyFlags, initializingContext);
-#endif
-                if (duplicating)
-                    meshRendererVisualDirtyFlags.Recreate();
-                else
-                    meshRendererVisualDirtyFlags.AllDirty();
-#if UNITY_EDITOR
-                Editor.UndoManager.FlushUndoRecordObjects();
-#endif
-            }
-
-            //Dont Popup if the object was duplicated or already exists
-            popup = initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Programmatically;
-            
-            if (!popup)
-                DetectCompromisedPopup();
-        }
-
-
-        public override void ExplicitOnEnable()
-        {
-            base.ExplicitOnEnable();
-
-            DetectCompromisedPopup();
-        }
-
-        private void DetectCompromisedPopup()
-        {
-            if (!(popupT == 0.0f || popupT == 1.0f))
-                popup = true;
-        }
-
-        protected virtual Type GetMeshRendererVisualDirtyFlagType()
-        {
-            return typeof(VisualObjectVisualDirtyFlags);
-        }
-
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => autoInstantiate = value, true, initializingContext);
-            InitValue(value => dontSaveVisualsToScene = value, GetDefaultDontSaveVisualsToScene(), initializingContext);
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+                UpdateAllChildManagedMeshRenderers();
+
             InitValue(value => alpha = value, GetDefaultAlpha(), initializingContext);
-            InitValue(value => popupType = value, GetDefaultPopupType(), initializingContext);
-            InitValue(value => popupDuration = value, GetDefaultPopupDuration(), initializingContext);
         }
 
 #if UNITY_EDITOR
@@ -241,12 +166,12 @@ namespace DepictionEngine
             return 0.2f;
         }
 
-        private List<MeshRenderer> meshRenderers
+        private List<MeshRenderer> managedMeshRenderers
         {
             get 
             {
-                _meshRenderers ??= new List<MeshRenderer>();
-                return _meshRenderers;
+                _managedMeshRenderers ??= new List<MeshRenderer>();
+                return _managedMeshRenderers;
             }
         }
 
@@ -256,39 +181,6 @@ namespace DepictionEngine
             {
                 _materialPropertyBlock ??= new MaterialPropertyBlock();
                 return _materialPropertyBlock; 
-            }
-        }
-
-        /// <summary>
-        /// When enabled the visuals will be instantiated automatically when the object is created or when the dependencies change.
-        /// </summary>
-        [Json]
-        public bool autoInstantiate
-        {
-            get { return _autoInstantiate; }
-            set
-            {
-                SetValue(nameof(autoInstantiate), value, ref _autoInstantiate, (newValue, oldValue) =>
-                {
-                    if (initialized && newValue)
-                        meshRendererVisualDirtyFlags.Recreate();
-                });
-            }
-        }
-
-        /// <summary>
-        /// When enabled the child <see cref="DepictionEngine.Visual"/> will not be saved as part of the Scene.
-        /// </summary>
-        [Json]
-        public bool dontSaveVisualsToScene
-        {
-            get { return _dontSaveVisualsToScene; }
-            set 
-            { 
-                SetValue(nameof(dontSaveVisualsToScene), value, ref _dontSaveVisualsToScene, (newValue, oldValue) => 
-                {
-                    DontSaveVisualsToSceneChanged(newValue, oldValue);
-                }); 
             }
         }
 
@@ -310,55 +202,6 @@ namespace DepictionEngine
             set { SetAlpha(value); }
         }
 
-        /// <summary>
-        /// How the object should fade in. Alpha Popup requires an instanced Material to work.
-        /// </summary>
-        [Json]
-        public PopupType popupType
-        {
-            get { return _popupType; }
-            set
-            {
-#if UNITY_EDITOR
-                //Demo the effect if the change was done in the inspector and was not the result of "Paste Component Values".
-                if (IsUserChangeContext() && SceneManager.sceneExecutionState != SceneManager.ExecutionState.PastingComponentValues)
-                    popup = true;
-#endif
-                SetValue(nameof(popupType), value, ref _popupType);
-            }
-        }
-
-        /// <summary>
-        /// The duration of the fade in animation.
-        /// </summary>
-        [Json]
-        public float popupDuration
-        {
-            get { return _popupDuration; }
-            set { SetValue(nameof(popupDuration), value, ref _popupDuration); }
-        }
-
-#if UNITY_EDITOR
-        protected virtual UnityEngine.Object[] GetAlphaAdditionalRecordObjects()
-        {
-            return null;
-        }
-#endif
-
-        public Tween popupTween
-        {
-            get { return _popupTween; }
-            set
-            {
-                if (Object.ReferenceEquals(_popupTween, value))
-                    return;
-
-                DisposeManager.Dispose(_popupTween);
-
-                _popupTween = value;
-            }
-        }
-
         protected virtual bool SetAlpha(float value)
         {
             return SetValue(nameof(alpha), value, ref _alpha, (newValue, oldValue) => 
@@ -369,68 +212,41 @@ namespace DepictionEngine
             });
         }
 
-        protected bool popup
+#if UNITY_EDITOR
+        protected virtual UnityEngine.Object[] GetAlphaAdditionalRecordObjects()
         {
-            get { return _popup; }
-            set { _popup = value; }
+            return null;
+        }
+#endif
+
+        /// <summary>
+        /// Automatically add all the child MeshRenderers so the <see cref="DepictionEngine.VisualObject"/> can manage their materials.
+        /// </summary>
+        /// <returns>The number of managed meshRenderers.</returns>
+        public int UpdateAllChildManagedMeshRenderers()
+        {
+            gameObject.GetComponentsInChildren(true, managedMeshRenderers);
+            return managedMeshRenderers.Count;
         }
 
-        protected float GetPopupT(PopupType popupType)
+        public void AddMeshRenderer(MeshRenderer meshRenderer)
         {
-            return popupType == this.popupType && popupTween != Disposable.NULL ? popupT : 1.0f;
+            if (!managedMeshRenderers.Contains(meshRenderer))
+                managedMeshRenderers.Add(meshRenderer);
         }
 
-        protected float popupT
+        public void RemoveMeshRenderer(MeshRenderer meshRenderer)
         {
-            get { return _popupT; }
-            set { SetPopupT(value); }
+            managedMeshRenderers.Remove(meshRenderer);
+            if (meshRenderer != null)
+                meshRenderer.SetPropertyBlock(null);
         }
 
-        protected virtual bool SetPopupT(float value)
+        public void IterateOverManagedMeshRenderer(Action<MaterialPropertyBlock, MeshRenderer> callback)
         {
-            return SetValue(nameof(popupT), value, ref _popupT);
-        }
-
-        protected override Type GetChildType()
-        {
-            return typeof(Visual);
-        }
-
-        protected override void Saving(Scene scene, string path)
-        {
-            base.Saving(scene, path);
-
-            if (dontSaveVisualsToScene)
+            foreach (MeshRenderer meshRenderer in managedMeshRenderers)
             {
-                if (meshRendererVisualDirtyFlags != null)
-                    meshRendererVisualDirtyFlags.AllDirty();
-            }
-        }
-
-        protected override void Saved(Scene scene)
-        {
-            base.Saved(scene);
-
-            if (meshRendererVisualDirtyFlags != null)
-                meshRendererVisualDirtyFlags.ResetDirty();
-        }
-
-        protected VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags
-        {
-            get { return _meshRendererVisualDirtyFlags; }
-            set { _meshRendererVisualDirtyFlags = value; }
-        }
-
-        public bool GetMeshRenderersInitialized()
-        {
-            return gameObject.transform.childCount > 0;
-        }
-
-        public void IterateOverMaterials(Action<Material, MaterialPropertyBlock, MeshRenderer> callback)
-        {
-            foreach (MeshRenderer meshRenderer in meshRenderers)
-            {
-                if (meshRenderer != null && meshRenderer.sharedMaterial != null)
+                if (meshRenderer != null)
                 {
                     MaterialPropertyBlock materialPropertyBlock = null;
 
@@ -439,7 +255,7 @@ namespace DepictionEngine
                     if (materialPropertyBlock != null)
                         meshRenderer.GetPropertyBlock(materialPropertyBlock);
 
-                    callback(meshRenderer.sharedMaterial, materialPropertyBlock, meshRenderer);
+                    callback(materialPropertyBlock, meshRenderer);
 
                     if (materialPropertyBlock != null)
                         meshRenderer.SetPropertyBlock(materialPropertyBlock);
@@ -467,8 +283,10 @@ namespace DepictionEngine
                     cameraAtmosphereAltitudeRatio = closestGeoAstroObject.GetAtmosphereAltitudeRatio(atmosphereThickness, cameraPosition);
                 }
 
-                IterateOverMaterials((material, materialPropertyBlock, meshRenderer) =>
+                IterateOverManagedMeshRenderer((materialPropertyBlock, meshRenderer) =>
                 {
+                    InitializeMaterial(meshRenderer, meshRenderer.sharedMaterial);
+
                     ApplyPropertiesToMaterial(meshRenderer, meshRenderer.sharedMaterial, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, star);
                 });
 
@@ -497,7 +315,7 @@ namespace DepictionEngine
                 if (renderingManager != Disposable.NULL)
                     rttCamera = renderingManager.rttCamera;
 
-                foreach (MeshRenderer meshRenderer in meshRenderers)
+                foreach (MeshRenderer meshRenderer in managedMeshRenderers)
                 {
                     if (meshRenderer != null && meshRenderer.sharedMaterial != null)
                     {
@@ -531,168 +349,19 @@ namespace DepictionEngine
             return false;
         }
 
-        protected virtual void UpdateVisualProperties()
+        public int managedMeshRendererCount
         {
-
-        }
-
-        private bool _visualsChanged;
-        protected override void PreHierarchicalUpdateBeforeChildrenAndSiblings()
-        {
-            base.PreHierarchicalUpdateBeforeChildrenAndSiblings();
-
-            UpdateVisualProperties();
-
-            if (AssetLoaded())
-            {
-                UpdateMeshRendererDirtyFlags(meshRendererVisualDirtyFlags);
-
-                if (autoInstantiate)
-                    UpdateMeshRendererVisuals(meshRendererVisualDirtyFlags);
-
-                if (GetMeshRenderersInitialized())
-                {
-                    if (popup && !IsFullyInitialized())
-                        popup = false;
-
-                    if (popup)
-                    {
-                        popup = false;
-                        if (_popupDuration != 0.0f)
-                        {
-                            switch (_popupType)
-                            {
-                                case PopupType.Alpha:
-                                    popupTween = tweenManager.To(0.0f, alpha, popupDuration, (value) => { popupT = value; }, null, () =>
-                                    {
-                                        popupTween = null;
-                                    });
-                                    break;
-                                case PopupType.Scale:
-                                    popupTween = tweenManager.To(0.0f, 1.0f, popupDuration, (value) => { popupT = value; }, null, () =>
-                                    {
-                                        popupTween = null;
-                                    }, EasingType.ElasticEaseOut);
-                                    break;
-                            }
-                        }
-                    }
-
-                    ApplyPropertiesToVisual(_visualsChanged, meshRendererVisualDirtyFlags);
-                    _visualsChanged = false;
-                }
-
-                meshRendererVisualDirtyFlags.ResetDirty();
-            }
-        }
-
-        protected virtual bool AssetLoaded()
-        {
-            return true;
-        }
-
-        protected virtual void UpdateMeshRendererDirtyFlags(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
-        {
-
-        }
-
-        protected virtual void UpdateMeshRendererVisuals(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
-        {
-            if (meshRendererVisualDirtyFlags.disposeAllVisuals)
-                DisposeAllChildren();
-        }
-
-        protected override void TransformChildAddedHandler(TransformBase transform, PropertyMonoBehaviour child)
-        {
-            base.TransformChildAddedHandler(transform, child);
-
-            if (child is Visual)
-                _visualsChanged = true;
-        }
-
-        protected override void TransformChildRemovedHandler(TransformBase transform, PropertyMonoBehaviour child)
-        {
-            base.TransformChildRemovedHandler(transform, child);
-
-            if (child is Visual)
-                _visualsChanged = true;
-        }
-
-        protected void UpdateMeshRendererVisualCollider(MeshRendererVisual meshRendererVisual, MeshRendererVisual.ColliderType colliderType, bool convexCollider, bool visualsChanged, bool colliderTypeChanged = true, bool convexColliderChanged = true)
-        {
-            bool colliderChanged = false;
-            if (visualsChanged || colliderTypeChanged)
-            {
-                if (meshRendererVisual.SetColliderType(colliderType))
-                    colliderChanged = true;
-            }
-
-            if (visualsChanged || colliderChanged || convexColliderChanged)
-            {
-                if (meshRendererVisual.GetCollider() != null && meshRendererVisual.GetCollider() is MeshCollider)
-                {
-                    MeshCollider meshCollider = meshRendererVisual.GetCollider() as MeshCollider;
-                    if (meshCollider.convex != convexCollider)
-                        meshCollider.convex = convexCollider;
-                }
-            }
-        }
-
-        protected virtual void ApplyPropertiesToVisual(bool visualsChanged, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
-        {
-
-        }
-
-        protected virtual void InitializeMaterial(MeshRendererVisual meshRendererVisual, Material material = null)
-        {
-            meshRendererVisual.sharedMaterial = material;
-        }
-
-        protected Material UpdateMaterial(ref Material material, string shaderPath)
-        {
-            Shader shader = RenderingManager.LoadShader(shaderPath);
-            if (material == null || material.shader != shader)
-            {
-                DisposeManager.Dispose(material);
-                material = InstantiateMaterial(shader);
-            }
-
-            return material;
-        }
-
-        protected Material InstantiateMaterial(Shader shader)
-        {
-            return shader != null ? new Material(shader) : null;
-        }
-
-        public int meshRendererCount
-        {
-            get { return meshRenderers.Count; }
+            get { return managedMeshRenderers.Count; }
         }
 
         public virtual float GetCurrentAlpha()
         {
-            return alpha * GetPopupT(PopupType.Alpha);
+            return alpha;
         }
 
         protected bool GetEnableAlphaClip()
         {
             return RenderingManager.GetEnableAlphaClip();
-        }
-
-        protected Visual GetVisual(string name)
-        {
-            Visual matchingVisual = null;
-            transform.IterateOverChildren<Visual>((visual) =>
-            {
-                if (visual.name == name)
-                {
-                    matchingVisual = visual;
-                    return false;
-                }
-                return true;
-            });
-            return matchingVisual;
         }
 
         protected virtual bool GetVisualIgnoreRender(Visual visual, Camera camera, bool afterRendering)
@@ -714,6 +383,31 @@ namespace DepictionEngine
             });
         }
 
+        protected MeshRendererVisual CreateMeshRendererVisual(Type type, string name = null, Transform parent = null)
+        {
+            return typeof(MeshRendererVisual).IsAssignableFrom(type) ? CreateVisual(type, name, parent) as MeshRendererVisual : null;
+        }
+
+        protected Visual CreateVisual(Type type, string name = null, Transform parent = null, List<PropertyModifier> propertyModifers = null)
+        {
+            return typeof(Visual).IsAssignableFrom(type) ? CreateChild(type, name, parent, InitializationContext.Programmatically, propertyModifers) as Visual : null;
+        }
+
+        protected Visual GetVisual(string name)
+        {
+            Visual matchingVisual = null;
+            transform.IterateOverChildren<Visual>((visual) =>
+            {
+                if (visual.name == name)
+                {
+                    matchingVisual = visual;
+                    return false;
+                }
+                return true;
+            });
+            return matchingVisual;
+        }
+
         protected Visual GetVisual(int index)
         {
             Visual visual = null;
@@ -722,43 +416,26 @@ namespace DepictionEngine
             return visual;
         }
 
-        protected MeshRendererVisual CreateMeshRendererVisual(Type type, string name = null, Transform parent = null)
+        protected virtual void InitializeMaterial(MeshRenderer meshRendererVisual, Material material = null)
         {
-            return typeof(MeshRendererVisual).IsAssignableFrom(type) ? CreateVisual(type, name, parent) as MeshRendererVisual : null;
+            meshRendererVisual.sharedMaterial = material;
         }
 
-        protected Visual CreateVisual(Type type, string name = null, Transform parent = null, List<PropertyModifier> propertyModifers = null)
+        protected Material UpdateMaterial(ref Material material, string shaderPath)
         {
-            Debug.Log(name);
-            return typeof(Visual).IsAssignableFrom(type) ? CreateChild(type, name, parent, InstanceManager.InitializationContext.Programmatically, propertyModifers) as Visual : null;
-        }
-
-        public void AddAllChildMeshRenderers()
-        {
-            gameObject.GetComponentsInChildren(true, meshRenderers);
-        }
-
-        public void AddMeshRenderer(MeshRenderer meshRenderer)
-        {
-            if (!meshRenderers.Contains(meshRenderer))
-                meshRenderers.Add(meshRenderer);
-        }
-
-        public void RemoveMeshRenderer(MeshRenderer meshRenderer)
-        {
-            meshRenderers.Remove(meshRenderer);
-            if (meshRenderer != null)
-                meshRenderer.SetPropertyBlock(null);
-        }
-
-        public void RemoveDisposedMeshRenderers()
-        {
-            for(int i = meshRenderers.Count - 1; i >= 0; i--)
+            Shader shader = RenderingManager.LoadShader(shaderPath);
+            if (material == null || material.shader != shader)
             {
-                MeshRenderer meshRenderer = meshRenderers[i];
-                if (meshRenderer == null)
-                    meshRenderers.RemoveAt(i);
+                DisposeManager.Dispose(material);
+                material = InstantiateMaterial(shader);
             }
+
+            return material;
+        }
+
+        protected Material InstantiateMaterial(Shader shader)
+        {
+            return shader != null ? new Material(shader) : null;
         }
 
         protected virtual void ApplyPropertiesToMaterial(MeshRenderer meshRenderer, Material material, MaterialPropertyBlock materialPropertyBlock, double cameraAtmosphereAltitudeRatio, Camera camera, GeoAstroObject closestGeoAstroObject, Star star)
@@ -978,54 +655,6 @@ namespace DepictionEngine
         protected virtual void ApplyReflectionTextureToMaterial(MeshRenderer meshRenderer, Material material, MaterialPropertyBlock materialPropertyBlock, double cameraAtmosphereAltitudeRatio, Camera camera, GeoAstroObject closestGeoAstroObject, RTTCamera rttCamera, ScriptableRenderContext? context)
         {
            
-        }
-
-        /// <summary>
-        /// Dispose all children visuals.
-        /// </summary>
-        /// <param name="disposeDelay"></param>
-        /// <returns></returns>
-        protected virtual bool DisposeAllChildren(DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Programmatically, DisposeManager.DisposeDelay disposeDelay = DisposeManager.DisposeDelay.None)
-        {
-            if (initialized && transform != null)
-            {
-                for (int i = transform.transform.childCount - 1; i >= 0 ; i--)
-                {
-                    Transform child = transform.transform.GetChild(i);
-                    if (child != null)
-                        Dispose(child.gameObject, disposeContext, disposeDelay);
-                }
-
-                return true;
-            }
-            return false;
-        }
-
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
-        {
-            if (base.OnDisposing(disposeContext))
-            {
-                popupTween = null;
-
-                //We dispose the visuals manualy in case only the Component is disposed and not the entire GameObject and its children
-                //The delay is required during a Dispose of the Object since we do not know wether it is only the Component being disposed or the entire GameObject. 
-                //If the Entire GameObject is being disposed in the Editor then some Destroy Undo operations will be registered by the Editor automaticaly. By the time the delayed dispose will be performed the children will already be Destroyed and we will not register additional Undo Operations
-                DisposeAllChildren(disposeContext, DisposeManager.DisposeDelay.Delayed);
-
-                return true;
-            }
-            return false;
-        }
-
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
-        {
-            if (base.OnDisposed(disposeContext, pooled))
-            {
-                Dispose(_meshRendererVisualDirtyFlags, disposeContext);
-
-                return true;
-            }
-            return false;
         }
     }
 }

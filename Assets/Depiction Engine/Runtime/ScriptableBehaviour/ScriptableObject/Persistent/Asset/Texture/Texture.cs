@@ -55,14 +55,14 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
-            if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
             {
                 if (unityTexture != null)
-                    unityTexture = InstanceManager.Duplicate(unityTexture, InstanceManager.InitializationContext.Programmatically);
+                    unityTexture = InstanceManager.Duplicate(unityTexture, InitializationContext.Programmatically);
             }
 
             InitValue(value => wrapMode = value, TextureWrapMode.Clamp, initializingContext);
@@ -153,12 +153,12 @@ namespace DepictionEngine
             return bytes;
         }
 
-        public override void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public override void SetData(object value, LoaderBase.DataType dataType, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             SetData(value as byte[], false, width, height, format, mipmapCount != 0, false, initializingContext);
         }
 
-        public void SetData(byte[] textureBytes, bool isRawTextureBytes, int width, int height, TextureFormat format, bool mipChain, bool linear, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public void SetData(byte[] textureBytes, bool isRawTextureBytes, int width, int height, TextureFormat format, bool mipChain, bool linear, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             CreateTextureIfRequired(isRawTextureBytes, width, height, format, mipChain, linear, initializingContext);
 
@@ -176,12 +176,12 @@ namespace DepictionEngine
             DataPropertyAssigned();
         }
 
-        private void CreateTextureIfRequired(bool isRawTextureBytes, int width, int height, TextureFormat format, bool mipChain, bool linear, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        private void CreateTextureIfRequired(bool isRawTextureBytes, int width, int height, TextureFormat format, bool mipChain, bool linear, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             bool requiresNewTexture2D = unityTexture == null || this.mipmapCount != (mipChain ? this.mipmapCount : 1);
 
 #if UNITY_EDITOR
-            if (initializingContext == InstanceManager.InitializationContext.Editor)
+            if (initializingContext == InitializationContext.Editor)
                 requiresNewTexture2D = true;
 #endif
 
@@ -198,7 +198,7 @@ namespace DepictionEngine
 
         public void SetData(Texture2D texture)
         {
-            SetData(texture, InstanceManager.InitializationContext.Programmatically);
+            SetData(texture, InitializationContext.Programmatically);
 
             DataPropertyAssigned();
         }
@@ -216,7 +216,7 @@ namespace DepictionEngine
             return "png";
         }
 
-        private void SetData(Texture2D texture, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        private void SetData(Texture2D texture, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             Texture2D oldUnityTexture = unityTexture;
 
@@ -319,12 +319,12 @@ namespace DepictionEngine
             a = 255;
         }
 
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (base.OnDispose(disposeContext))
             {
-                if (!pooled)
-                    Dispose(unityTexture, disposeContext);
+                if (disposeContext != DisposeContext.Programmatically_Pool)
+                    Dispose(_unityTexture, disposeContext);
 
                 return true;
             }
@@ -364,7 +364,7 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            textureModifier = null;
+            _textureModifier = default;
         }
 
         public void Init(TextureModifier textureModifier)
@@ -384,9 +384,9 @@ namespace DepictionEngine
             }
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 DisposeManager.Dispose(_textureModifier);
 
@@ -413,14 +413,14 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _texture2D = null;
-            _textureBytes = null;
-            _isRawTextureBytes = false;
-            _width = 0;
-            _height = 0;
-            _format = 0;
-            _mipChain = false;
-            _linear = false;
+            _texture2D = default;
+            _textureBytes = default;
+            _isRawTextureBytes = default;
+            _width = default;
+            _height = default;
+            _format = default;
+            _mipChain = default;
+            _linear = default;
         }
 
         public TextureModifier Init(Texture2D texture2D)
@@ -458,9 +458,9 @@ namespace DepictionEngine
                 texture.SetData(_textureBytes, _isRawTextureBytes, _width, _height, _format, _mipChain, _linear);
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 DisposeManager.Destroy(_texture2D);
 

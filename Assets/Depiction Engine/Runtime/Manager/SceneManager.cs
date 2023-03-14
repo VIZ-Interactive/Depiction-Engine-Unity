@@ -48,8 +48,6 @@ namespace DepictionEngine
         /// Objects that were waiting to be destroyed are destroyed. <br/><br/>
         /// <b><see cref="DelayedDispose"/>:</b> <br/>
         /// Objects that were waiting to be disposed are disposed. <br/><br/>
-        /// <b><see cref="DelayedDisposeLate"/>:</b> <br/>
-        /// Objects that were waiting to be disposed late are disposed.
         /// </summary> 
         public enum ExecutionState
         {
@@ -64,7 +62,6 @@ namespace DepictionEngine
             UnityInitialized,
             DelayedOnDestroy,
             DelayedDispose,
-            DelayedDisposeLate,
         };
 
         public const string NAMESPACE = "DepictionEngine";
@@ -186,7 +183,7 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
 
@@ -218,7 +215,7 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -351,10 +348,6 @@ namespace DepictionEngine
         private static bool _assembling;
         private void BeforeAssemblyReloadHandler()
         {
-            //This is required to prevent UIVisual from not being Destroyed when recompiling scripts repeatedly and not giving enough focus to the Editor window in between recompiles
-            //It seems to work despite the fact that the DelayedDispose Queue is empty when this event is dispatched and therefore nothing of relevance happens during the InvokeActions() call
-            DisposeManager.InvokeActions();
-
             UpdateHarmonyPatches(true);
 
             tweenManager.DisposeAllTweens();
@@ -466,6 +459,10 @@ namespace DepictionEngine
                     MethodInfo unityAppStatusBarOnGUI = appStatusBarType.GetMethod("OldOnGUI", BindingFlags.NonPublic | BindingFlags.Instance);
                     MethodInfo preAppStatusBarOnGUI = typeof(SceneManager).GetMethod("PatchedPreAppStatusBarOnGUI", BindingFlags.NonPublic | BindingFlags.Static);
                     _harmony.Patch(unityAppStatusBarOnGUI, new HarmonyLib.HarmonyMethod(preAppStatusBarOnGUI));
+
+                    MethodInfo unityGetInspectorTitle = typeof(UnityEditor.ObjectNames).GetMethod("GetInspectorTitle", BindingFlags.Static | BindingFlags.Public);
+                    MethodInfo postGetInspectorTitle = typeof(Editor.ObjectNames).GetMethod("PatchedPostGetInspectorTitle", BindingFlags.Static | BindingFlags.NonPublic);
+                    _harmony.Patch(unityGetInspectorTitle, null, new HarmonyLib.HarmonyMethod(postGetInspectorTitle));
 
                     //Fix for a Unity Bug where a null item is sent to the DoItemGUI method in TreeViewController causing it to spam NullReferenceException.
                     //The bug usually occurs when a GameObject foldout is opened in the SceneHierarchy while new child objects are being added/created quickly by a loader or anything else. 
@@ -706,11 +703,11 @@ namespace DepictionEngine
         {
             if (go != null && go != gameObject)
             {
-                TransformBase childTransform = go.GetComponent<TransformBase>();
-                if (childTransform != Disposable.NULL)
+                TransformBase childComponent = GetComponent<TransformBase>();
+                if (childComponent != Disposable.NULL)
                 {
-                    if (InitializeComponent(childTransform))
-                        childTransform.UpdateParent(this);
+                    if (InitializeComponent(childComponent))
+                        childComponent.UpdateParent(this);
                 }
             }
         }
@@ -875,6 +872,7 @@ namespace DepictionEngine
                 return true;
             return false;
         }
+#endif
 
         public static bool Debugging()
         {
@@ -885,7 +883,6 @@ namespace DepictionEngine
 
             return debug;
         }
-#endif
 
         protected override bool AddProperty(PropertyMonoBehaviour child)
         {
@@ -985,6 +982,7 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        //Inspector Methods
         private static List<Tuple<UnityEngine.Object[], string>> _queuedRecordObjects;
         public static void RecordObjects(UnityEngine.Object[] targetObjects, string undoGroupName = null)
         {
@@ -1007,6 +1005,11 @@ namespace DepictionEngine
             _queuedPropertyValueChanges ??= new List<Tuple<IScriptableBehaviour, PropertyInfo, object>>();
 
             _queuedPropertyValueChanges.Add(Tuple.Create(scriptableBehaviour, propertyInfo, value));
+        }
+
+        public static void SetInspectorPropertyValue(IScriptableBehaviour targetObject, PropertyInfo propertyInfo, object value)
+        {
+            propertyInfo.SetValue(targetObject, value);
         }
 #endif
 
@@ -1076,7 +1079,7 @@ namespace DepictionEngine
                                 try 
                                 {
 #pragma warning disable UNT0018 // System.Reflection features in performance critical messages
-                                    targetObject.IsUserChange(callback: () => { queuedPropertyValue.Item2.SetValue(targetObject, queuedPropertyValue.Item3); });
+                                    targetObject.IsUserChange(callback: () => { SetInspectorPropertyValue(targetObject, queuedPropertyValue.Item2, queuedPropertyValue.Item3); });
 #pragma warning restore UNT0018 // System.Reflection features in performance critical messages
                                 }
                                 catch(Exception)
@@ -1197,8 +1200,8 @@ namespace DepictionEngine
 
                 foreach (UnityEngine.Object unityObject in _resetingObjects)
                 {
-                    if (unityObject is IScriptableBehaviour)
-                        (unityObject as IScriptableBehaviour).InspectorReset();
+                    if (unityObject is IProperty)
+                        (unityObject as IProperty).InspectorReset();
                 }
 
                 _resetingObjects.Clear();
@@ -1235,12 +1238,10 @@ namespace DepictionEngine
 
             InvokeAction(ref UnityInitializedEvent, "UnityInitialized", ExecutionState.UnityInitialized);
 
-            DisposeManager.DestroyingContext(() => 
+            DisposeManager.DisposingContext(() => 
             {
                 InvokeAction(ref DelayedOnDestroyEvent, "DelayedOnDestroy", ExecutionState.DelayedOnDestroy);
-            }, DisposeManager.DisposeContext.Editor);
-
-            DisposeManager.InvokeActions();
+            }, DisposeContext.Editor_Destroy);
 
 #if UNITY_EDITOR
             //Unsubscribe and Subscribe again to stay at the bottom of the invocation list. 

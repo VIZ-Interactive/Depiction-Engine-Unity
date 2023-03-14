@@ -32,6 +32,9 @@ namespace DepictionEngine
         [SerializeField, ConditionalShow(nameof(IsPhysicsObject)), Tooltip("Used to determine the amount of gravitational force to apply when '"+nameof(Object.useGravity)+"' is enabled."), EndFoldout]
         private double _mass;
 
+        /// <summary>
+        /// Field used internally to hide some utilitarian GameObjects.
+        /// </summary>
         [SerializeField, HideInInspector]
         private bool _isHiddenInHierarchy;
       
@@ -124,15 +127,24 @@ namespace DepictionEngine
             base.Recycle();
 
             gameObject.layer = LayerMask.GetMask("Default");
-            gameObject.hideFlags = HideFlags.None;
+            gameObject.hideFlags = default;
 
-            if (_forceUpdateTransformPending != null)
-                _forceUpdateTransformPending.Clear();
+            _forceUpdateTransformPending?.Clear();
 
-            _targetController = null;
+            _targetController = default;
 
-            if (_visibleCameras != null)
-                _visibleCameras.Clear();
+            _visibleCameras?.Clear();
+        }
+
+        protected override bool Initialize(InitializationContext initializingContext)
+        {
+            if (base.Initialize(initializingContext))
+            {
+                UpdateReferences(true);
+
+                return true;
+            }
+            return false;
         }
 
         protected override bool InitializeLastFields()
@@ -148,7 +160,7 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -187,7 +199,7 @@ namespace DepictionEngine
             InitValue(value => isHiddenInHierarchy = value, GetDefaultIsHiddenInHierarchy(), () => { return false; }, initializingContext);
         }
 
-        protected T CreateOptionalProperties<T>(InstanceManager.InitializationContext initializingContext) where T : OptionalPropertiesBase
+        protected T CreateOptionalProperties<T>(InitializationContext initializingContext) where T : OptionalPropertiesBase
         {
             OptionalPropertiesBase optionalProperties = ScriptableObject.CreateInstance<T>();
             optionalProperties.parent = this;
@@ -199,50 +211,47 @@ namespace DepictionEngine
             return optionalProperties as T;
         }
 
-        protected override void CreateComponents(InstanceManager.InitializationContext initializingContext)
+        protected override bool UpdateRelations(Action beforeSiblingsInitializeCallback = null)
         {
-            base.CreateComponents(initializingContext);
-
-            InitializeRigidbody();
-        }
-
-        protected void InitializeRigidbody()
-        {
-            if (rigidbodyInternal == null)
-            {
-                rigidbodyInternal = gameObject.GetComponent<Rigidbody>();
-                if (useGravity && rigidbodyInternal == null)
-                {
-                    rigidbodyInternal = gameObject.AddSafeComponent<Rigidbody>(IsUserChangeContext() ? InstanceManager.InitializationContext.Editor : InstanceManager.InitializationContext.Programmatically);
-                    rigidbodyInternal.drag = 0.05f;
-                    rigidbodyInternal.useGravity = false;
-                }
-            }
-        }
-
-        protected override void InitializeTransform(InstanceManager.InitializationContext initializingContext)
-        {
-            base.InitializeTransform(initializingContext);
-
             if (initializationJson != null)
             {
                 JSONObject transformJson = initializationJson[nameof(transform)] as JSONObject;
                 if (transformJson != null)
                 {
-                    string typeStr = transformJson[nameof(type)];
-                    if (string.IsNullOrEmpty(typeStr))
-                        typeStr = typeof(TransformDouble).FullName;
-                    Type transformType = Type.GetType(typeStr);
-                    TransformDouble transform = gameObject.GetComponent(transformType) as TransformDouble;
+                    TransformDouble transform = GetComponent<TransformDouble>();
                     if (transform != Disposable.NULL)
                         InitializeComponent(transform, transformJson);
                 }
             }
+
+            return base.UpdateRelations(beforeSiblingsInitializeCallback);
         }
 
-        protected override void InitializeScripts(InstanceManager.InitializationContext initializingContext)
+        protected override void CreateComponents(InitializationContext initializingContext)
         {
-            base.InitializeScripts(initializingContext);
+            base.CreateComponents(initializingContext);
+
+            InitRequiredComponentTypes();
+            GetRequiredComponentTypes(ref _requiredComponentTypes);
+            List<Type> requiredComponentTypes = _requiredComponentTypes;
+
+            if (requiredComponentTypes.Count > 0)
+            {
+                Component[] components = GetComponents<Component>();
+
+                foreach (Type requiredComponentType in requiredComponentTypes)
+                {
+                    Component component = RemoveComponentFromList(requiredComponentType, components);
+                    if (Disposable.IsDisposed(component))
+                    {
+#if UNITY_EDITOR
+                        component = Editor.UndoManager.AddComponent(gameObject, requiredComponentType, initializingContext);
+#else
+                        component = gameObject.AddComponent(requiredComponentType);
+#endif
+                    }
+                }
+            }
 
             if (initializationJson != null)
             {
@@ -368,20 +377,61 @@ namespace DepictionEngine
                     }
                 }
             }
+
+            InitializeRigidbody(initializingContext);
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
+        protected void InitializeRigidbody(InitializationContext initializingContext)
         {
-            if (base.Initialize(initializingContext))
+            if (rigidbodyInternal == null)
             {
-                UpdateReferences(true);
-
-                return true;
+                rigidbodyInternal = GetComponent<Rigidbody>();
+                if (useGravity && rigidbodyInternal == null)
+                {
+                    rigidbodyInternal = gameObject.AddSafeComponent<Rigidbody>(initializingContext);
+                    rigidbodyInternal.drag = 0.05f;
+                    rigidbodyInternal.useGravity = false;
+                }
             }
-            return false;
         }
 
-        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
+        private List<Type> _requiredComponentTypes;
+        private void InitRequiredComponentTypes()
+        {
+            _requiredComponentTypes ??= new List<Type>();
+            _requiredComponentTypes.Clear();
+        }
+
+        protected Component RemoveComponentFromList(Type type, Component[] components)
+        {
+            for (int i = 0; i < components.Length; i++)
+            {
+                Component component = components[i];
+                if (!Disposable.IsDisposed(component))
+                {
+                    if (type.IsAssignableFrom(component.GetType()))
+                    {
+                        components[i] = null;
+                        return component;
+                    }
+                }
+            }
+            return null;
+        }
+
+        public List<Type> GetRequiredComponentTypes()
+        {
+            List<Type> requiredComponentTypes = new();
+            GetRequiredComponentTypes(ref requiredComponentTypes);
+            return requiredComponentTypes;
+        }
+
+        public void GetRequiredComponentTypes(ref List<Type> types)
+        {
+            MemberUtility.GetRequiredComponentTypes(ref types, GetType(), !isFallbackValues);
+        }
+
+        protected override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
 
@@ -389,7 +439,7 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        protected override void RegisterInitializeObjectUndo(InstanceManager.InitializationContext initializingContext)
+        protected override void RegisterInitializeObjectUndo(InitializationContext initializingContext)
         {
             base.RegisterInitializeObjectUndo(initializingContext);
 
@@ -398,11 +448,11 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override bool IsValidInitialization(InstanceManager.InitializationContext initializingContext)
+        protected override bool IsValidInitialization(InitializationContext initializingContext)
         {
             if (base.IsValidInitialization(initializingContext))
             {
-                if (!CanBeDuplicated() && (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate))
+                if (!CanBeDuplicated() && (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate))
                 {
                     DisposeManager.Destroy(gameObject);
 
@@ -431,7 +481,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         protected virtual void InitializeToTopInInspector()
         {
-            Component[] components = gameObject.GetComponents<Component>();
+            Component[] components = GetComponents<Component>();
             if (components[2] != this)
             {
                 Editor.ComponentUtility.MoveComponentRelativeToComponent(this, components[1], false);
@@ -986,7 +1036,7 @@ namespace DepictionEngine
                     value = false;
                 SetValue(nameof(useGravity), value, ref _useGravity, (newValue, oldValue) =>
                 {
-                    InitializeRigidbody();
+                    InitializeRigidbody(IsUserChangeContext() ? InitializationContext.Editor : InitializationContext.Programmatically);
                 });
             }
         }
@@ -1650,22 +1700,22 @@ namespace DepictionEngine
             }
         }
 
-        public T CreateScript<T>(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : Script
+        public T CreateScript<T>(InitializationContext initializingContext = InitializationContext.Programmatically) where T : Script
         {
             return CreateScript(typeof(T), null, initializingContext) as T;
         }
 
-        public T CreateScript<T>(JSONNode json, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : Script
+        public T CreateScript<T>(JSONNode json, InitializationContext initializingContext = InitializationContext.Programmatically) where T : Script
         {
             return CreateScript(typeof(T), json, initializingContext) as T;
         }
 
-        public Script CreateScript(Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, bool isFallbackValues = false)
+        public Script CreateScript(Type type, InitializationContext initializingContext = InitializationContext.Programmatically, bool isFallbackValues = false)
         {
             return CreateScript(type, null, initializingContext, isFallbackValues);
         }
 
-        public Script CreateScript(Type type, JSONNode json, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, bool isFallbackValues = false)
+        public Script CreateScript(Type type, JSONNode json, InitializationContext initializingContext = InitializationContext.Programmatically, bool isFallbackValues = false)
         {
             if (!type.IsSubclassOf(typeof(Script)))
                 return null;
@@ -1894,12 +1944,12 @@ namespace DepictionEngine
             return RemoveListItem(datasources, datasource);
         }
 
-        public T CreateChild<T>(string name = null, Transform parent = null, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, List<PropertyModifier> propertyModifiers = null) where T : IScriptableBehaviour
+        public T CreateChild<T>(string name = null, Transform parent = null, InitializationContext initializingContext = InitializationContext.Programmatically, List<PropertyModifier> propertyModifiers = null) where T : IScriptableBehaviour
         {
             return (T)CreateChild(typeof(T), name, parent, initializingContext, propertyModifiers);
         }
 
-        public IScriptableBehaviour CreateChild(Type type, string name = null, Transform parent = null, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, List<PropertyModifier> propertyModifiers = null)
+        public IScriptableBehaviour CreateChild(Type type, string name = null, Transform parent = null, InitializationContext initializingContext = InitializationContext.Programmatically, List<PropertyModifier> propertyModifiers = null)
         {
             IScriptableBehaviour scriptableBehaviour = instanceManager.CreateInstance(type, parent != null ? parent : gameObject.transform, initializingContext: initializingContext, propertyModifiers: propertyModifiers) as IScriptableBehaviour;
             
@@ -2178,9 +2228,30 @@ namespace DepictionEngine
                 dataProcessor.Dispose();
         }
 
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
+        /// <summary>
+        /// Dispose all children visuals.
+        /// </summary>
+        /// <param name="disposeDelay"></param>
+        /// <returns></returns>
+        protected virtual bool DisposeAllChildren(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (initialized && transform != null)
+            {
+                for (int i = transform.transform.childCount - 1; i >= 0; i--)
+                {
+                    Transform child = transform.transform.GetChild(i);
+                    if (child != null)
+                        Dispose(child.gameObject, disposeContext);
+                }
+
+                return true;
+            }
+            return false;
+        }
+
+        public override bool OnDispose(DisposeContext disposeContext)
+        {
+            if (base.OnDispose(disposeContext))
             {
                 Dispose(_objectAdditionalFallbackValues, disposeContext);
 
@@ -2201,7 +2272,6 @@ namespace DepictionEngine
         }
     }
 
-
     [Serializable]
     public class VisibleCameras
     {
@@ -2215,12 +2285,12 @@ namespace DepictionEngine
 
         public bool CameraVisible(Camera camera)
         {
-            return _values.Contains(camera.GetCameraInstanceID());
+            return _values != null && _values.Contains(camera.GetCameraInstanceID());
         }
 
         public bool SequenceEqual(List<int> other)
         {
-            return Enumerable.SequenceEqual(_values, other);
+            return _values != null && other != null ? Enumerable.SequenceEqual(_values, other) : _values == null && other == null;
         }
 
         public static implicit operator VisibleCameras(int[] d) 

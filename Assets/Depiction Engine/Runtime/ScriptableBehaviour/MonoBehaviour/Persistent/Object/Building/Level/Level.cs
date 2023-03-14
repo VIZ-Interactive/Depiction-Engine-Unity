@@ -12,7 +12,7 @@ namespace DepictionEngine
         [BeginFoldout("Children")]
         [SerializeField, Tooltip("When enabled the children objects will be hidden when the level is closed.")]
         private bool _showInteriorOnOpenOnly;
-        [SerializeField, Tooltip("When enabled the level will trigger '"+nameof(LoaderBase.LoadAll)+ "' on open and '"+nameof(LoaderBase.DisposeLoadScopes)+"' on close."), EndFoldout]
+        [SerializeField, Tooltip("When enabled the level will trigger '"+nameof(LoaderBase.LoadAll)+ "' on open and '"+nameof(LoaderBase.DisposeAllLoadScopes)+"' on close."), EndFoldout]
         private bool _manageLoaders;
 
 #if UNITY_EDITOR
@@ -39,10 +39,10 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _groundY = 0.0f;
+            _groundY = default;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -163,7 +163,7 @@ namespace DepictionEngine
             {
                 IterateOverGenerators<LoaderBase>((loader) =>
                 {
-                    loader.DisposeLoadScopes();
+                    loader.DisposeAllLoadScopes();
 
                     return true;
                 });
@@ -224,7 +224,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled the level will trigger <see cref="DepictionEngine.LoaderBase.LoadAll"/> on open and <see cref="DepictionEngine.LoaderBase.DisposeLoadScopes"/> on close.
+        /// When enabled the level will trigger <see cref="DepictionEngine.LoaderBase.LoadAll"/> on open and <see cref="DepictionEngine.LoaderBase.DisposeAllLoadScopes"/> on close.
         /// </summary>
         [Json]
         public bool manageLoaders

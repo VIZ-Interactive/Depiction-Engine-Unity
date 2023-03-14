@@ -8,7 +8,7 @@ namespace DepictionEngine
 {
     public class RTTCamera : Camera
     {
-        protected override void InitializeCamera(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeCamera(InitializationContext initializingContext)
         {
             base.InitializeCamera(initializingContext);
 
@@ -40,7 +40,6 @@ namespace DepictionEngine
             return true;
         }
        
-
         public RenderTexture RenderToCubemap(Camera camera, RenderTexture cubemap, Action<UnityEngine.Camera, Camera> applyPropertiesToUnityCamera = null, Action<UnityEngine.Camera> resetUnityCamera = null, int faceMask = 63)
         {
             ApplyPropertiesToRTTUnityCamera(camera, applyPropertiesToUnityCamera);

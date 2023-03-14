@@ -42,9 +42,9 @@ namespace DepictionEngine
             _locked.Add(multithreaded);
             multithreaded.locked = true;
         }
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (base.OnDispose(disposeContext))
             {
                 foreach (MultithreadSafeScriptableObject multithreaded in _locked)
                     multithreaded.locked = false;

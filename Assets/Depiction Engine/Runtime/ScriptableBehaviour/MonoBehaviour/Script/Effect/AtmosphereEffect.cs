@@ -26,9 +26,9 @@ namespace DepictionEngine
         [SerializeField, Tooltip("The Wave length of the sun light."), EndFoldout]
         private Color _waveLength;
 
-        private GlobalLoader _atmosphereLoader;
+        private GlobalLoader _atmosphereGlobalLoader;
 
-        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
+        protected override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
           
@@ -37,7 +37,7 @@ namespace DepictionEngine
             Transform atmosphereLoaderTransform = gameObject.transform.Find(atmosphereLoadersName);
 
             if (atmosphereLoaderTransform != null)
-                atmosphereLoader = atmosphereLoaderTransform.GetSafeComponent<GlobalLoader>(initializingContext);
+                atmosphereGlobalLoader = atmosphereLoaderTransform.GetSafeComponent<GlobalLoader>(initializingContext);
             else
             {
                 DatasourceRoot datasourceRoot = objectBase.CreateChild<DatasourceRoot>(atmosphereLoadersName, null, initializingContext);
@@ -45,10 +45,10 @@ namespace DepictionEngine
                 
                 SerializableGuid atmosphereGridMeshObjectFallbackValuesId = SerializableGuid.NewGuid();
                 
-                atmosphereLoader = datasourceRoot.gameObject.AddSafeComponent<GlobalLoader>(initializingContext);
-                atmosphereLoader.autoUpdateInterval = 0.0f;
-                atmosphereLoader.zoomRange = Vector2Int.zero;
-                atmosphereLoader.fallbackValuesId = new List<SerializableGuid> { atmosphereGridMeshObjectFallbackValuesId };
+                atmosphereGlobalLoader = datasourceRoot.gameObject.AddSafeComponent<GlobalLoader>(initializingContext);
+                atmosphereGlobalLoader.autoUpdateInterval = 0.0f;
+                atmosphereGlobalLoader.zoomRange = Vector2Int.zero;
+                atmosphereGlobalLoader.fallbackValuesId = new List<SerializableGuid> { atmosphereGridMeshObjectFallbackValuesId };
 
                 JSONObject json = new()
                 {
@@ -59,14 +59,18 @@ namespace DepictionEngine
                 atmosphereGridMeshObjectFallbackValues.SetProperty(nameof(AtmosphereGridMeshObject.dontSaveToScene), true);
             }
 
-            if (atmosphereLoader != Disposable.NULL)
-                atmosphereLoader.name = atmosphereLoadersName;
+            if (atmosphereGlobalLoader != Disposable.NULL)
+                atmosphereGlobalLoader.name = atmosphereLoadersName;
 
-            if (atmosphereLoader != Disposable.NULL)
-                atmosphereLoader.objectBase.isHiddenInHierarchy = true;
+            if (atmosphereGlobalLoader != Disposable.NULL)
+                atmosphereGlobalLoader.objectBase.isHiddenInHierarchy = true;
+
+            if (atmosphereGlobalLoader.GetPersistenCount() == 0)
+                atmosphereGlobalLoader.LoadAll();
+            atmosphereGlobalLoader.enabled = false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -78,17 +82,15 @@ namespace DepictionEngine
             InitValue(value => waveLength = value, new Color(0.8679245f, 0.7108141f, 0.5287087f), initializingContext);
         }
 
-        private GlobalLoader atmosphereLoader
+        private GlobalLoader atmosphereGlobalLoader
         {
-            get { return _atmosphereLoader; }
+            get { return _atmosphereGlobalLoader; }
             set
             {
-                if (Object.ReferenceEquals(_atmosphereLoader, value))
+                if (Object.ReferenceEquals(_atmosphereGlobalLoader, value))
                     return;
 
-                _atmosphereLoader = value;
-
-                UpdateAtmosphereLoaderActive();
+                _atmosphereGlobalLoader = value;
             }
         }
 
@@ -163,30 +165,6 @@ namespace DepictionEngine
         {
             double geoAstroObjectRadius = geoAstroObject.GetScaledRadius();
             return (ATMOPSHERE_ALTITUDE_FACTOR * geoAstroObjectRadius) - geoAstroObjectRadius;
-        }
-
-        protected override void ActiveAndEnabledChanged(bool newValue, bool oldValue)
-        {
-            base.ActiveAndEnabledChanged(newValue, oldValue);
-
-            UpdateAtmosphereLoaderActive();
-        }
-
-        private void UpdateAtmosphereLoaderActive()
-        {
-            if (atmosphereLoader != Disposable.NULL)
-                atmosphereLoader.gameObject.SetActive(!IsDisposing() && activeAndEnabled);
-        }
-
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
-        {
-            if (base.OnDisposing(disposeContext))
-            {
-                UpdateAtmosphereLoaderActive();
-
-                return true;
-            }
-            return false;
         }
     }
 }

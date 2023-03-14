@@ -37,7 +37,7 @@ namespace DepictionEngine
                             new Vector2(1.0f, 0.0f)
                         };
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
+        protected override bool Initialize(InitializationContext initializingContext)
         {
             if (base.Initialize(initializingContext))
             {

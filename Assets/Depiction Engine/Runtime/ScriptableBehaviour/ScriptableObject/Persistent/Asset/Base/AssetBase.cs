@@ -80,7 +80,7 @@ namespace DepictionEngine
                         Editor.UndoManager.RegisterCompleteObjectUndo(this);
 
                         LoaderBase.DataType dataType = GetDataTypeFromExtension(Path.GetExtension(assetPath));
-                        SetData(ProcessDataBytes(File.ReadAllBytes(assetPath), dataType), dataType, InstanceManager.InitializationContext.Editor);
+                        SetData(ProcessDataBytes(File.ReadAllBytes(assetPath), dataType), dataType, InitializationContext.Editor);
                     });
                 }
             }
@@ -147,7 +147,7 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -234,7 +234,7 @@ namespace DepictionEngine
             return null;
         }
 
-        public virtual void SetData(object value, LoaderBase.DataType dataType, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public virtual void SetData(object value, LoaderBase.DataType dataType, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
 
         }
@@ -263,14 +263,14 @@ namespace DepictionEngine
             return "";
         }
 
-        protected void DisposeOldDataAndRegisterNewData<T>(T oldData, T newData, InstanceManager.InitializationContext initializingContext) where T : UnityEngine.Object
+        protected void DisposeOldDataAndRegisterNewData<T>(T oldData, T newData, InitializationContext initializingContext) where T : UnityEngine.Object
         {
             if (newData != oldData)
             {
-                DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Unknown;
+                DisposeContext disposeContext = DisposeContext.Programmatically_Destroy;
 #if UNITY_EDITOR
-                if (initializingContext == InstanceManager.InitializationContext.Editor)
-                    disposeContext = DisposeManager.DisposeContext.Editor;
+                if (initializingContext == InitializationContext.Editor)
+                    disposeContext = DisposeContext.Editor_Destroy;
 #endif
                 Dispose(oldData, disposeContext);
 

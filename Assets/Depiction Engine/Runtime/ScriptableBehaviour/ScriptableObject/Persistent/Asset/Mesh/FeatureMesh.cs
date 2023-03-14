@@ -15,7 +15,7 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _featureLastIndex = null;
+            _featureLastIndex = default;
         }
 
         public int GetLastIndex(int featureIndex)
@@ -65,7 +65,7 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            featureLastIndex = null;
+            featureLastIndex = default;
         }
 
         public void FeatureComplete()

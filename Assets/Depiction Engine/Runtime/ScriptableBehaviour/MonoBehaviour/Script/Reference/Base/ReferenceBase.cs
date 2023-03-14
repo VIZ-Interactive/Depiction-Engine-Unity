@@ -41,9 +41,6 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private LoadScope _loadScope;
 
-        [HideInInspector]
-        public bool managedByObject;
-
         /// <summary>
         /// Dispatched when the <see cref="DepictionEngine.ReferenceBase.data"/> changed.
         /// </summary>
@@ -87,9 +84,9 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _loader = null;
-            _loadScope = null;
-            _data = null;
+            _loader = default;
+            _loadScope = default;
+            _data = default;
         }
 
         protected override bool InitializeLastFields()
@@ -104,16 +101,26 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
 
             AddReferenceFromLoader(loadScope);
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
+
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+            {
+                _loaderId = default;
+                _loader = default;
+                _loadScope = default;
+                _loadingState = default;
+                _loadedOrfailedIdLoadScope = default;
+                _loadedOrfailedIndexLoadScope = default;
+            }
 
             InitValue(value => loaderId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(loaderId, loader, initializingContext); }, initializingContext);
             InitValue(value => dataId = value, SerializableGuid.Empty, initializingContext);
@@ -150,7 +157,7 @@ namespace DepictionEngine
 
         private void RemoveLoaderDelegate(LoaderBase loader)
         {
-            if (!Object.ReferenceEquals(loader, null))
+            if (loader is not null)
                 loader.PropertyAssignedEvent -= LoaderPropertyAssignedHandler;
         }
 
@@ -165,15 +172,14 @@ namespace DepictionEngine
             if (name == nameof(LoaderBase.datasource))
                 ForceUpdateLoadScope();
 
-            if (LoaderPropertyAssignedChangedEvent != null)
-                LoaderPropertyAssignedChangedEvent(this, serializable, name, newValue, oldValue);
+            LoaderPropertyAssignedChangedEvent?.Invoke(this, serializable, name, newValue, oldValue);
         }
 
         private void RemoveLoadScopeDelegate(LoadScope loadScope)
         {
-            if (!Object.ReferenceEquals(loadScope, null))
+            if (loadScope is not null)
             {
-                loadScope.DisposingEvent -= LoadScopeDisposingHandler;
+                loadScope.DisposedEvent -= LoadScopeDisposedHandler;
                 loadScope.LoadingStateChangedEvent -= LoadScopeChangedHandler;
                 loadScope.PersistentAddedEvent -= LoadScopeChangedHandler;
             }
@@ -183,15 +189,15 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && loadScope != Disposable.NULL)
             {
-                loadScope.DisposingEvent += LoadScopeDisposingHandler;
+                loadScope.DisposedEvent += LoadScopeDisposedHandler;
                 loadScope.LoadingStateChangedEvent += LoadScopeChangedHandler;
                 loadScope.PersistentAddedEvent += LoadScopeChangedHandler;
             }
         }
 
-        private void LoadScopeDisposingHandler(IDisposable disposable)
+        private void LoadScopeDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
-            SetLoadScope(null);
+            SetLoadScope(null, disposeContext);
         }
 
         private void LoadScopeChangedHandler(LoadScope loadScope)
@@ -201,17 +207,17 @@ namespace DepictionEngine
 
         private void RemoveDataDelegates(ScriptableObjectDisposable data)
         {
-            if (!Object.ReferenceEquals(data, null))
-                data.DisposingEvent -= DataDisposingHandler;
+            if (data is not null)
+                data.DisposedEvent -= DataDisposedHandler;
         }
 
         private void AddDataDelegates(ScriptableObjectDisposable data)
         {
             if (!IsDisposing() && data != Disposable.NULL)
-                data.DisposingEvent += DataDisposingHandler;
+                data.DisposedEvent += DataDisposedHandler;
         }
 
-        private void DataDisposingHandler(IDisposable disposable)
+        private void DataDisposedHandler(IDisposable disposable, DisposeContext disposeContex)
         {
             SetData(null);
         }
@@ -242,13 +248,13 @@ namespace DepictionEngine
         {
             SetValue(nameof(loader), GetComponentFromId<LoaderBase>(loaderId), ref _loader, (newValue, oldValue) =>
             {
-                if (initialized)
+                if (HasChanged(newValue, oldValue, false))
                 {
                     RemoveLoaderDelegate(oldValue);
                     AddLoaderDelegate(newValue);
-                }
 
-                ForceUpdateLoadScope();
+                    ForceUpdateLoadScope();
+                }
             });
         }
 
@@ -263,7 +269,8 @@ namespace DepictionEngine
             {
                 SetValue(nameof(dataId), value, ref _dataId, (newValue, oldValue) =>
                 {
-                    ForceUpdateLoadScope();
+                    if (HasChanged(newValue, oldValue, false))
+                        ForceUpdateLoadScope();
                 });
             }
         }
@@ -279,7 +286,8 @@ namespace DepictionEngine
             {
                 SetValue(nameof(dataIndex2D), value, ref _dataIndex2D, (newValue, oldValue) =>
                 {
-                    ForceUpdateLoadScope();
+                    if (HasChanged(newValue, oldValue, false))
+                        ForceUpdateLoadScope();
                 });
             }
         }
@@ -304,7 +312,7 @@ namespace DepictionEngine
 
             if (loader != Disposable.NULL)
             {
-                bool createLoadScopeIfMissing = !SceneManager.IsSceneBeingDestroyed() && !WasLoaded();
+                bool createLoadScopeIfMissing = !SceneManager.IsSceneBeingDestroyed() && !LoadingWasAttempted();
 
                 IdLoader idLoader = loader as IdLoader;
                 if (idLoader != Disposable.NULL)
@@ -328,16 +336,16 @@ namespace DepictionEngine
             return SetLoadScope(loadScope != Disposable.NULL ? loadScope : null);
         }
 
-        private bool SetLoadScope(LoadScope value)
+        private bool SetLoadScope(LoadScope value, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
             return SetValue(nameof(loadScope), value, ref _loadScope, (newValue, oldValue) => 
             {
-                if (initialized)
+                if (HasChanged(newValue, oldValue, false))
                 {
-                    if (!Object.ReferenceEquals(oldValue, null))
+                    if (oldValue is not null)
                     {
                         RemoveLoadScopeDelegate(oldValue);
-                        RemoveReferenceFromLoader(oldValue);
+                        RemoveReferenceFromLoader(oldValue, disposeContext);
                     }
                     if (newValue != Disposable.NULL)
                     {
@@ -355,16 +363,16 @@ namespace DepictionEngine
                         Index2DLoadScope index2DLoadScope = newValue as Index2DLoadScope;
                         _loadedOrfailedIndexLoadScope = new Grid2DIndex(index2DLoadScope.scopeIndex, index2DLoadScope.scopeDimensions);
                     }
-                }
 
-                UpdateData();
+                    UpdateData();
+                }
             });
         }
 
-        private void RemoveReferenceFromLoader(LoadScope loadScope)
+        private void RemoveReferenceFromLoader(LoadScope loadScope, DisposeContext disposeContext)
         {
             if (loadScope != Disposable.NULL && loadScope.loader != Disposable.NULL)
-                loadScope.loader.RemoveReference(loadScope, this);
+                loadScope.loader.RemoveReference(loadScope, this, disposeContext);
         }
 
         private void AddReferenceFromLoader(LoadScope loadScope)
@@ -402,13 +410,16 @@ namespace DepictionEngine
         {
             return SetValue(nameof(data), value, ref _data, (newValue, oldValue) =>
             {
+                if (HasChanged(newValue, oldValue, false))
+                {
 #if UNITY_EDITOR
-                _lastData = newValue;
+                    _lastData = newValue;
 #endif
-                RemoveDataDelegates(oldValue);
-                AddDataDelegates(newValue);
+                    RemoveDataDelegates(oldValue);
+                    AddDataDelegates(newValue);
 
-                DataChanged(newValue, oldValue);
+                    DataChanged(newValue, oldValue);
+                }
             });
         }
 
@@ -417,7 +428,7 @@ namespace DepictionEngine
             DataChangedEvent?.Invoke(this, newValue, oldValue);
         }
 
-        private bool WasLoaded()
+        private bool LoadingWasAttempted()
         {
             if (loader is IdLoader)
                 return _loadedOrfailedIdLoadScope != SerializableGuid.Empty && dataId == _loadedOrfailedIdLoadScope;
@@ -447,21 +458,12 @@ namespace DepictionEngine
             }
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
-                RemoveReferenceFromLoader(loadScope);
+                RemoveReferenceFromLoader(loadScope, disposeContext);
 
-                return true;
-            }
-            return false;
-        }
-
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
-        {
-            if (base.OnDisposed(disposeContext, pooled))
-            {
                 DataChangedEvent = null;
                 LoaderPropertyAssignedChangedEvent = null;
 

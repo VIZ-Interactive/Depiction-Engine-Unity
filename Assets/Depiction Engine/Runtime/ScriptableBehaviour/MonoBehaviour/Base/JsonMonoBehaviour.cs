@@ -22,7 +22,7 @@ namespace DepictionEngine
             return initializeJSON;
         }
 
-        protected override SerializableGuid GetId(SerializableGuid id, InstanceManager.InitializationContext initializingContext)
+        protected override SerializableGuid GetId(SerializableGuid id, InitializationContext initializingContext)
         {
             if (_initializationJson != null)
             {
@@ -46,14 +46,14 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void  InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void  InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
           
             InitValue(value => enabled = value, true, initializingContext);
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
+        protected override bool Initialize(InitializationContext initializingContext)
         {
             if (base.Initialize(initializingContext))
             {
@@ -65,7 +65,7 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
+        protected override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
 
@@ -113,7 +113,7 @@ namespace DepictionEngine
                     value = true;
 
                 bool oldValue = enabled;
-                if (HasChanged(value, oldValue))
+                if (HasChanged(value, oldValue, false))
                 {
                     _lastEnabled = (this as MonoBehaviour).enabled = value;
                     PropertyAssigned(this, nameof(enabled), value, oldValue);

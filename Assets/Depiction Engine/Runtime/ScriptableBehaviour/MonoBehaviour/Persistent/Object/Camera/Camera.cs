@@ -1,6 +1,5 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
-using DepictionEngine.Editor;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -69,7 +68,7 @@ namespace DepictionEngine
 
         private List<Stack> _stacks;
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -107,30 +106,20 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void CreateComponents(InstanceManager.InitializationContext initializingContext)
+        protected override void CreateComponents(InitializationContext initializingContext)
         {
             base.CreateComponents(initializingContext);
 
-            if (!isFallbackValues)
-            {
-                if (skybox == null)
-                    skybox = GetComponent<Skybox>();
-            }
+            UpdateSkybox();
 
             InitializeCamera(initializingContext);
 
             InitializeStack(initializingContext);
         }
 
-        protected virtual void InitializeCamera(InstanceManager.InitializationContext initializingContext)
+        protected virtual void InitializeCamera(InitializationContext initializingContext)
         {
-            if (!isFallbackValues)
-            {
-                if (unityCamera == null)
-                    unityCamera = GetComponent<UnityEngine.Camera>();
-            }
-
-            if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Programmatically)
+            if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Programmatically)
                 RemoveIgnoreRenderFromUnityCameraCullingMask(unityCamera);
 
             InitializeAdditionalData();
@@ -148,14 +137,16 @@ namespace DepictionEngine
             }
         }
 
-        protected virtual bool InitializeStack(InstanceManager.InitializationContext initializingContext)
+        protected virtual bool InitializeStack(InitializationContext initializingContext)
         {
             string stackName = "Stack";
             if (gameObject.transform.Find(stackName) == null)
             {
                 GameObject stackGO = new(stackName);
-                UndoManager.RegisterCreatedObjectUndo(stackGO, initializingContext);
-                UndoManager.SetTransformParent(stackGO.transform, gameObject.transform, false, initializingContext);
+#if UNITY_EDITOR
+                Editor.UndoManager.RegisterCreatedObjectUndo(stackGO, initializingContext);
+                Editor.UndoManager.SetTransformParent(stackGO.transform, gameObject.transform, false, initializingContext);
+#endif
 
                 Stack stack = stackGO.AddSafeComponent<Stack>(initializingContext);
                 stack.main = true;
@@ -172,14 +163,17 @@ namespace DepictionEngine
                 for (int i = distancePass - 1; i >= 0; i--)
                 {
                     GameObject cameraGO = new("DistancePass_" + (i + 1));
-                    UndoManager.RegisterCreatedObjectUndo(cameraGO, initializingContext);
-                    UndoManager.SetTransformParent(cameraGO.transform, stackGO.transform, false, initializingContext);
-
+#if UNITY_EDITOR
+                    Editor.UndoManager.RegisterCreatedObjectUndo(cameraGO, initializingContext);
+                    Editor.UndoManager.SetTransformParent(cameraGO.transform, stackGO.transform, false, initializingContext);
+#endif
                     UnityEngine.Camera unityCamera = cameraGO.AddSafeComponent<UnityEngine.Camera>(initializingContext);
                     RemoveIgnoreRenderFromUnityCameraCullingMask(unityCamera);
 
                     UniversalAdditionalCameraData distancePassCameraUniversalAdditionalCameraData = unityCamera.GetUniversalAdditionalCameraData();
-                    UndoManager.RegisterCreatedObjectUndo(distancePassCameraUniversalAdditionalCameraData, initializingContext);
+#if UNITY_EDITOR
+                    Editor.UndoManager.RegisterCreatedObjectUndo(distancePassCameraUniversalAdditionalCameraData, initializingContext);
+#endif
                     if (distancePassCameraUniversalAdditionalCameraData != null)
                     {
                         distancePassCameraUniversalAdditionalCameraData.renderType = CameraRenderType.Overlay;
@@ -197,7 +191,8 @@ namespace DepictionEngine
 
         protected void RemoveIgnoreRenderFromUnityCameraCullingMask(UnityEngine.Camera unityCamera)
         {
-            unityCamera.cullingMask &= ~(1 << LayerUtility.GetLayer(CameraManager.IGNORE_RENDER_LAYER_NAME));
+            if (unityCamera != null)
+                unityCamera.cullingMask &= ~(1 << LayerUtility.GetLayer(CameraManager.IGNORE_RENDER_LAYER_NAME));
         }
 
         private List<Stack> _stacksTmp;
@@ -288,13 +283,11 @@ namespace DepictionEngine
 
         public virtual UnityEngine.Camera unityCamera
         {
-            get { return _unityCamera; }
-            protected set
-            {
-                if (_unityCamera == value)
-                    return;
-
-                _unityCamera = value;
+            get 
+            { 
+                if (_unityCamera == null)
+                    _unityCamera = GetComponent<UnityEngine.Camera>();
+                return _unityCamera; 
             }
         }
 
@@ -323,15 +316,11 @@ namespace DepictionEngine
 
         public Skybox skybox
         {
-            get { return _skybox; }
-            private set
-            {
-                if (_skybox == value)
-                    return;
-
-                _skybox = value;
-
-                UpdateSkybox();
+            get 
+            { 
+                if (_skybox == null)
+                    _skybox = GetComponent<Skybox>();
+                return _skybox; 
             }
         }
 
@@ -921,20 +910,29 @@ namespace DepictionEngine
                             else
                                 callback(stackedUnityCamera, 0, null);
                         }
-                }
+                    }
                 }
             }
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 DisposeManager.Dispose(_environmentCubemap);
+
+                if (_stacks != null)
+                {
+                    foreach (Stack stack in _stacks)
+                    {
+                        if (stack != null)
+                            Dispose(stack.gameObject, disposeContext);
+                    }
+                }
 
                 return true;
             }
             return false;
-        } 
+        }
     }
 }

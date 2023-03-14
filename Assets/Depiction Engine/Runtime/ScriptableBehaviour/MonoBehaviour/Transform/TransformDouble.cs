@@ -56,6 +56,20 @@ namespace DepictionEngine
         }
 #endif
 
+        public override void Recycle()
+        {
+            base.Recycle();
+
+            RemoveOriginShiftDirty(GetInstanceID());
+
+            _worldToLocalMatrix = default;
+            _localToWorldMatrix = default;
+
+            localPositionParam.Recycle();
+            localRotationParam.Recycle();
+            localScaleParam.Recycle();
+        }
+
         protected override bool InitializeLastFields()
         {
             if (base.InitializeLastFields())
@@ -71,7 +85,7 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -81,12 +95,12 @@ namespace DepictionEngine
             QuaternionDouble localRotation = this.localRotation;
             Vector3Double localScale = this.localScale;
 
-            if (initializingContext == InstanceManager.InitializationContext.Reset || initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Programmatically)
+            if (initializingContext == InitializationContext.Reset || initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Programmatically)
             {
                 localPosition = transformLocalPosition;
 
 #if UNITY_EDITOR
-                if (renderingManager.wasFirstUpdated && renderingManager.originShifting && (initializingContext == InstanceManager.InitializationContext.Reset || initializingContext == InstanceManager.InitializationContext.Editor) && transformLocalPosition != Vector3.zero)
+                if (renderingManager.wasFirstUpdated && renderingManager.originShifting && (initializingContext == InitializationContext.Reset || initializingContext == InitializationContext.Editor) && transformLocalPosition != Vector3.zero)
                 {
                     Editor.SceneCamera sceneCamera = Editor.SceneViewDouble.lastActiveSceneViewDouble != Disposable.NULL ? Editor.SceneViewDouble.lastActiveSceneViewDouble.camera : null;
                     localPosition += sceneCamera.GetOrigin();
@@ -96,7 +110,7 @@ namespace DepictionEngine
                 localRotation = transformLocalRotation;
                 localScale = transformLocalScale;
             }
-            else if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            else if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
             {
                 if (parent != newParent)
                 {
@@ -1137,20 +1151,11 @@ namespace DepictionEngine
             return value;
         }
 
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (base.OnDispose(disposeContext))
             {
-                RemoveOriginShiftDirty(GetInstanceID());
-
                 ObjectCallback = null;
-
-                _worldToLocalMatrix = Matrix4x4Double.identity;
-                _localToWorldMatrix = Matrix4x4Double.identity;
-
-                localPositionParam.OnDisposed();
-                localRotationParam.OnDisposed();
-                localScaleParam.OnDisposed();
 
                 return true;
             }
@@ -1257,9 +1262,9 @@ namespace DepictionEngine
             get { return _geoCoordinateValue; }
         }
 
-        public override void OnDisposed()
+        public override void Recycle()
         {
-            base.OnDisposed();
+            base.Recycle();
 
             _vector3DoubleValue = Vector3Double.zero;
             _geoCoordinateValue = GeoCoordinate3Double.zero;
@@ -1291,9 +1296,9 @@ namespace DepictionEngine
             get { return _value; }
         }
 
-        public override void OnDisposed()
+        public override void Recycle()
         {
-            base.OnDisposed();
+            base.Recycle();
 
             _value = QuaternionDouble.identity;
         }
@@ -1324,9 +1329,9 @@ namespace DepictionEngine
             get { return _value; }
         }
 
-        public override void OnDisposed()
+        public override void Recycle()
         {
-            base.OnDisposed();
+            base.Recycle();
 
             _value = Vector3Double.one;
         }

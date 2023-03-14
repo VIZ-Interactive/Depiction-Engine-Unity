@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using System.Reflection;
 using System.Linq;
+using System.Collections;
 
 namespace DepictionEngine
 {
@@ -44,8 +45,8 @@ namespace DepictionEngine
 
             ResetId();
 
-            _lateInitialized = false;
-            _wasFirstUpdated = false;
+            _lateInitialized = default;
+            _wasFirstUpdated = default;
 
             ClearDirtyFlags();
         }
@@ -66,47 +67,36 @@ namespace DepictionEngine
             _initializationPropertyModifiers = InstanceManager.initializePropertyModifiers;
         }
 
-        protected override void InitializeUID(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeUID(InitializationContext initializingContext)
         {
             base.InitializeUID(initializingContext);
 
             id = GetId(id, initializingContext);
         }
 
-        protected virtual SerializableGuid GetId(SerializableGuid id, InstanceManager.InitializationContext initializingContext)
+        protected virtual SerializableGuid GetId(SerializableGuid id, InitializationContext initializingContext)
         {
-            if (id == SerializableGuid.Empty || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate)
+            if (id == SerializableGuid.Empty || initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
                 return SerializableGuid.NewGuid();
             else
                 return id;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
-        {
-            base.InitializeFields(initializingContext);
-
-            InitializeLastFields();
-
-            UpdateActiveAndEnabled();
-        }
-
-        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
+        protected override bool Initialize(InitializationContext initializingContext)
         {
             if (base.Initialize(initializingContext))
             {
-                if (!UpdateRelations(
-                    () => 
-                    {
-                        InitializeTransform(initializingContext);
-                    },
-                    () => 
-                    {
-                        CreateComponents(initializingContext);
+                if (!isFallbackValues)
+                {
+                    if (!UpdateRelations(() => { CreateComponents(initializingContext); }))
+                        return false;
 
-                        InitializeScripts(initializingContext);
+                    InitializeFields(initializingContext);
+                }
+                else
+                    CreateComponents(initializingContext);
 
-                    }))
-                    return false;
+                InitializeSerializedFields(initializingContext);
 
                 if (_initializationPropertyModifiers != null)
                 {
@@ -120,22 +110,32 @@ namespace DepictionEngine
             return false;
         }
 
-        protected virtual void InitializeTransform(InstanceManager.InitializationContext initializingContext)
+        protected virtual void CreateComponents(InitializationContext initializingContext)
         {
 
         }
 
-        protected virtual void CreateComponents(InstanceManager.InitializationContext initializingContext)
+        protected virtual void InitializeFields(InitializationContext initializingContext)
+        {
+#if UNITY_EDITOR
+            RenderingManager.UpdateIcon(this);
+#endif
+
+            InitializeLastFields();
+
+            UpdateActiveAndEnabled();
+        }
+
+        /// <summary>
+        /// Initialize SerializedField's to their default values.
+        /// </summary>
+        /// <param name="initializingContext"></param>
+        protected virtual void InitializeSerializedFields(InitializationContext initializingContext)
         {
 
         }
 
-        protected virtual void InitializeScripts(InstanceManager.InitializationContext initializingContext)
-        {
-
-        }
-
-        protected override void Initialized(InstanceManager.InitializationContext initializingContext)
+        protected override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
 
@@ -162,10 +162,8 @@ namespace DepictionEngine
         {
         }
 
-        protected virtual bool UpdateRelations(Action beforeParentInitializeCallback = null, Action beforeSiblingsInitializeCallback = null)
+        protected virtual bool UpdateRelations(Action beforeSiblingsInitializeCallback = null)
         {
-            beforeParentInitializeCallback?.Invoke();
-
             if (ParentHasChanged())
                 UpdateParent();
 
@@ -246,7 +244,7 @@ namespace DepictionEngine
 
             Type parentType = GetParentType();
             if (parentType != null)
-                parent = InitializeComponent(transform.GetComponentInParent(parentType, true), null, isFallbackValues);
+                parent = InitializeComponent(GetComponentInParent(parentType, true), null, isFallbackValues);
 
             return parent;
         }
@@ -286,20 +284,20 @@ namespace DepictionEngine
             Type childType = GetChildType();
             if (childType != null)
             {
-                List<Component> children = null;
+                List<PropertyMonoBehaviour> children = null;
 
                 if (transform != null)
                 {
                     foreach (Transform childTransform in transform)
                     {
-                        children ??= new List<Component>();
-                        children.AddRange(childTransform.GetComponents(childType));
+                        children ??= new List<PropertyMonoBehaviour>();
+                        children.AddRange(childTransform.GetComponents(childType).Cast<PropertyMonoBehaviour>());
                     }
                 }
 
                 if (children != null)
                 {
-                    foreach (PropertyMonoBehaviour child in children.Cast<PropertyMonoBehaviour>())
+                    foreach (PropertyMonoBehaviour child in children)
                     {
                         if (child != Disposable.NULL)
                         {
@@ -316,7 +314,7 @@ namespace DepictionEngine
             if (component is PropertyMonoBehaviour)
             {
                 PropertyMonoBehaviour propertyMonoBehaviour = component as PropertyMonoBehaviour;
-                InstanceManager.Initialize(propertyMonoBehaviour, GetInitializeContext(InstanceManager.InitializationContext.Editor), json, null, isFallbackValues);
+                InstanceManager.Initialize(propertyMonoBehaviour, GetInitializeContext(), json, null, isFallbackValues);
                 return propertyMonoBehaviour;
             }
 
@@ -369,7 +367,7 @@ namespace DepictionEngine
             return component;
         }
 
-        protected List<SerializableGuid> GetDuplicateComponentReferenceId<T>(List<SerializableGuid> ids, List<T> componentReferences, InstanceManager.InitializationContext initializingContext) where T : PropertyMonoBehaviour
+        protected List<SerializableGuid> GetDuplicateComponentReferenceId<T>(List<SerializableGuid> ids, List<T> componentReferences, InitializationContext initializingContext) where T : PropertyMonoBehaviour
         {
             if (componentReferences != null)
             {
@@ -385,7 +383,7 @@ namespace DepictionEngine
             return ids;
         }
 
-        protected SerializableGuid GetDuplicateComponentReferenceId<T>(SerializableGuid id, T componentReference, InstanceManager.InitializationContext initializingContext) where T: PropertyMonoBehaviour
+        protected SerializableGuid GetDuplicateComponentReferenceId<T>(SerializableGuid id, T componentReference, InitializationContext initializingContext) where T: PropertyMonoBehaviour
         {
             if (componentReference != Disposable.NULL)
             {
@@ -398,18 +396,53 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override bool SetValue<T>(string name, T value, ref T valueField, Action<T, T> assignedCallback = null)
+        protected virtual bool SetValue<T>(string name, T value, ref T valueField, Action<T, T> assignedCallback = null)
         {
             T oldValue = valueField;
 
-            if (base.SetValue(name, value, ref valueField, assignedCallback))
+            if (HasChanged(value, oldValue))
             {
+                valueField = value;
+
+                assignedCallback?.Invoke(value, oldValue);
+
                 PropertyAssigned(this, name, value, oldValue);
 
                 return true;
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Are the two objects equals?
+        /// </summary>
+        /// <param name="newValue"></param>
+        /// <param name="oldValue"></param>
+        /// <param name="forceChangeDuringInitializing">When true, the function will always return true if the object is not initialized.</param>
+        /// <returns>True of the objects are the same.</returns>
+        /// <remarks>List's will compare their items not the collection reference.</remarks>
+        protected bool HasChanged(object newValue, object oldValue, bool forceChangeDuringInitializing = true)
+        {
+            if (!isFallbackValues && forceChangeDuringInitializing && !initialized)
+                return true;
+
+            if (newValue is IList && oldValue is IList && newValue.GetType() == oldValue.GetType())
+            {
+                IList newList = newValue as IList;
+                IList oldList = oldValue as IList;
+
+                if (newList.Count == oldList.Count)
+                {
+                    for (int i = 0; i < newList.Count; i++)
+                    {
+                        if (!Object.Equals(newList[i], oldList[i]))
+                            return true;
+                    }
+                }
+            }
+
+            return !Object.Equals(newValue, oldValue);
         }
 
         /// <summary>
@@ -434,8 +467,8 @@ namespace DepictionEngine
                     UserPropertyAssigned(iJson, name, jsonAttribute, propertyInfo);
             }
 
-            if (initialized && PropertyAssignedEvent != null)
-                PropertyAssignedEvent(property, name, newValue, oldValue);
+            if (initialized)
+                PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -511,7 +544,7 @@ namespace DepictionEngine
 
         public void ResetId()
         {
-            _id = SerializableGuid.Empty;
+            _id = default;
         }
 
         /// <summary>
@@ -556,7 +589,7 @@ namespace DepictionEngine
         public bool activeAndEnabled
         {
             get { return _activeAndEnabled; }
-            set 
+            private set 
             { 
                 SetValue(nameof(activeAndEnabled), value, ref _activeAndEnabled, (newValue, oldValue) => 
                 {
@@ -940,9 +973,35 @@ namespace DepictionEngine
             }
         }
 
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
+#if UNITY_EDITOR
+        public void Reset()
         {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (unityInitialized)
+            {
+                if (ResetAllowed())
+                    SceneManager.Reseting(this);
+
+                Editor.UndoManager.RevertAllInCurrentGroup();
+            }
+        }
+
+        protected virtual bool ResetAllowed()
+        {
+            return true;
+        }
+
+        public void InspectorReset()
+        {
+            IsUserChange(() =>
+            {
+                InitializeSerializedFields(InitializationContext.Reset);
+            });
+        }
+#endif
+
+        public override bool OnDispose(DisposeContext disposeContext)
+        {
+            if (base.OnDispose(disposeContext))
             {
                 if (instanceAdded && AddInstanceToManager())
                 {

@@ -68,15 +68,15 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            transformLocalPosition = Vector3.zero;
-            transformLocalRotation = Quaternion.identity;
+            transformLocalPosition = default;
+            transformLocalRotation = default;
             transformLocalScale = Vector3.one;
 
             ResetComponentDirtyFlag(true, true, true, true, true);
 
-            _parentGeoAstroObject = null;
+            _parentGeoAstroObject = default;
 
-            _objectBase = null;
+            _objectBase = default;
         }
 
         protected override bool InitializeLastFields()
@@ -117,7 +117,7 @@ namespace DepictionEngine
                 _lastTransformLocalScale = transformLocalScale;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
 
@@ -130,11 +130,11 @@ namespace DepictionEngine
             SetComponentDirtyFlag(true, true, true);
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
-            if (initializingContext == InstanceManager.InitializationContext.Reset)
+            if (initializingContext == InitializationContext.Reset)
             {
                 transformLocalPosition = Vector3.zero;
                 transformLocalRotation = Quaternion.identity;
@@ -181,14 +181,20 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        private List<UnityEngine.Component> _componentsList;
         public void InitializeToTopInInspector()
         {
-            bool objectIsSceneCamera = _objectBase != Disposable.NULL && _objectBase is Editor.SceneCamera;
-            if (!objectIsSceneCamera)
+            bool isEditorObject = false;
+
+            if (_objectBase != Disposable.NULL)
+                isEditorObject = SceneManager.IsEditorNamespace(_objectBase.GetType());
+            
+            if (!isEditorObject)
             {
-                UnityEngine.Component[] components = gameObject.GetComponents<UnityEngine.Component>();
-                if (components[1] != this)
-                    Editor.ComponentUtility.MoveComponentRelativeToComponent(this, components[0], false);
+                _componentsList ??= new List<UnityEngine.Component>();
+                GetComponents(_componentsList);
+                if (_componentsList[1] != this)
+                    Editor.ComponentUtility.MoveComponentRelativeToComponent(this, _componentsList[0], false);
             }
         }
 #endif
@@ -833,19 +839,6 @@ namespace DepictionEngine
             UpdateParentObject();
         }
 
-#if UNITY_EDITOR
-        public override bool PreHierarchicalUpdate()
-        {
-            if (base.PreHierarchicalUpdate())
-            {
-                UpdateTransformHideFlags();
-
-                return true;
-            }
-            return false;
-        }
-#endif
-
         protected Vector3 CaptureLocalPositionDelta()
         {
             return transformLocalPosition - _lastTransformLocalPosition;
@@ -917,10 +910,17 @@ namespace DepictionEngine
 
         public void UpdateTransformHideFlags()
         {
+            bool isEditorObject = false;
 #if UNITY_EDITOR
-            if (!DisposeManager.IsNullOrDisposing(this))
-                transform.hideFlags |= HideFlags.HideInInspector;
+            if (_objectBase != Disposable.NULL)
+                isEditorObject = SceneManager.IsEditorNamespace(_objectBase.GetType());
 #endif
+            if (!isEditorObject && transform is not null)
+            {
+                transform.hideFlags &= ~HideFlags.HideInInspector;
+                if (!DisposeManager.IsNullOrDisposing(this))
+                    transform.hideFlags |= HideFlags.HideInInspector;
+            }
         }
 
         public override void HierarchicalApplyOriginShifting(Vector3Double origin, bool originShiftSelected)
@@ -1081,6 +1081,17 @@ namespace DepictionEngine
             });
         }
 
+        public void IterateOverChildrenGameObject(GameObject gameObject, Action<GameObject> callback, bool recursive = false)
+        {
+            for (int i = 0; i < gameObject.transform.childCount; i++)
+            {
+                GameObject child = gameObject.transform.GetChild(i).gameObject;
+                callback(child);
+                if (recursive)
+                    IterateOverChildrenGameObject(child, callback, recursive);
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void HierarchicalActivate()
         {
@@ -1092,10 +1103,17 @@ namespace DepictionEngine
             UninhibitEnableDisableAll();
         }
 
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (base.OnDispose(disposeContext))
             {
+                try
+                {
+                    UpdateTransformHideFlags();
+                }
+                catch (MissingReferenceException)
+                {}
+
                 ChildAddedEvent = null;
                 ChildRemovedEvent = null;
                 ChildPropertyAssignedEvent = null;
@@ -1106,33 +1124,33 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override DisposeManager.DisposeContext GetDestroyingContext()
+        protected override DisposeContext GetDisposingContext()
         {
-            DisposeManager.DisposeContext overrideDestroyingContext = base.GetDestroyingContext();
+            DisposeContext overrideDestroyingContext = base.GetDisposingContext();
 
 #if UNITY_EDITOR
             if (_objectBase != Disposable.NULL && _objectBase is Editor.SceneCamera)
-                overrideDestroyingContext = DisposeManager.DisposeContext.Programmatically;
+                overrideDestroyingContext = DisposeContext.Programmatically_Destroy;
 #endif
 
             return overrideDestroyingContext;
         }
 
-        public T GetSafeComponent<T>(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponent<T>(initializingContext); }
+        public T GetSafeComponent<T>(InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponent<T>(initializingContext); }
 
-        public UnityEngine.Component GetSafeComponent(Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) { return transform.GetSafeComponent(type, initializingContext); }
+        public UnityEngine.Component GetSafeComponent(Type type, InitializationContext initializingContext = InitializationContext.Programmatically) { return transform.GetSafeComponent(type, initializingContext); }
 
-        public T GetSafeComponentInParent<T>(bool includeInactive, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponentInParent<T>(includeInactive, initializingContext); }
+        public T GetSafeComponentInParent<T>(bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponentInParent<T>(includeInactive, initializingContext); }
 
-        public UnityEngine.Component GetSafeComponentInParent(Type type, bool includeInactive, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) { return transform.GetSafeComponentInParent(type, includeInactive, initializingContext); }
+        public UnityEngine.Component GetSafeComponentInParent(Type type, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically) { return transform.GetSafeComponentInParent(type, includeInactive, initializingContext); }
 
-        public List<T> GetSafeComponents<T>(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponents<T>(initializingContext); }
+        public List<T> GetSafeComponents<T>(InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponents<T>(initializingContext); }
 
-        public List<UnityEngine.Component> GetSafeComponents(Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) { return transform.GetSafeComponents(type, initializingContext); }
+        public List<UnityEngine.Component> GetSafeComponents(Type type, InitializationContext initializingContext = InitializationContext.Programmatically) { return transform.GetSafeComponents(type, initializingContext); }
 
-        public List<T> GetSafeComponentsInChildren<T>(bool includeSibling = false, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponentsInChildren<T>(includeSibling, initializingContext); }
+        public List<T> GetSafeComponentsInChildren<T>(bool includeSibling = false, InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponentsInChildren<T>(includeSibling, initializingContext); }
 
-        public List<UnityEngine.Component> GetSafeComponentsInChildren(Type type, bool includeSibling = false, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically) { return transform.GetSafeComponentsInChildren(type, includeSibling, initializingContext); }
+        public List<UnityEngine.Component> GetSafeComponentsInChildren(Type type, bool includeSibling = false, InitializationContext initializingContext = InitializationContext.Programmatically) { return transform.GetSafeComponentsInChildren(type, includeSibling, initializingContext); }
     }
 
     [Serializable]
@@ -1186,7 +1204,7 @@ namespace DepictionEngine
             _changed = false;
         }
 
-        public virtual void OnDisposed()
+        public virtual void Recycle()
         {
             ResetChanged();
         }

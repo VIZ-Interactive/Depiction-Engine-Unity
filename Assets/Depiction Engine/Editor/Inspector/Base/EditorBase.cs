@@ -360,7 +360,10 @@ namespace DepictionEngine.Editor
 
         protected void SetPropertyValue(IScriptableBehaviour targetObject, PropertyInfo propertyInfo, object value)
         {
-            SceneManager.QueuePropertyValueChange(targetObject, propertyInfo, value);
+            if (targetObject.isFallbackValues)
+                SceneManager.SetInspectorPropertyValue(targetObject, propertyInfo, value);
+            else
+                SceneManager.QueuePropertyValueChange(targetObject, propertyInfo, value);
         }
 
         private static string GetName(string name)

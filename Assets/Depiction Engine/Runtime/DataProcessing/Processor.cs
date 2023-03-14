@@ -175,8 +175,7 @@ namespace DepictionEngine
 
         private Coroutine StartCoroutine(IEnumerator routine)
         {
-            if (Object.ReferenceEquals(_monoBehaviour, null))
-                _monoBehaviour = SceneManager.Instance();
+            _monoBehaviour = _monoBehaviour != null ? _monoBehaviour : SceneManager.Instance();
             return _monoBehaviour.StartCoroutine(routine);
         }
 
@@ -184,8 +183,7 @@ namespace DepictionEngine
         {
             data = dataType != null ? GetDataInstance(dataType) : null;
             parameters = GetParametersInstance(parametersType);
-            if (parametersCallback != null)
-                parametersCallback(parameters);
+            parametersCallback?.Invoke(parameters);
 
             _processingState = ProcessingState.Processing;
 
@@ -194,7 +192,7 @@ namespace DepictionEngine
 
         private string GetErrorMsg(Exception e)
         {
-            if (!(e is OperationCanceledException))
+            if (e is not OperationCanceledException)
                 return e + ", " + e.Message + ": " + e.StackTrace;
             return null;
         }
@@ -224,8 +222,7 @@ namespace DepictionEngine
             {
                 _processingState = ProcessingState.Completed;
 
-                if (processingCompleted != null)
-                    processingCompleted(data, errorMsg);
+                processingCompleted?.Invoke(data, errorMsg);
             }
 
             DisposeManager.Dispose(parameters);

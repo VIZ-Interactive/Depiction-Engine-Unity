@@ -12,14 +12,17 @@ namespace DepictionEngine
             {
                 Object objectBase = persistent as Object;
 
-                objectBase.ChildRemovedEvent -= ObjectChildRemovedHandler;
-                objectBase.ChildAddedEvent -= ObjectChildAddedHandler;
-                objectBase.ChildObjectPropertyAssignedEvent -= ObjectChildPropertyAssignedHandler;
-                objectBase.ScriptRemovedEvent -= ObjectScriptRemovedHandler;
-                objectBase.ScriptAddedEvent -= ObjectScriptAddedHandler;
-                objectBase.ComponentPropertyAssignedEvent -= ObjectComponentPropertyAssignedHandler;
-         
-                return true;
+                if (objectBase is not null)
+                {
+                    objectBase.ChildRemovedEvent -= ObjectChildRemovedHandler;
+                    objectBase.ChildAddedEvent -= ObjectChildAddedHandler;
+                    objectBase.ChildObjectPropertyAssignedEvent -= ObjectChildPropertyAssignedHandler;
+                    objectBase.ScriptRemovedEvent -= ObjectScriptRemovedHandler;
+                    objectBase.ScriptAddedEvent -= ObjectScriptAddedHandler;
+                    objectBase.ComponentPropertyAssignedEvent -= ObjectComponentPropertyAssignedHandler;
+
+                    return true;
+                }
             }
             return false;
         }
@@ -30,12 +33,17 @@ namespace DepictionEngine
             {
                 Object objectBase = persistent as Object;
 
-                objectBase.ChildRemovedEvent += ObjectChildRemovedHandler;
-                objectBase.ChildAddedEvent += ObjectChildAddedHandler;
-                objectBase.ChildObjectPropertyAssignedEvent += ObjectChildPropertyAssignedHandler;
-                objectBase.ComponentPropertyAssignedEvent += ObjectComponentPropertyAssignedHandler;
-                
-                return true;
+                if (!Disposable.IsDisposed(objectBase))
+                {
+                    objectBase.ChildRemovedEvent += ObjectChildRemovedHandler;
+                    objectBase.ChildAddedEvent += ObjectChildAddedHandler;
+                    objectBase.ChildObjectPropertyAssignedEvent += ObjectChildPropertyAssignedHandler;
+                    objectBase.ScriptRemovedEvent += ObjectScriptRemovedHandler;
+                    objectBase.ScriptAddedEvent += ObjectScriptAddedHandler;
+                    objectBase.ComponentPropertyAssignedEvent += ObjectComponentPropertyAssignedHandler;
+
+                    return true;
+                }
             }
             return false;
         }

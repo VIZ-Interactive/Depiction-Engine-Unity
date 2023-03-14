@@ -66,15 +66,11 @@ namespace DepictionEngine
         [ConditionalShow(nameof(GetShowLoadDelay))]
 #endif
         private float _autoUpdateDelay;
-        [SerializeField, Tooltip("The interval (in seconds) at which we call the "+nameof(ReloadAll)+ " function. Automatically calling "+nameof(ReloadAll)+" can be useful to keep objects in synch with a datasource. Set to zero to deactivate."), EndFoldout]
-        private float _autoReloadInterval;
 
         [BeginFoldout("Load Scope")]
 #if UNITY_EDITOR
         [SerializeField, Button(nameof(LoadAllBtn)), ConditionalShow(nameof(IsNotFallbackValues)), Tooltip("Create missing "+nameof(LoadScope)+ "(s) and dispose those that are no longer required."), BeginHorizontalGroup(true)]
         private bool _loadAll;
-        [SerializeField, Button(nameof(ReloadAllBtn)), ConditionalShow(nameof(IsNotFallbackValues)), Tooltip("Create missing "+nameof(LoadScope)+ "(s), reload existing ones and dispose those that are no longer required.")]
-        private bool _reloadAll;
         [SerializeField, Button(nameof(DisposeAllBtn)), ConditionalShow(nameof(IsNotFallbackValues)), Tooltip("Dispose all the "+nameof(LoadScope)+ "(s)."), EndHorizontalGroup]
         private bool _disposeAll;
 #endif
@@ -94,7 +90,10 @@ namespace DepictionEngine
 #endif
         private int _loadedCount;
 
-        [SerializeField, HideInInspector]
+        [SerializeField]
+#if UNITY_EDITOR
+        [ConditionalShow(nameof(GetDebug))]
+#endif
         private SerializableIPersistentList _persistents;
 
         [SerializeField, HideInInspector]
@@ -103,12 +102,16 @@ namespace DepictionEngine
         private bool _autoUpdate;
         private Tween _waitBetweenLoadTimer;
         private Tween _loadDelayTimer;
-        private Tween _autoReloadIntervalTimer;
 
         /// <summary>
         /// Dispatched when a <see cref="DepictionEngine.LoadScope"/> is Disposing.
         /// </summary>
-        public Action<LoadScope> LoadScopeDisposingEvent;
+        public Action<LoadScope, DisposeContext> LoadScopeDisposingEvent;
+
+        /// <summary>
+        /// Dispatched when a <see cref="DepictionEngine.LoadScope"/> LoadingState changes.
+        /// </summary>
+        public Action<LoadScope> LoadScopeLoadingStateChangedEvent;
 
 #if UNITY_EDITOR
         protected virtual bool GetShowWaitBetweenLoad()
@@ -136,14 +139,9 @@ namespace DepictionEngine
             LoadAll();
         }
 
-        private void ReloadAllBtn()
-        {
-            ReloadAll();
-        }
-
         private void DisposeAllBtn()
         {
-            DisposeLoadScopes();
+            DisposeAllLoadScopes();
         }
 
         protected override bool GetEnableSeed()
@@ -164,51 +162,42 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            if (_persistents != null)
-                _persistents.Clear();
+            _persistents?.Clear();
 
-            _datasource = null;
-
-            ClearLoadScopes();
+            _datasource = default;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
 
             KillTimers();
-            StartAutoReloadIntervalTimer();
 
             UpdateLoadTriggers();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
-            bool clearLoadScopes = initializingContext == InstanceManager.InitializationContext.Editor_Duplicate || initializingContext == InstanceManager.InitializationContext.Programmatically_Duplicate;
-
-            //Problem: When undoing a "Add Component"(Loader) action done in the inspector and redoing it, some null loadScopes can be found in the LoadScope Dictionary for some reason
-            //Fix: If this initialization is the result of an Undo/Redo operation, we look for null LoadScope in the Dictionary and Clear it all if we find some
-            if (!clearLoadScopes && initializingContext == InstanceManager.InitializationContext.Existing)
+            if (initializingContext == InitializationContext.Existing)
             {
-                if (DetectNullLoadScope())
+                //Problem: When undoing a "AddComponent"(Loader) action done in the inspector and redoing it, some null loadScopes can be found in the LoadScope Dictionary
+                //Fix: If this initialization is the result of an Undo/Redo operation, we look for null LoadScope in the Dictionary and Clear it all if we find some
+                IterateOverLoadScopes((loadScope) =>
                 {
-                    clearLoadScopes = true;
-                    Debug.LogError("Detected null LoadScopes in:" + this);
-                }
+                    if (loadScope == Disposable.NULL)
+                        RemoveLoadScope(loadScope);
+                    return true;
+                });
+
+                IterateOverPersistents((i, persistent) =>
+                {
+                    if (Disposable.IsDisposed(persistents))
+                        persistents.RemoveAt(i);
+                    return true;
+                });
             }
-
-            if (clearLoadScopes)
-                ClearLoadScopes();
-
-            IterateOverPersistents((persistent) =>
-            {
-                if (Disposable.IsDisposed(persistent))
-                    RemovePersistent(persistent);
-
-                return true;
-            });
 
             InitValue(value => datasourceId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(datasourceId, datasource, initializingContext); }, initializingContext);
             InitValue(value => loadEndpoint = value, "", initializingContext);
@@ -220,17 +209,10 @@ namespace DepictionEngine
             InitValue(value => autoUpdateWhenDisabled = value, GetDefaultAutoLoadWhenDisabled(), initializingContext);
             InitValue(value => autoUpdateInterval = value, GetDefaultWaitBetweenLoad(), initializingContext);
             InitValue(value => autoUpdateDelay = value, GetDefaultLoadDelay(), initializingContext);
-            InitValue(value => autoReloadInterval = value, GetDefaultAutoReloadInterval(), initializingContext);
         }
 
         protected virtual void ClearLoadScopes()
         {
-
-        }
-
-        protected virtual bool DetectNullLoadScope()
-        {
-            return false;
         }
 
         public override bool LateInitialize()
@@ -279,7 +261,7 @@ namespace DepictionEngine
         {
             if (base.UpdateAllDelegates())
             {
-                IterateOverPersistents((persistent) =>
+                IterateOverPersistents((i, persistent) =>
                 {
                     RemovePersistentDelegates(persistent);
                     AddPersistentDelegates(persistent);
@@ -312,17 +294,31 @@ namespace DepictionEngine
                 persistent.DisposedEvent += PersistentDisposedHandler;
         }
 
-        private void PersistentDisposedHandler(IDisposable disposable)
+        private void PersistentDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
-            RemovePersistent(disposable as IPersistent);
+            IPersistent persistent = disposable as IPersistent;
+            if (RemovePersistent(persistent, disposeContext) && GetLoadScope(out LoadScope loadScope, persistent))
+            {
+#if UNITY_EDITOR
+                if (disposeContext == DisposeContext.Editor_Destroy)
+                    Editor.UndoManager.RecordObject(loadScope);
+#endif
+
+                loadScope.RemovePersistent(persistent, disposeContext);
+
+#if UNITY_EDITOR
+                if (disposeContext == DisposeContext.Editor_Destroy)
+                    Editor.UndoManager.FlushUndoRecordObjects();
+#endif
+            }
         }
 
         private void RemoveLoadScopeDelegates(LoadScope loadScope)
         {
             if (loadScope is not null)
             {
-                loadScope.DisposingEvent -= LoadScopeDisposingHandler;
                 loadScope.DisposedEvent -= LoadScopeDisposedHandler;
+                loadScope.LoadingStateChangedEvent -= LoadScopeLoadingStateChangedHandler;
             }
         }
 
@@ -330,23 +326,21 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && loadScope != Disposable.NULL)
             {
-                loadScope.DisposingEvent += LoadScopeDisposingHandler;
                 loadScope.DisposedEvent += LoadScopeDisposedHandler;
+                loadScope.LoadingStateChangedEvent += LoadScopeLoadingStateChangedHandler;
             }
         }
 
-        private void LoadScopeDisposingHandler(IDisposable disposable)
+        private void LoadScopeDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
-            LoadScope loadScope = disposable as LoadScope;
+            RemoveLoadScope(disposable as LoadScope, disposeContext);
 
-            LoadScopeDisposingEvent?.Invoke(loadScope);
+            LoadScopeDisposingEvent?.Invoke(disposable as LoadScope, disposeContext);
         }
 
-        private void LoadScopeDisposedHandler(IDisposable disposable)
+        private void LoadScopeLoadingStateChangedHandler(LoadScope loadScope)
         {
-            LoadScope loadScope = disposable as LoadScope;
-
-            RemoveLoadScope(loadScope);
+            LoadScopeLoadingStateChangedEvent?.Invoke(loadScope);
         }
 
         protected override bool AddInstanceToManager()
@@ -369,11 +363,6 @@ namespace DepictionEngine
             return 0.0f;
         }
 
-        protected virtual float GetDefaultAutoReloadInterval()
-        {
-            return 0.0f;
-        }
-
         protected virtual bool GetDefaultAutoDisposeUnused()
         {
             return true;
@@ -386,6 +375,11 @@ namespace DepictionEngine
                 _persistents ??= new SerializableIPersistentList();
                 return _persistents;
             }
+        }
+
+        public int GetPersistenCount()
+        {
+            return persistents.Count;
         }
 
         /// <summary>
@@ -431,73 +425,6 @@ namespace DepictionEngine
         {
             return persistents.Contains(persistent);
         }
-
-        public void IterateOverPersistents(Func<IPersistent, bool> callback)
-        {
-            for (int i = persistents.Count - 1; i >= 0; i--)
-            {
-                if (!callback(persistents[i]))
-                    break;
-            }
-        }
-
-        public bool AddPersistent(IPersistent persistent)
-        {
-            bool added = false;
-
-            if (!persistents.Contains(persistent))
-            {
-                persistents.Add(persistent);
-                added = true;
-            }
-
-            if (added)
-            {
-                AddPersistentDelegates(persistent);
-#if UNITY_EDITOR
-                if (!Application.isPlaying)
-                    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
-#endif
-            }
-
-            return added;
-        }
-
-        private void RemoveAllPersistents()
-        {
-            IterateOverPersistents((persistent) =>
-            {
-                RemovePersistent(persistent);
-                return true;
-            });
-        }
-
-        public bool RemovePersistent(IPersistent persistent)
-        {
-            bool removed = false;
-
-            if (!IsDisposing())
-            {
-                if (persistents.Remove(persistent))
-                    removed = true;
-
-                if (removed)
-                {
-                    RemovePersistentDelegates(persistent);
-
-                    if (GetLoadScope(out LoadScope loadScope, persistent))
-                        loadScope.RemovePersistent(persistent);
-
-#if UNITY_EDITOR
-                    if (!Application.isPlaying)
-                        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
-#endif
-                }
-            }
-
-            return removed;
-        }
-
 
         public Datasource GetDatasource()
         {
@@ -616,22 +543,6 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The interval (in seconds) at which we call the <see cref="DepictionEngine.LoaderBase.ReloadAll"/> function. Automatically calling <see cref="DepictionEngine.LoaderBase.ReloadAll"/> can be useful to keep objects in synch with a datasource. Set to zero to deactivate.
-        /// </summary>
-        [Json]
-        public float autoReloadInterval
-        {
-            get { return _autoReloadInterval; }
-            set
-            {
-                SetValue(nameof(autoReloadInterval), value, ref _autoReloadInterval, (newValue, oldValue) =>
-                {
-                    StartAutoReloadIntervalTimer();
-                });
-            }
-        }
-
-        /// <summary>
         /// When enabled the <see cref="DepictionEngine.LoadScope"/>'s will be automatically disposed when their last reference is removed.
         /// </summary>
         [Json]
@@ -669,32 +580,6 @@ namespace DepictionEngine
             }
         }
 
-        private void StartAutoReloadIntervalTimer()
-        {
-            if (initialized)
-            {
-                autoReloadIntervalTimer = autoReloadInterval != 0.0f ? tweenManager.DelayedCall(autoReloadInterval, null, () =>
-                {
-                    ReloadAll();
-                    StartAutoReloadIntervalTimer();
-                }, () => autoReloadIntervalTimer = null) : null;
-            }
-        }
-
-        private Tween autoReloadIntervalTimer
-        {
-            get { return _autoReloadIntervalTimer; }
-            set
-            {
-                if (Object.ReferenceEquals(_autoReloadIntervalTimer, value))
-                    return;
-
-                DisposeManager.Dispose(_autoReloadIntervalTimer);
-                
-                _autoReloadIntervalTimer = value;
-            }
-        }
-
         /// <summary>
         /// Create missing <see cref="DepictionEngine.LoadScope"/>(s) and dispose those that are no longer required.
         /// </summary>
@@ -705,7 +590,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Create missing <see cref="DepictionEngine.LoadScope"/>(s), reload existing ones and dispose those that are no longer required.
+        /// Internal method, to reload data use the <see cref="DepictionEngine.DatasourceBase.ReloadAll"/> instead.
         /// </summary>
         /// <returns></returns>
         public List<LoadScope> ReloadAll()
@@ -735,7 +620,7 @@ namespace DepictionEngine
             return false;
         }
 
-        public virtual bool RemoveReference(LoadScope loadScope, ReferenceBase reference)
+        public virtual bool RemoveReference(LoadScope loadScope, ReferenceBase reference, DisposeContext disposeContext)
         {
             return false;
         }
@@ -843,9 +728,68 @@ namespace DepictionEngine
                 loadScope.Load(loadInterval);
         }
 
+        public void IterateOverPersistents(Func<int, IPersistent, bool> callback)
+        {
+            for (int i = persistents.Count - 1; i >= 0; i--)
+            {
+                if (!callback(i, persistents[i]))
+                    break;
+            }
+        }
+
+        public bool AddPersistent(IPersistent persistent)
+        {
+            bool added = false;
+
+            if (!persistents.Contains(persistent))
+            {
+                persistents.Add(persistent);
+                added = true;
+            }
+
+            if (added)
+            {
+                AddPersistentDelegates(persistent);
+#if UNITY_EDITOR
+                if (!Application.isPlaying)
+                    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+#endif
+            }
+
+            return added;
+        }
+
+        public bool RemovePersistent(IPersistent persistent, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
+        {
+            if (IsDisposing())
+                return false;
+
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.RecordObject(this);
+#endif
+
+            if (persistents.Remove(persistent))
+            {
+                RemovePersistentDelegates(persistent);
+#if UNITY_EDITOR
+                if (!Application.isPlaying)
+                    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+#endif
+                return true;
+            }
+
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.FlushUndoRecordObjects();
+#endif
+
+            return false;
+        }
+
         protected LoadScope CreateLoadScope(Type type)
         {
-            LoadScope loadScope = instanceManager.CreateInstance(type, initializingContext: GetInitializeContext()) as LoadScope;
+            LoadScope loadScope = instanceManager.CreateInstance(type) as LoadScope;
             return loadScope != Disposable.NULL ? loadScope : null;
         }
 
@@ -865,14 +809,25 @@ namespace DepictionEngine
             return loadScope != Disposable.NULL;
         }
 
-        protected bool RemoveLoadScope(LoadScope loadScope)
+        protected bool RemoveLoadScope(LoadScope loadScope, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.RecordObject(this);
+#endif
+
             if (RemoveLoadScopeInternal(loadScope))
             {
                 RemoveLoadScopeDelegates(loadScope);
 
                 return true;
             }
+
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.FlushUndoRecordObjects();
+#endif
+
             return false;
         }
 
@@ -885,7 +840,6 @@ namespace DepictionEngine
         {
             waitBetweenLoadTimer = null;
             loadDelayTimer = null;
-            autoReloadIntervalTimer = null;
         }
 
         public virtual bool IsInList(LoadScope loadScope)
@@ -896,11 +850,11 @@ namespace DepictionEngine
         /// <summary>
         /// Dispose all the <see cref="DepictionEngine.LoadScope"/>(s).
         /// </summary>
-        public void DisposeLoadScopes(DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Programmatically, DisposeManager.DisposeDelay disposeDelay = DisposeManager.DisposeDelay.None)
+        public void DisposeAllLoadScopes(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
             IterateOverLoadScopes((loadScope) =>
             {
-                DisposeLoadScope(loadScope, disposeContext, disposeDelay);
+                DisposeLoadScope(loadScope, disposeContext);
 
                 return true;
             });
@@ -909,29 +863,21 @@ namespace DepictionEngine
         /// <summary>
         /// Dispose the <see cref="DepictionEngine.LoadScope"/>.
         /// </summary>
-        protected void DisposeLoadScope(LoadScope loadScope, DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Programmatically, DisposeManager.DisposeDelay disposeDelay = DisposeManager.DisposeDelay.None)
+        protected void DisposeLoadScope(LoadScope loadScope, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            Dispose(loadScope, disposeContext, disposeDelay);
+            Dispose(loadScope, disposeContext);
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 KillTimers();
 
-                DisposeLoadScopes(disposeContext, DisposeManager.DisposeDelay.Delayed);
+                DisposeAllLoadScopes(disposeContext);
 
-                return true;
-            }
-            return false;
-        }
-
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled)
-        {
-            if (base.OnDisposed(disposeContext, pooled))
-            {
                 LoadScopeDisposingEvent = null;
+                LoadScopeLoadingStateChangedEvent = null;
 
                 return true;
             }

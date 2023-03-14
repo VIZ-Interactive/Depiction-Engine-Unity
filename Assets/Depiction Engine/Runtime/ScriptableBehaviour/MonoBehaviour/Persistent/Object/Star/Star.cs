@@ -40,14 +40,14 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
 
             InitLightAndLensFlare(initializingContext);
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -58,7 +58,7 @@ namespace DepictionEngine
             InitValue(value => shadows = value, LightShadows.Soft, initializingContext);
         }
 
-        protected override void InitReflectionProbeObject(InstanceManager.InitializationContext initializingContext)
+        protected override void InitReflectionProbeObject(InitializationContext initializingContext)
         {
         }
 
@@ -72,7 +72,7 @@ namespace DepictionEngine
             return false;
         }
 
-        private void InitLightAndLensFlare(InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        private void InitLightAndLensFlare(InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             if (!isFallbackValues)
             {

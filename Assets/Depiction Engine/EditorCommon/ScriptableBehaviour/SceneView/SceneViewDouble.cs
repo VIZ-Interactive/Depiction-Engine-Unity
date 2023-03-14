@@ -70,7 +70,7 @@ namespace DepictionEngine.Editor
         private bool _forceHandleVisibility;
 
         private bool _deleted;
-        private InstanceManager.InitializationContext _sceneViewinitializingContext;
+        private InitializationContext _sceneViewinitializingContext;
 
         private TargetControllerComponents _sceneViewDoubleComponents;
         private SceneViewDoubleComponentsDelta _sceneViewDoubleComponentsDelta;
@@ -87,13 +87,13 @@ namespace DepictionEngine.Editor
         private MethodInfo _onGUIEndedRemoveDelegate;
         private MethodInfo _onGUIEndedAddDelegate;
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
 
             _sceneViewinitializingContext = initializingContext;
 
-            if (initializingContext == InstanceManager.InitializationContext.Existing)
+            if (initializingContext == InitializationContext.Existing)
             {
                 if (SceneManager.playModeState == PlayModeStateChange.ExitingPlayMode)
                 {
@@ -125,7 +125,7 @@ namespace DepictionEngine.Editor
         {
             _sceneViewInstanceId = sceneView.GetInstanceID();
 
-            if (_sceneViewinitializingContext == InstanceManager.InitializationContext.Programmatically)
+            if (_sceneViewinitializingContext == InitializationContext.Programmatically)
             {
                 pivot = sceneView.pivot;
                 rotation = sceneView.rotation;
@@ -163,7 +163,7 @@ namespace DepictionEngine.Editor
                 if (sceneViewDouble == Disposable.NULL || sceneViewDouble.deleted)
                 {
                     sceneViewDoubles.RemoveAt(i);
-                    DisposeManager.Dispose(sceneViewDouble, DisposeManager.DisposeContext.Programmatically);
+                    DisposeManager.Dispose(sceneViewDouble, DisposeContext.Programmatically_Destroy);
                 }
             }
         }
@@ -179,7 +179,7 @@ namespace DepictionEngine.Editor
                 _camera = sceneView.camera.GetComponent<SceneCamera>();
                 if (_camera == Disposable.NULL)
                 {
-                    _camera = sceneView.camera.gameObject.AddSafeComponent(typeof(SceneCamera), InstanceManager.InitializationContext.Programmatically) as SceneCamera;
+                    _camera = sceneView.camera.gameObject.AddSafeComponent(typeof(SceneCamera), InitializationContext.Programmatically) as SceneCamera;
                     InitSceneCamera(_camera);
                 }
             }
@@ -1758,9 +1758,9 @@ namespace DepictionEngine.Editor
             return eulerRotation;
         }
 
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposed(disposeContext, pooled))
+            if (base.OnDispose(disposeContext))
             {
                 SceneManager sceneManager = SceneManager.Instance(false);
                 if (sceneManager != Disposable.NULL)

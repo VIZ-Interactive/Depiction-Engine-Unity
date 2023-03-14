@@ -96,15 +96,14 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _geoCoordinates.Clear();
+            _geoCoordinates?.Clear();
         }
 
         public override void Initializing()
         {
             base.Initializing();
           
-            if (_geoCoordinates == null)
-                _geoCoordinates = new List<GeoCoordinate3Double>();
+            _geoCoordinates ??= new List<GeoCoordinate3Double>();
         }
 
         public override FeatureModifier Init(int featureCount)

@@ -23,13 +23,19 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            if (_indexReferences != null)
-                _indexReferences.Clear();
+            _indices?.Clear();
+            _indexReferences?.Clear();
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
+
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+            {
+                _indices?.Clear();
+                _indexReferences?.Clear();
+            }
 
             InitValue(value => indices = value, new List<Grid2DIndex>(), initializingContext);
         }
@@ -137,7 +143,7 @@ namespace DepictionEngine
             return false;
         }
 
-        public override bool RemoveReference(LoadScope loadScope, ReferenceBase reference)
+        public override bool RemoveReference(LoadScope loadScope, ReferenceBase reference, DisposeContext disposeContext)
         {
             Index2DLoadScope index2DLoadScope = loadScope as Index2DLoadScope;
             if (index2DLoadScope != Disposable.NULL)
@@ -152,7 +158,7 @@ namespace DepictionEngine
                             indexReferences.Remove(scopeGrid2DIndex);
 
                             RemoveIndex(scopeGrid2DIndex);
-                            DisposeLoadScope(loadScope);
+                            DisposeLoadScope(loadScope, disposeContext);
                         }
 
                         return true;

@@ -38,12 +38,14 @@ namespace DepictionEngine
         public override void Recycle()
         {
             base.Recycle();
-           
-            sharedMaterial = null;
-            sharedMesh = null;
+
+            sharedMesh = default;
+            sharedMaterial = default;
+
+            colliderType = default;
         }
 
-        protected override void InitializeFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
             
@@ -93,7 +95,7 @@ namespace DepictionEngine
                 _colliderType = ColliderType.None;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -371,9 +373,9 @@ namespace DepictionEngine
             }
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 DisposeManager.Dispose(_meshModifier);
 
@@ -402,11 +404,11 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _name = null;
+            _name = default;
 
-            _typeNoCollider = null;
-            _typeBoxCollider = null;
-            _typeMeshCollider = null;
+            _typeNoCollider = default;
+            _typeBoxCollider = default;
+            _typeMeshCollider = default;
         }
 
         public Type typeNoCollider
@@ -544,22 +546,13 @@ namespace DepictionEngine
                 meshModifierProcessor.Dispose();
         }
 
-        public override bool UpdateDestroyingContext()
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.UpdateDestroyingContext())
+            if (base.OnDispose(disposeContext))
             {
                 if (_meshModifierProcessor != null)
                     _meshModifierProcessor.Dispose();
-             
-                return true;
-            }
-            return false;
-        }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
-        {
-            if (base.OnDisposing(disposeContext))
-            {
                 DisposeMeshModifier();
 
                 return true;

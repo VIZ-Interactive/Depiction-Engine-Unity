@@ -19,7 +19,7 @@ namespace DepictionEngine
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
         /// <returns>The newly created <see cref="DepictionEngine.Camera"/> instance.</returns>
-        public static Camera CreateTargetCamera(Transform parent, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false)
+        public static Camera CreateTargetCamera(Transform parent, InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false)
         {
             Camera camera = null;
 
@@ -64,7 +64,7 @@ namespace DepictionEngine
             double size,
             double mass,
             JSONNode json = null,
-            InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically,
+            InitializationContext initializingContext = InitializationContext.Programmatically,
             bool setParentAndAlign = false,
             bool moveToView = false)
         {
@@ -96,7 +96,7 @@ namespace DepictionEngine
         double size,
         double mass,
         JSONNode json = null,
-        InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically,
+        InitializationContext initializingContext = InitializationContext.Programmatically,
         bool setParentAndAlign = false,
         bool moveToView = false)
         {
@@ -131,7 +131,7 @@ namespace DepictionEngine
         /// <param name="json">Optional initialization values.</param>
         /// <param name="initializingContext">.</param>
         /// <returns>The newly created <see cref="DepictionEngine.DatasourceRoot"/> instance.</returns>
-        public static DatasourceRoot CreateLayer(SerializableGuid planetId, string name, JSONNode json = null, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public static DatasourceRoot CreateLayer(SerializableGuid planetId, string name, JSONNode json = null, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             return CreateLayer(InstanceManager.Instance().GetAstroObject(planetId) as Planet, name, json, initializingContext);
         }
@@ -144,7 +144,7 @@ namespace DepictionEngine
         /// <param name="json">Optional initialization values.</param>
         /// <param name="initializingContext">.</param>
         /// <returns>The newly created <see cref="DepictionEngine.DatasourceRoot"/> instance.</returns>
-        public static DatasourceRoot CreateLayer(Planet planet, string name, JSONNode json = null, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Programmatically)
+        public static DatasourceRoot CreateLayer(Planet planet, string name, JSONNode json = null, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             if (planet == Disposable.NULL)
                 return null;

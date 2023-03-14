@@ -154,7 +154,7 @@ namespace DepictionEngine
 
                 operationResult.Add(CreateResultData<LoadResultData>().Init(_type, new JSONObject(), _jsonFallback, _persistentFallbackValuesId, propertyModifier != Disposable.NULL ? new List<PropertyModifier>() { propertyModifier} : null));
 
-                Dispose(propertyModifier);
+                DisposeManager.Dispose(propertyModifier);
 
                 OperationDone(new OperationDoneResult(true, operationResult));
             }

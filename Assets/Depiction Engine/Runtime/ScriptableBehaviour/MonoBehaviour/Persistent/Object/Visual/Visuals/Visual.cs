@@ -2,7 +2,6 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace DepictionEngine
 {
@@ -19,32 +18,13 @@ namespace DepictionEngine
             base.Recycle();
 
             gameObject.layer = LayerMask.GetMask("Default");
-            gameObject.hideFlags = HideFlags.None;
+            gameObject.hideFlags = default;
 
-            transform.localPosition = Vector3.zero;
-            transform.localRotation = Quaternion.identity;
+            transform.localPosition = default;
+            transform.localRotation = default;
             transform.localScale = Vector3.one;
 
-            _visualObject = null;
-        }
-
-        protected override void Saving(Scene scene, string path)
-        {
-            base.Saving(scene, path);
-
-            if (visualObject.dontSaveVisualsToScene)
-                gameObject.hideFlags |= HideFlags.DontSave;
-        }
-
-        protected override bool UpdateHideFlags()
-        {
-            if (base.UpdateHideFlags())
-            {
-                gameObject.hideFlags = hideFlags;
-
-                return true;
-            }
-            return false;
+            _visualObject = default;
         }
 
         protected override Type GetParentType()

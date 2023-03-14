@@ -100,9 +100,9 @@ namespace DepictionEngine.Editor
         /// </summary>
         /// <param name="name"></param>
         /// <param name="initializingContext"></param>
-        public static void CreateNewGroup(string name, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
+        public static void CreateNewGroup(string name, InitializationContext initializingContext = InitializationContext.Editor)
         {
-            if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate)
+            if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate)
             {
                 IncrementCurrentGroup();
                 currentGroupName = name;
@@ -152,13 +152,13 @@ namespace DepictionEngine.Editor
         /// </summary>
         /// <param name="objectToUndo"></param>
         /// <param name="initializingContext"></param>
-        public static void RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
+        public static void RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext = InitializationContext.Editor)
         {
-            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is not null && (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate))
+            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is not null && (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate))
             {
                 //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the wrong Group
                 //Fix: We Queue the operation to perform it later(at the Beginning of the next Update) when the Undo Group name as been updated
-                if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate)
+                if (initializingContext == InitializationContext.Editor_Duplicate)
                 {
                     QueueUndoOperation(objectToUndo, UndoOperationType.Created);
                     _processingEditorCopyPasteOrDuplicateOrDragDropComponent = true;
@@ -178,13 +178,13 @@ namespace DepictionEngine.Editor
         /// </summary>
         /// <param name="objectToUndo"></param>
         /// <param name="initializingContext"></param>
-        public static void RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
+        public static void RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext = InitializationContext.Editor)
         {
-            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is not null && (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate))
+            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is not null && (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate))
             {
                 //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the wrong Group
                 //Fix: We Queue the operation to perform it later(at the Beginning of the next Update) when the Undo Group name as been updated
-                if (initializingContext == InstanceManager.InitializationContext.Editor_Duplicate)
+                if (initializingContext == InitializationContext.Editor_Duplicate)
                 {
                     QueueUndoOperation(objectToUndo, UndoOperationType.Complete);
                     _processingEditorCopyPasteOrDuplicateOrDragDropComponent = true;
@@ -212,9 +212,9 @@ namespace DepictionEngine.Editor
         /// Records any changes done on the object after the RecordObject function.
         /// </summary>
         /// <param name="objectToUndo"></param>
-        public static void RecordObject(UnityEngine.Object objectToUndo, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
+        public static void RecordObject(UnityEngine.Object objectToUndo, InitializationContext initializingContext = InitializationContext.Editor)
         {
-            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is not null && (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate))
+            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is not null && (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate))
                 Undo.RecordObject(objectToUndo, Undo.GetCurrentGroupName());
         }
 
@@ -257,9 +257,9 @@ namespace DepictionEngine.Editor
         /// <param name="transform"></param>
         /// <param name="newParent"></param>
         /// <param name="wordlPositionStays"></param>
-        public static void SetTransformParent(Transform transform, Transform newParent, bool wordlPositionStays, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
+        public static void SetTransformParent(Transform transform, Transform newParent, bool wordlPositionStays, InitializationContext initializingContext = InitializationContext.Editor)
         {
-            if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate)
+            if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate)
                 Undo.SetTransformParent(transform, newParent, wordlPositionStays, Undo.GetCurrentGroupName());
             else
                 transform.transform.SetParent(newParent, wordlPositionStays);
@@ -270,9 +270,9 @@ namespace DepictionEngine.Editor
         /// </summary>
         /// <param name="transform"></param>
         /// <param name="newParent"></param>
-        public static void SetTransformParent(Transform transform, Transform newParent, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
+        public static void SetTransformParent(Transform transform, Transform newParent, InitializationContext initializingContext = InitializationContext.Editor)
         {
-            if (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate)
+            if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate)
                 Undo.SetTransformParent(transform, newParent, Undo.GetCurrentGroupName());
             else
                 transform.transform.SetParent(newParent);
@@ -306,11 +306,11 @@ namespace DepictionEngine.Editor
         /// <param name="gameObject"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static Component AddComponent(GameObject gameObject, Type type, InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Editor)
+        public static Component AddComponent(GameObject gameObject, Type type, InitializationContext initializingContext = InitializationContext.Editor)
         {
             Component component;
 
-            if (!SceneManager.IsEditorNamespace(type) && (initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate))
+            if (!SceneManager.IsEditorNamespace(type) && (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate))
                 component = Undo.AddComponent(gameObject, type);
             else
                 component = gameObject.AddComponent(type);

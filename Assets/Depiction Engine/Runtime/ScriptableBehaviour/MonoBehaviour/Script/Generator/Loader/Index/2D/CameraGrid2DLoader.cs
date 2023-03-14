@@ -1,6 +1,5 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. <contact@vizinteractive.io> | Licensed under MIT license (see LICENSE.md for details)
 
-using DepictionEngine.Editor;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -70,7 +69,7 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -286,7 +285,6 @@ namespace DepictionEngine
             get
             {
                 _cameraGrids ??= new List<CameraGrid2D>();
-
                 return _cameraGrids;
             }
         }
@@ -402,7 +400,6 @@ namespace DepictionEngine
                 }
             }
 
-
             if (indexLoadScope.visibleCameras == null || !indexLoadScope.visibleCameras.SequenceEqual(_visibleCameras))
                 indexLoadScope.visibleCameras = _visibleCameras.ToArray();
         }
@@ -473,7 +470,7 @@ namespace DepictionEngine
             private GeoAstroObject _parentGeoAstroObject;
 
             /// <summary>
-            /// Dispatched when the <see cref="DepictionEngine.Camera"/> <see cref="DepictionEngine.IDisposable.UpdateDestroyingContext"/> is triggered.
+            /// Dispatched when the <see cref="DepictionEngine.Camera"/> <see cref="DepictionEngine.IDisposable.UpdateDisposingContext"/> is triggered.
             /// </summary>
             public Action<CameraGridLoaderCenterOnLoadTrigger> CameraDisposingEvent;
             /// <summary>
@@ -516,7 +513,7 @@ namespace DepictionEngine
             {
                 if (camera is not null)
                 {
-                    camera.DisposingEvent -= CameraDisposingHandler;
+                    camera.DisposedEvent -= CameraDisposedHandler;
                     camera.PropertyAssignedEvent -= CameraPropertyAssignedHandler;
                 }
             }
@@ -525,12 +522,12 @@ namespace DepictionEngine
             {
                 if (camera != Disposable.NULL)
                 {
-                    camera.DisposingEvent += CameraDisposingHandler;
+                    camera.DisposedEvent += CameraDisposedHandler;
                     camera.PropertyAssignedEvent += CameraPropertyAssignedHandler;
                 }
             }
 
-            private void CameraDisposingHandler(IDisposable disposable)
+            private void CameraDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
             {
                 dynamicSizeOffsetTimer = null;
 

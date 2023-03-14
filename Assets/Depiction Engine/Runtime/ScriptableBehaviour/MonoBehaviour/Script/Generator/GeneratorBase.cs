@@ -42,7 +42,7 @@ namespace DepictionEngine
             }
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -170,7 +170,7 @@ namespace DepictionEngine
             if (!Disposable.IsDisposed(persistent))
                 return false;
 
-            persistent = (IPersistent)instanceManager.CreateInstance(type, null, json, propertyModifiers, InstanceManager.InitializationContext.Programmatically);
+            persistent = (IPersistent)instanceManager.CreateInstance(type, null, json, propertyModifiers, InitializationContext.Programmatically);
             if (!Disposable.IsDisposed(persistent))
                 return true;
 
@@ -225,9 +225,9 @@ namespace DepictionEngine
             this.propertyModifier = propertyModifier;
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 DisposeManager.Dispose(propertyModifier);
 
@@ -264,9 +264,9 @@ namespace DepictionEngine
             this.grid2DDimensions = grid2DDimensions;
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 grid2DIndex = Vector2Int.zero;
                 grid2DDimensions = Vector2Int.zero;

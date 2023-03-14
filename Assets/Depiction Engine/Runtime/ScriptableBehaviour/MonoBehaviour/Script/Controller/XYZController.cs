@@ -16,7 +16,7 @@ namespace DepictionEngine
 		[SerializeField, Tooltip("Limits the object altitude to ground level + offset. (Requires "+nameof(autoSnapToGround)+" enabled)."), EndFoldout]
 		private double _groundOffset;
 
-		protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+		protected override void InitializeSerializedFields(InitializationContext initializingContext)
 		{
 			base.InitializeSerializedFields(initializingContext);
 

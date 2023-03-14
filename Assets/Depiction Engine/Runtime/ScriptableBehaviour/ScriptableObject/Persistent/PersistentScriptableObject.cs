@@ -92,7 +92,7 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _containsCopyrightedMaterial = false;
+            _containsCopyrightedMaterial = default;
         }
 
         protected override bool AddInstanceToManager()
@@ -100,7 +100,7 @@ namespace DepictionEngine
             return true;
         }
 
-        protected override bool Initialize(InstanceManager.InitializationContext initializingContext)
+        protected override bool Initialize(InitializationContext initializingContext)
         {
             if (base.Initialize(initializingContext))
             {
@@ -111,7 +111,7 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
@@ -285,7 +285,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_autoSynchronizeIntervalTimer, value))
                     return;
 
-                Dispose(_autoSynchronizeIntervalTimer);
+                DisposeManager.Dispose(_autoSynchronizeIntervalTimer);
 
                 _autoSynchronizeIntervalTimer = value;
             }
@@ -318,21 +318,12 @@ namespace DepictionEngine
             return deleted;
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 autoSynchronizeIntervalTimer = null;
 
-                return true;
-            }
-            return false;
-        }
-
-        protected override bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
-        {
-            if (base.OnDisposed(disposeContext, pooled))
-            {
                 PersistenceSaveOperationEvent = null;
                 PersistenceSynchronizeOperationEvent = null;
                 PersistenceDeleteOperationEvent = null;

@@ -19,6 +19,13 @@ namespace DepictionEngine
         /// </summary>
         Action<IProperty, string, object, object> PropertyAssignedEvent { get; set; }
 
+#if UNITY_EDITOR
+        /// <summary>
+        /// Resets all serialized fields to their default value.
+        /// </summary>
+        void InspectorReset();
+#endif
+
         /// <summary>
         /// A dynamic property is a property which is expected to be modified by the engine directly. For example, physics driven <see cref="DepictionEngine.TransformDouble.localPosition"/> or <see cref="DepictionEngine.TransformDouble.localRotation"/> should be dynamic properties.
         /// </summary>

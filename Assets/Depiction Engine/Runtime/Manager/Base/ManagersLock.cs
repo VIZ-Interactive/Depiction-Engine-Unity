@@ -13,11 +13,13 @@ namespace DepictionEngine
     [RequireComponent(typeof(InputManager))]
     [RequireComponent(typeof(DatasourceManager))]
     [ExecuteAlways]
-    internal class ManagersLock : MonoBehaviour
+    public class ManagersBootstrap : MonoBehaviour
     {
         public void Awake()
         {
             hideFlags = HideFlags.HideInInspector;
+
+            InstanceManager.Initialize(GetComponent<SceneManager>());
         }
     }
 }

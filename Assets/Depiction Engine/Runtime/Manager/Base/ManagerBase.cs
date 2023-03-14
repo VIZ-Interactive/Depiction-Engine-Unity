@@ -44,14 +44,10 @@ namespace DepictionEngine
             if (!SceneManager.IsSceneBeingDestroyed())
             {
                 GameObject go = GameObject.Find(gameOjectName);
-                if (Object.ReferenceEquals(go, null))
+                if (go is null)
                 {
                     go = new GameObject(gameOjectName);
-                    
-                    InstanceManager.InhibitExplicitAwake(() =>
-                    {
-                        go.AddComponent<ManagersLock>();
-                    }, true);
+                    go.AddComponent<ManagersBootstrap>();
                 }
             
                 manager = go.GetSafeComponent<T>();
@@ -84,8 +80,7 @@ namespace DepictionEngine
                 {
                     gameObject.SetActive(value);
                     _lastGameObjectActiveSelf = gameObject.activeSelf;
-                    if (PropertyAssignedEvent != null)
-                        PropertyAssignedEvent(this, nameof(gameObjectActiveSelf), value, oldValue);
+                    PropertyAssignedEvent?.Invoke(this, nameof(gameObjectActiveSelf), value, oldValue);
                 }
             }
         }
@@ -106,12 +101,5 @@ namespace DepictionEngine
             return false;
         }
 #endif
-
-        public override void ExplicitAwake()
-        {
-            base.ExplicitAwake();
-
-            Initialize();
-        }
     }
 }

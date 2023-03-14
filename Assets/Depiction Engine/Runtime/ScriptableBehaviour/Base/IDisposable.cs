@@ -24,25 +24,22 @@ namespace DepictionEngine
         /// <summary>
         /// Is the object done disposing.
         /// </summary>
-        bool disposedComplete { get; set; }
+        bool poolComplete { get; set; }
 
         /// <summary>
-        /// The <see cref="DepictionEngine.DisposeManager.DisposeContext"/> under which the object was destroyed.
+        /// The <see cref="DepictionEngine.DisposeContext"/> under which the object was destroyed.
         /// </summary>
-        DisposeManager.DisposeContext destroyingContext { get; }
+        DisposeContext disposingContext { get; }
 
         /// <summary>
         /// Dispatched after the object as been initialized.
         /// </summary>
-        Action InitializedEvent { get; set; }
+        Action<IDisposable> InitializedEvent { get; set; }
+
         /// <summary>
-        /// Dispatched during the <see cref="DepictionEngine.IDisposable.UpdateDestroyingContext"/>.
+        /// Dispatched during the <see cref="DepictionEngine.MonoBehaviourDisposable.OnDispose"/>, <see cref="DepictionEngine.ScriptableObjectDisposable.OnDispose"/> or <see cref="DepictionEngine.Disposable.OnDispose"/>.
         /// </summary>
-        Action<IDisposable> DisposingEvent { get; set; }
-        /// <summary>
-        /// Dispatched during the <see cref="DepictionEngine.MonoBehaviourDisposable.OnDisposed"/>, <see cref="DepictionEngine.ScriptableObjectDisposable.OnDisposed"/> or <see cref="DepictionEngine.Disposable.OnDisposed"/>.
-        /// </summary>
-        Action<IDisposable> DisposedEvent { get; set; }
+        Action<IDisposable, DisposeContext> DisposedEvent { get; set; }
 
         /// <summary>
         /// Resets the fields to their default value so the object can be reused again. It will be called by the <see cref="DepictionEngine.PoolManager"/> if the object is being recycled from the pool.
@@ -68,19 +65,21 @@ namespace DepictionEngine
         /// <returns>True if the object as already been disposed / destroyed.</returns>
         bool IsDisposed();
 
+        bool OnDisposing();
+
         /// <summary>
-        /// This is where you clear or dipose any references. Should be called automatically by the <see cref="DepictionEngine.DisposeManager"/> immediately after <see cref="DepictionEngine.DisposeManager.Dispose"/> or <see cref="DepictionEngine.DisposeManager.Destroy"/> is called. The <see cref="IDisposable.destroyingContext"/> is not initialized at this point.
+        /// This is where you dispose any remaining dependencies.
         /// </summary>
-        /// <returns>True if disposing, False if the object is already disposing or was disposed.</returns>
-        bool OnDisposing(DisposeManager.DisposeContext disposeContext);
+        /// <param name="disposeContext">The context under which the object is being destroyed.</param>
+        /// <returns>False if the object was already disposed otherwise True.</returns>
+        bool OnDispose(DisposeContext disposeContext);
+        void OnDisposeInternal(DisposeContext disposeContext);
 
         /// <summary>
         /// This is where you clear or dipose any remaining references. It will be called automatically by <see cref="DepictionEngine.DisposeManager"/> immediately after <see cref="DepictionEngine.IDisposable.OnDisposing"/> unless the object was Destroyed as a result of an Editor action.
         /// </summary>
         /// <returns>True if disposing, False if the object is already disposing or was disposed.</returns>
-        bool UpdateDestroyingContext();
-
-        void OnDisposedInternal(DisposeManager.DisposeContext disposeContext, bool pooled = false);
+        bool UpdateDisposingContext();
 
         bool Equals(Disposable.Null value);
     }

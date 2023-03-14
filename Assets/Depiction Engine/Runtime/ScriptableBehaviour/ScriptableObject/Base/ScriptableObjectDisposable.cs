@@ -25,22 +25,21 @@ namespace DepictionEngine
         private bool _delegatesInitialized;
         private bool _unityInitialized;
 
-        private bool _awake;
         private bool _initializing;
         private bool _initialized;
         private bool _instanceAdded;
         private bool _disposing;
-        private bool _destroyingContextUpdated;
+        private bool _disposingContextUpdated;
         private bool _disposed;
-        private bool _disposedComplete;
+        private bool _poolComplete;
 
-        private DisposeManager.DisposeContext _destroyingContext;
+        private DisposeContext _disposingContext;
         private IScriptableBehaviour _originator;
         private bool _isUserChange;
 
-        private Action _initializedEvent;
+        private Action<IDisposable> _initializedEvent;
         private Action<IDisposable> _disposingEvent;
-        private Action<IDisposable> _disposedEvent;
+        private Action<IDisposable, DisposeContext> _disposedEvent;
 
 #if UNITY_EDITOR
         protected bool GetDebug()
@@ -52,17 +51,17 @@ namespace DepictionEngine
         public virtual void Recycle()
         {
             name = PoolManager.NEW_SCRIPT_OBJECT_NAME;
-            hideFlags = HideFlags.None;
+            hideFlags = default;
 
-            _instanceID = 0;
-            _isFallbackValues = false;
-            _awake = _initializing = _initialized = _instanceAdded = _disposing = _destroyingContextUpdated = _disposed = _disposedComplete = false;
-            _destroyingContext = DisposeManager.DisposeContext.Unknown;
-            _initializingContext = InstanceManager.InitializationContext.Unknown;
+            _instanceID = default;
+            _isFallbackValues = default;
+            _initializing = _initialized = _instanceAdded = _disposing = _disposingContextUpdated = _disposed = _poolComplete = default;
+            _disposingContext = default;
+            _initializingContext = default;
 
 #if UNITY_EDITOR
-            _lastHasEditorUndoRedo = _hasEditorUndoRedo = false;
-            _inspectorComponentNameOverride = null;
+            _lastHasEditorUndoRedo = _hasEditorUndoRedo = default;
+            _inspectorComponentNameOverride = default;
 #endif
         }
 
@@ -72,8 +71,8 @@ namespace DepictionEngine
             {
                 Initializing();
 
-                InstanceManager.InitializationContext initializingContext = GetinitializingContext();
-
+                InitializationContext initializingContext = GetinitializingContext();
+             
                 InitializeUID(initializingContext);
 
                 bool abortInitialization = false;
@@ -82,7 +81,7 @@ namespace DepictionEngine
                 {
                     if (!Initialize(initializingContext))
                         abortInitialization = true;
-                }, initializingContext == InstanceManager.InitializationContext.Editor || initializingContext == InstanceManager.InitializationContext.Editor_Duplicate);
+                }, initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate);
 
                 if (abortInitialization)
                     return false;
@@ -101,7 +100,7 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        private void RegisterInitializeObjectUndo(InstanceManager.InitializationContext initializingContext)
+        private void RegisterInitializeObjectUndo(InitializationContext initializingContext)
         {
             Editor.UndoManager.RegisterCompleteObjectUndo(this, initializingContext);
         }
@@ -114,8 +113,15 @@ namespace DepictionEngine
         {
             _initializing = true;
 
+            SceneManager.UnityInitializedEvent += UnityInitialized;
+
             if (!_isFallbackValues)
                 _isFallbackValues = InstanceManager.initializeIsFallbackValues;
+        }
+
+        private void UnityInitialized()
+        {
+            _unityInitialized = true;
         }
 
         /// <summary>
@@ -123,24 +129,25 @@ namespace DepictionEngine
         /// </summary>
         /// <returns></returns>
         [NonSerialized]
-        private InstanceManager.InitializationContext _initializingContext;
-        private InstanceManager.InitializationContext GetinitializingContext()
+        private InitializationContext _initializingContext;
+        private InitializationContext GetinitializingContext()
         {
-            if (_initializingContext == InstanceManager.InitializationContext.Unknown)
+            //The _initializingContext == InitializationContext.Editor is necessary for when a Compoenent is copied as New in the inspector. Because the serialization wont happen immediatly on Awake we have to wait for the Update initialization to know wheter the component was duplicated or not. 
+            if (!_initialized && (_initializingContext == InitializationContext.Unknown || _initializingContext == InitializationContext.Editor))
             {
-                InstanceManager.InitializationContext initializingContext = InstanceManager.InitializationContext.Existing;
+                InitializationContext initializingContext = InitializationContext.Existing;
 
                 //If the instanceID is not the same it means the component is new.
                 int newInstanceID = GetInstanceID();
                 if (newInstanceID != instanceID)
                 {
-                    bool isEditor = InstanceManager.initializingContext == InstanceManager.InitializationContext.Editor || InstanceManager.initializingContext == InstanceManager.InitializationContext.Editor_Duplicate;
+                    bool isEditor = InstanceManager.initializingContext == InitializationContext.Editor || InstanceManager.initializingContext == InitializationContext.Editor_Duplicate;
 
                     //If serialized instanceID is zero it means this is not a duplicate.
                     if (instanceID == 0)
-                        initializingContext = isEditor ? InstanceManager.InitializationContext.Editor : InstanceManager.InitializationContext.Programmatically;
+                        initializingContext = isEditor ? InitializationContext.Editor : InitializationContext.Programmatically;
                     else if (newInstanceID < 0)
-                        initializingContext = isEditor ? InstanceManager.InitializationContext.Editor_Duplicate : InstanceManager.InitializationContext.Programmatically_Duplicate;
+                        initializingContext = isEditor ? InitializationContext.Editor_Duplicate : InitializationContext.Programmatically_Duplicate;
                 }
 
                 _initializingContext = initializingContext;
@@ -152,17 +159,10 @@ namespace DepictionEngine
         /// <summary>
         /// Initializes the object's unique identifiers.
         /// </summary>
-        /// <param name="initializatingState"></param>
-        protected virtual void InitializeUID(InstanceManager.InitializationContext initializingContext)
+        /// <param name="initializingContext"></param>
+        protected virtual void InitializeUID(InitializationContext initializingContext)
         {
             instanceID = GetInstanceID();
-        }
-
-        protected virtual void InitializeFields(InstanceManager.InitializationContext initializingContext)
-        {
-#if UNITY_EDITOR
-            RenderingManager.UpdateIcon(this);
-#endif
         }
 
         /// <summary>
@@ -179,15 +179,10 @@ namespace DepictionEngine
         /// </summary>
         /// <param name="initializingContext"></param>
         /// <returns>False if the initialization failed.</returns>
-        protected virtual bool Initialize(InstanceManager.InitializationContext initializingContext)
+        protected virtual bool Initialize(InitializationContext initializingContext)
         {
             if (!IsValidInitialization(initializingContext))
                 return false;
-
-            if (!isFallbackValues)
-                InitializeFields(initializingContext);
-
-            InitializeSerializedFields(initializingContext);
 
             UpdateAllDelegates();
 
@@ -199,26 +194,17 @@ namespace DepictionEngine
         /// </summary>
         /// <param name="initializingContext"></param>
         /// <returns>False to interrupt the initialization.</returns>
-        protected virtual bool IsValidInitialization(InstanceManager.InitializationContext initializingContext)
+        protected virtual bool IsValidInitialization(InitializationContext initializingContext)
         {
             return true;
         }
 
-        /// <summary>
-        /// Initialize SerializedField's to their default values.
-        /// </summary>
-        /// <param name="initializingContext"></param>
-        protected virtual void InitializeSerializedFields(InstanceManager.InitializationContext initializingContext)
-        {
-           
-        }
-
-        protected bool InitValue<T>(Action<T> callback, T defaultValue, InstanceManager.InitializationContext initializingContext)
+        protected bool InitValue<T>(Action<T> callback, T defaultValue, InitializationContext initializingContext)
         {
             return MonoBehaviourDisposable.InitValueInternal(callback, defaultValue, initializingContext);
         }
 
-        protected bool InitValue<T>(Action<T> callback, T defaultValue, T duplicateValue, InstanceManager.InitializationContext initializingContext)
+        protected bool InitValue<T>(Action<T> callback, T defaultValue, T duplicateValue, InitializationContext initializingContext)
         {
             return MonoBehaviourDisposable.InitValueInternal(callback, defaultValue, () => { return duplicateValue; }, initializingContext);
         }
@@ -228,6 +214,7 @@ namespace DepictionEngine
         /// </summary>
         protected virtual void Initialized()
         {
+            //FallbackValues Component are really only used to diplay properties in the Inspector or to validate property change. By preventing initialized we limit the amount of code the object can execute.
             if (!isFallbackValues)
                 _initialized = true;
 
@@ -278,16 +265,14 @@ namespace DepictionEngine
             SceneManager.PostLateInitializeEvent -= UpdateAllDelegatesHandler;
 
 #if UNITY_EDITOR
-            Editor.UndoManager.UndoRedoPerformedEvent -= UndoRedoPerformedHandler;
-            if (!IsDisposing())
-                Editor.UndoManager.UndoRedoPerformedEvent += UndoRedoPerformedHandler;
-
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= Saving;
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaved -= Saved;
+            Editor.UndoManager.UndoRedoPerformedEvent -= UndoRedoPerformedHandler;
             if (!IsDisposing())
             {
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaving += Saving;
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaved += Saved;
+                Editor.UndoManager.UndoRedoPerformedEvent += UndoRedoPerformedHandler;
             }
 
             SceneManager sceneManager = SceneManager.Instance(false);
@@ -307,13 +292,11 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         private void UndoRedoPerformedHandler()
         {
+            //Are the Destroy and Initialize check necessary?
             if (!DisposeManager.TriggerOnDestroyIfNull(this))
             {
-                InstanceManager.Initialize(this, InstanceManager.InitializationContext.Existing);
-                IsUserChange(() =>
-                {
-                    UndoRedoPerformed();
-                });
+                InstanceManager.Initialize(this, InitializationContext.Existing);
+                IsUserChange(() => { UndoRedoPerformed(); });
             }
         }
 
@@ -354,24 +337,14 @@ namespace DepictionEngine
             UpdateHideFlags();
         }
 
-        private void RemoveDisposingDelegate(IDisposable disposable)
-        {
-            disposable.DisposingEvent -= ObjectDisposingHandler;
-        }
-
-        private void ObjectDisposingHandler(IDisposable disposable)
-        {
-            RemoveDisposingDelegate(disposable);
-        }
-
-        private void RemoveDisposedDelegate(IDisposable disposable)
+        private void RemoveDisposedDelegate(IDisposable disposable, DisposeContext disposeContext)
         {
             disposable.DisposedEvent -= ObjectDisposedHandler;
         }
 
-        private void ObjectDisposedHandler(IDisposable disposable)
+        private void ObjectDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
-            RemoveDisposedDelegate(disposable);
+            RemoveDisposedDelegate(disposable, disposeContext);
         }
 
         private int instanceID
@@ -383,10 +356,10 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual bool SetValue<T>(string name, T value, ref T valueField, Action<T, T> assignedCallback = null)
         {
-            if (HasChanged(value, valueField))
-            {
-                T oldValue = valueField;
+            T oldValue = valueField;
 
+            if (HasChanged(value, oldValue))
+            { 
                 valueField = value;
 
                 assignedCallback?.Invoke(value, oldValue);
@@ -407,18 +380,18 @@ namespace DepictionEngine
         /// <remarks>List's will compare their items not the collection reference.</remarks>
         protected bool HasChanged(object newValue, object oldValue, bool forceChangeDuringInitializing = true)
         {
-            return (forceChangeDuringInitializing && !initialized) || !Object.Equals(newValue, oldValue);
+            return (!isFallbackValues && forceChangeDuringInitializing && !initialized) || !Object.Equals(newValue, oldValue);
         }
 
-        public bool initialized
-        {
-            get { return _initialized; }
-        }
+        protected bool unityInitialized { get => _unityInitialized; }
 
-        protected bool instanceAdded
-        {
-            get { return _instanceAdded; }
-        }
+        public bool initialized { get => _initialized; }
+
+        protected bool instanceAdded { get => _instanceAdded; }
+
+        public bool isFallbackValues { get => _isFallbackValues; }
+
+        public IScriptableBehaviour originator { get => _originator; }
 
         protected bool IsFallbackValues()
         {
@@ -428,16 +401,6 @@ namespace DepictionEngine
         protected bool IsNotFallbackValues()
         {
             return !isFallbackValues;
-        }
-
-        public bool isFallbackValues
-        {
-            get { return _isFallbackValues; }
-        }
-
-        public IScriptableBehaviour originator
-        {
-            get { return _originator; }
         }
 
         public virtual void IsUserChange(Action callback, bool isUserChange = true)
@@ -458,29 +421,21 @@ namespace DepictionEngine
             return _isUserChange || (_originator is not null && _originator.IsUserChangeContext());
         }
 
-        public InstanceManager.InitializationContext GetInitializeContext(InstanceManager.InitializationContext defaultState = InstanceManager.InitializationContext.Programmatically)
+        public InitializationContext GetInitializeContext()
         {
-            InstanceManager.InitializationContext initializeState = defaultState;
+            InitializationContext initializeState = InitializationContext.Programmatically;
+
+#if UNITY_EDITOR
+            initializeState = InitializationContext.Editor;
+#endif
 
             if (_initializing && !_initialized)
-                initializeState = GetinitializingContext();
+                initializeState = _initializingContext;
             else if (_originator != null)
-                initializeState = _originator.GetInitializeContext(initializeState);
+                initializeState = _originator.GetInitializeContext();
             else if (_disposing)
-            {
-                switch (_destroyingContext)
-                {
-                    case DisposeManager.DisposeContext.Editor:
-                        initializeState = InstanceManager.InitializationContext.Editor;
-                        break;
-                    case DisposeManager.DisposeContext.Editor_UndoRedo:
-                        initializeState = InstanceManager.InitializationContext.Programmatically;
-                        break;
-                    case DisposeManager.DisposeContext.Programmatically:
-                        initializeState = InstanceManager.InitializationContext.Programmatically;
-                        break;
-                }
-            }
+                initializeState = _disposingContext == DisposeContext.Editor_Destroy ? InitializationContext.Editor : InitializationContext.Programmatically;
+
 
             return initializeState;
         }
@@ -495,10 +450,10 @@ namespace DepictionEngine
             return _disposed;
         }
 
-        public bool disposedComplete
+        public bool poolComplete
         {
-            get { return _disposedComplete; }
-            set { _disposedComplete = value; }
+            get { return _poolComplete; }
+            set { _poolComplete = value; }
         }
 
         /// <summary>
@@ -507,12 +462,12 @@ namespace DepictionEngine
         /// <returns>True if the object as already been destroyed.</returns>
         protected bool IsDestroying()
         {
-            return _disposing && _destroyingContext != DisposeManager.DisposeContext.Unknown;
+            return _disposing && _disposingContext != DisposeContext.Programmatically_Pool;
         }
 
-        public DisposeManager.DisposeContext destroyingContext
+        public DisposeContext disposingContext
         {
-            get { return _destroyingContext; }
+            get { return _disposingContext; }
         }
 
 #if UNITY_EDITOR
@@ -527,7 +482,7 @@ namespace DepictionEngine
         }
 #endif
 
-        public Action InitializedEvent
+        public Action<IDisposable> InitializedEvent
         {
             get { return _initializedEvent; }
             set { _initializedEvent = value; }
@@ -539,7 +494,7 @@ namespace DepictionEngine
             set { _disposingEvent = value; }
         }
 
-        public Action<IDisposable> DisposedEvent
+        public Action<IDisposable, DisposeContext> DisposedEvent
         {
             get { return _disposedEvent; }
             set { _disposedEvent = value; }
@@ -604,7 +559,7 @@ namespace DepictionEngine
             }
         }
 
-        public virtual bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public bool OnDisposing()
         {
             if (!_disposing)
             {
@@ -618,110 +573,102 @@ namespace DepictionEngine
             return false;
         }
 
-        public bool UpdateDestroyingContext()
+        public bool UpdateDisposingContext()
         {
-            if (!_destroyingContextUpdated)
+            if (!_disposingContextUpdated)
             {
-                _destroyingContextUpdated = true;
+                _disposingContextUpdated = true;
 
-                _destroyingContext = GetDestroyingContext();
-
+                _disposingContext = GetDisposingContext();
+#if UNITY_EDITOR
+                if (_disposingContext == DisposeContext.Editor_Unknown)
+                    _disposingContext = DisposeContext.Editor_Destroy;
+#endif
                 return true;
             }
             return false;
         }
 
-        public void OnDisposedInternal(DisposeManager.DisposeContext disposeContext, bool pooled = false)
+        public void OnDisposeInternal(DisposeContext disposeContext)
         {
-            IsUserChange(() => { OnDisposed(disposeContext, pooled); }, disposeContext != DisposeManager.DisposeContext.Programmatically);
+            IsUserChange(() => { OnDispose(disposeContext); }, disposeContext == DisposeContext.Editor_Destroy);
         }
 
         /// <summary>
-        /// This is the last chance to clear or dipose any remaining references. It will be called immediately after the <see cref="DepictionEngine.IDisposable.UpdateDestroyingContext"/> unless a <see cref="DepictionEngine.DisposeManager.DisposeDelay"/> was passed to the <see cref="DepictionEngine.DisposeManager.Dispose"/> call.
+        /// This is where you dispose any remaining dependencies.
         /// </summary>
         /// <param name="disposeContext">The context under which the object is being destroyed.</param>
         /// <returns>False if the object was already disposed otherwise True.</returns>
-        protected virtual bool OnDisposed(DisposeManager.DisposeContext disposeContext, bool pooled = false)
+        public virtual bool OnDispose(DisposeContext disposeContext)
         {
             if (!_disposed)
             {
                 _disposed = true;
 
-                DisposedEvent?.Invoke(this);
-                DisposedEvent = null;
+                DisposedEvent?.Invoke(this, disposeContext);
+
+                SceneManager.UnityInitializedEvent -= UnityInitialized;
+                UpdateAllDelegates();
 
                 InitializedEvent = null;
                 DisposingEvent = null;
                 DisposedEvent = null;
-
-                SceneManager.UnityInitializedEvent -= UnityInitialized;
-                UpdateAllDelegates();
 
                 return true;
             }
             return false;
         }
 
-        private void OnDestroyInternal()
+        private void OnDisposingInternal()
         {
-            UpdateDestroyingContext();
-            OnDisposedInternal(_destroyingContext);
+#if UNITY_EDITOR
+            Editor.UndoManager.UndoRedoPerformedEvent -= TriggerOnDestroyIfNullHandler;
+#endif
+            UpdateDisposingContext();
+            OnDisposeInternal(_disposingContext);
         }
 
         public void OnDestroy()
         {
-            OnDisposing(DisposeManager.DisposeContext.Editor);
+            OnDisposing();
 
-            if (GetDestroyingContext() != DisposeManager.DisposeContext.Unknown)
-                OnDestroyInternal();
-            else
-            {
 #if UNITY_EDITOR
-                SceneManager.DelayedOnDestroyEvent += OnDestroyInternal;
-
-                if (!_initialized)
-                {
-                    Editor.UndoManager.UndoRedoPerformedEvent -= UndoRedoPerformed;
-                    Editor.UndoManager.UndoRedoPerformedEvent += UndoRedoPerformed;
-                }
-#endif
+            if (GetDisposingContext() == DisposeContext.Editor_Unknown)
+            {
+                //Give us more time to identify whether this is an Editor Undo/Redo dispose
+                SceneManager.DelayedOnDestroyEvent += OnDisposingInternal;
+                Editor.UndoManager.UndoRedoPerformedEvent -= TriggerOnDestroyIfNullHandler;
+                Editor.UndoManager.UndoRedoPerformedEvent += TriggerOnDestroyIfNullHandler;
             }
+            else
+#endif
+            OnDisposingInternal();
         }
 
-        protected virtual DisposeManager.DisposeContext GetDestroyingContext()
+#if UNITY_EDITOR
+        private void TriggerOnDestroyIfNullHandler()
         {
-            DisposeManager.DisposeContext destroyingContext = DisposeManager.disposingContext;
+            DisposeManager.TriggerOnDestroyIfNull(this);
+        }
+#endif
+
+        protected virtual DisposeContext GetDisposingContext()
+        {
+            DisposeContext destroyingContext = DisposeContext.Programmatically_Pool;
+
+#if UNITY_EDITOR
+            destroyingContext = DisposeManager.disposingContext;
 
             if (SceneManager.IsSceneBeingDestroyed())
-                destroyingContext = DisposeManager.DisposeContext.Programmatically;
+                destroyingContext = DisposeContext.Programmatically_Destroy;
+#endif
 
             return destroyingContext;
         }
 
-        public virtual void ExplicitAwake()
+        protected virtual void Awake()
         {
-            if (!_initializing)
-            {
-                if (!_awake)
-                {
-                    _awake = true;
-
-                    SceneManager.UnityInitializedEvent += UnityInitialized;
-                }
-
-                Initialize();
-            }
-        }
-
-        private void UnityInitialized()
-        {
-            _unityInitialized = true;
-        }
-
-        private void Awake()
-        {
-            if (!InstanceManager.inhibitExplicitAwake)
-                ExplicitAwake();
+            Initialize();
         }
 
         private bool _inhibitExplicitOnEnableDisable;
@@ -766,47 +713,26 @@ namespace DepictionEngine
 #endif
         }
 
-#if UNITY_EDITOR
-        public void Reset()
+        public DisposeContext GetDisposeContext()
         {
-            if (_unityInitialized)
-            {
-                if (ResetAllowed())
-                    SceneManager.Reseting(this);
-
-                Editor.UndoManager.RevertAllInCurrentGroup();
-            }
-        }
-
-        protected virtual bool ResetAllowed()
-        {
-            return true;
-        }
-
-        public void InspectorReset()
-        {
-            IsUserChange(() =>
-            {
-                InitializeSerializedFields(InstanceManager.InitializationContext.Reset);
-            });
-        }
-#endif
-
-        public DisposeManager.DisposeContext GetDisposeContext()
-        {
-            DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Programmatically;
+            DisposeContext disposeContext = DisposeContext.Programmatically_Pool;
 
             if (IsDisposing())
-                disposeContext = _destroyingContext;
+                disposeContext = _disposingContext;
             else if (_originator is not null)
                 disposeContext = _originator.GetDisposeContext();
 
             return disposeContext;
         }
 
-        protected void Dispose(object obj, DisposeManager.DisposeContext disposeContext = DisposeManager.DisposeContext.Unknown, DisposeManager.DisposeDelay disposeDelay = DisposeManager.DisposeDelay.None)
+        protected void Dispose(object obj)
         {
-            DisposeManager.Dispose(obj, disposeContext == DisposeManager.DisposeContext.Unknown ? GetDisposeContext() : disposeContext, disposeDelay);
+            DisposeManager.Dispose(obj, GetDisposeContext());
+        }
+
+        protected void Dispose(object obj, DisposeContext disposeContext)
+        {
+            DisposeManager.Dispose(obj, disposeContext);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

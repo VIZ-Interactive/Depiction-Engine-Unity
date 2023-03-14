@@ -10,7 +10,7 @@ namespace DepictionEngine.Editor
 {
     public class SceneCamera : Camera
     {
-        protected override bool InitializeStack(InstanceManager.InitializationContext initializingContext)
+        protected override bool InitializeStack(InitializationContext initializingContext)
         {
             return false;
         }
@@ -41,6 +41,13 @@ namespace DepictionEngine.Editor
             
         }
 
+        protected override void CreateComponents(InitializationContext initializingContext)
+        {
+            base.CreateComponents(initializingContext);
+
+            UpdateShowImageEffects();
+        }
+
         protected override bool UpdateAllDelegates()
         {
             if (base.UpdateAllDelegates())
@@ -52,19 +59,6 @@ namespace DepictionEngine.Editor
                 return true;
             }
             return false;
-        }
-
-        public override UnityEngine.Camera unityCamera
-        {
-            protected set
-            {
-                if (base.unityCamera == value)
-                    return;
-
-                base.unityCamera = value;
-
-                UpdateShowImageEffects();
-            }
         }
 
         public override UniversalAdditionalCameraData GetUniversalAdditionalCameraData()
@@ -197,14 +191,14 @@ namespace DepictionEngine.Editor
             ApplyClipPlanePropertiesToUnityCamera(unityCamera, 0);
         }
 
-        protected override DisposeManager.DisposeContext GetDestroyingContext()
+        protected override DisposeContext GetDisposingContext()
         {
-            return DisposeManager.DisposeContext.Programmatically;
+            return DisposeContext.Programmatically_Destroy;
         }
 
-        public override bool OnDisposing(DisposeManager.DisposeContext disposeContext)
+        public override bool OnDispose(DisposeContext disposeContext)
         {
-            if (base.OnDisposing(disposeContext))
+            if (base.OnDispose(disposeContext))
             {
                 if (skybox != null)
                     skybox.enabled = false;
