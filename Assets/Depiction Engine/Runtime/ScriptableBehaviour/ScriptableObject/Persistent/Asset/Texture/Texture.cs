@@ -324,7 +324,7 @@ namespace DepictionEngine
             if (base.OnDispose(disposeContext))
             {
                 if (disposeContext != DisposeContext.Programmatically_Pool)
-                    Dispose(_unityTexture, disposeContext);
+                    DisposeManager.Dispose(_unityTexture, disposeContext);
 
                 return true;
             }

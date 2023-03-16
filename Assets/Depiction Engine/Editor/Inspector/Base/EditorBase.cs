@@ -79,6 +79,9 @@ namespace DepictionEngine.Editor
                     GUI.DrawTexture(new Rect(0.0f, 24.0f, EditorGUIUtility.currentViewWidth, 1.0f), headerLineTexture);
                 }
 
+                if (SceneManager.Debugging() && property.hasEditorUndoRedo)
+                    GUI.Label(new Rect(20, 5, 150, 15), "Not Poolable");
+
                 Rect position = new Rect(inspectorWidth - 27.0f, 3.0f, width, EditorGUIUtility.singleLineHeight);
 
                 if (GUI.Button(position, new GUIContent("ID", property.id.ToString())))
@@ -136,204 +139,210 @@ namespace DepictionEngine.Editor
 
             while (serializedProperty.NextVisible(false))
             {
-                IEnumerable<CustomAttribute> customAttributes = MemberUtility.GetMemberAttributes<CustomAttribute>(serializedObject.targetObject, serializedProperty.propertyPath);
-
-                if (beginFoldoutAttribute == null)
+                if (serializedObject.targetObject != null)
                 {
-                    beginFoldoutAttribute = MemberUtility.GetFirstAttribute<BeginFoldoutAttribute>(customAttributes);
-                    if (beginFoldoutAttribute != null)
+                    IEnumerable<CustomAttribute> customAttributes = MemberUtility.GetMemberAttributes<CustomAttribute>(serializedObject.targetObject, serializedProperty.propertyPath);
+
+                    if (beginFoldoutAttribute == null)
                     {
-                        beginFoldoutAttribute.serializedPropertyPath = serializedProperty.propertyPath;
-                        beginFoldoutAttribute.foldoutCreated = false;
-                    }
-                }
-
-                SerializedProperty beginFoloutSerializedProperty = null;
-                if (beginFoldoutAttribute != null)
-                    beginFoloutSerializedProperty = serializedObject.FindProperty(beginFoldoutAttribute.serializedPropertyPath);
-
-                if (beginHorizontalGroupAttribute == null)
-                {
-                    beginHorizontalGroupAttribute = MemberUtility.GetFirstAttribute<BeginHorizontalGroupAttribute>(customAttributes);
-                    if (beginHorizontalGroupAttribute != null)
-                        beginHorizontalGroupAttribute.horizontalGroupCreated = false;
-                }
-
-                if (IncludeField(customAttributes, serializedProperty))
-                {
-                    if (beginFoldoutAttribute != null && !beginFoldoutAttribute.foldoutCreated)
-                    {
-                        Rect position = GUILayoutUtility.GetRect(0.0f, 0.0f);
-
-                        position.y += position.height + EditorGUIUtility.standardVerticalSpacing - 1.0f;
-                        position.x += 2.0f;
-                        position.height = 22.0f;
-
-                        RenderingManager renderingManager = RenderingManager.Instance(false);
-                        if (renderingManager != Disposable.NULL)
-                            GUI.DrawTexture(position, renderingManager.headerTextures[10]);
-
-                        if (foldoutHeaderStyle == null)
-                            foldoutHeaderStyle = new GUIStyle(EditorStyles.foldoutHeader);
-                      
-                        foldoutHeaderStyle.fixedWidth = position.width - 5.0f;
-                        beginFoloutSerializedProperty.isExpanded = EditorGUILayout.Foldout(beginFoloutSerializedProperty.isExpanded, beginFoldoutAttribute.label, true, foldoutHeaderStyle);
-
-                        EditorGUILayout.Space(8.0f);
-
-                        if (beginFoloutSerializedProperty.isExpanded)
-                            EditorGUI.indentLevel++;
-
-                        beginFoldoutAttribute.foldoutCreated = true;
-                    }
-
-                    if (beginHorizontalGroupAttribute != null && !beginHorizontalGroupAttribute.horizontalGroupCreated)
-                    {
-                        if (beginHorizontalGroupAttribute.hideLabels)
-                            EditorGUIUtility.labelWidth = 0.0001f;
-                        EditorGUIUtility.fieldWidth = 30.0f;
-                        EditorGUILayout.BeginHorizontal();
-
-                        beginHorizontalGroupAttribute.horizontalGroupCreated = true;
-                    }
-
-                    if (beginFoldoutAttribute == null || beginFoloutSerializedProperty.isExpanded)
-                    {
-                        string labelOverride = null;
-                        LabelOverrideAttribute labelOverrideAttribute = MemberUtility.GetFirstAttribute<LabelOverrideAttribute>(customAttributes);
-                        if (labelOverrideAttribute != null)
-                            labelOverride = labelOverrideAttribute.label;
-
-                        EditorGUI.BeginChangeCheck();
-
-                        UnityEngine.Object[] targetObjects = serializedProperty.serializedObject.targetObjects;
-
-                        string typeStr = serializedProperty.type;
-                        Type type = typeStr.StartsWith("PPtr<$") ? typeof(OptionalPropertiesBase).Assembly.GetType(typeof(SceneManager).Namespace + "." + typeStr.Substring(6, typeStr.Length - 7)) : null;
-                        
-                        if (type != null && typeof(OptionalPropertiesBase).IsAssignableFrom(type))
-                            AddOptionalProperties(serializedProperty);
-                        else
-                            AddProperty(serializedProperty, labelOverride);
-
-                        if (EditorGUI.EndChangeCheck())
+                        beginFoldoutAttribute = MemberUtility.GetFirstAttribute<BeginFoldoutAttribute>(customAttributes);
+                        if (beginFoldoutAttribute != null)
                         {
-                            for (int i = 0; i < targetObjects.Length; i++)
+                            beginFoldoutAttribute.serializedPropertyPath = serializedProperty.propertyPath;
+                            beginFoldoutAttribute.foldoutCreated = false;
+                        }
+                    }
+
+                    SerializedProperty beginFoloutSerializedProperty = null;
+                    if (beginFoldoutAttribute != null)
+                        beginFoloutSerializedProperty = serializedObject.FindProperty(beginFoldoutAttribute.serializedPropertyPath);
+
+                    if (beginHorizontalGroupAttribute == null)
+                    {
+                        beginHorizontalGroupAttribute = MemberUtility.GetFirstAttribute<BeginHorizontalGroupAttribute>(customAttributes);
+                        if (beginHorizontalGroupAttribute != null)
+                            beginHorizontalGroupAttribute.horizontalGroupCreated = false;
+                    }
+
+                    if (IncludeField(customAttributes, serializedProperty))
+                    {
+                        if (beginFoldoutAttribute != null && !beginFoldoutAttribute.foldoutCreated)
+                        {
+                            Rect position = GUILayoutUtility.GetRect(0.0f, 0.0f);
+
+                            position.y += position.height + EditorGUIUtility.standardVerticalSpacing - 1.0f;
+                            position.x += 2.0f;
+                            position.height = 22.0f;
+
+                            RenderingManager renderingManager = RenderingManager.Instance(false);
+                            if (renderingManager != Disposable.NULL)
+                                GUI.DrawTexture(position, renderingManager.headerTextures[10]);
+
+                            if (foldoutHeaderStyle == null)
+                                foldoutHeaderStyle = new GUIStyle(EditorStyles.foldoutHeader);
+
+                            foldoutHeaderStyle.fixedWidth = position.width - 5.0f;
+                            beginFoloutSerializedProperty.isExpanded = EditorGUILayout.Foldout(beginFoloutSerializedProperty.isExpanded, beginFoldoutAttribute.label, true, foldoutHeaderStyle);
+
+                            EditorGUILayout.Space(8.0f);
+
+                            if (beginFoloutSerializedProperty.isExpanded)
+                                EditorGUI.indentLevel++;
+
+                            beginFoldoutAttribute.foldoutCreated = true;
+                        }
+
+                        if (beginHorizontalGroupAttribute != null && !beginHorizontalGroupAttribute.horizontalGroupCreated)
+                        {
+                            if (beginHorizontalGroupAttribute.hideLabels)
+                                EditorGUIUtility.labelWidth = 0.0001f;
+                            EditorGUIUtility.fieldWidth = 30.0f;
+                            EditorGUILayout.BeginHorizontal();
+
+                            beginHorizontalGroupAttribute.horizontalGroupCreated = true;
+                        }
+
+                        if (beginFoldoutAttribute == null || beginFoloutSerializedProperty.isExpanded)
+                        {
+                            string labelOverride = null;
+                            LabelOverrideAttribute labelOverrideAttribute = MemberUtility.GetFirstAttribute<LabelOverrideAttribute>(customAttributes);
+                            if (labelOverrideAttribute != null)
+                                labelOverride = labelOverrideAttribute.label;
+
+                            EditorGUI.BeginChangeCheck();
+
+                            UnityEngine.Object[] targetObjects = serializedProperty.serializedObject.targetObjects;
+
+                            string typeStr = serializedProperty.type;
+                            Type type = typeStr.StartsWith("PPtr<$") ? typeof(OptionalPropertiesBase).Assembly.GetType(typeof(SceneManager).Namespace + "." + typeStr.Substring(6, typeStr.Length - 7)) : null;
+
+                            if (type != null && typeof(OptionalPropertiesBase).IsAssignableFrom(type))
+                                AddOptionalProperties(serializedProperty);
+                            else
+                                AddProperty(serializedProperty, labelOverride);
+
+                            if (EditorGUI.EndChangeCheck())
                             {
-                                UnityEngine.Object targetObject = targetObjects[i];
-                                if (targetObject is OptionalPropertiesBase)
-                                    targetObjects[i] = (targetObject as OptionalPropertiesBase).parent;
-                            }
-
-                            UnityEngine.Object firstTargetObject = targetObjects[0];
-
-                            PropertyInfo propertyInfo = MemberUtility.GetMemberInfoFromMemberName<PropertyInfo>(firstTargetObject.GetType(), GetName(serializedProperty.propertyPath));
-
-                            if (propertyInfo != null)
-                            {
-                                if (propertyInfo.CanWrite)
+                                for (int i = 0; i < targetObjects.Length; i++)
                                 {
-                                    if (targetObjects.Length > 0)
+                                    UnityEngine.Object targetObject = targetObjects[i];
+                                    if (targetObject is OptionalPropertiesBase)
+                                        targetObjects[i] = (targetObject as OptionalPropertiesBase).parent;
+                                }
+
+                                UnityEngine.Object firstTargetObject = targetObjects[0];
+
+                                PropertyInfo propertyInfo = MemberUtility.GetMemberInfoFromMemberName<PropertyInfo>(firstTargetObject.GetType(), GetName(serializedProperty.propertyPath));
+
+                                if (propertyInfo != null)
+                                {
+                                    if (propertyInfo.CanWrite)
                                     {
-                                        object value = GetValue(serializedProperty);
-
-                                        string undoGroupName = null;
-
-                                        if (propertyInfo.Name == TransformDouble.GetLocalEditorEulerAnglesHintName())
-                                            undoGroupName = "Set Rotation";
-                                        else if (propertyInfo.Name == nameof(TransformDouble.localPosition) || propertyInfo.Name == nameof(TransformDouble.localScale))
+                                        if (targetObjects.Length > 0)
                                         {
-                                            undoGroupName = "Set ";
+                                            object value = GetValue(serializedProperty);
 
-                                            string valueStr = ((Vector3Double)value).ToString("F2");
-                                            if (propertyInfo.Name == nameof(TransformDouble.localPosition))
-                                                undoGroupName += "Position to " + valueStr + " in ";
-                                            else
-                                                undoGroupName += "Scale to " + valueStr + " in ";
+                                            string undoGroupName = null;
 
-                                            undoGroupName += serializedProperty.serializedObject.targetObjects.Length == 1 ? firstTargetObject.name : "Selected Objects";
-                                        }
-
-                                        RecordAdditionalObjectsAttribute recordAdditionalObjectsAttribute = propertyInfo.GetCustomAttribute<RecordAdditionalObjectsAttribute>();
-                                        if (recordAdditionalObjectsAttribute != null)
-                                        {
-                                            MethodInfo methodInfo = MemberUtility.GetMethodInfoFromMethodName(targetObjects[0], recordAdditionalObjectsAttribute.methodName);
-                                            if (methodInfo != null)
+                                            if (propertyInfo.Name == TransformDouble.GetLocalEditorEulerAnglesHintName())
+                                                undoGroupName = "Set Rotation";
+                                            else if (propertyInfo.Name == nameof(TransformDouble.localPosition) || propertyInfo.Name == nameof(TransformDouble.localScale))
                                             {
-                                                foreach (UnityEngine.Object targetObject in targetObjects)
+                                                undoGroupName = "Set ";
+
+                                                string valueStr = ((Vector3Double)value).ToString("F2");
+                                                if (propertyInfo.Name == nameof(TransformDouble.localPosition))
+                                                    undoGroupName += "Position to " + valueStr + " in ";
+                                                else
+                                                    undoGroupName += "Scale to " + valueStr + " in ";
+
+                                                undoGroupName += serializedProperty.serializedObject.targetObjects.Length == 1 ? firstTargetObject.name : "Selected Objects";
+                                            }
+
+                                            RecordAdditionalObjectsAttribute recordAdditionalObjectsAttribute = propertyInfo.GetCustomAttribute<RecordAdditionalObjectsAttribute>();
+                                            if (recordAdditionalObjectsAttribute != null)
+                                            {
+                                                MethodInfo methodInfo = MemberUtility.GetMethodInfoFromMethodName(targetObjects[0], recordAdditionalObjectsAttribute.methodName);
+                                                if (methodInfo != null)
                                                 {
-                                                    UnityEngine.Object[] additionalObjects = methodInfo.Invoke(targetObject, null) as UnityEngine.Object[];
-                                                    if (additionalObjects != null && additionalObjects.Length > 0)
-                                                        RecordObjects(additionalObjects, undoGroupName);
+                                                    foreach (UnityEngine.Object targetObject in targetObjects)
+                                                    {
+                                                        UnityEngine.Object[] additionalObjects = methodInfo.Invoke(targetObject, null) as UnityEngine.Object[];
+                                                        if (additionalObjects != null && additionalObjects.Length > 0)
+                                                            RecordObjects(additionalObjects, undoGroupName);
+                                                    }
+                                                }
+                                                else
+                                                    Debug.LogError("RecordAdditionalObjectsAttribute method '" + recordAdditionalObjectsAttribute.methodName + "' not found!");
+                                            }
+
+                                            RecordObjects(targetObjects, undoGroupName);
+
+                                            foreach (UnityEngine.Object targetObject in targetObjects)
+                                            {
+                                                if (targetObject is IScriptableBehaviour)
+                                                {
+                                                    if (!IsFallbackValues(serializedProperty.serializedObject))
+                                                        SetPropertyValue(targetObject as IScriptableBehaviour, propertyInfo, value);
+                                                    else
+                                                        propertyInfo.SetValue(targetObject, value);
                                                 }
                                             }
-                                            else
-                                                Debug.LogError("RecordAdditionalObjectsAttribute method '" + recordAdditionalObjectsAttribute.methodName + "' not found!");
                                         }
-
-                                        RecordObjects(targetObjects, undoGroupName);
-
-                                        foreach (UnityEngine.Object targetObject in targetObjects)
-                                        {
-                                            if (targetObject is IScriptableBehaviour)
-                                            {
-                                                if (!IsFallbackValues(serializedProperty.serializedObject))
-                                                    SetPropertyValue(targetObject as IScriptableBehaviour, propertyInfo, value);
-                                                else
-                                                    propertyInfo.SetValue(targetObject, value);
-                                            }
-                                        }
+                                    }
+                                    else
+                                    {
+                                        if (propertyInfo.Name != nameof(DatasourceBase.datasource))
+                                            Debug.LogWarning("Property '" + propertyInfo.Name + "' is readOnly");
                                     }
                                 }
                                 else
                                 {
-                                    if (propertyInfo.Name != nameof(DatasourceBase.datasource))
-                                        Debug.LogWarning("Property '" + propertyInfo.Name + "' is readOnly");
+                                    if (serializedProperty.serializedObject.targetObject != null)
+                                    {
+                                        FieldInfo fieldInfo = MemberUtility.GetMemberInfoFromMemberName<FieldInfo>(serializedProperty.serializedObject.targetObject.GetType(), serializedProperty.propertyPath);
+
+                                        ButtonAttribute btnAttribute = null;
+
+                                        if (fieldInfo != null)
+                                            btnAttribute = fieldInfo.GetCustomAttribute<ButtonAttribute>();
+
+                                        if (btnAttribute == null)
+                                            Debug.LogWarning("Missing property '" + serializedProperty.propertyPath + "'");
+                                    }
                                 }
                             }
-                            else
-                            {
-                                FieldInfo fieldInfo = MemberUtility.GetMemberInfoFromMemberName<FieldInfo>(serializedProperty.serializedObject.targetObject.GetType(), serializedProperty.propertyPath);
-
-                                ButtonAttribute btnAttribute = null;
-
-                                if (fieldInfo != null)
-                                    btnAttribute = fieldInfo.GetCustomAttribute<ButtonAttribute>();
-
-                                if (btnAttribute == null)
-                                    Debug.LogWarning("Missing property '" + serializedProperty.propertyPath + "'");
-                            }
                         }
                     }
-                }
 
-                EndHorizontalGroupAttribute endHorizontalGroupAttribute = MemberUtility.GetFirstAttribute<EndHorizontalGroupAttribute>(customAttributes);
-                if (endHorizontalGroupAttribute != null)
-                {
-                    if (beginHorizontalGroupAttribute != null && beginHorizontalGroupAttribute.horizontalGroupCreated)
+                    EndHorizontalGroupAttribute endHorizontalGroupAttribute = MemberUtility.GetFirstAttribute<EndHorizontalGroupAttribute>(customAttributes);
+                    if (endHorizontalGroupAttribute != null)
                     {
-                        EditorGUILayout.EndHorizontal();
-                        EditorGUIUtility.labelWidth = 0.0f;
-                    }
-
-                    beginHorizontalGroupAttribute = null;
-                }
-
-                EndFoldoutAttribute endFoldoutAttribute = MemberUtility.GetFirstAttribute<EndFoldoutAttribute>(customAttributes);
-                if (endFoldoutAttribute != null)
-                {
-                    if (beginFoldoutAttribute != null && beginFoldoutAttribute.foldoutCreated)
-                    {
-                        if (beginFoloutSerializedProperty.isExpanded)
+                        if (beginHorizontalGroupAttribute != null && beginHorizontalGroupAttribute.horizontalGroupCreated)
                         {
-                            EditorGUILayout.Space(endFoldoutAttribute.space);
-                            EditorGUI.indentLevel--;
+                            EditorGUILayout.EndHorizontal();
+                            EditorGUIUtility.labelWidth = 0.0f;
                         }
 
-                        EditorGUILayout.EndFoldoutHeaderGroup();
+                        beginHorizontalGroupAttribute = null;
                     }
 
-                    beginFoldoutAttribute = null;
+                    EndFoldoutAttribute endFoldoutAttribute = MemberUtility.GetFirstAttribute<EndFoldoutAttribute>(customAttributes);
+                    if (endFoldoutAttribute != null)
+                    {
+                        if (beginFoldoutAttribute != null && beginFoldoutAttribute.foldoutCreated)
+                        {
+                            if (beginFoloutSerializedProperty.isExpanded)
+                            {
+                                EditorGUILayout.Space(endFoldoutAttribute.space);
+                                EditorGUI.indentLevel--;
+                            }
+
+                            EditorGUILayout.EndFoldoutHeaderGroup();
+                        }
+
+                        beginFoldoutAttribute = null;
+                    }
                 }
             }
 
@@ -717,6 +726,11 @@ namespace DepictionEngine.Editor
                 foreach (UnityEditor.Editor optionalPropertiesEditor in _optionalPropertiesEditors.Values)
                     DisposeManager.Destroy(optionalPropertiesEditor);
             }
+        }
+
+        protected virtual void OnDestroy()
+        {
+
         }
     }
 }

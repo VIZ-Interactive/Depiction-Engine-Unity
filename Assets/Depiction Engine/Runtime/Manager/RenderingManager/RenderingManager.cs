@@ -282,6 +282,8 @@ namespace DepictionEngine
 
         private void GenerateAllMarkersBtn()
         {
+            Editor.UndoManager.CreateNewGroup("Generate all Markers");
+
             foreach (int i in Enum.GetValues(typeof(Marker.Icon)))
             {
                 Marker.Icon icon = (Marker.Icon)i;
@@ -342,7 +344,7 @@ namespace DepictionEngine
             InitValue(value => minMaxFocusDistance = value, new Vector2(0.0f, 500.0f), initializingContext);
         }
 
-        protected override void Initialized(InitializationContext initializingContext)
+        public override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
 
@@ -1547,7 +1549,7 @@ namespace DepictionEngine
             if (_meshCache != null)
             {
                 foreach (Mesh mesh in _meshCache.Values)
-                    Dispose(mesh, disposeContext);
+                    DisposeManager.Dispose(mesh, disposeContext);
             }
         }
 

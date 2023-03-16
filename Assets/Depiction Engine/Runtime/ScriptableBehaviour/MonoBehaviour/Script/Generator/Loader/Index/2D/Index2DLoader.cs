@@ -122,7 +122,7 @@ namespace DepictionEngine
             if (index2DLoadScope != Disposable.NULL)
             {
                 Grid2DIndex scopeGrid2DIndex = index2DLoadScope.scopeGrid2DIndex;
-                if (scopeGrid2DIndex != Grid2DIndex.empty)
+                if (scopeGrid2DIndex != Grid2DIndex.Empty)
                 {
                     if (!indexReferences.TryGetValue(scopeGrid2DIndex, out ReferencesList references))
                     {
@@ -145,25 +145,39 @@ namespace DepictionEngine
 
         public override bool RemoveReference(LoadScope loadScope, ReferenceBase reference, DisposeContext disposeContext)
         {
-            Index2DLoadScope index2DLoadScope = loadScope as Index2DLoadScope;
-            if (index2DLoadScope != Disposable.NULL)
+            if (base.RemoveReference(loadScope, reference, disposeContext))
             {
-                Grid2DIndex scopeGrid2DIndex = index2DLoadScope.scopeGrid2DIndex;
-                if (scopeGrid2DIndex != Grid2DIndex.empty)
+                bool removed = false;
+
+                Index2DLoadScope index2DLoadScope = loadScope as Index2DLoadScope;
+                if (index2DLoadScope != Disposable.NULL)
                 {
-                    if (indexReferences.TryGetValue(scopeGrid2DIndex, out ReferencesList references) && references.Remove(reference))
+                    Grid2DIndex scopeGrid2DIndex = index2DLoadScope.scopeGrid2DIndex;
+                    if (scopeGrid2DIndex != Grid2DIndex.Empty)
                     {
-                        if (references.IsEmpty())
+#if UNITY_EDITOR
+                        if (disposeContext == DisposeContext.Editor_Destroy)
+                            Editor.UndoManager.RecordObject(this);
+#endif
+                        if (indexReferences.TryGetValue(scopeGrid2DIndex, out ReferencesList references) && references.Remove(reference))
                         {
-                            indexReferences.Remove(scopeGrid2DIndex);
+                            if (references.IsEmpty())
+                            {
+                                indexReferences.Remove(scopeGrid2DIndex);
 
-                            RemoveIndex(scopeGrid2DIndex);
-                            DisposeLoadScope(loadScope, disposeContext);
+                                RemoveIndex(scopeGrid2DIndex);
+                                DisposeLoadScope(loadScope, disposeContext);
+                            }
+
+                            removed = true;
                         }
-
-                        return true;
+#if UNITY_EDITOR
+                        if (disposeContext == DisposeContext.Editor_Destroy)
+                            Editor.UndoManager.FlushUndoRecordObjects();
+#endif
                     }
                 }
+                return removed;
             }
             return false;
         }

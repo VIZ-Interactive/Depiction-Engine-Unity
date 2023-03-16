@@ -164,11 +164,14 @@ namespace DepictionEngine
             {
                 value = ValidateFallbackValuesJson(value);
 
-                string typeName = value[nameof(Object.type)];
-                if (!string.IsNullOrEmpty(typeName))
-                    SetFallbackJsonFromType(typeName);
+                if (value != null)
+                {
+                    string typeName = value[nameof(Object.type)];
+                    if (!string.IsNullOrEmpty(typeName))
+                        SetFallbackJsonFromType(typeName);
 
-                MergeJson(_fallbackValuesJson, value);
+                    MergeJson(_fallbackValuesJson, value);
+                }
 
                 SetFallbackValuesJson(value); 
             }
@@ -183,7 +186,7 @@ namespace DepictionEngine
 
                 JsonUtility.FromJson(out string jsonStr, newValue);
 
-                if (IsUserChangeContext() && fallbackValuesObject != null)
+                if (SceneManager.IsUserChangeContext() && fallbackValuesObject != null)
                     (fallbackValuesObject as IJson).SetJson(newValue);
 
                 UpdateFallbackJsonStr(jsonStr);
@@ -275,9 +278,11 @@ namespace DepictionEngine
             }
         }
 
-        private void DisposeFallbackValuesObject(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
+        private void DisposeFallbackValuesObject()
         {
-            Dispose(_fallbackValuesObject is MonoBehaviour ? (_fallbackValuesObject as MonoBehaviour).gameObject : _fallbackValuesObject, disposeContext);
+            if (_fallbackValuesObject != null)
+                DisposeManager.Dispose(_fallbackValuesObject is MonoBehaviour ? (_fallbackValuesObject as MonoBehaviour).gameObject : _fallbackValuesObject, DisposeContext.Programmatically_Destroy);
+            
             fallbackValuesObject = null;
 
             _fallbackValuesObjectReferences = 0;
@@ -430,8 +435,13 @@ namespace DepictionEngine
         {
             if (base.OnDispose(disposeContext))
             {
-                DisposeFallbackValuesObject(disposeContext);
-
+                try
+                {
+                    DisposeFallbackValuesObject();
+                }
+                catch(MissingFieldException)
+                {}
+                
                 return true;
             }
             return false;

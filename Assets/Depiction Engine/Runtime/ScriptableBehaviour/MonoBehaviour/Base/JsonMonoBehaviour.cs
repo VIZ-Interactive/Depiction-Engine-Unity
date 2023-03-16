@@ -22,19 +22,6 @@ namespace DepictionEngine
             return initializeJSON;
         }
 
-        protected override SerializableGuid GetId(SerializableGuid id, InitializationContext initializingContext)
-        {
-            if (_initializationJson != null)
-            {
-                if (SerializableGuid.TryParse(_initializationJson[nameof(PropertyScriptableObject.id)], out SerializableGuid parsedId))
-                    id = parsedId;
-
-                _initializationJson.Remove(nameof(PropertyScriptableObject.id));
-            }
-
-            return base.GetId(id, initializingContext);
-        }
-
         protected override bool InitializeLastFields()
         {
             if (base.InitializeLastFields())
@@ -65,16 +52,29 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void Initialized(InitializationContext initializingContext)
+        protected override SerializableGuid GetId(SerializableGuid id, InitializationContext initializingContext)
+        {
+            if (_initializationJson != null)
+            {
+                if (SerializableGuid.TryParse(_initializationJson[nameof(PropertyScriptableObject.id)], out SerializableGuid parsedId))
+                    id = parsedId;
+
+                _initializationJson.Remove(nameof(PropertyScriptableObject.id));
+            }
+
+            return base.GetId(id, initializingContext);
+        }
+
+        public override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
 
             _initializationJson = null;
         }
 
-        protected override void DetectChanges()
+        protected override void DetectUserChanges()
         {
-            base.DetectChanges();
+            base.DetectUserChanges();
 
             if (_lastEnabled != enabled)
             {
@@ -84,20 +84,11 @@ namespace DepictionEngine
             }
         }
 
-        protected JSONNode initializationJson
-        {
-            get { return _initializationJson; }
-        }
+        protected JSONNode initializationJson { get => _initializationJson; }
 
-        public void SetJson(JSONNode json)
-        {
-            JsonUtility.SetJSON(json, this);
-        }
+        public void SetJson(JSONNode json) { JsonUtility.SetJSON(json, this); }
 
-        public JSONObject GetJson(Datasource outOfSynchDatasource = null, JSONNode filter = null)
-        {
-            return JsonUtility.GetJson(this, this, outOfSynchDatasource, filter) as JSONObject;
-        }
+        public JSONObject GetJson(Datasource outOfSynchDatasource = null, JSONNode filter = null) { return JsonUtility.GetJson(this, this, outOfSynchDatasource, filter) as JSONObject; }
 
         private bool _lastEnabled;
         /// <summary>

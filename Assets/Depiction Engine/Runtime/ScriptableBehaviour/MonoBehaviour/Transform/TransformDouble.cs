@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 
 namespace DepictionEngine
 {
@@ -209,10 +210,11 @@ namespace DepictionEngine
         /// <summary>
         /// The parent of the Transform.
         /// </summary>
+        [Json(propertyName: nameof(parentJson))]
         public new TransformDouble parent
         {
-            get { return base.parent as TransformDouble; }
-            set { SetParent(value); }
+            get => base.parent as TransformDouble;
+            set => SetParent(value);
         }
 
         public Vector3Double forward { get { return rotation * Vector3Double.forward; } }
@@ -654,12 +656,15 @@ namespace DepictionEngine
             PropertyAssigned(this, nameof(geoCoordinate), geoCoordinate, geoCoordinate);
         }
 
-        protected override void DetectChanges()
+        protected override void DetectUserChanges()
         {
-            base.DetectChanges();
+            base.DetectUserChanges();
 
             if (DetectDirectTransformLocalPositionManipulation() || DetectDirectTransformLocalRotationManipulation() || DetectDirectTransformLocalScaleManipulation())
             {
+#if UNITY_EDITOR
+                EditorUndoRedoDetected();
+#endif
                 SetComponents(CaptureLocalPosition(), CaptureLocalRotation(), CaptureLocalScale());
 
                 InitLastTransformFields();
@@ -749,7 +754,7 @@ namespace DepictionEngine
             Component changedComponents = Component.None;
             Component capturedComponents = Component.None;
 
-            bool isUserChange = IsUserChangeContext();
+            bool isUserChange = SceneManager.IsUserChangeContext();
 
             if (localPosition.changed && (!localPosition.isGeoCoordinate && SetLocalPosition(localPosition.vector3DoubleValue) || (localPosition.isGeoCoordinate && SetGeoCoordinate(localPosition.geoCoordinateValue, true, forceDeriveLocalPosition))))
             {

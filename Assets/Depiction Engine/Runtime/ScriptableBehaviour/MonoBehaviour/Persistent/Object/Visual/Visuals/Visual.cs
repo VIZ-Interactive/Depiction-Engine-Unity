@@ -1,6 +1,7 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -9,7 +10,7 @@ namespace DepictionEngine
     /// A GameObject meant to be used as a child of a <see cref="DepictionEngine.VisualObject"/>.
     /// </summary>
     [DisallowMultipleComponent]
-    public class Visual : PropertyMonoBehaviour
+    public class Visual : PropertyMonoBehaviour, IRequiresComponents
     {
         private VisualObject _visualObject;
 
@@ -98,6 +99,14 @@ namespace DepictionEngine
         protected virtual int GetLayer()
         {
             return _visualObject != Disposable.NULL ? _visualObject.layer : 0;
+        }
+
+        public void GetRequiredComponentTypes(ref List<Type> types)
+        {
+            types.Clear();
+            types.Add(typeof(MeshFilter));
+            types.Add(typeof(MeshRenderer));
+            types.Add(typeof(Collider));
         }
     }
 }

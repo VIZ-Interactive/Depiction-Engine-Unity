@@ -41,7 +41,7 @@ namespace DepictionEngine
 
                 UpdateAllDelegates();
 
-                Initialized();
+                Initialized(InitializationContext.Programmatically);
                 InitializedEvent?.Invoke(this);
 
                 return true;
@@ -68,10 +68,7 @@ namespace DepictionEngine
            
         }
 
-        /// <summary>
-        /// Acts as a reliable constructor and will always by called unlike Awake which is sometimes skipped.
-        /// </summary>
-        protected virtual void Initialized()
+        public virtual void Initialized(InitializationContext initializingContext)
         {
             _initialized = true;
         }

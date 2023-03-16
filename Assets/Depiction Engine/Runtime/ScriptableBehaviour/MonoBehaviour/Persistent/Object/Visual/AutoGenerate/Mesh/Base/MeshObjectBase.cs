@@ -484,7 +484,7 @@ namespace DepictionEngine
             if (_meshes != null && _isSharedMeshFlags != null)
             {
                 if (!_isSharedMeshFlags[index])
-                    Dispose(_meshes[index], disposeContext);
+                    DisposeManager.Dispose(_meshes[index], disposeContext);
             }
         }
 

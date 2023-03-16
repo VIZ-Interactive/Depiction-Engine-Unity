@@ -203,6 +203,16 @@ namespace DepictionEngine
             set { SetValue(nameof(destroyCount), value, ref _destroyCount); }
         }
 
+        protected override void IterateOverChildrenAndSiblings(Action<PropertyMonoBehaviour> callback)
+        {
+
+        }
+
+        protected override void IterateOverChildren(Action<PropertyMonoBehaviour> callback)
+        {
+
+        }
+
         private Tween resizeTimer
         {
             get { return _resizeTimer; }
@@ -364,16 +374,6 @@ namespace DepictionEngine
             }
 
             return disposable;
-        }
-
-        protected override void IterateOverChildrenAndSiblings(Action<PropertyMonoBehaviour> callback)
-        {
-
-        }
-
-        protected override void IterateOverChildren(Action<PropertyMonoBehaviour> callback)
-        {
-
         }
 
         public int GetHashCodeFromType(Type type)

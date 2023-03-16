@@ -345,14 +345,14 @@ namespace DepictionEngine
         /// </summary>
         public int subdivision
         {
-            get { return _subdivision; }
-            private set { SetValue(nameof(subdivision), ValidateSubdivision(value), ref _subdivision); }
+            get => _subdivision;
+            private set => _subdivision = ValidateSubdivision(value);
         }
 
         private float subdivisionSize
         {
-            get { return _subdivisionSize; }
-            set { SetValue(nameof(subdivisionSize), value, ref _subdivisionSize); }
+            get => _subdivisionSize;
+            set => _subdivisionSize = value;
         }
 
         private int cameraCount
@@ -627,7 +627,7 @@ namespace DepictionEngine
             if (base.OnDispose(disposeContext))
             {
                 if (disposeContext != DisposeContext.Programmatically_Pool)
-                    Dispose(_material, disposeContext);
+                    DisposeManager.Dispose(_material, disposeContext);
 
                 return true;
             }

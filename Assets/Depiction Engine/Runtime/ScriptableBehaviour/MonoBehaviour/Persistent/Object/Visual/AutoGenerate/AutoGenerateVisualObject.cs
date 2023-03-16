@@ -1,6 +1,7 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. <contact@vizinteractive.io> | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -83,6 +84,8 @@ namespace DepictionEngine
                     meshRendererVisualDirtyFlags.AllDirty();
 #if UNITY_EDITOR
                 Editor.UndoManager.RegisterCompleteObjectUndo(meshRendererVisualDirtyFlags, initializingContext);
+                //Prevent further changes to the VisualDirtyFlags to be recorded as part of this undo operation.
+                Editor.UndoManager.CollapseUndoOperations(Editor.UndoManager.GetCurrentGroup());
 #endif
             }
 
@@ -160,7 +163,7 @@ namespace DepictionEngine
             {
 #if UNITY_EDITOR
                 //Demo the effect if the change was done in the inspector and was not the result of "Paste Component Values".
-                if (IsUserChangeContext() && SceneManager.sceneExecutionState != SceneManager.ExecutionState.PastingComponentValues)
+                if (SceneManager.IsUserChangeContext() && SceneManager.sceneExecutionState != SceneManager.ExecutionState.PastingComponentValues)
                     popup = true;
 #endif
                 SetValue(nameof(popupType), value, ref _popupType);
@@ -373,7 +376,6 @@ namespace DepictionEngine
         {
 
         }
-
         public override bool OnDispose(DisposeContext disposeContext)
         {
             if (base.OnDispose(disposeContext))
@@ -387,10 +389,10 @@ namespace DepictionEngine
                     //If the Entire GameObject is being disposed in the Editor then some Destroy Undo operations will be registered by the Editor automaticaly. By the time the delayed dispose will be performed the children will already be Destroyed and we will not register additional Undo Operations
                     DisposeAllChildren(disposeContext);
                 }
-                catch(MissingReferenceException)
+                catch (MissingReferenceException)
                 { }
 
-                Dispose(_meshRendererVisualDirtyFlags, disposeContext);
+                DisposeManager.Dispose(_meshRendererVisualDirtyFlags, disposeContext);
 
                 return true;
             }

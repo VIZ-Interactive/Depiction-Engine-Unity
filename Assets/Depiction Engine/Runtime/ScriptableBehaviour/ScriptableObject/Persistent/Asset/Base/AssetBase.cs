@@ -74,7 +74,7 @@ namespace DepictionEngine
                 string assetPath = UnityEditor.EditorUtility.OpenFilePanel("Load Asset File", "Assets/DepictionEngine/Resources", GetSupportedLoadFileExtensions());
                 if (!string.IsNullOrEmpty(assetPath))
                 {
-                    IsUserChange(() => 
+                    SceneManager.UserContext(() => 
                     {
                         Editor.UndoManager.CreateNewGroup("Changed Asset Data in " + name);
                         Editor.UndoManager.RegisterCompleteObjectUndo(this);
@@ -272,7 +272,7 @@ namespace DepictionEngine
                 if (initializingContext == InitializationContext.Editor)
                     disposeContext = DisposeContext.Editor_Destroy;
 #endif
-                Dispose(oldData, disposeContext);
+                DisposeManager.Dispose(oldData, disposeContext);
 
 #if UNITY_EDITOR
                 Editor.UndoManager.RegisterCreatedObjectUndo(newData, initializingContext);

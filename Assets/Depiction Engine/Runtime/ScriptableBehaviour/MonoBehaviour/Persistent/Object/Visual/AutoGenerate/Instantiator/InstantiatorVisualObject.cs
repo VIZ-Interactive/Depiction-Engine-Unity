@@ -33,7 +33,7 @@ namespace DepictionEngine
 
         private void DisposeAllVisualsBtn()
         {
-            IsUserChange(() =>
+            SceneManager.UserContext(() =>
             {
                 Editor.UndoManager.CreateNewGroup("Disposed All '" + name + "' Visuals");
                 DisposeAllChildren();
@@ -42,7 +42,7 @@ namespace DepictionEngine
 
         private void UpdateAllGameObjectsBtn()
         {
-            IsUserChange(() =>
+            SceneManager.UserContext(() =>
             {
                 Editor.UndoManager.CreateNewGroup("Updated All '" + name + "' GameObjects");
                 UpdateAllGameObjects();
@@ -231,7 +231,7 @@ namespace DepictionEngine
 
             if (visual != Disposable.NULL)
             {
-                Visual newVisual = instanceManager.CreateInstance(visual.GetType(), parent.transform, null, null) as Visual;
+                Visual newVisual = instanceManager.CreateInstance(visual.GetType(), parent.transform, null, null, InitializationContext.Programmatically) as Visual;
 
                 if (newVisual is MeshRendererVisual)
                 {

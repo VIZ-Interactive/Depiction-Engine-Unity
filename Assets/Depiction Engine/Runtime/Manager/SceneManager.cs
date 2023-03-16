@@ -120,6 +120,8 @@ namespace DepictionEngine
 
         private bool _updated;
 
+        private static bool _isUserChange;
+
         private static bool _activateAll;
 
         private static ExecutionState _sceneExecutionState;
@@ -137,7 +139,7 @@ namespace DepictionEngine
         /// <summary>
         /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
         /// </summary>
-        public static Action UnityInitializedEvent;
+        public static Action LateUpdateEvent;
         /// <summary>
         /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/>.
         /// </summary>
@@ -550,6 +552,23 @@ namespace DepictionEngine
         }
 #endif
 
+        /// <summary>
+        /// Makes available to the code executed in the callback, the user context under which it was triggered. If it was triggered by a user action, such as altering properties through the editor inspector or moving object using the manipulator, the value passed to isUserChange should be true. User context inside this callback can always be accessed by calling <see cref="DepictionEngine.IScriptableBehaviour.IsUserChangeContext"/>.
+        /// </summary>
+        /// <param name="callback">The code to execute.</param>
+        /// <param name="isUserChange">Whether the current code execution was triggered by a user action.</param>
+        public static void UserContext(Action callback, bool isUserChange = true)
+        {
+            if (callback is null)
+                return;
+            bool lastIsUserChange = _isUserChange;
+            _isUserChange = isUserChange;
+            callback();
+            _isUserChange = lastIsUserChange;
+        }
+
+        public static bool IsUserChangeContext() => _isUserChange;
+
         public static bool IsValidActiveStateChange()
         {
             bool isValid = true;
@@ -703,7 +722,7 @@ namespace DepictionEngine
         {
             if (go != null && go != gameObject)
             {
-                TransformBase childComponent = GetComponent<TransformBase>();
+                TransformBase childComponent = go.GetComponent<TransformBase>();
                 if (childComponent != Disposable.NULL)
                 {
                     if (InitializeComponent(childComponent))
@@ -713,7 +732,7 @@ namespace DepictionEngine
         }
 
         private List<GameObject> _rootGameObjects;
-        private List<GameObject> GetRootGameObjects()
+        public List<GameObject> GetRootGameObjects()
         {
             UnityEngine.SceneManagement.Scene scene = gameObject.scene;
             if (scene != null && scene.isLoaded)
@@ -801,7 +820,6 @@ namespace DepictionEngine
             set { SetValue(nameof(logConsoleFiltering), value, ref _logConsoleFiltering); }
         }
 
-
         /// <summary>
         /// Should the player be running when the application is in the background?
         /// </summary>
@@ -884,7 +902,7 @@ namespace DepictionEngine
             return debug;
         }
 
-        protected override bool AddProperty(PropertyMonoBehaviour child)
+        protected override bool AddChild(PropertyMonoBehaviour child)
         {
             if (child is TweenManager)
                 _tweenManager = child as TweenManager;
@@ -904,7 +922,7 @@ namespace DepictionEngine
                 _instanceManager = child as InstanceManager;
             else
             {
-                if (base.AddProperty(child))
+                if (base.AddChild(child))
                 {
                     if (child is TransformBase && child.transform.parent == null)
                     {
@@ -924,7 +942,7 @@ namespace DepictionEngine
             return true;
         }
 
-        protected override bool RemoveProperty(PropertyMonoBehaviour child)
+        protected override bool RemoveChild(PropertyMonoBehaviour child)
         {
             if (this != Disposable.NULL)
             {
@@ -946,7 +964,7 @@ namespace DepictionEngine
                     _instanceManager = null;
                 else
                 {
-                    if (base.RemoveProperty(child))
+                    if (base.RemoveChild(child))
                     {
                         if (child is TransformBase)
                         {
@@ -1079,7 +1097,7 @@ namespace DepictionEngine
                                 try 
                                 {
 #pragma warning disable UNT0018 // System.Reflection features in performance critical messages
-                                    targetObject.IsUserChange(callback: () => { SetInspectorPropertyValue(targetObject, queuedPropertyValue.Item2, queuedPropertyValue.Item3); });
+                                    UserContext(callback: () => { SetInspectorPropertyValue(targetObject, queuedPropertyValue.Item2, queuedPropertyValue.Item3); });
 #pragma warning restore UNT0018 // System.Reflection features in performance critical messages
                                 }
                                 catch(Exception)
@@ -1166,18 +1184,15 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        private static List<UnityEngine.Object> _resetingObjects;
+        private static List<UnityEngine.Object> _resetingObjects = new();
         public static void Reseting(UnityEngine.Object scriptableBehaviour)
         {
-            _resetingObjects ??= new List<UnityEngine.Object>();
             _resetingObjects.Add(scriptableBehaviour);
         }
 
-        private static List<(IJson, JSONObject)> _pastingComponentValuesToObjects;
+        private static List<(IJson, JSONObject)> _pastingComponentValuesToObjects = new();
         public static void PastingComponentValues(IJson iJson, JSONObject json)
         {
-            _pastingComponentValuesToObjects ??= new List<(IJson, JSONObject)>();
-            
             if (json[nameof(IProperty.id)] != null)
                 json.Remove(nameof(IProperty.id));
             
@@ -1226,7 +1241,7 @@ namespace DepictionEngine
                 {
                     IJson iJson = pastingComponentValuesToObject.Item1;
                     JSONObject json = pastingComponentValuesToObject.Item2;
-                    iJson.IsUserChange(() => 
+                    UserContext(() => 
                     {
                         iJson.SetJson(json);
                     });
@@ -1236,7 +1251,7 @@ namespace DepictionEngine
             sceneExecutionState = ExecutionState.None;
 #endif
 
-            InvokeAction(ref UnityInitializedEvent, "UnityInitialized", ExecutionState.UnityInitialized);
+            InvokeAction(ref LateUpdateEvent, "UnityInitialized", ExecutionState.UnityInitialized);
 
             DisposeManager.DisposingContext(() => 
             {

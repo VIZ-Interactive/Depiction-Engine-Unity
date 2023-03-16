@@ -23,15 +23,14 @@ namespace DepictionEngine
         private PersistentScriptableObject _persistentScriptableObject;
 
         [SerializeField]
-        private Datasource _datasource;
-
-        [SerializeField]
         private OutOfSyncDictionary _outOfSyncDictionary;
-
         [SerializeField]
         private bool _isOutOfSync;
         [SerializeField]
         private bool _canBeAutoDisposed;
+
+        [SerializeField]
+        private Datasource _datasource;
 
         [SerializeField]
         private bool _supportsSave;
@@ -52,6 +51,10 @@ namespace DepictionEngine
         /// Dispatched after the <see cref="DepictionEngine.PersistenceData.canBeAutoDisposed"/> value changed.
         /// </summary>
         public Action<PersistenceData> CanBeAutoDisposedChangedEvent;
+        /// <summary>
+        /// Dispatched when the persistent is disposed.
+        /// </summary>
+        public Action<PersistenceData, IPersistent, DisposeContext> PersistentDisposedEvent;
 
         public override void Recycle()
         {
@@ -59,7 +62,7 @@ namespace DepictionEngine
 
             _persistentMonoBehaviour = default;
             _persistentScriptableObject = default;
-            
+
             _datasource = default;
 
             _outOfSyncDictionary?.Clear();
@@ -93,7 +96,11 @@ namespace DepictionEngine
             {
                 persistent.DisposedEvent -= PersistentDisposedHandler;
                 persistent.PropertyAssignedEvent -= PersistentPropertyAssignedHandler;
-                persistent.UserPropertyAssignedEvent -= PersistentUserPropertyAssignedHandler;
+                if (persistent is Object)
+                {
+                    Object objectBase = persistent as Object;
+                    objectBase.ComponentPropertyAssignedEvent -= PersistentPropertyAssignedHandler;
+                }
 
                 if (supportsSave)
                     persistent.PersistenceSaveOperationEvent -= PersistenceSaveOperationHandler;
@@ -113,7 +120,11 @@ namespace DepictionEngine
             {
                 persistent.DisposedEvent += PersistentDisposedHandler;
                 persistent.PropertyAssignedEvent += PersistentPropertyAssignedHandler;
-                persistent.UserPropertyAssignedEvent += PersistentUserPropertyAssignedHandler;
+                if (persistent is Object)
+                {
+                    Object objectBase = persistent as Object;
+                    objectBase.ComponentPropertyAssignedEvent += PersistentPropertyAssignedHandler;
+                }
 
                 if (supportsSave)
                     persistent.PersistenceSaveOperationEvent += PersistenceSaveOperationHandler;
@@ -129,24 +140,23 @@ namespace DepictionEngine
 
         private void PersistentDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
-            Dispose(this, disposeContext);
+            PersistentDisposedEvent?.Invoke(this, disposable as IPersistent, disposeContext);
         }
 
         private void PersistentPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
-            if (name == nameof(PersistentMonoBehaviour.autoDispose))
-                UpdateCanBeAutoDisposed();
+            if (property is IJson)
+            {
+                IJson iJson = property as IJson;
+
+                if (iJson is IPersistent && name == nameof(PersistentMonoBehaviour.autoDispose))
+                    UpdateCanBeAutoDisposed();
+
+                if (SceneManager.IsUserChangeContext() && iJson.GetJsonAttribute(name, out JsonAttribute _, out PropertyInfo propertyInfo) && SetPropertyOutOfSync(iJson, propertyInfo))
+                    isOutOfSync = true;
+            }
 
             PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
-        }
-
-        private void PersistentUserPropertyAssignedHandler(IJson iJson, PropertyInfo propertyInfo)
-        {
-            if (name == nameof(PersistentMonoBehaviour.autoDispose))
-                UpdateCanBeAutoDisposed();
-
-            if (SetPropertyOutOfSync(iJson, propertyInfo))
-                isOutOfSync = true;
         }
 
         private void PersistenceSaveOperationHandler(IPersistent persistent, Action callback)
@@ -164,10 +174,10 @@ namespace DepictionEngine
             PersistenceOperationEvent?.Invoke(Datasource.OperationType.Delete, persistent, callback);
         }
 
-        public Datasource datasource
+        protected Datasource datasource
         {
-            get { return _datasource; }
-            set { _datasource = value; }
+            get => _datasource;
+            private set => _datasource = value;
         }
 
         public IPersistent persistent
@@ -312,10 +322,7 @@ namespace DepictionEngine
                 return true;
             });
 
-            if (isOutOfSync)
-                return true;
-
-            return false;
+            return isOutOfSync;
         }
 
         public bool IsPropertyOutOfSync(IJson iJson, string name)
@@ -357,13 +364,8 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool SetPropertyOutOfSync(IJson iJson, PropertyInfo propertyInfo, bool allowAutoDispose = false)
         {
-            bool outOfSyncChanged = false;
-
             int key = PropertyMonoBehaviour.GetPropertyKey(propertyInfo.Name);
-            if (!iJson.IsDynamicProperty(key) && SetKeyOutOfSync(iJson, key, allowAutoDispose))
-                outOfSyncChanged = true;
-
-            return outOfSyncChanged;
+            return !iJson.IsDynamicProperty(key) && SetKeyOutOfSync(iJson, key, allowAutoDispose);
         }
 
         private bool SetKeyOutOfSync(IJson iJson, int key, bool allowAutoDispose = false)
@@ -375,17 +377,15 @@ namespace DepictionEngine
                 outOfSyncDictionary.Add(id, outOfSyncKeys);
             }
 
-            bool outOfSynchChanged = false;
-
             if (!outOfSyncKeys.ContainsKey(key))
             {
                 outOfSyncKeys.Add(key, allowAutoDispose);
-                outOfSynchChanged = true;
+                return true;
             }
             else
                 outOfSyncKeys[key] = allowAutoDispose;
 
-            return outOfSynchChanged;
+            return false;
         }
 
         private bool IterateOverOutOfSync(Func<IJson, int, bool, bool> callback)

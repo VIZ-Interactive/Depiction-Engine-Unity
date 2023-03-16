@@ -67,7 +67,25 @@ namespace DepictionEngine
 #endif
         private float _autoUpdateDelay;
 
+        [SerializeField, EndFoldout]
+#if UNITY_EDITOR
+        [ConditionalShow(nameof(GetDebug))]
+#endif
+        private SerializableIPersistentList _persistents;
+
         [BeginFoldout("Load Scope")]
+        [SerializeField, ConditionalShow(nameof(IsNotFallbackValues)), BeginHorizontalGroup]
+#if UNITY_EDITOR
+        [ConditionalEnable(nameof(GetEnableLoadingLabels))]
+#endif
+        private int _loadingCount;
+
+        [SerializeField, ConditionalShow(nameof(IsNotFallbackValues)), EndHorizontalGroup]
+#if UNITY_EDITOR
+        [ConditionalEnable(nameof(GetEnableLoadingLabels))]
+#endif
+        private int _loadedCount;
+
 #if UNITY_EDITOR
         [SerializeField, Button(nameof(LoadAllBtn)), ConditionalShow(nameof(IsNotFallbackValues)), Tooltip("Create missing "+nameof(LoadScope)+ "(s) and dispose those that are no longer required."), BeginHorizontalGroup(true)]
         private bool _loadAll;
@@ -75,26 +93,8 @@ namespace DepictionEngine
         private bool _disposeAll;
 #endif
 
-        [SerializeField, Tooltip("When enabled the "+nameof(LoadScope)+"'s will be automatically disposed when their last reference is removed.")]
+        [SerializeField, Tooltip("When enabled the " + nameof(LoadScope) + "'s will be automatically disposed when their last reference is removed."), EndFoldout]
         private bool _autoDisposeUnused;
-
-        [SerializeField, ConditionalShow(nameof(IsNotFallbackValues)), BeginHorizontalGroup]
-#if UNITY_EDITOR
-        [ConditionalEnable(nameof(GetEnableLoadingLabels))]
-#endif
-        private int _loadingCount;
-
-        [SerializeField, ConditionalShow(nameof(IsNotFallbackValues)), EndHorizontalGroup, EndFoldout]
-#if UNITY_EDITOR
-        [ConditionalEnable(nameof(GetEnableLoadingLabels))]
-#endif
-        private int _loadedCount;
-
-        [SerializeField]
-#if UNITY_EDITOR
-        [ConditionalShow(nameof(GetDebug))]
-#endif
-        private SerializableIPersistentList _persistents;
 
         [SerializeField, HideInInspector]
         private DatasourceBase _datasource;
@@ -104,9 +104,9 @@ namespace DepictionEngine
         private Tween _loadDelayTimer;
 
         /// <summary>
-        /// Dispatched when a <see cref="DepictionEngine.LoadScope"/> is Disposing.
+        /// Dispatched after a <see cref="DepictionEngine.LoadScope"/> is Disposed.
         /// </summary>
-        public Action<LoadScope, DisposeContext> LoadScopeDisposingEvent;
+        public Action<LoadScope, DisposeContext> LoadScopeDisposedEvent;
 
         /// <summary>
         /// Dispatched when a <see cref="DepictionEngine.LoadScope"/> LoadingState changes.
@@ -141,7 +141,7 @@ namespace DepictionEngine
 
         private void DisposeAllBtn()
         {
-            DisposeAllLoadScopes();
+            DisposeAllLoadScopes(DisposeContext.Editor_Destroy);
         }
 
         protected override bool GetEnableSeed()
@@ -316,26 +316,20 @@ namespace DepictionEngine
         private void RemoveLoadScopeDelegates(LoadScope loadScope)
         {
             if (loadScope is not null)
-            {
-                loadScope.DisposedEvent -= LoadScopeDisposedHandler;
                 loadScope.LoadingStateChangedEvent -= LoadScopeLoadingStateChangedHandler;
-            }
         }
 
         private void AddLoadScopeDelegates(LoadScope loadScope)
         {
             if (!IsDisposing() && loadScope != Disposable.NULL)
-            {
-                loadScope.DisposedEvent += LoadScopeDisposedHandler;
                 loadScope.LoadingStateChangedEvent += LoadScopeLoadingStateChangedHandler;
-            }
         }
 
         private void LoadScopeDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
             RemoveLoadScope(disposable as LoadScope, disposeContext);
 
-            LoadScopeDisposingEvent?.Invoke(disposable as LoadScope, disposeContext);
+            LoadScopeDisposedEvent?.Invoke(disposable as LoadScope, disposeContext);
         }
 
         private void LoadScopeLoadingStateChangedHandler(LoadScope loadScope)
@@ -617,12 +611,12 @@ namespace DepictionEngine
 
         public virtual bool AddReference(LoadScope loadScope, ReferenceBase reference)
         {
-            return false;
+            return true;
         }
 
         public virtual bool RemoveReference(LoadScope loadScope, ReferenceBase reference, DisposeContext disposeContext)
         {
-            return false;
+            return true;
         }
 
         /// <summary>
@@ -816,11 +810,13 @@ namespace DepictionEngine
                 Editor.UndoManager.RecordObject(this);
 #endif
 
+            bool removed = false;
+
             if (RemoveLoadScopeInternal(loadScope))
             {
                 RemoveLoadScopeDelegates(loadScope);
 
-                return true;
+                removed = true;
             }
 
 #if UNITY_EDITOR
@@ -828,7 +824,7 @@ namespace DepictionEngine
                 Editor.UndoManager.FlushUndoRecordObjects();
 #endif
 
-            return false;
+            return removed;
         }
 
         protected virtual bool RemoveLoadScopeInternal(LoadScope loadScope)
@@ -852,12 +848,22 @@ namespace DepictionEngine
         /// </summary>
         public void DisposeAllLoadScopes(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.RecordObject(this);
+#endif
+
             IterateOverLoadScopes((loadScope) =>
             {
                 DisposeLoadScope(loadScope, disposeContext);
 
                 return true;
             });
+
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.FlushUndoRecordObjects();
+#endif
         }
 
         /// <summary>
@@ -865,7 +871,13 @@ namespace DepictionEngine
         /// </summary>
         protected void DisposeLoadScope(LoadScope loadScope, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            Dispose(loadScope, disposeContext);
+            RemoveLoadScope(loadScope, disposeContext);
+
+            if (loadScope != Disposable.NULL)
+            {
+                DisposeManager.Dispose(loadScope, disposeContext);
+                LoadScopeDisposedEvent?.Invoke(loadScope, disposeContext);
+            }
         }
 
         public override bool OnDispose(DisposeContext disposeContext)
@@ -876,7 +888,7 @@ namespace DepictionEngine
 
                 DisposeAllLoadScopes(disposeContext);
 
-                LoadScopeDisposingEvent = null;
+                LoadScopeDisposedEvent = null;
                 LoadScopeLoadingStateChangedEvent = null;
 
                 return true;

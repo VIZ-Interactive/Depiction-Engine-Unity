@@ -2,7 +2,6 @@
 
 using System;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using static UnityEngine.Rendering.DebugUI;
@@ -46,7 +45,6 @@ namespace DepictionEngine
         private Action<IPersistent, Action> _persistenceSaveOperationEvent;
         private Action<IPersistent, Action> _persistenceSynchronizeOperationEvent;
         private Action<IPersistent, Action> _persistenceDeleteOperationEvent;
-        private Action<IJson, PropertyInfo> _userPropertyAssignedEvent;
 
 #if UNITY_EDITOR
         private void SaveBtn()
@@ -121,14 +119,6 @@ namespace DepictionEngine
             InitValue(value => createPersistentIfMissing = value, true, initializingContext);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override void UserPropertyAssigned(IJson iJson, string name, JsonAttribute jsonAttribute, PropertyInfo propertyInfo)
-        {
-            base.UserPropertyAssigned(iJson, name, jsonAttribute, propertyInfo);
-
-            UserPropertyAssignedEvent?.Invoke(iJson, propertyInfo);
-        }
-
         protected override void Saving(Scene scene, string path)
         {
             base.Saving(scene, path);
@@ -165,12 +155,6 @@ namespace DepictionEngine
         {
             get { return _persistenceDeleteOperationEvent; }
             set { _persistenceDeleteOperationEvent = value; }
-        }
-
-        public Action<IJson, PropertyInfo> UserPropertyAssignedEvent
-        {
-            get { return _userPropertyAssignedEvent; }
-            set { _userPropertyAssignedEvent = value; }
         }
 
         protected virtual bool GetDefaultDontSaveToScene()
@@ -327,7 +311,6 @@ namespace DepictionEngine
                 PersistenceSaveOperationEvent = null;
                 PersistenceSynchronizeOperationEvent = null;
                 PersistenceDeleteOperationEvent = null;
-                UserPropertyAssignedEvent = null;
 
                 return true;
             }

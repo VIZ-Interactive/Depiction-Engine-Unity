@@ -16,17 +16,17 @@ namespace DepictionEngine
         private class IdLoadScopeDictionary : SerializableDictionary<SerializableGuid, IdLoadScope> { };
 
         [BeginFoldout("Ids")]
-        [SerializeField, Tooltip("The list of ids to load."), EndFoldout]
+        [SerializeField, Tooltip("The list of ids to load.")]
         private List<SerializableGuid> _ids;
 
-        [SerializeField, HideInInspector]
-        private IdReferencesDictionary _idReferences;
-
-        [SerializeField]
+        [SerializeField, EndFoldout]
 #if UNITY_EDITOR
         [ConditionalShow(nameof(GetDebug))]
 #endif
         private IdLoadScopeDictionary _idLoadScopes;
+
+        [SerializeField, HideInInspector]
+        private IdReferencesDictionary _idReferences;
 
         public override void Recycle()
         {
@@ -166,20 +166,35 @@ namespace DepictionEngine
 
         public override bool RemoveReference(LoadScope loadScope, ReferenceBase reference, DisposeContext disposeContext)
         {
-            IdLoadScope idLoadScope = loadScope as IdLoadScope;
-            if (idLoadScope != Disposable.NULL)
+            if (base.RemoveReference(loadScope, reference, disposeContext))
             {
-                SerializableGuid scopeId = idLoadScope.scopeId;
-                if (scopeId != SerializableGuid.Empty)
-                {
-                    if (idReferences.TryGetValue(scopeId, out ReferencesList references) && references.Remove(reference))
-                    {
-                        if (references.IsEmpty() && RemoveId(scopeId))
-                            DisposeLoadScope(loadScope, disposeContext);
+                bool removed = false;
 
-                        return true;
+                IdLoadScope idLoadScope = loadScope as IdLoadScope;
+                if (idLoadScope != Disposable.NULL)
+                {
+                    SerializableGuid scopeId = idLoadScope.scopeId;
+                    if (scopeId != SerializableGuid.Empty)
+                    {
+#if UNITY_EDITOR
+                        if (disposeContext == DisposeContext.Editor_Destroy)
+                            Editor.UndoManager.RecordObject(this);
+#endif
+                        if (idReferences.TryGetValue(scopeId, out ReferencesList references) && references.Remove(reference))
+                        {
+                            if (references.IsEmpty() && RemoveId(scopeId))
+                                DisposeLoadScope(loadScope, disposeContext);
+
+                            removed = true;
+                        }
+#if UNITY_EDITOR
+                        if (disposeContext == DisposeContext.Editor_Destroy)
+                            Editor.UndoManager.FlushUndoRecordObjects();
+#endif
                     }
                 }
+
+                return removed;
             }
             return false;
         }

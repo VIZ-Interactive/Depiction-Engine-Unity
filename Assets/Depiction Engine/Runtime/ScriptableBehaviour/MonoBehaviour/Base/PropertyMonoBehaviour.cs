@@ -1,13 +1,13 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Rendering;
-using System.Reflection;
-using System.Linq;
-using System.Collections;
 
 namespace DepictionEngine
 {
@@ -25,13 +25,12 @@ namespace DepictionEngine
         private bool _activeAndEnabled;
 
         private bool _lateInitialized;
-        private bool _wasFirstUpdated;
-
-        [NonSerialized]
-        private bool _initializeLastFields;
 
         private bool _hasDirtyFlags;
         private HashSet<int> _dirtyKeys;
+
+        [NonSerialized]
+        private bool _initializeLastFields;
 
         private Action<IProperty, string, object, object> _propertyAssignedEvent;
 
@@ -46,7 +45,6 @@ namespace DepictionEngine
             ResetId();
 
             _lateInitialized = default;
-            _wasFirstUpdated = default;
 
             ClearDirtyFlags();
         }
@@ -86,15 +84,15 @@ namespace DepictionEngine
         {
             if (base.Initialize(initializingContext))
             {
-                if (!isFallbackValues)
+                if (!UpdateRelations(() => 
                 {
-                    if (!UpdateRelations(() => { CreateComponents(initializingContext); }))
-                        return false;
+                    if (!isFallbackValues)
+                        CreateComponents(initializingContext); 
+                }))
+                    return false;
 
+                if (!isFallbackValues)
                     InitializeFields(initializingContext);
-                }
-                else
-                    CreateComponents(initializingContext);
 
                 InitializeSerializedFields(initializingContext);
 
@@ -135,7 +133,7 @@ namespace DepictionEngine
 
         }
 
-        protected override void Initialized(InitializationContext initializingContext)
+        public override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
 
@@ -199,10 +197,19 @@ namespace DepictionEngine
                     InstanceManager.RemovedEvent += InstanceRemovedHandler;
                 }
 
-                if (parent != Disposable.NULL)
+                if (_parent != Disposable.NULL)
                 {
-                    RemoveParentDelegates(parent);
-                    AddParentDelegates(parent);
+                    RemoveParentDelegates(_parent);
+                    AddParentDelegates(_parent);
+                }
+
+                if (_children != null)
+                {
+                    foreach (PropertyMonoBehaviour child in _children)
+                    {
+                        RemoveChildDelegates(child);
+                        AddChildDelegates(child);
+                    }
                 }
 
                 return true;
@@ -238,6 +245,31 @@ namespace DepictionEngine
             return !IsDisposing() && parent != Disposable.NULL;
         }
 
+        protected virtual bool RemoveChildDelegates(PropertyMonoBehaviour child)
+        {
+            if (child is not null)
+            {
+                child.DisposedEvent -= ChildDisposed;
+                return true;
+            }
+            return false;
+        }
+
+        protected virtual bool AddChildDelegates(PropertyMonoBehaviour child)
+        {
+            if (!IsDisposing() && child != Disposable.NULL)
+            {
+                child.DisposedEvent += ChildDisposed;
+                return true;
+            }
+            return false;
+        }
+
+        private void ChildDisposed(IDisposable disposable, DisposeContext disposeContext)
+        {
+            RemoveChild(disposable as PropertyMonoBehaviour);
+        }
+
         protected virtual PropertyMonoBehaviour GetParent()
         {
             PropertyMonoBehaviour parent = null;
@@ -253,7 +285,6 @@ namespace DepictionEngine
         /// Finds and sets the parent.
         /// </summary>
         /// <param name="originator"></param>
-        /// <param name="isEditorUndo"></param>
         public virtual void UpdateParent(PropertyMonoBehaviour originator = null)
         {
             Originator(() =>  { SetParent(GetParent()); }, originator);
@@ -460,24 +491,22 @@ namespace DepictionEngine
         {
             SetPropertyDirty(name);
 
-            if (IsUserChangeContext() && property is IJson)
-            {
-                IJson iJson = property as IJson;
-                if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
-                    UserPropertyAssigned(iJson, name, jsonAttribute, propertyInfo);
-            }
-
             if (initialized)
-                PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void UserPropertyAssigned(IJson iJson, string name, JsonAttribute jsonAttribute, PropertyInfo propertyInfo)
-        {
+            {
+                if (SceneManager.IsUserChangeContext() && property is IJson)
+                {
+                    IJson iJson = property as IJson;
+                    if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
+                    {
 #if UNITY_EDITOR
-            if (!iJson.IsDynamicProperty(GetPropertyKey(name)))
-                EditorUndoRedoDetected();
+                        if (!iJson.IsDynamicProperty(GetPropertyKey(name)))
+                            EditorUndoRedoDetected();
 #endif
+                    }
+                }
+
+                PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
+            }
         }
 
         private void SetPropertyDirty(string name)
@@ -524,11 +553,6 @@ namespace DepictionEngine
                 _children ??= new List<PropertyMonoBehaviour>();
                 return _children; 
             }
-        }
-
-        public bool wasFirstUpdated
-        {
-            get { return _wasFirstUpdated; }
         }
 
         protected virtual bool CanBeDisabled()
@@ -608,15 +632,9 @@ namespace DepictionEngine
             return sceneManager;
         }
 
-        protected virtual bool IncludeParentJson()
-        {
-            return false;
-        }
-
         /// <summary>
         /// The object above in the hierarchy. 
         /// </summary>
-        [Json(propertyName: nameof(parentJson), conditionalMethod: nameof(IncludeParentJson))]
         public PropertyMonoBehaviour parent
         {
             get { return _parent; }
@@ -649,10 +667,10 @@ namespace DepictionEngine
             return SetValue(nameof(parent), value, ref _parent, (newValue, oldValue) =>
                {
                     if (RemoveParentDelegates(oldValue))
-                        oldValue.RemoveProperty(this);
+                        oldValue.RemoveChild(this);
 
                     if (AddParentDelegates(newValue))
-                        newValue.AddProperty(this);
+                        newValue.AddChild(this);
                });
         }
 
@@ -678,9 +696,11 @@ namespace DepictionEngine
         {
             if (!isFallbackValues)
             {
-                IsUserChange(() =>
+                DetectChanges();
+
+                SceneManager.UserContext(() =>
                 {
-                    DetectChanges();
+                    DetectUserChanges();
 
                     UpdateActiveAndEnabled();
                 });
@@ -693,6 +713,13 @@ namespace DepictionEngine
         /// Detect changes that happen as a result of an external influence.
         /// </summary>
         protected virtual void DetectChanges()
+        {
+        }
+
+        /// <summary>
+        /// Detect changes that happen as a result of an external influence.
+        /// </summary>
+        protected virtual void DetectUserChanges()
         {
         }
 
@@ -788,7 +815,7 @@ namespace DepictionEngine
         public virtual bool PreHierarchicalUpdate()
         {
             bool updateRelationsFailed = true;
-            IsUserChange(() => 
+            SceneManager.UserContext(() => 
             {
                 updateRelationsFailed = UpdateRelations();
             });
@@ -857,19 +884,25 @@ namespace DepictionEngine
             IterateOverChildrenAndSiblings(HierarchicalActivateChild);
         }
 
-        protected virtual bool AddProperty(PropertyMonoBehaviour property)
+        protected virtual bool AddChild(PropertyMonoBehaviour child)
         {
-            if (!children.Contains(property))
+            if (!children.Contains(child))
             {
-                children.Add(property);
+                children.Add(child);
+                AddChildDelegates(child);
                 return true;
             }
             return false;
         }
 
-        protected virtual bool RemoveProperty(PropertyMonoBehaviour property)
+        protected virtual bool RemoveChild(PropertyMonoBehaviour child)
         {
-            return RemoveListItem(children, property);
+            if (RemoveListItem(children, child))
+            {
+                RemoveChildDelegates(child);
+                return true;
+            }
+            return false;
         }
 
         protected virtual bool ApplyBeforeChildren(Action<PropertyMonoBehaviour> callback)
@@ -900,6 +933,7 @@ namespace DepictionEngine
             ListTriggerCallback(children, callback);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool RemoveListItem<T>(List<T> list, T property)
         {
             if (list != null)
@@ -959,7 +993,6 @@ namespace DepictionEngine
         public virtual void HierarchicalClearDirtyFlags()
         {
             ClearDirtyFlags();
-            _wasFirstUpdated = true;
             IterateOverChildrenAndSiblings((child) => { child.HierarchicalClearDirtyFlags(); });
         }
 
@@ -976,12 +1009,14 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         public void Reset()
         {
-            if (unityInitialized)
+            if (wasFirstUpdated)
             {
                 if (ResetAllowed())
                     SceneManager.Reseting(this);
 
                 Editor.UndoManager.RevertAllInCurrentGroup();
+
+                EditorUndoRedoDetected();
             }
         }
 
@@ -992,7 +1027,9 @@ namespace DepictionEngine
 
         public void InspectorReset()
         {
-            IsUserChange(() =>
+            Editor.UndoManager.RegisterCompleteObjectUndo(this);
+
+            SceneManager.UserContext(() =>
             {
                 InitializeSerializedFields(InitializationContext.Reset);
             });
@@ -1014,8 +1051,6 @@ namespace DepictionEngine
                 }
 
                 PropertyAssignedEvent = null;
-
-                SetParent(null);
 
                 return true;
             }

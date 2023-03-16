@@ -28,18 +28,6 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void Initialized()
-        {
-            base.Initialized();
-
-            _initializationJson = null;
-        }
-
-        protected JSONNode initializationJson
-        {
-            get { return _initializationJson; }
-        }
-
         protected override SerializableGuid GetId(SerializableGuid id, InitializationContext initializingContext)
         {
             if (_initializationJson != null)
@@ -53,15 +41,18 @@ namespace DepictionEngine
             return base.GetId(id, initializingContext);
         }
 
-        public void SetJson(JSONNode json)
+        public override void Initialized(InitializationContext initializingContext)
         {
-            JsonUtility.SetJSON(json, this);
+            base.Initialized(initializingContext);
+
+            _initializationJson = null;
         }
 
-        public JSONObject GetJson(Datasource outOfSynchDatasource = null, JSONNode filter = null)
-        {
-            return JsonUtility.GetJson(this, this, outOfSynchDatasource, filter) as JSONObject;
-        }
+        protected JSONNode initializationJson { get => _initializationJson; }
+
+        public void SetJson(JSONNode json) { JsonUtility.SetJSON(json, this); }
+
+        public JSONObject GetJson(Datasource outOfSynchDatasource = null, JSONNode filter = null) { return JsonUtility.GetJson(this, this, outOfSynchDatasource, filter) as JSONObject; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool GetJsonAttribute(string name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo)

@@ -466,14 +466,14 @@ namespace DepictionEngine
         {
             if (id != SerializableGuid.Empty)
             {
-                IJson iJson = instanceManager.GetPersistent(id);
+                IJson iJson = GetPersistent(id);
 
                 if (Disposable.IsDisposed(iJson))
-                    iJson = instanceManager.GetTransform(id);
+                    iJson = GetTransform(id);
                 if (Disposable.IsDisposed(iJson))
-                    iJson = instanceManager.GetScript(id);
+                    iJson = GetScript(id);
                 if (Disposable.IsDisposed(iJson))
-                    iJson = instanceManager.GetManager(id);
+                    iJson = GetManager(id);
 
                 return iJson;
             }

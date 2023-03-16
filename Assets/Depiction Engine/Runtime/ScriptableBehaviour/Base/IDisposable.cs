@@ -9,6 +9,21 @@ namespace DepictionEngine
     /// </summary>
     public interface IDisposable
     {
+        /// <summary>
+        /// Dispatched after the object as been initialized.
+        /// </summary>
+        Action<IDisposable> InitializedEvent { get; set; }
+
+        /// <summary>
+        /// Dispatched during the <see cref="DepictionEngine.MonoBehaviourDisposable.OnDispose"/>, <see cref="DepictionEngine.ScriptableObjectDisposable.OnDispose"/> or <see cref="DepictionEngine.Disposable.OnDispose"/>.
+        /// </summary>
+        Action<IDisposable, DisposeContext> DisposedEvent { get; set; }
+
+        /// <summary>
+        /// Acts as a reliable constructor and will always by called unlike Awake which is sometimes skipped during Undo / Redo operations.
+        /// </summary>
+        void Initialized(InitializationContext initializingContext);
+
 #if UNITY_EDITOR
         /// <summary>
         /// Can the object be found on the Editor undo or redo stack.
@@ -30,16 +45,6 @@ namespace DepictionEngine
         /// The <see cref="DepictionEngine.DisposeContext"/> under which the object was destroyed.
         /// </summary>
         DisposeContext disposingContext { get; }
-
-        /// <summary>
-        /// Dispatched after the object as been initialized.
-        /// </summary>
-        Action<IDisposable> InitializedEvent { get; set; }
-
-        /// <summary>
-        /// Dispatched during the <see cref="DepictionEngine.MonoBehaviourDisposable.OnDispose"/>, <see cref="DepictionEngine.ScriptableObjectDisposable.OnDispose"/> or <see cref="DepictionEngine.Disposable.OnDispose"/>.
-        /// </summary>
-        Action<IDisposable, DisposeContext> DisposedEvent { get; set; }
 
         /// <summary>
         /// Resets the fields to their default value so the object can be reused again. It will be called by the <see cref="DepictionEngine.PoolManager"/> if the object is being recycled from the pool.

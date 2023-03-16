@@ -610,7 +610,7 @@ namespace DepictionEngine
             if (base.OnDispose(disposeContext))
             {
                 if (disposeContext != DisposeContext.Programmatically_Pool)
-                    Dispose(_unityMesh, disposeContext);
+                    DisposeManager.Dispose(_unityMesh, disposeContext);
 
                 ModificationPendingChangedEvent = null;
 

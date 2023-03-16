@@ -32,16 +32,20 @@ namespace DepictionEngine
             Delete
         };
 
+        [SerializeField]
         private string _uri;
+        [SerializeField]
         private int _timeout;
+        [SerializeField]
         private List<string> _headers;
+        [SerializeField]
         private byte[] _bodyData;
+
+        private Processor _webRequestDataProcessor;
 
         private UnityWebRequest _www;
         private Coroutine _coroutine;
         private MonoBehaviour _monoBehaviour;
-
-        private Processor _webRequestDataProcessor;
 
         public void Init(string uri, int timeout, List<string> headers, byte[] bodyData)
         {

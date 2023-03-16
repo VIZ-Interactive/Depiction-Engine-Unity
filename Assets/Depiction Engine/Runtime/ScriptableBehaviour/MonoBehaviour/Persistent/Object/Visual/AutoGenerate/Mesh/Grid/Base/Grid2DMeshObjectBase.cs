@@ -69,7 +69,7 @@ namespace DepictionEngine
                 UpdateReferenceDataIndex2D();
         }
 
-        protected override void Initialized(InitializationContext initializingContext)
+        public override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
 
@@ -153,7 +153,7 @@ namespace DepictionEngine
             {
                 IterateOverReferences<ReferenceBase>((reference) =>
                 {
-                    Grid2DIndex grid2DIndex = Grid2DIndex.empty;
+                    Grid2DIndex grid2DIndex = Grid2DIndex.Empty;
 
                     Index2DLoader index2DLoader = reference.loader as Index2DLoader;
                     if (index2DLoader != Disposable.NULL)

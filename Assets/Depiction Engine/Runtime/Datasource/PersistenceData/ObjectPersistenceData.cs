@@ -60,7 +60,7 @@ namespace DepictionEngine
                 UpdateCanBeAutoDisposed();
         }
         
-        private void ObjectChildPropertyAssignedHandler(IProperty property, string name)
+        private void ObjectChildPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             if (name == nameof(canBeAutoDisposed))
                 UpdateCanBeAutoDisposed();
@@ -68,19 +68,19 @@ namespace DepictionEngine
 
         private void ObjectScriptRemovedHandler(Object objectBase, Script script)
         {
-            if (objectBase.IsUserChangeContext())
+            if (SceneManager.IsUserChangeContext())
                 SetAllSync(script);
         }
 
         private void ObjectScriptAddedHandler(Object objectBase, Script script)
         {
-            if (objectBase.IsUserChangeContext())
+            if (SceneManager.IsUserChangeContext())
                 SetAllOutOfSync(script);
         }
 
-        private void ObjectComponentPropertyAssignedHandler(IProperty property, string name)
+        private void ObjectComponentPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
-            if (objectBase.IsUserChangeContext() && property is IJson)
+            if (SceneManager.IsUserChangeContext() && property is IJson)
             {
                 IJson iJson = property as IJson;
                 if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))

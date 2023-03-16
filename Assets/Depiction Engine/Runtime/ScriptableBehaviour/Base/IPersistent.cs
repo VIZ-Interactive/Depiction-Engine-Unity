@@ -28,10 +28,6 @@ namespace DepictionEngine
         /// Dispatched as a signal to any <see cref="DepictionEngine.DatasourceBase"/> containing this <see cref="DepictionEngine.IPersistent"/> to let them know that they need to add it to their delete operation queue.
         /// </summary>
         Action<IPersistent, Action> PersistenceDeleteOperationEvent { get; set; }
-        /// <summary>
-        /// Dispatched after a property assign action was detected while <see cref="DepictionEngine.IScriptableBehaviour.IsUserChangeContext"/> was true.
-        /// </summary>
-        Action<IJson, PropertyInfo> UserPropertyAssignedEvent { get; set; }
 
         /// <summary>
         /// Trigger the dispatch of a <see cref="DepictionEngine.IPersistent.PersistenceSaveOperationEvent"/>.

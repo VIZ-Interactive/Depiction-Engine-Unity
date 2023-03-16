@@ -124,7 +124,12 @@ namespace DepictionEngine
 
             InitValue(value => loaderId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(loaderId, loader, initializingContext); }, initializingContext);
             InitValue(value => dataId = value, SerializableGuid.Empty, initializingContext);
-            InitValue(value => dataIndex2D = value, Grid2DIndex.empty, initializingContext);
+            InitValue(value => dataIndex2D = value, Grid2DIndex.Empty, initializingContext);
+        }
+
+        protected override bool AddInstanceToManager()
+        {
+            return true;
         }
 
 #if UNITY_EDITOR
@@ -295,7 +300,7 @@ namespace DepictionEngine
         private void ForceUpdateLoadScope()
         {
             _loadedOrfailedIdLoadScope = SerializableGuid.Empty;
-            _loadedOrfailedIndexLoadScope = Grid2DIndex.empty;
+            _loadedOrfailedIndexLoadScope = Grid2DIndex.Empty;
 
             UpdateLoadScope();
         }
@@ -372,7 +377,13 @@ namespace DepictionEngine
         private void RemoveReferenceFromLoader(LoadScope loadScope, DisposeContext disposeContext)
         {
             if (loadScope != Disposable.NULL && loadScope.loader != Disposable.NULL)
+            {
+#if UNITY_EDITOR
+                if (SceneManager.IsUserChangeContext())
+                    disposeContext = DisposeContext.Editor_Destroy;
+#endif
                 loadScope.loader.RemoveReference(loadScope, this, disposeContext);
+            }
         }
 
         private void AddReferenceFromLoader(LoadScope loadScope)
@@ -433,7 +444,7 @@ namespace DepictionEngine
             if (loader is IdLoader)
                 return _loadedOrfailedIdLoadScope != SerializableGuid.Empty && dataId == _loadedOrfailedIdLoadScope;
             if (loader is Index2DLoaderBase)
-                return _loadedOrfailedIndexLoadScope != Grid2DIndex.empty && dataIndex2D == _loadedOrfailedIndexLoadScope;
+                return _loadedOrfailedIndexLoadScope != Grid2DIndex.Empty && dataIndex2D == _loadedOrfailedIndexLoadScope;
             
             return false;
         }

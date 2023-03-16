@@ -926,7 +926,7 @@ namespace DepictionEngine
                     foreach (Stack stack in _stacks)
                     {
                         if (stack != null)
-                            Dispose(stack.gameObject, disposeContext);
+                            DisposeManager.Dispose(stack.gameObject, disposeContext);
                     }
                 }
 

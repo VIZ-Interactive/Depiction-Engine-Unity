@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 
 namespace DepictionEngine
 {
@@ -348,16 +349,6 @@ namespace DepictionEngine
             ChildPropertyAssignedEvent?.Invoke(property as TransformBase, name, newValue, oldValue);
         }
 
-        public override bool IsDynamicProperty(int key)
-        {
-            bool isDynamicProperty = base.IsDynamicProperty(key);
-
-            if (!isDynamicProperty && key == GetPropertyKey(nameof(index)))
-                isDynamicProperty = true;
-
-            return isDynamicProperty;
-        }
-
         protected override bool CanBeDisabled()
         {
             return false;
@@ -471,12 +462,14 @@ namespace DepictionEngine
             set 
             {
                 int oldValue = index;
+
                 if (HasChanged(value, oldValue))
                 {
                     transform.SetSiblingIndex(value);
-                    _lastIndex = value;
                     PropertyAssigned(this, nameof(index), value, oldValue);
                 }
+
+                _lastIndex = value;
             }
         }
 
@@ -582,7 +575,7 @@ namespace DepictionEngine
             private set { _worldToLocalMatrixDirty = value; }
         }
 
-        protected override bool AddProperty(PropertyMonoBehaviour child)
+        protected override bool AddChild(PropertyMonoBehaviour child)
         {
             bool added = false;
 
@@ -594,14 +587,14 @@ namespace DepictionEngine
                     {
                         added = true;
 #if UNITY_EDITOR
-                        if (IsUserChangeContext())
+                        if (initialized && SceneManager.IsUserChangeContext())
                             EditorUndoRedoDetected();
 #endif
                     }
                 }
                 else
                 {
-                    if (base.AddProperty(child))
+                    if (base.AddChild(child))
                     {
                         added = true;
 
@@ -616,7 +609,7 @@ namespace DepictionEngine
             return added;
         }
 
-        protected override bool RemoveProperty(PropertyMonoBehaviour child)
+        protected override bool RemoveChild(PropertyMonoBehaviour child)
         {
             bool removed = false;
 
@@ -628,14 +621,14 @@ namespace DepictionEngine
                     {
                         removed = true;
 #if UNITY_EDITOR
-                        if (IsUserChangeContext())
+                        if (initialized && SceneManager.IsUserChangeContext())
                             EditorUndoRedoDetected();
 #endif
                     }
                 }
                 else
                 {
-                    if (base.RemoveProperty(child))
+                    if (base.RemoveChild(child))
                     {
                         removed = true;
 
@@ -774,11 +767,6 @@ namespace DepictionEngine
                 localToWorldMatrixDirty = false;
         }
 
-        protected override bool IncludeParentJson()
-        {
-            return true;
-        }
-
         protected override JSONNode parentJson
         {
             get { return parent != Disposable.NULL ? JsonUtility.ToJson(parent.id) : null; }
@@ -808,7 +796,7 @@ namespace DepictionEngine
                     {
                         bool parentChanged = false;
 #if UNITY_EDITOR
-                        if (IsUserChangeContext())
+                        if (SceneManager.IsUserChangeContext())
                         {
                             parentChanged = true;
                             Editor.UndoManager.SetTransformParent(transform, newTransform);
@@ -819,7 +807,7 @@ namespace DepictionEngine
                     }
 
 #if UNITY_EDITOR
-                    if (IsUserChangeContext())
+                    if (SceneManager.IsUserChangeContext())
                         Editor.UndoManager.RecordObject(this);
 #endif
 

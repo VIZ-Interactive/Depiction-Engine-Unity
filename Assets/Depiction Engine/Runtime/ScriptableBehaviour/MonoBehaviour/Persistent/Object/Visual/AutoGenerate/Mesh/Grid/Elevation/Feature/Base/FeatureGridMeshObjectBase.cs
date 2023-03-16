@@ -334,7 +334,7 @@ namespace DepictionEngine
                 if (_materialsDictionary != null)
                 {
                     foreach (Material material in _materialsDictionary.Values)
-                        Dispose(material, disposeContext);
+                        DisposeManager.Dispose(material, disposeContext);
                 }
 
                 return true;

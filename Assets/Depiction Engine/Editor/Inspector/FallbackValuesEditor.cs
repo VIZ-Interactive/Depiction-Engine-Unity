@@ -36,8 +36,6 @@ namespace DepictionEngine.Editor
 
                 _fallbackValuesObject = value;
 
-                _fallbackValuesObjectEditorChanged = true;
-
                 if (_fallbackValuesObject != null)
                     CreateCachedEditor(_fallbackValuesObject, null, ref _fallbackValuesObjectEditor);
             }
@@ -83,6 +81,8 @@ namespace DepictionEngine.Editor
                     if (EditorGUI.EndChangeCheck())
                     {
                         serializedProperty.stringValue = null;
+
+                        _fallbackValuesObjectEditorChanged = true;
 
                         fallbackValues.SetPendingInspectorTypeChange(FallbackValues.ParseType(_instanceTypes[currentIndex]));
                     }
@@ -141,6 +141,13 @@ namespace DepictionEngine.Editor
         protected override void OnDisable()
         {
             base.OnDisable();
+
+            fallbackValuesObject = null;
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
 
             fallbackValuesObject = null;
         }

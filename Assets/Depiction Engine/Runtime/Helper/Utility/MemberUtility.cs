@@ -137,9 +137,9 @@ namespace DepictionEngine
         /// </summary>
         /// <param name="types">The reference to the list that will be populated. The list will be cleared first.</param>
         /// <param name="classType">The class type in which attributes should be found.</param>
-        /// <param name="includeRequireScriptAttribute">true to include <see cref="DepictionEngine.CreateComponentAttribute"/>.</param>
+        /// <param name="includeCreateComponentAttribute">true to include <see cref="DepictionEngine.CreateComponentAttribute"/>.</param>
         /// <returns></returns>
-        public static void GetRequiredComponentTypes(ref List<Type> types, Type classType, bool includeRequireScriptAttribute = true)
+        public static void GetRequiredComponentTypes(ref List<Type> types, Type classType, bool includeCreateComponentAttribute = true)
         {
             types.Clear();
 
@@ -154,7 +154,7 @@ namespace DepictionEngine
                     types.Add(requiredComponent.m_Type2);
             }
 
-            if (includeRequireScriptAttribute)
+            if (includeCreateComponentAttribute)
             {
                 IEnumerable<CreateComponentAttribute> createComponents = GetAllAttributes<CreateComponentAttribute>(classType, false);
                 foreach (CreateComponentAttribute createComponent in createComponents)

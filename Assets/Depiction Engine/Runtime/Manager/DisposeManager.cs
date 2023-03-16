@@ -36,15 +36,23 @@ namespace DepictionEngine
     {
         public static DisposeContext disposingContext = DisposeContext.Editor_Unknown;
 
-        private static List<(object, DisposeContext)> _disposingData = new();
+        private static List<Type> _requiredComponentTypes = new();
+
+        /// <summary>
+        /// Will dispose of an object by sending it to the pool if pooling is enabled, it implements <see cref="DepictionEngine.IDisposable"/> and no <see cref="DepictionEngine.DisposeContext"/> is specified. Otherwise it will be destroyed.
+        /// </summary>
+        /// <param name="obj">The object to dispose.</param>
+        public static void Dispose(object obj)
+        {
+            Dispose(obj, DisposeContext.Programmatically_Pool);
+        }
 
         /// <summary>
         /// Will dispose of an object by sending it to the pool if pooling is enabled, it implements <see cref="DepictionEngine.IDisposable"/> and no <see cref="DepictionEngine.DisposeContext"/> is specified. Otherwise it will be destroyed.
         /// </summary>
         /// <param name="obj">The object to dispose.</param>
         /// <param name="disposeContext">The context under which the object is being destroyed.</param>
-        /// <param name="disposeDelay">Specify whether the destroy part of the dispose should happen immediatly or later.</param>
-        public static void Dispose(object obj, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
+        public static void Dispose(object obj, DisposeContext disposeContext)
         {
             if (obj is null || obj.Equals(null) || SceneManager.IsSceneBeingDestroyed())
                 return;
@@ -77,22 +85,28 @@ namespace DepictionEngine
 
                         if (disposable is not null)
                         {
+#if UNITY_EDITOR
+                            //if some components are not compatible with pooling we destroy the object
                             foreach (Component component in components)
                             {
-                                bool invalidForPool = false;
                                 if (component is MonoBehaviourDisposable)
                                 {
-#if UNITY_EDITOR
-                                    invalidForPool = (component as MonoBehaviourDisposable).hasEditorUndoRedo;
-#endif
+                                    if ((component as MonoBehaviourDisposable).hasEditorUndoRedo)
+                                    {
+                                        goDisposeContext = DisposeContext.Programmatically_Destroy;
+                                        break;
+                                    }
                                 }
-                                else if (!((disposable is Object && component is Transform) || (disposable is Visual && (component is Transform || component is MeshFilter || component is MeshRenderer || component is Collider))))
-                                    invalidForPool = true;
-
-                                if (invalidForPool)
+                            }
+#endif
+                            //Destroy components that are not required
+                            if (goDisposeContext == DisposeContext.Programmatically_Pool && disposable is IRequiresComponents)
+                            {
+                                (disposable as IRequiresComponents).GetRequiredComponentTypes(ref _requiredComponentTypes);
+                                foreach (Component component in components)
                                 {
-                                    goDisposeContext = DisposeContext.Programmatically_Destroy;
-                                    break;
+                                    if (!Object.ReferenceEquals(component,disposable) && component is not Transform && !_requiredComponentTypes.Remove(component.GetType()))
+                                        Destroy(component);
                                 }
                             }
                         }
@@ -208,12 +222,8 @@ namespace DepictionEngine
 #endif
 
                 //MonoBehaviourDisposable who have not been activated yet will not trigger OnDestroy so we do it manually
-                IterateOverAllObjects(unityObject, 
-                    (obj) => 
-                    { 
-                        IterateOverAllMonoBehaviourDisposable(obj as UnityEngine.Object, (monoBehaviourDisposable) => { monoBehaviourDisposable.OnDestroy(); }); 
-                    });
-            
+                IterateOverAllObjects(unityObject, (obj) => { IterateOverAllMonoBehaviourDisposable(obj as UnityEngine.Object, (monoBehaviourDisposable) => { monoBehaviourDisposable.OnDestroy(); }); });
+
             }, disposeContext);
 
 #if UNITY_EDITOR

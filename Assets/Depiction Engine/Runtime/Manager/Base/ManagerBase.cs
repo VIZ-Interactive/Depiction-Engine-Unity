@@ -24,9 +24,9 @@ namespace DepictionEngine
             return true;
         }
 
-        protected override void DetectChanges()
+        protected override void DetectUserChanges()
         {
-            base.DetectChanges();
+            base.DetectUserChanges();
 
             if (_lastGameObjectActiveSelf != gameObjectActiveSelf)
             {

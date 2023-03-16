@@ -1,8 +1,6 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -45,7 +43,6 @@ namespace DepictionEngine
         private Action<IPersistent, Action> _persistenceSaveOperationEvent;
         private Action<IPersistent, Action> _persistenceSynchronizeOperationEvent;
         private Action<IPersistent, Action> _persistenceDeleteOperationEvent;
-        private Action<IJson, PropertyInfo> _userPropertyAssignedEvent;
 
 #if UNITY_EDITOR
         private void SaveBtn()
@@ -132,9 +129,9 @@ namespace DepictionEngine
             InitValue(value => createPersistentIfMissing = value, true, initializingContext);
         }
 
-        protected override void DetectChanges()
+        protected override void DetectUserChanges()
         {
-            base.DetectChanges();
+            base.DetectUserChanges();
 
             if (_lastName != name)
             {
@@ -142,14 +139,6 @@ namespace DepictionEngine
                 base.name = _lastName;
                 name = newValue;
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override void UserPropertyAssigned(IJson iJson, string name, JsonAttribute jsonAttribute, PropertyInfo propertyInfo)
-        {
-            base.UserPropertyAssigned(iJson, name, jsonAttribute, propertyInfo);
-
-            UserPropertyAssignedEvent?.Invoke(iJson, propertyInfo);
         }
 
         protected override void Saving(Scene scene, string path)
@@ -190,12 +179,6 @@ namespace DepictionEngine
         {
             get { return _persistenceDeleteOperationEvent; }
             set { _persistenceDeleteOperationEvent = value; }
-        }
-
-        public Action<IJson, PropertyInfo> UserPropertyAssignedEvent
-        {
-            get { return _userPropertyAssignedEvent; }
-            set { _userPropertyAssignedEvent = value; }
         }
 
         protected virtual bool GetDefaultDontSaveToScene()
@@ -353,7 +336,6 @@ namespace DepictionEngine
                 PersistenceSaveOperationEvent = null;
                 PersistenceSynchronizeOperationEvent = null;
                 PersistenceDeleteOperationEvent = null;
-                UserPropertyAssignedEvent = null;
 
                 return true;
             }

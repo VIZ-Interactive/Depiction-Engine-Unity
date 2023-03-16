@@ -133,7 +133,7 @@ namespace DepictionEngine
         {
             if (loader is not null)
             {
-                loader.LoadScopeDisposingEvent -= LoadScopeDisposingHandler;
+                loader.LoadScopeDisposedEvent -= LoadScopeDisposedHandler;
                 loader.LoadScopeLoadingStateChangedEvent -= LoadScopeLoadingStateChangedHandler;
             }
         }
@@ -142,12 +142,12 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && loader != Disposable.NULL)
             {
-                loader.LoadScopeDisposingEvent += LoadScopeDisposingHandler;
+                loader.LoadScopeDisposedEvent += LoadScopeDisposedHandler;
                 loader.LoadScopeLoadingStateChangedEvent += LoadScopeLoadingStateChangedHandler;
             }
         }
 
-        private void LoadScopeDisposingHandler(IDisposable disposable, DisposeContext disposeContext)
+        private void LoadScopeDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
             AutoDisposeLoadScopePersistents(disposable as LoadScope, disposeContext);
         }
@@ -162,7 +162,7 @@ namespace DepictionEngine
         {
             if (persistenceData is not null)
             {
-                persistenceData.DisposedEvent -= PersistenceDataDisposedHandler;
+                persistenceData.PersistentDisposedEvent -= PersistenceDataPersistentDisposedHandler;
                 persistenceData.CanBeAutoDisposedChangedEvent -= PersistenceDataCanBeAutoDisposedChangedHandler;
                 persistenceData.PropertyAssignedEvent -= PersistenceDataPropertyAssignedHandler;
             }
@@ -172,22 +172,15 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && !Disposable.IsDisposed(persistenceData))
             {
-                persistenceData.DisposedEvent += PersistenceDataDisposedHandler;
+                persistenceData.PersistentDisposedEvent += PersistenceDataPersistentDisposedHandler;
                 persistenceData.CanBeAutoDisposedChangedEvent += PersistenceDataCanBeAutoDisposedChangedHandler;
                 persistenceData.PropertyAssignedEvent += PersistenceDataPropertyAssignedHandler;
             }
         }
 
-        private void PersistenceDataDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
+        private void PersistenceDataPersistentDisposedHandler(PersistenceData persistenceData, IPersistent persistence, DisposeContext disposeContext)
         {
-#if UNITY_EDITOR
-            InitializationContext initializationContext = disposeContext == DisposeContext.Editor_Destroy ? InitializationContext.Editor : InitializationContext.Programmatically;
-            Editor.UndoManager.RecordObject(this, initializationContext);
-#endif
-            RemovePersistenceData(disposable as PersistenceData);
-#if UNITY_EDITOR
-            Editor.UndoManager.FlushUndoRecordObjects();
-#endif
+            DisposePersistenceData(persistenceData, disposeContext);
         }
 
         private void PersistenceDataCanBeAutoDisposedChangedHandler(PersistenceData persistenceData)
@@ -368,10 +361,15 @@ namespace DepictionEngine
             }
         }
 
-        private void RemovePersistenceData(PersistenceData persistenceData)
+        public void RemovePersistenceData(PersistenceData persistenceData, DisposeContext disposeContext)
         {
             if (IsDisposing())
                 return;
+
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.RecordObject(this);
+#endif
 
             SerializableGuid persistentId = persistenceData.persistent.id;
             if (persistenceDataDictionary.Remove(persistentId))
@@ -379,6 +377,11 @@ namespace DepictionEngine
                 RemovePersistenceDataDelegates(persistenceData);
                 PersistenceDataRemovedEvent?.Invoke(persistenceData);
             }
+
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.FlushUndoRecordObjects();
+#endif
         }
 
         private List<LoaderBase> loaders
@@ -573,7 +576,7 @@ namespace DepictionEngine
                             successCount = operationResult.IterateOverResultsData<IdResultData>((idResultData, persistent) =>
                             {
                                 if (!Disposable.IsDisposed(persistent) && GetPersistenceData(persistent.id, out PersistenceData persistenceData))
-                                    Dispose(persistenceData);
+                                    DisposeManager.Dispose(persistenceData);
                             });
                         }
 
@@ -680,6 +683,12 @@ namespace DepictionEngine
             }
         }
 
+        private void DisposePersistenceData(PersistenceData persistenceData, DisposeContext disposeContext)
+        {
+            RemovePersistenceData(persistenceData, disposeContext);
+            DisposeManager.Dispose(persistenceData, disposeContext);
+        }
+
         private void AutoDisposeLoadScopePersistents(LoadScope loadScope, DisposeContext disposeContext)
         {
             if (loadScope.loader != Disposable.NULL)
@@ -718,7 +727,7 @@ namespace DepictionEngine
 
                 if (dispose)
                 {
-                    Dispose(persistent is PersistentMonoBehaviour ? (persistent as PersistentMonoBehaviour).gameObject : persistent, disposeContext);
+                    DisposeManager.Dispose(persistent is PersistentMonoBehaviour ? (persistent as PersistentMonoBehaviour).gameObject : persistent, disposeContext);
 
                     return true;
                 }
@@ -733,7 +742,7 @@ namespace DepictionEngine
             {
                 IterateOverPersistenceData((persistentId, persistenceData) => 
                 {
-                    Dispose(persistenceData, disposeContext);
+                    DisposeManager.Dispose(persistenceData, disposeContext);
                     return true;
                 });
 

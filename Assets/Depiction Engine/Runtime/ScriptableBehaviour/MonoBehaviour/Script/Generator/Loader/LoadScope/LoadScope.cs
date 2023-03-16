@@ -40,10 +40,15 @@ namespace DepictionEngine
             _loader = default;
         }
 
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
+        }
+
         public bool LoadingWasCompromised()
         {
             //Problem: Loading was interrupted before finishing(Often because the scene is Played while LoadScopes are still loading)
-            return datasourceOperation == null || datasourceOperation.LoadingWasCompromised();
+            return initialized && (datasourceOperation == null || datasourceOperation.LoadingWasCompromised());
         }
 
         public LoadScope Init(LoaderBase loader)
@@ -327,7 +332,7 @@ namespace DepictionEngine
                 LoadingStateChangedEvent = null;
 
                 loadIntervalTween = null;
-                datasourceOperation = null;
+                DisposeManager.Dispose(_datasourceOperation, disposeContext);
 
                 PersistentAddedEvent = null;
 

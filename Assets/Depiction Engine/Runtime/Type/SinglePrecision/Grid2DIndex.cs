@@ -11,7 +11,7 @@ namespace DepictionEngine
     [Serializable]
     public struct Grid2DIndex
     {
-        public static readonly Grid2DIndex empty = new Grid2DIndex(Vector2Int.minusOne, Vector2Int.zero);
+        public static readonly Grid2DIndex Empty = new Grid2DIndex(Vector2Int.minusOne, Vector2Int.zero);
 
         public Vector2Int index;
         public Vector2Int dimensions;

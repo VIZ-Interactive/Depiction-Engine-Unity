@@ -132,9 +132,9 @@ namespace DepictionEngine
             {
                 if (disposeContext != DisposeContext.Programmatically_Pool)
                 {
-                    Dispose(_floorMaterial, disposeContext);
-                    Dispose(_wallsMaterial, disposeContext);
-                    Dispose(_ceilingMaterial, disposeContext);
+                    DisposeManager.Dispose(_floorMaterial, disposeContext);
+                    DisposeManager.Dispose(_wallsMaterial, disposeContext);
+                    DisposeManager.Dispose(_ceilingMaterial, disposeContext);
                 }
 
                 return true;

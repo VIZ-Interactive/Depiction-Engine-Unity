@@ -7,6 +7,8 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using UnityEngine.SceneManagement;
+using UnityEditor.Rendering.PostProcessing;
 
 namespace DepictionEngine.Editor
 {
@@ -374,18 +376,69 @@ namespace DepictionEngine.Editor
         {
             if (CaptureEditorCurrentGroupChange() && _wasFirstUpdated)
             {
-                if (_validatedObjects != null && currentGroupName != null)
+                if (!string.IsNullOrEmpty(currentGroupName))
                 {
                     string[] splitCurrentGroupName = currentGroupName.Split();
+
                     if (splitCurrentGroupName.Length > 2 && splitCurrentGroupName[0] == "Paste" && splitCurrentGroupName[^1] == "Values")
                     {
-                        foreach (IJson validatedObject in _validatedObjects.Cast<IJson>())
+                        if (_validatedObjects != null)
                         {
-                            if (validatedObject.PasteComponentAllowed())
-                                SceneManager.PastingComponentValues(validatedObject, validatedObject.GetJson());
+                            bool pastingComponentValues = false;
+
+                            foreach (IJson validatedObject in _validatedObjects.Cast<IJson>())
+                            {
+                                if (validatedObject.PasteComponentAllowed())
+                                {
+                                    pastingComponentValues = true;
+                                    SceneManager.PastingComponentValues(validatedObject, validatedObject.GetJson());
+                                }
+                            }
+
+                            if (pastingComponentValues)
+                                RevertAllInCurrentGroup();
+                        }
+                    }
+
+                    //SiblingIndex is a typo in the UnityEngine i suppose.
+                    if (splitCurrentGroupName.Length >= 2 && (splitCurrentGroupName[0] == "SiblingIndex" || splitCurrentGroupName[1] == "Index" || splitCurrentGroupName[1] == "Order") && splitCurrentGroupName[^1] == "Change")
+                    {
+                        //The added "d" is used to distinguish Unity 'Root / Sibling Order Change' action from the one we create. If there is no distinction then if the undo/redo actions are played again this code will be executed again and a new action will be recorded in the history erasing any subsequent actions.
+                        SetCurrentGroupName(currentGroupName + "d");
+
+                        List<TransformBase> affectedSiblings = new();
+
+                        AddAffectSiblings(ref affectedSiblings);
+                        Undo.PerformUndo();
+                        AddAffectSiblings(ref affectedSiblings);
+                        Undo.PerformRedo();
+
+                        void AddAffectSiblings(ref List<TransformBase> affectedSiblings)
+                        {
+                            foreach (GameObject selectedGameObject in UnityEditor.Selection.gameObjects)
+                            {
+                                if (selectedGameObject.transform.parent != null)
+                                {
+                                    foreach (Transform sibling in selectedGameObject.transform.parent)
+                                        AddSibling(ref affectedSiblings, sibling);
+                                }
+                                else
+                                {
+                                    List<GameObject> rootGameObjects = SceneManager.Instance().GetRootGameObjects();
+                                    foreach (GameObject sibling in rootGameObjects)
+                                        AddSibling(ref affectedSiblings, sibling.transform);
+                                }
+                                void AddSibling(ref List<TransformBase> affectedSiblings, Transform sibling)
+                                {
+                                    TransformBase siblingTransform = sibling.GetComponent<TransformBase>();
+                                    if (siblingTransform != Disposable.NULL && !affectedSiblings.Contains(siblingTransform))
+                                        affectedSiblings.Add(siblingTransform);
+                                }
+                            }
                         }
 
-                        RevertAllInCurrentGroup();
+                        foreach (TransformBase affectedSibling in affectedSiblings)
+                            affectedSibling.EditorUndoRedoDetected();
                     }
                 }
             }

@@ -652,10 +652,10 @@ namespace DepictionEngine
             {
                 if (disposeContext != DisposeContext.Programmatically_Pool)
                 {
-                    Dispose(_markerBadgeMaterial, disposeContext);
-                    Dispose(_markerLineMaterial, disposeContext);
-                    Dispose(_markerShadowMaterial, disposeContext);
-                    Dispose(_badgeMesh, disposeContext);
+                    DisposeManager.Dispose(_markerBadgeMaterial, disposeContext);
+                    DisposeManager.Dispose(_markerLineMaterial, disposeContext);
+                    DisposeManager.Dispose(_markerShadowMaterial, disposeContext);
+                    DisposeManager.Dispose(_badgeMesh, disposeContext);
                 }
 
                 return true;

@@ -28,7 +28,7 @@ namespace DepictionEngine
 
         private GlobalLoader _atmosphereGlobalLoader;
 
-        protected override void Initialized(InitializationContext initializingContext)
+        public override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
           

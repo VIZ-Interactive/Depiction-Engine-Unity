@@ -14,7 +14,7 @@ namespace DepictionEngine
     [DisallowMultipleComponent]
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/" + nameof(Object))]
     [RequireComponent(typeof(TransformDouble))]
-    public class Object : PersistentMonoBehaviour
+    public class Object : PersistentMonoBehaviour, IRequiresComponents
     {
         [Serializable]
         private class VisibleCamerasDictionary : SerializableDictionary<int, VisibleCameras> { };
@@ -67,7 +67,7 @@ namespace DepictionEngine
         /// <summary>
         /// Dispatched when a property assign event is detected in the <see cref="DepictionEngine.Object"/> of one of the child <see cref="DepictionEngine.TransformDouble"/>.
         /// </summary>
-        public Action<IProperty, string> ChildObjectPropertyAssignedEvent;
+        public Action<IProperty, string, object, object> ChildObjectPropertyAssignedEvent;
 
         /// <summary>
         /// Dispatched when a <see cref="DepictionEngine.Script"/> is added.
@@ -80,7 +80,7 @@ namespace DepictionEngine
         /// <summary>
         /// Dispatched when a property assign event is detected in any of the <see cref="DepictionEngine.Script"/> or <see cref="DepictionEngine.TransformDouble"/>.
         /// </summary>
-        public Action<IProperty, string> ComponentPropertyAssignedEvent;
+        public Action<IProperty, string, object, object> ComponentPropertyAssignedEvent;
 
         /// <summary>
         /// Dispatched after changes to the <see cref="DepictionEngine.TransformDouble.localPosition"/>, <see cref="DepictionEngine.TransformDouble.localRotation"/> or <see cref="DepictionEngine.TransformDouble.localScale"/> have been detected. 
@@ -231,10 +231,8 @@ namespace DepictionEngine
         {
             base.CreateComponents(initializingContext);
 
-            InitRequiredComponentTypes();
             GetRequiredComponentTypes(ref _requiredComponentTypes);
             List<Type> requiredComponentTypes = _requiredComponentTypes;
-
             if (requiredComponentTypes.Count > 0)
             {
                 Component[] components = GetComponents<Component>();
@@ -395,13 +393,7 @@ namespace DepictionEngine
             }
         }
 
-        private List<Type> _requiredComponentTypes;
-        private void InitRequiredComponentTypes()
-        {
-            _requiredComponentTypes ??= new List<Type>();
-            _requiredComponentTypes.Clear();
-        }
-
+        private List<Type> _requiredComponentTypes = new();
         protected Component RemoveComponentFromList(Type type, Component[] components)
         {
             for (int i = 0; i < components.Length; i++)
@@ -419,19 +411,12 @@ namespace DepictionEngine
             return null;
         }
 
-        public List<Type> GetRequiredComponentTypes()
-        {
-            List<Type> requiredComponentTypes = new();
-            GetRequiredComponentTypes(ref requiredComponentTypes);
-            return requiredComponentTypes;
-        }
-
         public void GetRequiredComponentTypes(ref List<Type> types)
         {
-            MemberUtility.GetRequiredComponentTypes(ref types, GetType(), !isFallbackValues);
+            MemberUtility.GetRequiredComponentTypes(ref types, GetType());
         }
 
-        protected override void Initialized(InitializationContext initializingContext)
+        public override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
 
@@ -514,9 +499,9 @@ namespace DepictionEngine
             return true;
         }
 
-        protected override void DetectChanges()
+        protected override void DetectUserChanges()
         {
-            base.DetectChanges();
+            base.DetectUserChanges();
 
             if (_lastGameObjectActiveSelf != gameObjectActiveSelf)
             {
@@ -689,13 +674,10 @@ namespace DepictionEngine
             if (!HasChanged(newValue, oldValue) || property.IsDisposing())
                 return;
 
-            ComponentPropertyAssigned(property, name);
+            ComponentPropertyAssigned(property, name, newValue, oldValue);
 
-            Originator(() =>
-            {
-                if (name == nameof(parentGeoAstroObject))
-                    UpdateParentGeoAstroObject();
-            }, property);
+            if (name == nameof(parentGeoAstroObject))
+                Originator(() => { UpdateParentGeoAstroObject(); }, property);
 
             TransformPropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
         }
@@ -729,17 +711,17 @@ namespace DepictionEngine
             if (property.IsDisposing())
                 return;
 
-            ComponentPropertyAssigned(property, name);
+            ComponentPropertyAssigned(property, name, newValue, oldValue);
         }
 
-        private void ComponentPropertyAssigned(IProperty property, string name)
+        private void ComponentPropertyAssigned(IProperty property, string name, object newValue, object oldValue)
         {
             Originator(() => 
             {
                 (string, object) localProperty = GetProperty(property);
                 PropertyAssigned(this, localProperty.Item1, localProperty.Item2, null);
 
-                ComponentPropertyAssignedEvent?.Invoke(property, name);
+                ComponentPropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
             }, property);
         }
 
@@ -840,7 +822,7 @@ namespace DepictionEngine
             if (!HasChanged(oldValue, newValue))
                 return;
 
-            ChildObjectPropertyAssignedEvent?.Invoke(property, name);
+            ChildObjectPropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
         }
 
         public virtual int GetAdditionalChildCount()
@@ -1036,7 +1018,7 @@ namespace DepictionEngine
                     value = false;
                 SetValue(nameof(useGravity), value, ref _useGravity, (newValue, oldValue) =>
                 {
-                    InitializeRigidbody(IsUserChangeContext() ? InitializationContext.Editor : InitializationContext.Programmatically);
+                    InitializeRigidbody(SceneManager.IsUserChangeContext() ? InitializationContext.Editor : InitializationContext.Programmatically);
                 });
             }
         }
@@ -1744,7 +1726,7 @@ namespace DepictionEngine
             return (null,null);
         }
 
-        protected override bool AddProperty(PropertyMonoBehaviour child)
+        protected override bool AddChild(PropertyMonoBehaviour child)
         {
             bool added = false;
 
@@ -1754,7 +1736,7 @@ namespace DepictionEngine
                     added = AddScript(child as Script);
                 else
                 {
-                    if (base.AddProperty(child))
+                    if (base.AddChild(child))
                         added = true;
                 }
             }, child);
@@ -1855,7 +1837,7 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool RemoveProperty(PropertyMonoBehaviour child)
+        protected override bool RemoveChild(PropertyMonoBehaviour child)
         {
             bool removed = false;
 
@@ -1865,7 +1847,7 @@ namespace DepictionEngine
                     removed = RemoveScript(child as Script);
                 else
                 {
-                    if (base.RemoveProperty(child))
+                    if (base.RemoveChild(child))
                         removed = true;
                 }
             }, child);
@@ -2241,7 +2223,7 @@ namespace DepictionEngine
                 {
                     Transform child = transform.transform.GetChild(i);
                     if (child != null)
-                        Dispose(child.gameObject, disposeContext);
+                        DisposeManager.Dispose(child.gameObject, disposeContext);
                 }
 
                 return true;
@@ -2253,7 +2235,7 @@ namespace DepictionEngine
         {
             if (base.OnDispose(disposeContext))
             {
-                Dispose(_objectAdditionalFallbackValues, disposeContext);
+                DisposeManager.Dispose(_objectAdditionalFallbackValues, disposeContext);
 
                 ChildAddedEvent = null;
                 ChildRemovedEvent = null;

@@ -39,21 +39,6 @@ namespace DepictionEngine
         void ExplicitOnDisable();
 
         /// <summary>
-        /// Indicates whether the current code execution was triggered as a result of a user action such as altering properties through the editor inspector or moving object using the manipulator.
-        /// </summary>
-        /// <returns>True if it is the result of a user action, otherwise False.</returns>
-        bool IsUserChangeContext();
-
-        /// <summary>
-        /// Makes available to the code executed in the callback, the user context under which it was triggered. If it was triggered by a user action, such as altering properties through the editor inspector or moving object using the manipulator, the value passed to isUserChange should be true. User context inside this callback can always be accessed by calling <see cref="DepictionEngine.IScriptableBehaviour.IsUserChangeContext"/>.
-        /// </summary>
-        /// <param name="callback">The code to execute.</param>
-        /// <param name="isUserChange">Whether the current code execution was triggered by a user action.</param>
-        void IsUserChange(Action callback, bool isUserChange = true);
-
-        DisposeContext GetDisposeContext();
-
-        /// <summary>
         /// This is where you destroy any remaining dependencies.
         /// </summary>
         void OnDestroy();

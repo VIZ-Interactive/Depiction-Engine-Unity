@@ -75,7 +75,7 @@
  *   + **Recycle**: \n 
  *     `DepictionEngine.IDisposable.Recycle`
  *   + **Initialized**: \n 
- *     `DepictionEngine.MonoBehaviourDisposable.Initialized` `DepictionEngine.ScriptableObjectDisposable.Initialized` `DepictionEngine.Disposable.Initialized`
+ *     `DepictionEngine.IDisposable.Initialized`
  * .
  *
  * - __Updating__ \n 
@@ -100,10 +100,8 @@
  * \n 
  *    Whether pooled or destroyed OnDisposing and OnDisposed will always be called. \n 
  * \n 
- *   + **OnDisposing**: \n 
- *     `DepictionEngine.IDisposable.OnDisposing`
- *   + **OnDisposed**: \n 
- *     `DepictionEngine.MonoBehaviourDisposable.OnDisposed` `DepictionEngine.ScriptableObjectDisposable.OnDisposed` `DepictionEngine.Disposable.OnDisposed` \n 
+ *   + **OnDispose**: \n 
+ *     `DepictionEngine.IDisposable.OnDispose` \n 
  * .
  *
  *

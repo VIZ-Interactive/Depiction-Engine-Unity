@@ -23,10 +23,10 @@ namespace DepictionEngine
         [ConditionalEnable(nameof(GetEnabledIndexUrlParamType))]
 #endif
         private Index2DLoadScope.URLParametersType _indexUrlParamType;
-        [SerializeField, Tooltip("The horizontal to vertical tiles ratio. A ratio of 2.0 means the grid contains twice as many tiles horizontally then vertically. A ratio of 0.5 means the grid contains twice as many tiles vertically then horizontally. The max value is 10.0 and min value is 0.1."), EndFoldout]
+        [SerializeField, Tooltip("The horizontal to vertical tiles ratio. A ratio of 2.0 means the grid contains twice as many tiles horizontally then vertically. A ratio of 0.5 means the grid contains twice as many tiles vertically then horizontally. The max value is 10.0 and min value is 0.1.")]
         private float _xyTilesRatio;
 
-        [SerializeField]
+        [SerializeField, EndFoldout]
 #if UNITY_EDITOR
         [ConditionalShow(nameof(GetDebug))]
 #endif

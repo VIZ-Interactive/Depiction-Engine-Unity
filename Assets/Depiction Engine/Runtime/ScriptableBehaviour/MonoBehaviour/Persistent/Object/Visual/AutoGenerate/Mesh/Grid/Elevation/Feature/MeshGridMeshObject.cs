@@ -242,7 +242,7 @@ namespace DepictionEngine
                 DisposeDataProcessor(_meshRendererVisualModifiersProcessor);
 
                 if (disposeContext != DisposeContext.Programmatically_Pool)
-                    Dispose(_material, disposeContext);
+                    DisposeManager.Dispose(_material, disposeContext);
                 
                 return true;
             }

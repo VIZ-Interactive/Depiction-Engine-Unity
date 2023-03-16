@@ -19,7 +19,7 @@ namespace DepictionEngine
         private bool _initializeLastFields;
 
         private Action<IProperty, string, object, object> _propertyAssignedEvent;
-        
+
         public override void Recycle()
         {
             base.Recycle();
@@ -156,24 +156,22 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void PropertyAssigned<T>(IProperty property, string name, T newValue, T oldValue)
         {
-            if (IsUserChangeContext() && property is IJson)
-            {
-                IJson iJson = property as IJson;
-                if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
-                    UserPropertyAssigned(iJson, name, jsonAttribute, propertyInfo);
-            }
-
             if (initialized)
-                PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void UserPropertyAssigned(IJson iJson, string name, JsonAttribute jsonAttribute, PropertyInfo propertyInfo)
-        {
+            {
+                if (SceneManager.IsUserChangeContext() && property is IJson)
+                {
+                    IJson iJson = property as IJson;
+                    if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
+                    {
 #if UNITY_EDITOR
-            if (!iJson.IsDynamicProperty(PropertyMonoBehaviour.GetPropertyKey(name)))
-                EditorUndoRedoDetected();
+                        if (!iJson.IsDynamicProperty(PropertyMonoBehaviour.GetPropertyKey(name)))
+                            EditorUndoRedoDetected();
 #endif
+                    }
+                }
+
+                PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
+            }
         }
 
         protected virtual bool InitializeLastFields()
@@ -195,12 +193,14 @@ namespace DepictionEngine
 
         public void Reset()
         {
-            if (unityInitialized)
+            if (wasFirstUpdated)
             {
                 if (ResetAllowed())
                     SceneManager.Reseting(this);
 
                 Editor.UndoManager.RevertAllInCurrentGroup();
+
+                EditorUndoRedoDetected();
             }
         }
 
@@ -211,7 +211,9 @@ namespace DepictionEngine
 
         public void InspectorReset()
         {
-            IsUserChange(() =>
+            Editor.UndoManager.RegisterCompleteObjectUndo(this);
+
+            SceneManager.UserContext(() =>
             {
                 InitializeSerializedFields(InitializationContext.Reset);
             });

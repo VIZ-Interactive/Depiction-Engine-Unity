@@ -54,10 +54,7 @@ namespace DepictionEngine
 
         private MonoBehaviour _monoBehaviour;
 
-        public ProcessingState processingState
-        {
-            get { return _processingState; }
-        }
+        public ProcessingState processingState { get => _processingState; }
 
         public bool Cancel()
         {
