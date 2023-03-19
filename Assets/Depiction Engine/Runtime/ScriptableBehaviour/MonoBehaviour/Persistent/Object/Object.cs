@@ -147,6 +147,11 @@ namespace DepictionEngine
             return false;
         }
 
+        protected override void DestroyAfterFailedInitialization()
+        {
+            DisposeManager.Destroy(gameObject);
+        }
+
         protected override bool InitializeLastFields()
         {
             if (base.InitializeLastFields())
@@ -429,7 +434,7 @@ namespace DepictionEngine
             base.RegisterInitializeObjectUndo(initializingContext);
 
             //Register GameObject name/layer/enabled etc...
-            Editor.UndoManager.RegisterCompleteObjectUndo(gameObject, initializingContext);
+            //Editor.UndoManager.RegisterCompleteObjectUndo(gameObject, initializingContext);
         }
 #endif
 

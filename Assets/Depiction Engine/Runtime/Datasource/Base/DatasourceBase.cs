@@ -592,9 +592,6 @@ namespace DepictionEngine
             {
                 KillTimers();
 
-                if (disposeContext != DisposeContext.Programmatically_Pool)
-                    DisposeManager.Dispose(_datasource, disposeContext);
-
                 return true;
             }
             return false;

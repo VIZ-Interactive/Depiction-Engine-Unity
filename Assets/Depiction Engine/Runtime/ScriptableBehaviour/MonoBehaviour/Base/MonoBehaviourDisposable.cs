@@ -1,6 +1,7 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -78,15 +79,14 @@ namespace DepictionEngine
                 _initializingContext = InitializationContext.Existing;
 
                 //If the instanceID is not the same it means the component is new.
-                int newInstanceID = GetInstanceID();
-                if (newInstanceID != instanceID)
+                if (IsDuplicateInitializing())
                 {
                     bool isEditor = InstanceManager.initializingContext == InitializationContext.Editor || InstanceManager.initializingContext == InitializationContext.Editor_Duplicate;
 
                     //If serialized instanceID is zero it means this is not a duplicate.
                     if (instanceID == 0)
                         _initializingContext = isEditor ? InitializationContext.Editor : InitializationContext.Programmatically;
-                    else if (newInstanceID < 0)
+                    else if (GetInstanceID() < 0)
                         _initializingContext = isEditor ? InitializationContext.Editor_Duplicate : InitializationContext.Programmatically_Duplicate;
                 }
 
@@ -103,7 +103,11 @@ namespace DepictionEngine
                 {
                     if (!Initialize(_initializingContext))
                     {
-                        DisposeManager.Destroy(gameObject);
+                        try
+                        {
+                            DestroyAfterFailedInitialization();
+                        }
+                        catch (MissingReferenceException) { }
                         abortInitialization = true;
                     }
                 }, _initializingContext == InitializationContext.Editor || _initializingContext == InitializationContext.Editor_Duplicate);
@@ -123,6 +127,16 @@ namespace DepictionEngine
             }
 
             return false;
+        }
+
+        protected bool IsDuplicateInitializing()
+        {
+            return GetInstanceID() != instanceID;
+        }
+
+        protected virtual void DestroyAfterFailedInitialization()
+        {
+            DisposeManager.Destroy(this);
         }
 
 #if UNITY_EDITOR
@@ -475,45 +489,14 @@ namespace DepictionEngine
             set { _disposedEvent = value; }
         }
 
-        protected SceneManager sceneManager
-        {
-            get { return SceneManager.Instance(); }
-        }
-
-        protected InstanceManager instanceManager
-        {
-            get { return InstanceManager.Instance(); }
-        }
-
-        protected DatasourceManager datasourceManager
-        {
-            get { return DatasourceManager.Instance(); }
-        }
-
-        protected TweenManager tweenManager
-        {
-            get { return TweenManager.Instance(); }
-        }
-
-        protected InputManager inputManager
-        {
-            get { return InputManager.Instance(); }
-        }
-
-        protected CameraManager cameraManager
-        {
-            get { return CameraManager.Instance(); }
-        }
-
-        protected PoolManager poolManager
-        {
-            get { return PoolManager.Instance(); }
-        }
-
-        protected RenderingManager renderingManager
-        {
-            get { return RenderingManager.Instance(); }
-        }
+        protected SceneManager sceneManager { get => SceneManager.Instance();  }
+        protected InstanceManager instanceManager { get => InstanceManager.Instance(); }
+        protected DatasourceManager datasourceManager { get => DatasourceManager.Instance(); }
+        protected TweenManager tweenManager { get => TweenManager.Instance(); }
+        protected InputManager inputManager { get => InputManager.Instance(); }
+        protected CameraManager cameraManager { get => CameraManager.Instance(); }
+        protected PoolManager poolManager { get => PoolManager.Instance(); }
+        protected RenderingManager renderingManager { get => RenderingManager.Instance(); }
 
         protected virtual bool UpdateHideFlags()
         {
@@ -660,6 +643,7 @@ namespace DepictionEngine
 
         protected virtual void Awake()
         {
+     
         }
 
         private bool _inhibitExplicitOnEnableDisable;

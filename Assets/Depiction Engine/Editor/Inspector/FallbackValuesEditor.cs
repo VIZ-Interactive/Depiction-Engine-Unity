@@ -28,7 +28,7 @@ namespace DepictionEngine.Editor
             get { return _fallbackValuesObject; }
             set
             {
-                if (_fallbackValuesObject == value)
+                if (Object.ReferenceEquals(_fallbackValuesObject, value))
                     return;
 
                FallbackValues fallbackValues = serializedObject.targetObject as FallbackValues;
@@ -74,7 +74,7 @@ namespace DepictionEngine.Editor
                                 instanceTypes.Add(type.FullName);
                         }
 
-                        instanceTypes.OrderBy(x => x);
+                        instanceTypes = instanceTypes.OrderBy(x => x).ToList();
                         instanceTypes.Insert(0, "Select");
 
                         _instanceTypes = instanceTypes.ToArray();

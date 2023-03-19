@@ -64,7 +64,7 @@ namespace DepictionEngine
             base.UndoRedoPerformed();
 
             if (_lastFallbackValuesJsonStr != _fallbackValuesJsonStr)
-                SetFallbackValuesJson((JSONObject)JSONObject.Parse(_fallbackValuesJsonStr));
+                SetFallbackValuesJson(string.IsNullOrEmpty(_fallbackValuesJsonStr) ? new JSONObject() : (JSONObject)JSONObject.Parse(_fallbackValuesJsonStr));
         }
 #endif
 
@@ -261,7 +261,8 @@ namespace DepictionEngine
                     fallbackValuesObject = instanceManager.CreateInstance(type, null, json, isFallbackValues: true) as UnityEngine.Object;
             }
 
-            _fallbackValuesObjectReferences++;
+            if (!Disposable.IsDisposed(fallbackValuesObject))
+                _fallbackValuesObjectReferences++;
 
             return fallbackValuesObject;
         }

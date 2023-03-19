@@ -1091,6 +1091,15 @@ namespace DepictionEngine
             UninhibitEnableDisableAll();
         }
 
+        protected override void Awake()
+        {
+            base.Awake();
+
+            //We initialize right away if the gameObject is being duplicated to make sure the Undo operations are recorded together as one.
+            if (IsDuplicateInitializing())
+                InstanceManager.Initialize(this);
+        }
+
         public override bool OnDispose(DisposeContext disposeContext)
         {
             if (base.OnDispose(disposeContext))
