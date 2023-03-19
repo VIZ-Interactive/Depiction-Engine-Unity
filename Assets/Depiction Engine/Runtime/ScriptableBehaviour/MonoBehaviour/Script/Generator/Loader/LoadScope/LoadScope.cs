@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -14,7 +15,7 @@ namespace DepictionEngine
         private DatasourceOperationBase _datasourceOperation;
 
         [SerializeField]
-        protected SerializableIPersistentList _persistents;
+        protected Datasource.PersistentDictionary _persistentsDictionary;
 
         [SerializeField, HideInInspector]
         private LoaderBase _loader;
@@ -34,21 +35,25 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _persistents?.Clear();
+            _persistentsDictionary?.Clear();
 
             _loadingState = default;
             _loader = default;
-        }
-
-        public override void Initialized(InitializationContext initializingContext)
-        {
-            base.Initialized(initializingContext);
         }
 
         public bool LoadingWasCompromised()
         {
             //Problem: Loading was interrupted before finishing(Often because the scene is Played while LoadScopes are still loading)
             return initialized && (datasourceOperation == null || datasourceOperation.LoadingWasCompromised());
+        }
+
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
+
+#if UNITY_EDITOR
+            FixBrokenPersistentsDictionary();
+#endif
         }
 
         public LoadScope Init(LoaderBase loader)
@@ -62,11 +67,11 @@ namespace DepictionEngine
         {
             bool removed = false;
 
-            IterateOverPersistents((i, persistent) =>
+            IterateOverPersistents((persistentId, persistent) =>
             {
                 if (Disposable.IsDisposed(persistent))
                 {
-                    _persistents.RemoveAt(i);
+                    RemovePersistentId(persistentId);
                     removed = true;
                 }
                 return true;
@@ -75,12 +80,26 @@ namespace DepictionEngine
             return removed;
         }
 
-        private SerializableIPersistentList persistents
+#if UNITY_EDITOR
+        protected override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            FixBrokenPersistentsDictionary();
+        }
+
+        private void FixBrokenPersistentsDictionary()
+        {
+            Editor.SerializationUtility.FixBrokenPersistentsDictionary(IterateOverPersistents, persistentsDictionary);
+        }
+#endif
+
+        private Datasource.PersistentDictionary persistentsDictionary
         {
             get
             {
-                _persistents ??= new SerializableIPersistentList();
-                return _persistents;
+                _persistentsDictionary ??= new Datasource.PersistentDictionary();
+                return _persistentsDictionary;
             }
         }
 
@@ -88,8 +107,8 @@ namespace DepictionEngine
         {
             IPersistent persistent = null;
 
-            if (persistents.Count > 0)
-                persistent = persistents[0];
+            if (persistentsDictionary.Count > 0)
+                persistent = persistentsDictionary.ElementAt(0).Value.persistent;
 
             return persistent;
         }
@@ -98,9 +117,9 @@ namespace DepictionEngine
         {
             bool added = false;
 
-            if (!persistents.Contains(persistent))
+            if (!persistentsDictionary.ContainsKey(persistent.id))
             {
-                persistents.Add(persistent);
+                persistentsDictionary.Add(persistent.id, new SerializableIPersistent(persistent));
                 added = true;
             }
 
@@ -115,16 +134,22 @@ namespace DepictionEngine
             if (IsDisposing())
                 return false;
 
-            return persistents.Remove(persistent);
+            return RemovePersistentId(persistent.id);
         }
 
-        public void IterateOverPersistents(Func<int, IPersistent, bool> callback)
+        private bool RemovePersistentId(SerializableGuid id)
         {
-            if (_persistents != null)
+            return persistentsDictionary.Remove(id);
+        }
+
+        public void IterateOverPersistents(Func<SerializableGuid, IPersistent, bool> callback)
+        {
+            if (_persistentsDictionary != null)
             {
-                for (int i = _persistents.Count - 1; i >= 0; i--)
+                for (int i = _persistentsDictionary.Count - 1; i >= 0; i--)
                 {
-                    if (!callback(i, _persistents[i]))
+                    KeyValuePair<SerializableGuid, SerializableIPersistent> persistentKey = _persistentsDictionary.ElementAt(i);
+                    if (!callback(persistentKey.Key, persistentKey.Value.persistent))
                         break;
                 }
             }

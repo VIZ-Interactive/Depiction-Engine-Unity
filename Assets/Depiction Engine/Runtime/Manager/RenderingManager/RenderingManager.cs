@@ -303,8 +303,8 @@ namespace DepictionEngine
         /// <returns>An instance of the manager if the context allows.</returns>
         public static RenderingManager Instance(bool createIfMissing = true)
         {
-            if (_instance == Disposable.NULL && createIfMissing)
-                _instance = GetManagerComponent<RenderingManager>();
+            if (_instance == Disposable.NULL)
+                _instance = GetManagerComponent<RenderingManager>(createIfMissing);
             return _instance;
         }
 

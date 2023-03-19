@@ -455,7 +455,7 @@ namespace DepictionEngine
         /// <remarks>List's will compare their items not the collection reference.</remarks>
         protected bool HasChanged(object newValue, object oldValue, bool forceChangeDuringInitializing = true)
         {
-            if (!isFallbackValues && forceChangeDuringInitializing && !initialized)
+            if (forceChangeDuringInitializing && !initialized && !isFallbackValues)
                 return true;
 
             if (newValue is IList && oldValue is IList && newValue.GetType() == oldValue.GetType())

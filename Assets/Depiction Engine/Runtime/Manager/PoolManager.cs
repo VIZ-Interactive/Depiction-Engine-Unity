@@ -46,14 +46,6 @@ namespace DepictionEngine
         [SerializeField, ConditionalShow(nameof(GetShowDebug))]
         private PoolStackDictionary _debug;
 
-        private bool GetShowDebug()
-        {
-            SceneManager sceneManager = SceneManager.Instance(false);
-            if (sceneManager != Disposable.NULL)
-                return sceneManager.debug;
-            return false;
-        }
-
         private PoolStackDictionary debug
         { 
             get 
@@ -82,8 +74,8 @@ namespace DepictionEngine
         /// <returns>An instance of the manager if the context allows.</returns>
         public static PoolManager Instance(bool createIfMissing = true)
         {
-            if (_instance == Disposable.NULL && createIfMissing)
-                _instance = GetManagerComponent<PoolManager>();
+            if (_instance == Disposable.NULL)
+                _instance = GetManagerComponent<PoolManager>(createIfMissing);
             return _instance;
         }
 
@@ -425,7 +417,8 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         private void UpdateDebug(Type type, List<IDisposable> pool)
         {
-            if (GetShowDebug() && pool != null)
+            SceneManager sceneManager = SceneManager.Instance(false);
+            if (sceneManager != Disposable.NULL && sceneManager.debug && pool != null)
             {
                 lock (debug)
                 {

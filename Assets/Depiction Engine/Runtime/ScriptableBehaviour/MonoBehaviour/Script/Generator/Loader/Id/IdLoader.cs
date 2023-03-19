@@ -21,7 +21,7 @@ namespace DepictionEngine
 
         [SerializeField, EndFoldout]
 #if UNITY_EDITOR
-        [ConditionalShow(nameof(GetDebug))]
+        [ConditionalShow(nameof(GetShowDebug))]
 #endif
         private IdLoadScopeDictionary _idLoadScopes;
 
@@ -78,6 +78,11 @@ namespace DepictionEngine
                 return true;
             }
             return false;
+        }
+
+        protected override int GetLoadScopeCount()
+        {
+            return base.GetLoadScopeCount() + idLoadScopes.Count;
         }
 
         private IdLoadScopeDictionary idLoadScopes
@@ -238,13 +243,16 @@ namespace DepictionEngine
                 if (loadScope is IdLoadScope)
                 {
                     IdLoadScope idLoadScope = loadScope as IdLoadScope;
-
-                    SerializableGuid key = idLoadScope.scopeId;
-                    if (idLoadScopes.Remove(key))
+                    if (idLoadScopes.Remove(idLoadScope.scopeId))
                         return true;
                 }
             }
             return false;
+        }
+
+        protected override bool RemoveLoadScopeKey(object key)
+        {
+            return base.RemoveLoadScopeKey(key) && idLoadScopes.Remove((SerializableGuid)key);
         }
 
         public override bool GetLoadScope(out LoadScope loadScope, IPersistent persistent)
@@ -308,7 +316,7 @@ namespace DepictionEngine
             return loadScopes;
         }
 
-        public override bool IterateOverLoadScopes(Func<LoadScope, bool> callback)
+        public override bool IterateOverLoadScopes(Func<object, LoadScope, bool> callback)
         {
             if (base.IterateOverLoadScopes(callback))
             {
@@ -316,8 +324,8 @@ namespace DepictionEngine
                 {
                     for (int i = idLoadScopes.Count - 1; i >= 0; i--)
                     {
-                        IdLoadScope loadScope = idLoadScopes.ElementAt(i).Value;
-                        if (loadScope != Disposable.NULL && !callback(loadScope))
+                        KeyValuePair<SerializableGuid, IdLoadScope> idLoadScope = idLoadScopes.ElementAt(i);
+                        if (idLoadScope.Value != Disposable.NULL && !callback(idLoadScope.Key, idLoadScope.Value))
                             return false;
                     }
                 }

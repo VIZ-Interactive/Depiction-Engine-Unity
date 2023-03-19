@@ -97,12 +97,12 @@ namespace DepictionEngine
 
         protected T CreateOperationResult<T>() where T : OperationResult
         {
-            return InstanceManager.Instance(false).CreateInstance<T>();
+            return InstanceManager.Instance(false)?.CreateInstance<T>();
         }
 
         protected T CreateResultData<T>() where T : ResultData
         {
-            return InstanceManager.Instance(false).CreateInstance<T>();
+            return InstanceManager.Instance(false)?.CreateInstance<T>();
         }
 
         protected virtual void KillLoading()

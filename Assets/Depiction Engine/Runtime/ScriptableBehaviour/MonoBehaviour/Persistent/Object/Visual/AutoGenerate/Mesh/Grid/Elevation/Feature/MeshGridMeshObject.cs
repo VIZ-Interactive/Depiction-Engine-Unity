@@ -185,7 +185,7 @@ namespace DepictionEngine
 
             if (meshGridMeshObjectVisualDirtyFlags != null)
             {
-                meshRendererVisualModifiersProcessor ??= InstanceManager.Instance(false).CreateInstance<Processor>();
+                meshRendererVisualModifiersProcessor ??= InstanceManager.Instance(false)?.CreateInstance<Processor>();
 
                 meshGridMeshObjectVisualDirtyFlags.SetProcessing(true, meshRendererVisualModifiersProcessor);
 

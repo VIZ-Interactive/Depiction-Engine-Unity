@@ -519,11 +519,7 @@ namespace DepictionEngine.Editor
             {
                 AtmosphereEffect atmopshereEffect = targetObject as AtmosphereEffect;
 
-                Star star = null;
-
-                InstanceManager instanceManager = InstanceManager.Instance(false);
-                if (instanceManager != Disposable.NULL)
-                    star = instanceManager.GetStar();
+                Star star = InstanceManager.Instance(false)?.GetStar();
 
                 if (star == Disposable.NULL)
                     helpBoxes.Add(("Add a 'Star' to the Scene to control light direction", MessageType.Warning));
@@ -675,7 +671,7 @@ namespace DepictionEngine.Editor
                 {
                     Datasource datasource = GetDatasourceFromSerializedProperty(serializedProperty.serializedObject.targetObject);
 
-                    if (datasource != Disposable.NULL && datasource.persistentCount == 0)
+                    if (datasource != null && datasource.persistentCount == 0)
                         enable = false;
                 }
             }

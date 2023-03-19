@@ -307,7 +307,7 @@ namespace DepictionEngine
 
         public static MeshRendererVisualModifier CreateMeshRendererVisualModifier(string name = null)
         {
-            MeshRendererVisualModifier meshRendererVisualModifier = InstanceManager.Instance(false).CreateInstance<MeshRendererVisualModifier>();
+            MeshRendererVisualModifier meshRendererVisualModifier = InstanceManager.Instance(false)?.CreateInstance<MeshRendererVisualModifier>();
             meshRendererVisualModifier.name = name;
 
             return meshRendererVisualModifier;
@@ -525,7 +525,7 @@ namespace DepictionEngine
         {
             if (processingFunction != null)
             {
-                meshModifierProcessor ??= InstanceManager.Instance(false).CreateInstance<Processor>();
+                meshModifierProcessor ??= InstanceManager.Instance(false)?.CreateInstance<Processor>();
                 
                 meshModifierProcessor.StartProcessing(processingFunction, typeof(MeshRendererVisualProcessorOutput), parametersType, parametersCallback,
                     (data, errorMsg) =>

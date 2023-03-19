@@ -45,8 +45,8 @@ namespace DepictionEngine
                         json = new JSONString(obj.ToString());
                     else if (obj is Enum)
                         json = new JSONString(Enum.GetName(type, obj));
-                    else if (obj is Type)
-                        json = new JSONString(((Type)obj).FullName);
+                    else if (obj is Type type1)
+                        json = new JSONString(type1.FullName);
                     else if (obj is IJson)
                         json = (obj as IJson).GetJson();
                     else if (obj is UnityEngine.Object || obj is Vector2 || obj is Vector2Double || obj is Vector2Int || obj is Vector4 || obj is Vector4Double || obj is Vector3 || obj is Vector3Int || obj is Vector3Double || obj is GeoCoordinate3 || obj is GeoCoordinate3Double || obj is GeoCoordinate2 || obj is GeoCoordinate2Double || obj is Color || obj is Quaternion || obj is QuaternionDouble || obj is Grid2DIndex || obj is GeoCoordinateGeometries || obj is GeoCoordinateGeometry || obj is GeoCoordinatePolygon || obj is Disposable || type.IsSubclassOf(typeof(Disposable)))
@@ -148,7 +148,7 @@ namespace DepictionEngine
                             if (!string.IsNullOrEmpty(jsonStr))
                             {
                                 if (jsonStr.StartsWith("PPtr<$"))
-                                    jsonStr = jsonStr.Substring(6, jsonStr.Length - 7);
+                                    jsonStr = jsonStr[6..^1];
 
                                 parsedValue ??= Type.GetType(jsonStr);
                                 parsedValue ??= Type.GetType("System." + jsonStr);
@@ -250,7 +250,7 @@ namespace DepictionEngine
             }
 
             if (!success && json != null)
-               Debug.LogWarning("Json: '"+ json.ToString() +"', not successfully parsed to '" + (type != null ? type.Name : "Null") + "'");
+               Debug.LogWarning("Json: "+ json.ToString() +", not successfully parsed to '" + (type != null ? type.Name : "Null") + "'");
 
             value = parsedValue;
 
@@ -312,7 +312,7 @@ namespace DepictionEngine
                                         else
                                             property = null;
 
-                                        if (outOfSynchDatasource == Disposable.NULL || !outOfSynchDatasource.GetPersistenceData(iJson.id, out PersistenceData persistenceData) || persistenceData.IsPropertyOutOfSync(iJson, name))
+                                        if (outOfSynchDatasource == null || !outOfSynchDatasource.GetPersistent(iJson.id, out IPersistent persistent) || outOfSynchDatasource.IsPersistentComponentPropertyOutOfSync(persistent, iJson, name))
                                         {
                                             JSONNode filterNode = GetFilterNode(filter, name);
                                             if (property is ICollection)

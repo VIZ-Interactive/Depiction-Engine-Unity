@@ -28,9 +28,9 @@ namespace DepictionEngine
 
         private GlobalLoader _atmosphereGlobalLoader;
 
-        public override void Initialized(InitializationContext initializingContext)
+        protected override void CreateComponents(InitializationContext initializingContext)
         {
-            base.Initialized(initializingContext);
+            base.CreateComponents(initializingContext);
           
             string atmosphereLoadersName = "AtmosphereLoader";
 

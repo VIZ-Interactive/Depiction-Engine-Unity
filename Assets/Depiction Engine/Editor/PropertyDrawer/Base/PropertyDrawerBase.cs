@@ -339,9 +339,8 @@ namespace DepictionEngine.Editor
             position.height = EditorGUIUtility.singleLineHeight;
 
             float totalHeight = 0.0f;
-            datasource.IterateOverPersistenceData((persistentId, persistenceData) =>
+            datasource.IterateOverPersistents((persistentId, persistent) =>
             {
-                IPersistent persistent = persistenceData.persistent;
                 GUI.SetNextControlName(Selection.PERSISTENT_PREFIX + "" + persistent.id.ToString());
                 EditorGUI.ObjectField(position, persistent as UnityEngine.Object, persistent.GetType(), true);
                 float height = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
@@ -506,9 +505,9 @@ namespace DepictionEngine.Editor
 
                     float totalHeight = 0.0f;
 
-                    if (datasource != Disposable.NULL)
+                    if (datasource is not null)
                     {
-                        datasource.IterateOverPersistenceData((persistentId, persistent) =>
+                        datasource.IterateOverPersistents((persistentId, persistent) =>
                         {
                             totalHeight += GetDefaultSingleLineHeight();
 

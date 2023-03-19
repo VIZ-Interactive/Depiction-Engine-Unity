@@ -58,8 +58,8 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CameraManager Instance(bool createIfMissing = true)
         {
-            if (_instance == Disposable.NULL && createIfMissing)
-                _instance = GetManagerComponent<CameraManager>();
+            if (_instance == Disposable.NULL)
+                _instance = GetManagerComponent<CameraManager>(createIfMissing);
             return _instance;
         }
 

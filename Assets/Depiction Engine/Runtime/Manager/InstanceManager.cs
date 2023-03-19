@@ -141,8 +141,8 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static InstanceManager Instance(bool createIfMissing = true)
         {
-            if (_instance == Disposable.NULL && createIfMissing)
-                _instance = GetManagerComponent<InstanceManager>();
+            if (_instance == Disposable.NULL)
+                _instance = GetManagerComponent<InstanceManager>(createIfMissing);
             return _instance;
         }
 

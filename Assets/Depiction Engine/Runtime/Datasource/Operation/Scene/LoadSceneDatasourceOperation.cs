@@ -93,7 +93,7 @@ namespace DepictionEngine
                     proceduralDataProcessorParametersType = typeof(PropertyModifierIndex2DParameters);
 
                 if (proceduralDataProcessor == null)
-                    proceduralDataProcessor = InstanceManager.Instance(false).CreateInstance<Processor>();
+                    proceduralDataProcessor = InstanceManager.Instance(false)?.CreateInstance<Processor>();
 
                 proceduralDataProcessor.StartProcessing(PropertyModifierDataProcessingFunctions.PopulatePropertyModifier, typeof(PropertyModifierData), proceduralDataProcessorParametersType, InitProceduralModifierParameters,
                     (data, errorMsg) =>

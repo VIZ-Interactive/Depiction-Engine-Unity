@@ -123,7 +123,7 @@ namespace DepictionEngine
         {
             base.Saving(scene, path);
 
-            if (IsFallbackValues() || dontSaveToScene)
+            if (isFallbackValues || dontSaveToScene)
                 hideFlags |= HideFlags.DontSave;
         }
 
@@ -131,7 +131,7 @@ namespace DepictionEngine
         {
             if (base.UpdateHideFlags())
             {
-                if (IsFallbackValues() && !SceneManager.Debugging())
+                if (isFallbackValues && !SceneManager.Debugging())
                     hideFlags |= HideFlags.HideInHierarchy;
 
                 return true;

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -69,9 +70,9 @@ namespace DepictionEngine
 
         [SerializeField, EndFoldout]
 #if UNITY_EDITOR
-        [ConditionalShow(nameof(GetDebug))]
+        [ConditionalShow(nameof(GetShowDebug))]
 #endif
-        private SerializableIPersistentList _persistents;
+        private Datasource.PersistentDictionary _persistentsDictionary;
 
         [BeginFoldout("Load Scope")]
         [SerializeField, ConditionalShow(nameof(IsNotFallbackValues)), BeginHorizontalGroup]
@@ -162,9 +163,22 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _persistents?.Clear();
+            _persistentsDictionary?.Clear();
 
             _datasource = default;
+        }
+
+        protected override bool InitializeLastFields()
+        {
+            if (base.InitializeLastFields())
+            {
+#if UNITY_EDITOR
+                UpdateLastLocalScopeCount();
+#endif
+
+                return true;
+            }
+            return false;
         }
 
         protected override void InitializeFields(InitializationContext initializingContext)
@@ -184,17 +198,17 @@ namespace DepictionEngine
             {
                 //Problem: When undoing a "AddComponent"(Loader) action done in the inspector and redoing it, some null loadScopes can be found in the LoadScope Dictionary
                 //Fix: If this initialization is the result of an Undo/Redo operation, we look for null LoadScope in the Dictionary and Clear it all if we find some
-                IterateOverLoadScopes((loadScope) =>
+                IterateOverLoadScopes((loadScopeKey, loadScope) =>
                 {
                     if (loadScope == Disposable.NULL)
-                        RemoveLoadScope(loadScope);
+                        RemoveLoadScopeKey(loadScopeKey);
                     return true;
                 });
 
-                IterateOverPersistents((i, persistent) =>
+                IterateOverPersistents((persistentId, persistent) =>
                 {
-                    if (Disposable.IsDisposed(persistents))
-                        persistents.RemoveAt(i);
+                    if (Disposable.IsDisposed(persistent))
+                        RemovePersistentId(persistentId);
                     return true;
                 });
             }
@@ -219,7 +233,7 @@ namespace DepictionEngine
         {
             if (base.LateInitialize())
             {
-                InitializeLoadScopes();
+                FixBrokenLoadScopes();
 
                 QueueAutoUpdate();
 
@@ -232,16 +246,9 @@ namespace DepictionEngine
             return false;
         }
 
-        public override void ExplicitOnEnable()
+        public void FixBrokenLoadScopes()
         {
-            base.ExplicitOnEnable();
-
-            InitializeLoadScopes();
-        }
-
-        private void InitializeLoadScopes()
-        {
-            IterateOverLoadScopes((loadScope) =>
+            IterateOverLoadScopes((loadScopeKey, loadScope) =>
             {
                 bool reload = false;
 
@@ -257,11 +264,23 @@ namespace DepictionEngine
             });
         }
 
+#if UNITY_EDITOR
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void AfterAssemblyReloadHandler()
+        {
+            InstanceManager.Instance(false)?.IterateOverInstances<LoaderBase>((loader) =>
+            {
+                loader.FixBrokenLoadScopes();
+                return true;
+            });
+        }
+#endif
+
         protected override bool UpdateAllDelegates()
         {
             if (base.UpdateAllDelegates())
             {
-                IterateOverPersistents((i, persistent) =>
+                IterateOverPersistents((persistentId, persistent) =>
                 {
                     RemovePersistentDelegates(persistent);
                     AddPersistentDelegates(persistent);
@@ -269,7 +288,7 @@ namespace DepictionEngine
                     return true;
                 });
 
-                IterateOverLoadScopes((loadScope) => 
+                IterateOverLoadScopes((loadScopeKey, loadScope) => 
                 {
                     RemoveLoadScopeDelegates(loadScope);
                     AddLoadScopeDelegates(loadScope);
@@ -337,6 +356,33 @@ namespace DepictionEngine
             LoadScopeLoadingStateChangedEvent?.Invoke(loadScope);
         }
 
+#if UNITY_EDITOR
+        private int _lastLocalScopeCount;
+        protected override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            Editor.SerializationUtility.FixBrokenPersistentsDictionary(IterateOverPersistents, persistentsDictionary);
+
+            if (_lastLocalScopeCount != GetLoadScopeCount())
+            {
+                UpdateLastLocalScopeCount();
+
+                IterateOverLoadScopes((loadScopeKey, loadScope) =>
+                {
+                    RemoveLoadScopeDelegates(loadScope);
+                    AddLoadScopeDelegates(loadScope);
+                    return true;
+                });
+            }
+        }
+
+        private void UpdateLastLocalScopeCount()
+        {
+            _lastLocalScopeCount = GetLoadScopeCount();
+        }
+#endif
+
         protected override bool AddInstanceToManager()
         {
             return true;
@@ -360,20 +406,6 @@ namespace DepictionEngine
         protected virtual bool GetDefaultAutoDisposeUnused()
         {
             return true;
-        }
-
-        private SerializableIPersistentList persistents
-        {
-            get
-            {
-                _persistents ??= new SerializableIPersistentList();
-                return _persistents;
-            }
-        }
-
-        public int GetPersistenCount()
-        {
-            return persistents.Count;
         }
 
         /// <summary>
@@ -403,7 +435,7 @@ namespace DepictionEngine
         private void UpdateLoadCount()
         {
             _loadingCount = _loadedCount = 0;
-            IterateOverLoadScopes((loadScope) =>
+            IterateOverLoadScopes((loadScopeKey, loadScope) =>
             {
                 DatasourceOperationBase.LoadingState loadScopeLoadingState = loadScope.loadingState;
                 if (loadScopeLoadingState == DatasourceOperationBase.LoadingState.Interval || loadScopeLoadingState == DatasourceOperationBase.LoadingState.Loading)
@@ -415,9 +447,9 @@ namespace DepictionEngine
             });
         }
 
-        public bool Contains(IPersistent persistent)
+        protected virtual int GetLoadScopeCount()
         {
-            return persistents.Contains(persistent);
+            return 0;
         }
 
         public Datasource GetDatasource()
@@ -604,7 +636,7 @@ namespace DepictionEngine
             return false;
         }
 
-        public virtual bool IterateOverLoadScopes(Func<LoadScope, bool> callback)
+        public virtual bool IterateOverLoadScopes(Func<object, LoadScope, bool> callback)
         {
             return true;
         }
@@ -676,7 +708,7 @@ namespace DepictionEngine
 
             if (autoDisposeUnused)
             {
-                IterateOverLoadScopes((loadScope) =>
+                IterateOverLoadScopes((loadScopeKey, loadScope) =>
                 {
                     if (!IsInList(loadScope))
                         DisposeLoadScope(loadScope);
@@ -722,22 +754,45 @@ namespace DepictionEngine
                 loadScope.Load(loadInterval);
         }
 
-        public void IterateOverPersistents(Func<int, IPersistent, bool> callback)
+        public void IterateOverPersistents(Func<SerializableGuid, IPersistent, bool> callback)
         {
-            for (int i = persistents.Count - 1; i >= 0; i--)
+            if (_persistentsDictionary != null)
             {
-                if (!callback(i, persistents[i]))
-                    break;
+                for (int i = _persistentsDictionary.Count - 1; i >= 0; i--)
+                {
+                    KeyValuePair<SerializableGuid, SerializableIPersistent> persistentKey = _persistentsDictionary.ElementAt(i);
+                    if (!callback(persistentKey.Key, persistentKey.Value.persistent))
+                        break;
+                }
             }
+        }
+
+        private Datasource.PersistentDictionary persistentsDictionary
+        {
+            get
+            {
+                _persistentsDictionary ??= new Datasource.PersistentDictionary();
+                return _persistentsDictionary;
+            }
+        }
+
+        public bool Contains(IPersistent persistent)
+        {
+            return persistentsDictionary.ContainsKey(persistent.id);
+        }
+
+        public int GetPersistenCount()
+        {
+            return persistentsDictionary.Count;
         }
 
         public bool AddPersistent(IPersistent persistent)
         {
             bool added = false;
 
-            if (!persistents.Contains(persistent))
+            if (!Contains(persistent))
             {
-                persistents.Add(persistent);
+                persistentsDictionary.Add(persistent.id, new SerializableIPersistent(persistent));
                 added = true;
             }
 
@@ -760,10 +815,10 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
             if (disposeContext == DisposeContext.Editor_Destroy)
-                Editor.UndoManager.RecordObject(this);
+                Editor.UndoManager.RegisterCompleteObjectUndo(this);
 #endif
 
-            if (persistents.Remove(persistent))
+            if (RemovePersistentId(persistent.id))
             {
                 RemovePersistentDelegates(persistent);
 #if UNITY_EDITOR
@@ -773,12 +828,12 @@ namespace DepictionEngine
                 return true;
             }
 
-#if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-                Editor.UndoManager.FlushUndoRecordObjects();
-#endif
-
             return false;
+        }
+
+        private bool RemovePersistentId(SerializableGuid id)
+        {
+            return persistentsDictionary.Remove(id);
         }
 
         protected LoadScope CreateLoadScope(Type type)
@@ -791,6 +846,9 @@ namespace DepictionEngine
         {
             if (AddLoadScopeInternal(loadScope))
             {
+#if UNITY_EDITOR
+                UpdateLastLocalScopeCount();
+#endif
                 AddLoadScopeDelegates(loadScope);
 
                 return true;
@@ -814,6 +872,9 @@ namespace DepictionEngine
 
             if (RemoveLoadScopeInternal(loadScope))
             {
+#if UNITY_EDITOR
+                UpdateLastLocalScopeCount();
+#endif
                 RemoveLoadScopeDelegates(loadScope);
 
                 removed = true;
@@ -828,6 +889,11 @@ namespace DepictionEngine
         }
 
         protected virtual bool RemoveLoadScopeInternal(LoadScope loadScope)
+        {
+            return true;
+        }
+
+        protected virtual bool RemoveLoadScopeKey(object key)
         {
             return true;
         }
@@ -853,7 +919,7 @@ namespace DepictionEngine
                 Editor.UndoManager.RecordObject(this);
 #endif
 
-            IterateOverLoadScopes((loadScope) =>
+            IterateOverLoadScopes((loadScopeKey, loadScope) =>
             {
                 DisposeLoadScope(loadScope, disposeContext);
 

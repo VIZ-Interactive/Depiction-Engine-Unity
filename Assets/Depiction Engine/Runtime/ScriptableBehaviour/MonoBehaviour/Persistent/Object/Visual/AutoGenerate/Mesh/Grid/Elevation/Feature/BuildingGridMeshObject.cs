@@ -284,7 +284,7 @@ namespace DepictionEngine
 
             if (buildingGridMeshObjectVisualDirtyFlags != null)
             {
-                meshRendererVisualModifiersProcessor ??= InstanceManager.Instance(false).CreateInstance<Processor>();
+                meshRendererVisualModifiersProcessor ??= InstanceManager.Instance(false)?.CreateInstance<Processor>();
 
                 buildingGridMeshObjectVisualDirtyFlags.SetProcessing(true, meshRendererVisualModifiersProcessor);
 

@@ -26,12 +26,12 @@ namespace DepictionEngine
 
         [SerializeField]
 #if UNITY_EDITOR
-        [ConditionalShow(nameof(GetDebug))]
+        [ConditionalShow(nameof(GetShowDebug))]
 #endif
         private List<Mesh> _meshes;
         [SerializeField]
 #if UNITY_EDITOR
-        [ConditionalShow(nameof(GetDebug))]
+        [ConditionalShow(nameof(GetShowDebug))]
 #endif
         private List<bool> _isSharedMeshFlags;
 
@@ -143,13 +143,6 @@ namespace DepictionEngine
             set { SetValue(nameof(receiveShadows), value, ref _receiveShadows); }
         }
 
-        protected override void DontSaveToSceneChanged(bool newValue, bool oldValue)
-        {
-            base.DontSaveToSceneChanged(newValue, oldValue);
-
-            UpdateMeshesDontSaveToScene();
-        }
-
         protected override void DontSaveVisualsToSceneChanged(bool newValue, bool oldValue)
         {
             base.DontSaveVisualsToSceneChanged(newValue, oldValue);
@@ -160,7 +153,7 @@ namespace DepictionEngine
         private void UpdateMeshesDontSaveToScene()
         {
             foreach (Mesh mesh in meshes)
-                mesh.dontSaveToScene = dontSaveToScene || dontSaveVisualsToScene;
+                mesh.dontSaveToScene = dontSaveVisualsToScene;
         }
 
         /// <summary>
@@ -341,7 +334,7 @@ namespace DepictionEngine
 
                 if (_meshParameters != null)
                 {
-                    meshDataProcessor ??= InstanceManager.Instance(false).CreateInstance<Processor>();
+                    meshDataProcessor ??= InstanceManager.Instance(false)?.CreateInstance<Processor>();
 
                     meshDataProcessor.StartProcessing(MeshProcessingFunctions.ModifyMeshes, null, typeof(MeshesParameters), 
                         (parameters) => 

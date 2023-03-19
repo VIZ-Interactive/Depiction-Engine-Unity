@@ -369,7 +369,7 @@ namespace DepictionEngine
             base.UpdateLoadScopeFields();
 
             IEnumerable<IGrid2D> grids = GetGrids();
-            IterateOverLoadScopes((loadScope) =>
+            IterateOverLoadScopes((loadScopeKey, loadScope) =>
             {
                 UpdateLoadScopeCameras(loadScope as Index2DLoadScope, grids);
                 return true;

@@ -6,121 +6,121 @@ namespace DepictionEngine
 {
     public class ObjectPersistenceData : PersistenceData
     {
-        protected override bool RemovePersistentDelegates(IPersistent persistent)
-        {
-            if (base.RemovePersistentDelegates(persistent))
-            {
-                Object objectBase = persistent as Object;
+        //protected override bool RemovePersistentDelegates(IPersistent persistent)
+        //{
+        //    if (base.RemovePersistentDelegates(persistent))
+        //    {
+        //        Object objectBase = persistent as Object;
 
-                if (objectBase is not null)
-                {
-                    objectBase.ChildRemovedEvent -= ObjectChildRemovedHandler;
-                    objectBase.ChildAddedEvent -= ObjectChildAddedHandler;
-                    objectBase.ChildObjectPropertyAssignedEvent -= ObjectChildPropertyAssignedHandler;
-                    objectBase.ScriptRemovedEvent -= ObjectScriptRemovedHandler;
-                    objectBase.ScriptAddedEvent -= ObjectScriptAddedHandler;
-                    objectBase.ComponentPropertyAssignedEvent -= ObjectComponentPropertyAssignedHandler;
+        //        if (objectBase is not null)
+        //        {
+        //            objectBase.ChildRemovedEvent -= ObjectChildRemovedHandler;
+        //            objectBase.ChildAddedEvent -= ObjectChildAddedHandler;
+        //            objectBase.ChildObjectPropertyAssignedEvent -= ObjectChildPropertyAssignedHandler;
+        //            objectBase.ScriptRemovedEvent -= ObjectScriptRemovedHandler;
+        //            objectBase.ScriptAddedEvent -= ObjectScriptAddedHandler;
+        //            objectBase.ComponentPropertyAssignedEvent -= ObjectComponentPropertyAssignedHandler;
 
-                    return true;
-                }
-            }
-            return false;
-        }
+        //            return true;
+        //        }
+        //    }
+        //    return false;
+        //}
 
-        protected override bool AddPersistentDelegates(IPersistent persistent)
-        {
-            if (base.AddPersistentDelegates(persistent))
-            {
-                Object objectBase = persistent as Object;
+        //protected override bool AddPersistentDelegates(IPersistent persistent)
+        //{
+        //    if (base.AddPersistentDelegates(persistent))
+        //    {
+        //        Object objectBase = persistent as Object;
 
-                if (!Disposable.IsDisposed(objectBase))
-                {
-                    objectBase.ChildRemovedEvent += ObjectChildRemovedHandler;
-                    objectBase.ChildAddedEvent += ObjectChildAddedHandler;
-                    objectBase.ChildObjectPropertyAssignedEvent += ObjectChildPropertyAssignedHandler;
-                    objectBase.ScriptRemovedEvent += ObjectScriptRemovedHandler;
-                    objectBase.ScriptAddedEvent += ObjectScriptAddedHandler;
-                    objectBase.ComponentPropertyAssignedEvent += ObjectComponentPropertyAssignedHandler;
+        //        if (!Disposable.IsDisposed(objectBase))
+        //        {
+        //            objectBase.ChildRemovedEvent += ObjectChildRemovedHandler;
+        //            objectBase.ChildAddedEvent += ObjectChildAddedHandler;
+        //            objectBase.ChildObjectPropertyAssignedEvent += ObjectChildPropertyAssignedHandler;
+        //            objectBase.ScriptRemovedEvent += ObjectScriptRemovedHandler;
+        //            objectBase.ScriptAddedEvent += ObjectScriptAddedHandler;
+        //            objectBase.ComponentPropertyAssignedEvent += ObjectComponentPropertyAssignedHandler;
 
-                    return true;
-                }
-            }
-            return false;
-        }
+        //            return true;
+        //        }
+        //    }
+        //    return false;
+        //}
 
-        private void ObjectChildRemovedHandler(Object objectBase, PropertyMonoBehaviour child)
-        {
-            if (child is TransformBase)
-                UpdateCanBeAutoDisposed();
-        }
+        //private void ObjectChildRemovedHandler(Object objectBase, PropertyMonoBehaviour child)
+        //{
+        //    if (child is TransformBase)
+        //        UpdateCanBeAutoDisposed();
+        //}
 
-        private void ObjectChildAddedHandler(Object objectBase, PropertyMonoBehaviour child)
-        {
-            if (child is TransformBase)
-                UpdateCanBeAutoDisposed();
-        }
+        //private void ObjectChildAddedHandler(Object objectBase, PropertyMonoBehaviour child)
+        //{
+        //    if (child is TransformBase)
+        //        UpdateCanBeAutoDisposed();
+        //}
         
-        private void ObjectChildPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
-        {
-            if (name == nameof(canBeAutoDisposed))
-                UpdateCanBeAutoDisposed();
-        }
+        //private void ObjectChildPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
+        //{
+        //    if (name == nameof(canBeAutoDisposed))
+        //        UpdateCanBeAutoDisposed();
+        //}
 
-        private void ObjectScriptRemovedHandler(Object objectBase, Script script)
-        {
-            if (SceneManager.IsUserChangeContext())
-                SetAllSync(script);
-        }
+        //private void ObjectScriptRemovedHandler(Object objectBase, Script script)
+        //{
+        //    if (SceneManager.IsUserChangeContext())
+        //        SetAllSync(script);
+        //}
 
-        private void ObjectScriptAddedHandler(Object objectBase, Script script)
-        {
-            if (SceneManager.IsUserChangeContext())
-                SetAllOutOfSync(script);
-        }
+        //private void ObjectScriptAddedHandler(Object objectBase, Script script)
+        //{
+        //    if (SceneManager.IsUserChangeContext())
+        //        SetAllOutOfSync(script);
+        //}
 
-        private void ObjectComponentPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
-        {
-            if (SceneManager.IsUserChangeContext() && property is IJson)
-            {
-                IJson iJson = property as IJson;
-                if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
-                    SetPropertyOutOfSync(iJson, propertyInfo);
-            }
-        }
+        //private void ObjectComponentPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
+        //{
+        //    if (SceneManager.IsUserChangeContext() && property is IJson)
+        //    {
+        //        IJson iJson = property as IJson;
+        //        if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
+        //            SetPropertyOutOfSync(iJson, propertyInfo);
+        //    }
+        //}
 
-        protected Object objectBase
-        {
-            get { return persistent as Object; }
-        }
+        //protected Object objectBase
+        //{
+        //    get { return persistent as Object; }
+        //}
 
-        protected override bool CanBeDisposed()
-        {
-            bool canBeDisposed = base.CanBeDisposed();
+        //protected override bool CanBeDisposed()
+        //{
+        //    bool canBeDisposed = base.CanBeDisposed();
             
-            if (objectBase is Interior)
-                canBeDisposed = true;
+        //    if (objectBase is Interior)
+        //        canBeDisposed = true;
 
-            return canBeDisposed;
-        }
+        //    return canBeDisposed;
+        //}
 
-        public override bool GetCanBeAutoDisposed()
-        {
-            bool canBeDisposed = base.GetCanBeAutoDisposed();
+        //public override bool GetCanBeAutoDisposed()
+        //{
+        //    bool canBeDisposed = base.GetCanBeAutoDisposed();
 
-            if (canBeDisposed)
-            {
-                objectBase.transform.IterateOverChildrenObject<Object>((objectBase) =>
-                {
-                    if (!datasource.GetPersistenceData(objectBase.id, out PersistenceData persistenceData) && !persistenceData.canBeAutoDisposed)
-                    {
-                        canBeDisposed = false;
-                        return false;
-                    }
-                    return true;
-                });
-            }
+        //    if (canBeDisposed)
+        //    {
+        //        objectBase.transform.IterateOverChildrenObject<Object>((objectBase) =>
+        //        {
+        //            if (!datasource.GetPersistenceData(objectBase.id, out PersistenceData persistenceData) && !persistenceData.canBeAutoDisposed)
+        //            {
+        //                canBeDisposed = false;
+        //                return false;
+        //            }
+        //            return true;
+        //        });
+        //    }
 
-            return canBeDisposed;
-        }
+        //    return canBeDisposed;
+        //}
     }
 }

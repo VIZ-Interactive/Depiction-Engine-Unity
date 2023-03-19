@@ -26,8 +26,8 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TweenManager Instance(bool createIfMissing = true)
         {
-            if (_instance == Disposable.NULL && createIfMissing)
-                _instance = GetManagerComponent<TweenManager>();
+            if (_instance == Disposable.NULL)
+                _instance = GetManagerComponent<TweenManager>(createIfMissing);
             return _instance;
         }
 

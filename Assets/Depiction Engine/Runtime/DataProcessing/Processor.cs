@@ -233,7 +233,7 @@ namespace DepictionEngine
                 Debug.LogError("Processor Data Type '" + type.Name + "' is not valid");
                 return null;
             }
-            return InstanceManager.Instance(false).CreateInstance(type) as ProcessorOutput;
+            return InstanceManager.Instance(false)?.CreateInstance(type) as ProcessorOutput;
         }
 
         public static ProcessorParameters GetParametersInstance(Type type)

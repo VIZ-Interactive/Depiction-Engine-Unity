@@ -37,20 +37,22 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T GetManagerComponent<T>(string gameOjectName = SceneManager.SCENE_MANAGER_NAME) where T : ManagerBase
+        public static T GetManagerComponent<T>(bool createIfMissing = true) where T : ManagerBase
         {
             T manager = null;
 
             if (!SceneManager.IsSceneBeingDestroyed())
             {
-                GameObject go = GameObject.Find(gameOjectName);
-                if (go is null)
+                GameObject go = GameObject.Find(SceneManager.SCENE_MANAGER_NAME);
+
+                if (go is null && createIfMissing)
                 {
-                    go = new GameObject(gameOjectName);
+                    go = new GameObject(SceneManager.SCENE_MANAGER_NAME);
                     go.AddComponent<ManagersBootstrap>();
                 }
-            
-                manager = go.GetSafeComponent<T>();
+                
+                if (go is not null)
+                    manager = go.GetSafeComponent<T>();
             }
 
             return manager;

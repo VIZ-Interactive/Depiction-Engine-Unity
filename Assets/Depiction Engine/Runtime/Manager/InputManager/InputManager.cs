@@ -64,8 +64,8 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static InputManager Instance(bool createIfMissing = true)
         {
-            if (_instance == Disposable.NULL && createIfMissing)
-                _instance = GetManagerComponent<InputManager>();
+            if (_instance == Disposable.NULL)
+                _instance = GetManagerComponent<InputManager>(createIfMissing);
             return _instance;
         }
 

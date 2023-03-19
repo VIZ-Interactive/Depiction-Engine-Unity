@@ -43,7 +43,7 @@ namespace DepictionEngine
         private Action<IDisposable, DisposeContext> _disposedEvent;
 
 #if UNITY_EDITOR
-        protected bool GetDebug()
+        protected bool GetShowDebug()
         {
             return SceneManager.Debugging();
         }
@@ -102,7 +102,10 @@ namespace DepictionEngine
                 SceneManager.UserContext(() =>
                 {
                     if (!Initialize(_initializingContext))
+                    {
+                        DisposeManager.Destroy(gameObject);
                         abortInitialization = true;
+                    }
                 }, _initializingContext == InitializationContext.Editor || _initializingContext == InitializationContext.Editor_Duplicate);
 
                 if (abortInitialization)
@@ -172,12 +175,7 @@ namespace DepictionEngine
         /// <returns>False if the initialization failed.</returns>
         protected virtual bool Initialize(InitializationContext initializingContext)
         {
-            if (!IsValidInitialization(initializingContext))
-                return false;
-
-            UpdateAllDelegates();
-
-            return true;
+            return IsValidInitialization(initializingContext);
         }
 
         /// <summary>
@@ -187,7 +185,7 @@ namespace DepictionEngine
         /// <returns>False to interrupt the initialization.</returns>
         protected virtual bool IsValidInitialization(InitializationContext initializingContext)
         {
-            return true;
+            return !(isFallbackValues && initializingContext == InitializationContext.Existing);
         }
 
         protected bool InitValue<T>(Action<T> callback, T defaultValue, InitializationContext initializingContext)
@@ -228,6 +226,8 @@ namespace DepictionEngine
                 _initialized = true;
 
             UpdateHideFlags();
+
+            UpdateAllDelegates();
         }
 
         protected virtual bool IsFullyInitialized()

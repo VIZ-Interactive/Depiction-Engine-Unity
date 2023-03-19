@@ -145,7 +145,7 @@ namespace DepictionEngine
         {
             base.Saving(scene, path);
 
-            if (isFallbackValues || dontSaveToScene)
+            if (GetDontSaveToScene())
                 gameObject.hideFlags |= HideFlags.DontSave;
         }
 
@@ -183,7 +183,7 @@ namespace DepictionEngine
 
         protected virtual bool GetDefaultDontSaveToScene()
         {
-            return isFallbackValues || PersistentScriptableObject.DEFAULT_DONT_SAVE_TO_SCENE;
+            return PersistentScriptableObject.DEFAULT_DONT_SAVE_TO_SCENE;
         }
 
         private string _lastName;
@@ -238,17 +238,12 @@ namespace DepictionEngine
         public bool dontSaveToScene
         {
             get { return _dontSaveToScene; }
-            set 
-            { 
-                SetValue(nameof(dontSaveToScene), value, ref _dontSaveToScene, (newValue, oldValue) => 
-                {
-                    DontSaveToSceneChanged(newValue, oldValue);
-                }); 
-            }
+            set { SetValue(nameof(dontSaveToScene), value, ref _dontSaveToScene); }
         }
 
-        protected virtual void DontSaveToSceneChanged(bool newValue, bool oldValue)
+        protected virtual bool GetDontSaveToScene()
         {
+            return dontSaveToScene || isFallbackValues || containsCopyrightedMaterial;
         }
 
         /// <summary>

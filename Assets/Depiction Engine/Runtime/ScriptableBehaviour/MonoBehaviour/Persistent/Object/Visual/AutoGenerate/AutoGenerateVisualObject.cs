@@ -382,17 +382,12 @@ namespace DepictionEngine
             {
                 popupTween = null;
 
-                try
-                {
-                    //We dispose the visuals manualy in case only the Component is disposed and not the entire GameObject and its children
-                    //The delay is required during a Dispose of the Object since we do not know wether it is only the Component being disposed or the entire GameObject. 
-                    //If the Entire GameObject is being disposed in the Editor then some Destroy Undo operations will be registered by the Editor automaticaly. By the time the delayed dispose will be performed the children will already be Destroyed and we will not register additional Undo Operations
-                    DisposeAllChildren(disposeContext);
-                }
-                catch (MissingReferenceException)
-                { }
-
                 DisposeManager.Dispose(_meshRendererVisualDirtyFlags, disposeContext);
+
+                //We dispose the visuals manualy in case only the Component is disposed and not the entire GameObject and its children
+                //The delay is required during a Dispose of the Object since we do not know wether it is only the Component being disposed or the entire GameObject. 
+                //If the Entire GameObject is being disposed in the Editor then some Destroy Undo operations will be registered by the Editor automaticaly. By the time the delayed dispose will be performed the children will already be Destroyed and we will not register additional Undo Operations
+                DisposeAllChildren(disposeContext);
 
                 return true;
             }

@@ -580,7 +580,7 @@ namespace DepictionEngine
 
         public static MeshModifier CreateMeshModifier(Type type)
         {
-            return InstanceManager.Instance(false).CreateInstance(type) as MeshModifier;
+            return InstanceManager.Instance(false)?.CreateInstance(type) as MeshModifier;
         }
 
         public static MeshModifier CreateMeshModifier()
@@ -590,7 +590,7 @@ namespace DepictionEngine
 
         public static T CreateMeshModifier<T>() where T : MeshModifier
         {
-            return InstanceManager.Instance(false).CreateInstance<T>();
+            return InstanceManager.Instance(false)?.CreateInstance<T>();
         }
 
         protected override bool OnDisposedLocked()

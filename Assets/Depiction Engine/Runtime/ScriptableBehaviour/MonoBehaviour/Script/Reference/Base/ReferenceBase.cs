@@ -94,6 +94,10 @@ namespace DepictionEngine
             if (base.InitializeLastFields())
             {
 #if UNITY_EDITOR
+                _lastLoaderId = loaderId;
+                _lastDataId = dataId;
+                _lastDataIndex2D = dataIndex2D;
+                _lastLoadScope = loadScope;
                 _lastData = data;
 #endif
                 return true;
@@ -133,11 +137,20 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        private SerializableGuid _lastLoaderId;
+        private SerializableGuid _lastDataId;
+        private Grid2DIndex _lastDataIndex2D;
+        private LoadScope _lastLoadScope;
         private PersistentScriptableObject _lastData;
         protected override void UndoRedoPerformed()
         {
             base.UndoRedoPerformed();
 
+            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { loaderId = value; }, ref _loaderId, ref _lastLoaderId);
+            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { dataId = value; }, ref _dataId, ref _lastDataId);
+            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { dataIndex2D = value; }, ref _dataIndex2D, ref _lastDataIndex2D);
+
+            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { loadScope = value; }, ref _loadScope, ref _lastLoadScope);
             Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { data = value; }, ref _data, ref _lastData);
         }
 #endif
@@ -244,6 +257,9 @@ namespace DepictionEngine
             { 
                 SetValue(nameof(loaderId), value, ref _loaderId, (newValue, oldValue) => 
                 {
+#if UNITY_EDITOR
+                    _lastLoaderId = newValue;
+#endif
                     UpdateLoader();
                 }); 
             }
@@ -275,7 +291,12 @@ namespace DepictionEngine
                 SetValue(nameof(dataId), value, ref _dataId, (newValue, oldValue) =>
                 {
                     if (HasChanged(newValue, oldValue, false))
+                    {
+#if UNITY_EDITOR
+                        _lastDataId = newValue;
+#endif
                         ForceUpdateLoadScope();
+                    }
                 });
             }
         }
@@ -292,7 +313,12 @@ namespace DepictionEngine
                 SetValue(nameof(dataIndex2D), value, ref _dataIndex2D, (newValue, oldValue) =>
                 {
                     if (HasChanged(newValue, oldValue, false))
+                    {
+#if UNITY_EDITOR
+                        _lastDataIndex2D = newValue;
+#endif
                         ForceUpdateLoadScope();
+                    }
                 });
             }
         }
@@ -347,6 +373,9 @@ namespace DepictionEngine
             {
                 if (HasChanged(newValue, oldValue, false))
                 {
+#if UNITY_EDITOR
+                    _lastLoadScope = newValue;
+#endif
                     if (oldValue is not null)
                     {
                         RemoveLoadScopeDelegate(oldValue);

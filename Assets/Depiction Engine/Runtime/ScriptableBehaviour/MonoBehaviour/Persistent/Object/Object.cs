@@ -67,7 +67,7 @@ namespace DepictionEngine
         /// <summary>
         /// Dispatched when a property assign event is detected in the <see cref="DepictionEngine.Object"/> of one of the child <see cref="DepictionEngine.TransformDouble"/>.
         /// </summary>
-        public Action<IProperty, string, object, object> ChildObjectPropertyAssignedEvent;
+        public Action<Object, string, object, object> ChildObjectPropertyAssignedEvent;
 
         /// <summary>
         /// Dispatched when a <see cref="DepictionEngine.Script"/> is added.
@@ -80,7 +80,7 @@ namespace DepictionEngine
         /// <summary>
         /// Dispatched when a property assign event is detected in any of the <see cref="DepictionEngine.Script"/> or <see cref="DepictionEngine.TransformDouble"/>.
         /// </summary>
-        public Action<IProperty, string, object, object> ComponentPropertyAssignedEvent;
+        public Action<Object, IJson, string, object, object> ComponentPropertyAssignedEvent;
 
         /// <summary>
         /// Dispatched after changes to the <see cref="DepictionEngine.TransformDouble.localPosition"/>, <see cref="DepictionEngine.TransformDouble.localRotation"/> or <see cref="DepictionEngine.TransformDouble.localScale"/> have been detected. 
@@ -89,12 +89,12 @@ namespace DepictionEngine
         /// <summary>
         /// Dispatched when a property assign event is detected in the <see cref="DepictionEngine.TransformDouble"/>.
         /// </summary>
-        public Action<IProperty, string, object, object> TransformPropertyAssignedEvent;
+        public Action<TransformBase, string, object, object> TransformPropertyAssignedEvent;
 
         /// <summary>
         /// Dispatched when a property assign event is detected in the parent <see cref="DepictionEngine.GeoAstroObject"/>.
         /// </summary>
-        public Action<IProperty, string, object, object> ParentGeoAstroObjectPropertyAssignedEvent;
+        public Action<GeoAstroObject, string, object, object> ParentGeoAstroObjectPropertyAssignedEvent;
 
         /// <summary>
         /// A callback triggered by changes in the <see cref="DepictionEngine.TransformDouble"/> allowing you to make changes to the new values before they are assigned.
@@ -438,11 +438,7 @@ namespace DepictionEngine
             if (base.IsValidInitialization(initializingContext))
             {
                 if (!CanBeDuplicated() && (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate))
-                {
-                    DisposeManager.Destroy(gameObject);
-
                     return false;
-                }
                 return true;
             }
             return false;
@@ -674,12 +670,14 @@ namespace DepictionEngine
             if (!HasChanged(newValue, oldValue) || property.IsDisposing())
                 return;
 
-            ComponentPropertyAssigned(property, name, newValue, oldValue);
+            TransformBase transform = property as TransformBase;
+
+            ComponentPropertyAssigned(transform, name, newValue, oldValue);
 
             if (name == nameof(parentGeoAstroObject))
                 Originator(() => { UpdateParentGeoAstroObject(); }, property);
 
-            TransformPropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
+            TransformPropertyAssignedEvent?.Invoke(transform, name, newValue, oldValue);
         }
 
         private void TransformChangedHandler(TransformBase.Component changedComponent, TransformBase.Component capturedComponent)
@@ -711,18 +709,18 @@ namespace DepictionEngine
             if (property.IsDisposing())
                 return;
 
-            ComponentPropertyAssigned(property, name, newValue, oldValue);
+            ComponentPropertyAssigned(property as IJson, name, newValue, oldValue);
         }
 
-        private void ComponentPropertyAssigned(IProperty property, string name, object newValue, object oldValue)
+        private void ComponentPropertyAssigned(IJson iJson, string name, object newValue, object oldValue)
         {
             Originator(() => 
             {
-                (string, object) localProperty = GetProperty(property);
+                (string, object) localProperty = GetProperty(iJson);
                 PropertyAssigned(this, localProperty.Item1, localProperty.Item2, null);
 
-                ComponentPropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
-            }, property);
+                ComponentPropertyAssignedEvent?.Invoke(this, iJson, name, newValue, oldValue);
+            }, iJson);
         }
 
         protected bool RemoveLoadScopeDataReferenceDelegate(ReferenceBase reference)
@@ -822,7 +820,7 @@ namespace DepictionEngine
             if (!HasChanged(oldValue, newValue))
                 return;
 
-            ChildObjectPropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
+            ChildObjectPropertyAssignedEvent?.Invoke(property as Object, name, newValue, oldValue);
         }
 
         public virtual int GetAdditionalChildCount()
@@ -871,7 +869,7 @@ namespace DepictionEngine
 
         protected void ParentGeoAstroObjectPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
-            ParentGeoAstroObjectPropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
+            ParentGeoAstroObjectPropertyAssignedEvent?.Invoke(property as GeoAstroObject, name, newValue, oldValue);
         }
 
         private void UpdateParentGeoAstroObject()

@@ -26,16 +26,6 @@ namespace DepictionEngine
         /// </summary>
         public static Action<LoaderBase> DatasourceLoadersChangedEvent;
 
-#if UNITY_EDITOR
-        private bool GetShowDebug()
-        {
-            SceneManager sceneManager = SceneManager.Instance(false);
-            if (sceneManager != Disposable.NULL)
-                return sceneManager.debug;
-            return false;
-        }
-#endif
-
         private static DatasourceManager _instance;
         /// <summary>
         /// Get a singleton of the manager.
@@ -45,23 +35,44 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static DatasourceManager Instance(bool createIfMissing = true)
         {
-            if (_instance == Disposable.NULL && createIfMissing)
-                _instance = GetManagerComponent<DatasourceManager>();
+            if (_instance == Disposable.NULL)
+                _instance = GetManagerComponent<DatasourceManager>(createIfMissing);
             return _instance;
+        }
+
+        public override void Recycle()
+        {
+            base.Recycle();
+
+            sceneDatasource?.Recycle();
         }
 
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
-            if (_sceneDatasource == Disposable.NULL)
-                _sceneDatasource = DatasourceManager.CreateDatasource("SceneDatasource", initializingContext);
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+                sceneDatasource = default;
+
+            sceneDatasource ??= CreateDatasource();
+            sceneDatasource.Initialize(this, initializingContext);
         }
+
+#if UNITY_EDITOR
+        protected override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            sceneDatasource?.UndoRedoPerformed();
+        }
+#endif
 
         protected override bool UpdateAllDelegates()
         {
             if (base.UpdateAllDelegates())
             {
+                sceneDatasource.UpdateAllDelegates(IsDisposing());
+
                 InstanceManager instanceManager = InstanceManager.Instance(false);
                 if (instanceManager != Disposable.NULL)
                 {
@@ -132,7 +143,8 @@ namespace DepictionEngine
 
         public Datasource sceneDatasource
         {
-            get { return _sceneDatasource; }
+            get => _sceneDatasource;
+            private set => _sceneDatasource = value;
         }
 
         public DatasourceOperationBase Load(Action<List<IPersistent>> operationResult, LoadScope loadScope)
@@ -257,9 +269,9 @@ namespace DepictionEngine
             return false;
         }
 
-        public static Datasource CreateDatasource(string name, InitializationContext initializingContext = InitializationContext.Programmatically)
+        public static Datasource CreateDatasource()
         {
-            return InstanceManager.Instance().CreateInstance<Datasource>(null, new JSONObject() { [nameof(Datasource.name)] = name }, null, initializingContext);
+            return new Datasource();
         }
     }
 }

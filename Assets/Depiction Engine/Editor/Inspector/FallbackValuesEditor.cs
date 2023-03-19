@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEngine;
 
 namespace DepictionEngine.Editor
 {
@@ -14,9 +15,12 @@ namespace DepictionEngine.Editor
     {
         private static string[] _instanceTypes;
 
+        [SerializeField]
         private UnityEngine.Object _fallbackValuesObject;
+        [SerializeField]
         private UnityEditor.Editor _fallbackValuesObjectEditor;
 
+        [SerializeField]
         private bool _fallbackValuesObjectEditorChanged;
 
         private UnityEngine.Object fallbackValuesObject
@@ -98,7 +102,14 @@ namespace DepictionEngine.Editor
                     EditorGUILayout.LabelField("Cannot edit multiple FallbackValues simultaneously");
 
                 if (fallbackValuesObjectType != newFallbackValuesObjectType)
-                    fallbackValuesObject = fallbackValues.GetFallbackValuesObject(newFallbackValuesObjectType, fallbackValues.fallbackValuesJson);
+                {
+                    JSONObject json = null;
+
+                    if (fallbackValues.fallbackValuesJson != null && JsonUtility.FromJson(out Type type, fallbackValues.fallbackValuesJson[nameof(Object.type)]) && type == newFallbackValuesObjectType)
+                        json = fallbackValues.fallbackValuesJson;
+
+                    fallbackValuesObject = fallbackValues.GetFallbackValuesObject(newFallbackValuesObjectType, json);
+                }
             }
             else
                 base.AddProperty(serializedProperty, labelOverride);

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -42,7 +43,10 @@ namespace DepictionEngine
 #endif
 
         [BeginFoldout("Persistents")]
-        [SerializeField, ConditionalShow(nameof(IsNotFallbackValues)), EndFoldout]
+        [SerializeField, EndFoldout]
+#if UNITY_EDITOR
+        [ConditionalShow(nameof(GetShowDebug))]
+#endif
         private Datasource _datasource;
 
         private DatasourceOperationBase _datasourceOperation;
@@ -145,8 +149,7 @@ namespace DepictionEngine
         {
             base.Recycle();
         
-            if (_datasource != Disposable.NULL)
-                _datasource.Recycle();
+            datasource?.Recycle();
         }
 
         protected override void InitializeFields(InitializationContext initializingContext)
@@ -162,10 +165,10 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
 
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
-                _datasource = default;
-
-            if (_datasource == Disposable.NULL)
-                _datasource = DatasourceManager.CreateDatasource(GetType().Name, initializingContext);
+                datasource = default;
+          
+            datasource ??= DatasourceManager.CreateDatasource();
+            datasource.Initialize(this, initializingContext);
 
             InitValue(value => autoReloadInterval = value, 0.0f, initializingContext);
         }
@@ -174,69 +177,26 @@ namespace DepictionEngine
         {
             if (base.UpdateAllDelegates())
             {
-                RemoveDatasourcePersistenceDataDelegates();
-                AddDatasourcePersistenceDataDelegates();
+                datasource.UpdateAllDelegates(IsDisposing());
 
-                if (datasource != Disposable.NULL)
-                {
-                    datasource.IterateOverPersistenceData((persistentId, persistenceData) =>
-                    {
-                        RemovePersistenceDataDelegates(persistenceData);
-                        AddPersistenceDataDelegates(persistenceData);
-
-                        return true;
-                    });
-                }
+                RemoveDatasourcePersistentDelegates();
+                AddDatasourcePersistentDelegates();
 
                 return true;
             }
             return false;
         }
 
-        private void RemoveDatasourcePersistenceDataDelegates()
+        private void RemoveDatasourcePersistentDelegates()
         {
             if (datasource is not null)
-            {
-                datasource.PersistenceDataRemovedEvent -= DatasourcePersistenceDataRemovedHandler;
-                datasource.PersistenceDataAddedEvent -= DatasourcePersistenceDataAddedHandler;
-            }
+                datasource.PersistenceOperationEvent -= PersistenceOperationHandler;
         }
 
-        private void AddDatasourcePersistenceDataDelegates()
+        private void AddDatasourcePersistentDelegates()
         {
-            if (!IsDisposing() && datasource != Disposable.NULL)
-            {
-                datasource.PersistenceDataRemovedEvent += DatasourcePersistenceDataRemovedHandler;
-                datasource.PersistenceDataAddedEvent += DatasourcePersistenceDataAddedHandler;
-            }
-        }
-
-        private void DatasourcePersistenceDataRemovedHandler(PersistenceData persistenceData)
-        {
-#if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(this);
-#endif
-            RemovePersistenceDataDelegates(persistenceData);
-        }
-
-        private void DatasourcePersistenceDataAddedHandler(PersistenceData persistenceData)
-        {
-#if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(this);
-#endif      
-            AddPersistenceDataDelegates(persistenceData);
-        }
-
-        private void RemovePersistenceDataDelegates(PersistenceData persistenceData)
-        {
-            if (persistenceData is not null)
-                persistenceData.PersistenceOperationEvent -= PersistenceOperationHandler;
-        }
-
-        private void AddPersistenceDataDelegates(PersistenceData persistenceData)
-        {
-            if (!IsDisposing() && !Disposable.IsDisposed(persistenceData))
-                persistenceData.PersistenceOperationEvent += PersistenceOperationHandler;
+            if (!IsDisposing() && datasource is not null)
+                datasource.PersistenceOperationEvent += PersistenceOperationHandler;
         }
 
         private void PersistenceOperationHandler(Datasource.OperationType type, IPersistent persistent, Action callback)
@@ -259,6 +219,15 @@ namespace DepictionEngine
                     break;
             }
         }
+
+#if UNITY_EDITOR
+        protected override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            datasource?.UndoRedoPerformed();
+        }
+#endif
 
         protected override bool AddInstanceToManager()
         {
@@ -354,9 +323,9 @@ namespace DepictionEngine
         {
             int saving = 0;
 
-            datasource.IterateOverPersistenceData((persistentId, persistenceData) =>
+            datasource.IterateOverPersistents((persistentId, persistent) =>
             {
-                if (Save(persistenceData.persistent))
+                if (Save(persistent))
                     saving++;
                 return true;
             });
@@ -381,8 +350,8 @@ namespace DepictionEngine
                     {
                         SerializableGuid id = persistent.id;
 
-                        bool isInDatasource = datasource.GetPersistenceData(id, out PersistenceData persistenceData);
-                        if (!isInDatasource || persistenceData.IsOutOfSync())
+                        bool isInDatasource = datasource.GetPersistent(id, out persistent);
+                        if (!isInDatasource || datasource.IsPersistentOutOfSync(persistent))
                         {
                             JSONObject json = persistent.GetJson(isInDatasource ? datasource : null);
                             if (json != null)
@@ -411,9 +380,9 @@ namespace DepictionEngine
         {
             int synchronizing = 0;
 
-            datasource.IterateOverPersistenceData((persistentId, persistenceData) =>
+            datasource.IterateOverPersistents((persistentId, persistent) =>
             {
-                if (Synchronize(persistenceData.persistent))
+                if (Synchronize(persistent))
                     synchronizing++;
                 return true;
             });
@@ -435,7 +404,7 @@ namespace DepictionEngine
                 if (!_synchronizePersistenceOperationDatas.ContainsKey(id))
                 {
                     SerializableGuid id = persistent.id;
-                    bool isInDatasource = datasource.GetPersistenceData(id, out _);
+                    bool isInDatasource = datasource.GetPersistent(id, out _);
                     if (isInDatasource)
                     {
                         _synchronizePersistenceOperationDatas[id] = new Datasource.PersistenceOperationData(persistent);
@@ -454,9 +423,9 @@ namespace DepictionEngine
         {
             int deleting = 0;
 
-            datasource.IterateOverPersistenceData((persistentId, persistenceData) =>
+            datasource.IterateOverPersistents((persistentId, persistent) =>
             {
-                if (Delete(persistenceData.persistent))
+                if (Delete(persistent))
                     deleting++;
                 return true;
             });
@@ -478,7 +447,7 @@ namespace DepictionEngine
                 if (!_deletePersistenceOperationDatas.ContainsKey(id))
                 {
                     SerializableGuid id = persistent.id;
-                    bool isInDatasource = datasource.GetPersistenceData(id, out _);
+                    bool isInDatasource = datasource.GetPersistent(id, out _);
                     if (isInDatasource)
                     {
                         _deletePersistenceOperationDatas[id] = new Datasource.PersistenceOperationData(persistent);

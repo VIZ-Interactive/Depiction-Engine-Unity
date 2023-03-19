@@ -152,8 +152,7 @@ namespace DepictionEngine
 
                 if (_www.result != UnityWebRequest.Result.ConnectionError && _www.result != UnityWebRequest.Result.ProtocolError)
                 {
-                    if (webRequestDataProcessor == null)
-                        webRequestDataProcessor = InstanceManager.Instance(false).CreateInstance<Processor>();
+                    webRequestDataProcessor ??= InstanceManager.Instance(false)?.CreateInstance<Processor>();
 
                     webRequestDataProcessor.StartProcessing(WebRequestDataProcessorFunction, typeof(OperationResult), InitWebRequestProcessorParametersType(), InitWebRequestProcessorParameters, (data, errorMsg) =>
                     {

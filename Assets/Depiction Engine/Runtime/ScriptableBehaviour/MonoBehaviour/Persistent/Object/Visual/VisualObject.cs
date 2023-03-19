@@ -267,10 +267,7 @@ namespace DepictionEngine
         {
             if (base.HierarchicalBeginCameraRendering(camera))
             {
-                Star star = null;
-                InstanceManager instanceManager = InstanceManager.Instance(false);
-                if (renderingManager != Disposable.NULL)
-                    star = instanceManager.GetStar();
+                Star star = InstanceManager.Instance(false)?.GetStar();
 
                 GeoAstroObject closestGeoAstroObject = GetClosestGeoAstroObject();
 

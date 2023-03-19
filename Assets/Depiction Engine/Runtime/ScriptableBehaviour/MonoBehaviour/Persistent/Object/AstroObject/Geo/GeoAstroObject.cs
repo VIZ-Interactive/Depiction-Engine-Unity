@@ -708,26 +708,22 @@ namespace DepictionEngine
             GeoAstroObject closestGeoAstroObject = null;
 
             double closestDistance = double.MaxValue;
-            InstanceManager instanceManager = InstanceManager.Instance();
-            if (instanceManager != Disposable.NULL)
-            {
-                instanceManager.IterateOverInstances<AstroObject>(
-                    (astroObject) =>
+            InstanceManager.Instance()?.IterateOverInstances<AstroObject>(
+                (astroObject) =>
+                {
+                    GeoAstroObject geoAstroObject = astroObject as GeoAstroObject;
+                    if (geoAstroObject != Disposable.NULL && astroObject.isActiveAndEnabled)
                     {
-                        GeoAstroObject geoAstroObject = astroObject as GeoAstroObject;
-                        if (geoAstroObject != Disposable.NULL && astroObject.isActiveAndEnabled)
+                        double distance = geoAstroObject.GetGeoCoordinateFromPoint(point).altitude;
+                        if (distance <= closestDistance)
                         {
-                            double distance = geoAstroObject.GetGeoCoordinateFromPoint(point).altitude;
-                            if (distance <= closestDistance)
-                            {
-                                closestDistance = distance;
-                                closestGeoAstroObject = geoAstroObject;
-                            }
+                            closestDistance = distance;
+                            closestGeoAstroObject = geoAstroObject;
                         }
+                    }
 
-                        return true;
-                    });
-            }
+                    return true;
+                });
 
             return closestGeoAstroObject;
         }
@@ -935,7 +931,7 @@ namespace DepictionEngine
         {
             foreach(TerrainGridMeshObject terrainGridMeshObject in _terrainGridMeshObjects)
             {
-                if (terrainGridMeshObject.GetMeshRenderersInitialized())
+                if (terrainGridMeshObject != Disposable.NULL && terrainGridMeshObject.GetMeshRenderersInitialized())
                     return true;
             }
 

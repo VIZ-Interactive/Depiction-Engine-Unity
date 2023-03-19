@@ -104,6 +104,8 @@ namespace DepictionEngine
         }
 #endif
 
+        public TerrainGridMeshObject _test;
+
         private TweenManager _tweenManager;
         private PoolManager _poolManager;
         private InputManager _inputManager;
@@ -133,10 +135,6 @@ namespace DepictionEngine
         /// </summary>
         public static Action PostLateInitializeEvent;
         /// <summary>
-        /// Dispatched when the parent Scene of the <see cref="DepictionEngine.SceneManager"/> gameObject is closing.
-        /// </summary>
-        public static Action SceneClosingEvent;
-        /// <summary>
         /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
         /// </summary>
         public static Action LateUpdateEvent;
@@ -145,14 +143,16 @@ namespace DepictionEngine
         /// </summary>
         public static Action DelayedOnDestroyEvent;
 
+#if UNITY_EDITOR
+        /// <summary>
+        /// Dispatched when the parent Scene of the <see cref="DepictionEngine.SceneManager"/> gameObject is closing.
+        /// </summary>
+        public static Action SceneClosingEvent;
         /// <summary>
         /// Dispatched at the same time as the <see cref="UnityEditor.AssemblyReloadEvents.beforeAssemblyReload"/>.
         /// </summary>
         public static Action BeforeAssemblyReloadEvent;
-        /// <summary>
-        /// Dispatched at the same time as the <see cref="UnityEditor.AssemblyReloadEvents.afterAssemblyReload"/>.
-        /// </summary>
-        public static Action AfterAssemblyReloadEvent;
+#endif
 
         private static SceneManager _instance;
         /// <summary>
@@ -163,9 +163,9 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static SceneManager Instance(bool createIfMissing = true)
         {
-            if (_instance == Disposable.NULL && createIfMissing)
+            if (_instance == Disposable.NULL)
             {
-                _instance = GetManagerComponent<SceneManager>();
+                _instance = GetManagerComponent<SceneManager>(createIfMissing);
                 if (_instance != Disposable.NULL)
                     _instance.transform.SetAsFirstSibling();
             }
@@ -261,7 +261,6 @@ namespace DepictionEngine
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= SceneSavingHandler;
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaved -= SceneSavedHandler;
                 UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= BeforeAssemblyReloadHandler;
-                UnityEditor.AssemblyReloadEvents.afterAssemblyReload -= AfterAssemblyReloadHandler;
                 UnityEditor.Selection.selectionChanged -= SelectionChangedHandler;
                 if (!IsDisposing())
                 {
@@ -272,7 +271,6 @@ namespace DepictionEngine
                     UnityEditor.SceneManagement.EditorSceneManager.sceneSaving += SceneSavingHandler;
                     UnityEditor.SceneManagement.EditorSceneManager.sceneSaved += SceneSavedHandler;
                     UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReloadHandler;
-                    UnityEditor.AssemblyReloadEvents.afterAssemblyReload += AfterAssemblyReloadHandler;
                     UnityEditor.Selection.selectionChanged += SelectionChangedHandler;
                 }
 
@@ -358,11 +356,11 @@ namespace DepictionEngine
             BeforeAssemblyReloadEvent?.Invoke();
         }
 
-        private void AfterAssemblyReloadHandler()
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void AfterAssemblyReloadHandler()
         {
+            //Necessary?
             Resources.UnloadUnusedAssets();
-
-            AfterAssemblyReloadEvent?.Invoke();
         }
 
         private void SelectionChangedHandler()
@@ -897,7 +895,11 @@ namespace DepictionEngine
             bool debug = false;
 
             if (!IsSceneBeingDestroyed())
-                debug = SceneManager.Instance().debug;
+            {
+                SceneManager sceneManager = SceneManager.Instance(false);
+                if (sceneManager != Disposable.NULL)
+                    debug = sceneManager.debug;
+            }
 
             return debug;
         }
@@ -1097,7 +1099,9 @@ namespace DepictionEngine
                                 try 
                                 {
 #pragma warning disable UNT0018 // System.Reflection features in performance critical messages
-                                    UserContext(callback: () => { SetInspectorPropertyValue(targetObject, queuedPropertyValue.Item2, queuedPropertyValue.Item3); });
+                                    Editor.UndoManager.RecordObject(targetObject as UnityEngine.Object);
+                                    UserContext(() => { SetInspectorPropertyValue(targetObject, queuedPropertyValue.Item2, queuedPropertyValue.Item3); });
+                                    Editor.UndoManager.FlushUndoRecordObjects();
 #pragma warning restore UNT0018 // System.Reflection features in performance critical messages
                                 }
                                 catch(Exception)

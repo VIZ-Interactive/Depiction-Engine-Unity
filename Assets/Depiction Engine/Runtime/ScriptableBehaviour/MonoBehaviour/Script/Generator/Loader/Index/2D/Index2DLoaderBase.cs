@@ -28,7 +28,7 @@ namespace DepictionEngine
 
         [SerializeField, EndFoldout]
 #if UNITY_EDITOR
-        [ConditionalShow(nameof(GetDebug))]
+        [ConditionalShow(nameof(GetShowDebug))]
 #endif
         private IndexLoadScopeDictionary _index2DLoadScopes;
 
@@ -56,6 +56,11 @@ namespace DepictionEngine
             InitValue(value => minMaxZoom = value, new Vector2Int(0, 20), initializingContext);
             InitValue(value => indexUrlParamType = value, Index2DLoadScope.URLParametersType.ZoomXY, initializingContext);
             InitValue(value => xyTilesRatio = value, 1.0f, initializingContext);
+        }
+
+        protected override int GetLoadScopeCount()
+        {
+            return base.GetLoadScopeCount() + index2DLoadScopes.Count;
         }
 
         private IndexLoadScopeDictionary index2DLoadScopes
@@ -172,12 +177,16 @@ namespace DepictionEngine
                 {
                     Index2DLoadScope index2DLoadScope = loadScope as Index2DLoadScope;
 
-                    int key = index2DLoadScope.GetHashCode();
-                    if (index2DLoadScopes.Remove(key))
+                    if (index2DLoadScopes.Remove(index2DLoadScope.GetHashCode()))
                         return true;
                 }
             }
             return false;
+        }
+
+        protected override bool RemoveLoadScopeKey(object key)
+        {
+            return base.RemoveLoadScopeKey(key) && index2DLoadScopes.Remove((int)key);
         }
 
         private bool IsValidZoom(int zoom)
@@ -288,7 +297,7 @@ namespace DepictionEngine
 
         }
 
-        public override bool IterateOverLoadScopes(Func<LoadScope, bool> callback)
+        public override bool IterateOverLoadScopes(Func<object,LoadScope, bool> callback)
         {
             if (base.IterateOverLoadScopes(callback))
             {
@@ -296,8 +305,8 @@ namespace DepictionEngine
                 {
                     for (int i = index2DLoadScopes.Count - 1; i >= 0; i--)
                     {
-                        Index2DLoadScope loadScope = index2DLoadScopes.ElementAt(i).Value;
-                        if (loadScope != Disposable.NULL && !callback(loadScope))
+                        KeyValuePair<int, Index2DLoadScope> indexLoadScope = index2DLoadScopes.ElementAt(i);
+                        if (indexLoadScope.Value != Disposable.NULL && !callback(indexLoadScope.Key, indexLoadScope.Value))
                             return false;
                     }
                 }

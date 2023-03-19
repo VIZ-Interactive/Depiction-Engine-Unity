@@ -16,10 +16,9 @@ namespace DepictionEngine
         public string instanceType { get { return _instanceType; } set { } }
 #endif
         [SerializeField, HideInInspector]
-        private UnityEngine.Object _fallbackValuesObject;
-
-        [SerializeField, HideInInspector]
         private string _fallbackValuesJsonStr;
+
+        private UnityEngine.Object _fallbackValuesObject;
 
         private JSONObject _fallbackValuesJson;
 
@@ -69,10 +68,10 @@ namespace DepictionEngine
         }
 #endif
 
-        public void SetFallbackJsonFromType(string typeFullName)
+        public void SetFallbackJsonFromType(string typeFullName, bool ignorePendingTypeChange = false)
         {
             Type type = ParseType(typeFullName);
-            if (GetFallbackValuesType() != type && IsValidFallbackValuesType(type))
+            if (GetFallbackValuesType(ignorePendingTypeChange) != type && IsValidFallbackValuesType(type))
             {
                 DisposeFallbackValuesObject();
 
@@ -127,10 +126,10 @@ namespace DepictionEngine
         }
 #endif
 
-        public Type GetFallbackValuesType()
+        public Type GetFallbackValuesType(bool ignorePendingTypeChange = false)
         {
 #if UNITY_EDITOR
-            if (_pendingInspectorTypeChange != null)
+            if (!ignorePendingTypeChange && _pendingInspectorTypeChange != null)
                 return _pendingInspectorTypeChange;
 #endif
             if (GetProperty(out Type type, nameof(type)))
@@ -258,7 +257,6 @@ namespace DepictionEngine
                     DisposeFallbackValuesObject();
 
                 InstanceManager instanceManager = InstanceManager.Instance(false);
-
                 if (instanceManager != Disposable.NULL)
                     fallbackValuesObject = instanceManager.CreateInstance(type, null, json, isFallbackValues: true) as UnityEngine.Object;
             }
