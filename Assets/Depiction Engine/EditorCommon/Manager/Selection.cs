@@ -119,8 +119,8 @@ namespace DepictionEngine.Editor
             RenderingManager renderingManager = RenderingManager.Instance(false);
             if (renderingManager != Disposable.NULL && renderingManager.originShifting)
             {
-                List<TransformDouble> rootTransformDoubles;
                 bool selectionOriginShiftDirty;
+                List<TransformDouble> rootTransformDoubles;
 
                 if (UnityEditor.Selection.transforms.Length != 0 && UnityEditor.Selection.transforms.Length == GetTransformDoubleSelectionCount())
                 {
@@ -128,10 +128,8 @@ namespace DepictionEngine.Editor
 
                     selectionOriginShiftDirty = _selectionOriginShiftDirty;
 
-                    if (_rootTransformDoubles == null)
-                        _rootTransformDoubles = new List<TransformDouble>();
+                    _rootTransformDoubles ??= new List<TransformDouble>();
                     _rootTransformDoubles.Clear();
-
                     rootTransformDoubles = GetRootTransforms(ref _rootTransformDoubles);
                 }
                 else

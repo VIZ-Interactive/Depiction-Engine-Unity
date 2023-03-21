@@ -179,7 +179,7 @@ namespace DepictionEngine
         private void Init(ref ProcessorOutput data, ref ProcessorParameters parameters, ref CancellationTokenSource cancellationTokenSource, Type dataType, Type parametersType, Action<ProcessorParameters> parametersCallback)
         {
             data = dataType != null ? GetDataInstance(dataType) : null;
-            parameters = GetParametersInstance(parametersType);
+            parameters = CreateParametersInstance(parametersType);
             parametersCallback?.Invoke(parameters);
 
             _processingState = ProcessingState.Processing;
@@ -236,7 +236,7 @@ namespace DepictionEngine
             return InstanceManager.Instance(false)?.CreateInstance(type) as ProcessorOutput;
         }
 
-        public static ProcessorParameters GetParametersInstance(Type type)
+        public static ProcessorParameters CreateParametersInstance(Type type)
         {
             if (!type.IsSubclassOf(typeof(ProcessorParameters)))
             {

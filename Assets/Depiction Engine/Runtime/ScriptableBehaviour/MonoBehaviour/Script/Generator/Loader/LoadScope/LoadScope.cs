@@ -307,7 +307,7 @@ namespace DepictionEngine
 
                 datasourceOperation = loadDatasource.Load((persistents) =>
                 {
-                    IterateOverPersistents((i, persistent) => 
+                    IterateOverPersistents((persistentId, persistent) => 
                     {
                         if (persistents == null || !persistents.Contains(persistent))
                             RemovePersistent(persistent);
@@ -324,10 +324,10 @@ namespace DepictionEngine
                     }
 
                     UpdateLoadingState();
-
                 }, this);
             }, () => loadIntervalTween = null);
         }
+
 
         private void UpdateLoadingState()
         {

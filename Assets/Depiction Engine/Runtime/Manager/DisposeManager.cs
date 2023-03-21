@@ -208,7 +208,7 @@ namespace DepictionEngine
         {
             if (unityObject == null)
                 return;
-
+   
             if (disposeContext != DisposeContext.Editor_Destroy)
                 disposeContext = DisposeContext.Programmatically_Destroy;
 

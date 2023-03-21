@@ -66,7 +66,7 @@ namespace DepictionEngine
         public Grid2DIndex scopeGrid2DIndex
         {
             get { return _scopeGrid2DIndex; }
-            set { _scopeGrid2DIndex = value; }
+            private set { _scopeGrid2DIndex = value; }
         }
 
         public URLParametersType indexUrlParamType

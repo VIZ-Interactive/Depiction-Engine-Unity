@@ -264,7 +264,7 @@ namespace DepictionEngine
             get { return _colorMap; }
             set
             {
-                if (_colorMap == value)
+                if (Object.ReferenceEquals(_colorMap, value))
                     return;
 
                 _colorMap = value;
@@ -291,7 +291,7 @@ namespace DepictionEngine
             get { return _additionalMap; }
             set
             {
-                if (_additionalMap == value)
+                if (Object.ReferenceEquals(_additionalMap, value))
                     return;
 
                 _additionalMap = value;
@@ -318,7 +318,7 @@ namespace DepictionEngine
             get { return _surfaceTypeMap; }
             set
             {
-                if (_surfaceTypeMap == value)
+                if (Object.ReferenceEquals(_surfaceTypeMap, value))
                     return;
 
                 _surfaceTypeMap = value;

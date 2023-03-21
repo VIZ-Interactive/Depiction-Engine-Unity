@@ -15,11 +15,14 @@ namespace DepictionEngine
         private double _altitudeOffset;
 
         [BeginFoldout("Grid 2D")]
-        [SerializeField, Tooltip("The horizontal and vertical size of the grid."), EndFoldout]
+        [SerializeField, Tooltip("The horizontal and vertical size of the grid.")]
         private Vector2Int _grid2DDimensions;
 
         //Needs to be serialized or otherwise some Grid2DMeshObject get recreated when entering Play mode in the Editor
-        [SerializeField, HideInInspector]
+        [SerializeField, EndFoldout]
+#if UNITY_EDITOR
+        [ConditionalShow(nameof(GetShowDebug))]
+#endif
         private Vector2Int _grid2DIndex;
 
         private double _size;
@@ -31,6 +34,7 @@ namespace DepictionEngine
             base.Recycle();
 
             _grid2DIndex = default;
+            _grid2DDimensions = default;
             _size = default;
             _sphericalRatio = default;
             _meshRendererVisualLocalScale = default;

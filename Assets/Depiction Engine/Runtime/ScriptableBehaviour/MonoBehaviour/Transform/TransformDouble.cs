@@ -96,7 +96,7 @@ namespace DepictionEngine
             QuaternionDouble localRotation = this.localRotation;
             Vector3Double localScale = this.localScale;
 
-            if (initializingContext == InitializationContext.Reset || initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Programmatically)
+            if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Programmatically || initializingContext == InitializationContext.Reset)
             {
                 localPosition = transformLocalPosition;
 
@@ -435,10 +435,10 @@ namespace DepictionEngine
             return false;
         }
 
+        private QuaternionDouble _rotation;
         /// <summary>
         /// A Quaternion that stores the rotation of the Transform in world space.
         /// </summary>
-        private QuaternionDouble _rotation;
         public QuaternionDouble rotation
         {
             get

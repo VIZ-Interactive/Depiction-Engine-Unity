@@ -2,6 +2,7 @@
 
 #if UNITY_EDITOR
 using System;
+using UnityEditor;
 
 namespace DepictionEngine.Editor
 {
@@ -18,12 +19,19 @@ namespace DepictionEngine.Editor
 
         public static void FixBrokenPersistentDictionary(Datasource.PersistentDictionary persistentsDictionary, IPersistent persistent, SerializableGuid persistentId)
         {
-            IPersistent editorPersistent = UnityEditor.EditorUtility.InstanceIDToObject(persistent.GetInstanceID()) as IPersistent;
+            IPersistent editorPersistent = (IPersistent)FindLostReferencedObject(persistent as UnityEngine.Object);
             if (!Object.ReferenceEquals(editorPersistent, persistent))
             {
                 persistentsDictionary.Remove(persistentId);
                 persistentsDictionary.Add(persistentId, new SerializableIPersistent(editorPersistent));
             }
+        }
+
+        public static UnityEngine.Object FindLostReferencedObject(UnityEngine.Object unityObject)
+        {
+            if (!Object.ReferenceEquals(unityObject, null))
+                unityObject = EditorUtility.InstanceIDToObject(unityObject.GetInstanceID());
+            return unityObject;
         }
     }
 }

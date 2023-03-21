@@ -248,6 +248,8 @@ namespace DepictionEngine
 
         public void FixBrokenLoadScopes()
         {
+            float loadInterval = 0.0f;
+
             IterateOverLoadScopes((loadScopeKey, loadScope) =>
             {
                 bool reload = false;
@@ -258,7 +260,10 @@ namespace DepictionEngine
                     reload = true;
 
                 if (CanAutoLoad() && reload)
-                    Load(loadScope);
+                {
+                    loadInterval += 0.01f;
+                    Load(loadScope, loadInterval);
+                }
 
                 return true;
             });
@@ -342,13 +347,6 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && loadScope != Disposable.NULL)
                 loadScope.LoadingStateChangedEvent += LoadScopeLoadingStateChangedHandler;
-        }
-
-        private void LoadScopeDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
-        {
-            RemoveLoadScope(disposable as LoadScope, disposeContext);
-
-            LoadScopeDisposedEvent?.Invoke(disposable as LoadScope, disposeContext);
         }
 
         private void LoadScopeLoadingStateChangedHandler(LoadScope loadScope)
@@ -939,11 +937,9 @@ namespace DepictionEngine
         {
             RemoveLoadScope(loadScope, disposeContext);
 
-            if (loadScope != Disposable.NULL)
-            {
-                DisposeManager.Dispose(loadScope, disposeContext);
-                LoadScopeDisposedEvent?.Invoke(loadScope, disposeContext);
-            }
+            DisposeManager.Dispose(loadScope, disposeContext);
+
+            LoadScopeDisposedEvent?.Invoke(loadScope, disposeContext);
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

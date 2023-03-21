@@ -64,7 +64,6 @@ namespace DepictionEngine.Editor
         private float _lastHandleDistanceFactor;
         private Vector3 _lastHandlePosition;
 
-        private bool _showMockHandles;
         private int _handleCount;
 
         private bool _forceHandleVisibility;
@@ -173,7 +172,7 @@ namespace DepictionEngine.Editor
             if (IsDisposing())
                 return;
 
-            if (_camera == Disposable.NULL)
+            if (_camera == Disposable.NULL && sceneView != null)
             {
                 //Dont Initialize Camera here by calling GetSafeComponent<Camera>(), let them initialize in the Update loop
                 _camera = sceneView.camera.GetComponent<SceneCamera>();
@@ -361,15 +360,9 @@ namespace DepictionEngine.Editor
             }
         }
 
-        public bool showMockHandles
+        public bool toolsHidden
         {
-            get { return _showMockHandles; }
-            set
-            {
-                if (_showMockHandles == value)
-                    return;
-                _showMockHandles = value;
-            }
+            get => renderingManager.originShifting && sceneView.camera != lastActiveSceneViewDouble.camera.unityCamera;
         }
 
         public int handleCount
@@ -422,9 +415,7 @@ namespace DepictionEngine.Editor
         {
             get
             {
-                if (_sceneView == null)
-                    _sceneView = GetSceneView(this);
-
+                _sceneView ??= GetSceneView(this);
                 return _sceneView;
             }
         }
@@ -1442,39 +1433,43 @@ namespace DepictionEngine.Editor
 
             if (renderingManager.originShifting)
             {
-                SceneViewDouble lastActiveSceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
+                _lastToolCurrent = Tools.current;
 
+                SceneViewDouble lastActiveSceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
                 if (lastActiveSceneViewDouble != Disposable.NULL)
                 {
                     Vector3Double origin = lastActiveSceneViewDouble.camera.GetOrigin();
                     if (UnityEditor.Selection.transforms.Length > 0)
                     {
-                        Selection.ApplyOriginShifting(origin);
-
-                        _lastActiveSceneCameraTransforms ??= new List<TransformDouble>();
-                        _lastActiveSceneCameraTransforms.Clear();
-                        if (lastActiveSceneViewDouble != Disposable.NULL)
+                        Event evt = Event.current;
+                        bool rayDrag = Tools.vertexDragging || (evt.GetTypeForControl(GUIUtility.GetControlID(Handles.s_FreeMoveHandleHash, FocusType.Passive)) == EventType.MouseDrag && EditorGUI.actionKey && evt.shift);
+                        // If we are mouse dragging because of 'vertext snapping' or 'Ctrl + Shift in windows' we need to apply origin shifting to all the transforms because the Handles will perform ray casting against the scene.
+                        // Otherwise we only need to apply origin shifting to the selected transforms and the camera + target transforms.
+                        if (rayDrag)
+                            TransformDouble.ApplyOriginShifting(origin);
+                        else
                         {
-                            _lastActiveSceneCameraTransforms.Add(lastActiveSceneViewDouble.camera.transform);
-                            _lastActiveSceneCameraTransforms.Add(lastActiveSceneViewDouble.camera.sceneCameraController.targetTransform);
+                            Selection.ApplyOriginShifting(origin);
+
+                            _lastActiveSceneCameraTransforms ??= new List<TransformDouble>();
+                            _lastActiveSceneCameraTransforms.Clear();
+                            if (lastActiveSceneViewDouble != Disposable.NULL)
+                            {
+                                _lastActiveSceneCameraTransforms.Add(lastActiveSceneViewDouble.camera.transform);
+                                _lastActiveSceneCameraTransforms.Add(lastActiveSceneViewDouble.camera.sceneCameraController.targetTransform);
+                            }
+
+                            TransformDouble.ApplyOriginShifting(_lastActiveSceneCameraTransforms, origin);
                         }
 
-                        TransformDouble.ApplyOriginShifting(_lastActiveSceneCameraTransforms, origin);
+                        //The Rect Tool throws "Screen position out of view frustum" errors when the selected object is too far away so we disable it beyond a certain distance
+                        if (Tools.current == Tool.Rect && !Tools.GetHandlePosition(out Vector3 _))
+                            Tools.current = Tool.None;
                     }
-
-                    //The Rect Tool throws "Screen position out of view frustum" errors when the selected object is too far away so we disable it beyond a certain distance
-                    _lastToolCurrent = Tools.current;
-                    if (Tools.current == Tool.Rect && !Tools.GetHandlePosition(out Vector3 _))
-                        Tools.current = Tool.None;
-
-                    Tools.hidden = sceneView.camera != lastActiveSceneViewDouble.camera.unityCamera;
-
-                    bool showMockHandles = false;
-                    if (UnityEditor.Selection.transforms.Length == Selection.GetTransformDoubleSelectionCount())
-                        showMockHandles = Tools.hidden;
-                    this.showMockHandles = showMockHandles;
                 }
             }
+
+            Tools.hidden = toolsHidden;
         }
 
         private bool InitSceneViewDoubleComponents()
@@ -1778,6 +1773,8 @@ namespace DepictionEngine.Editor
                         break;
                     }
                 }
+
+                Tools.hidden = false;
 
                 return true;
             }

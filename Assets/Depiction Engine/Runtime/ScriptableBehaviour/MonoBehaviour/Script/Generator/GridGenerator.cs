@@ -132,7 +132,7 @@ namespace DepictionEngine
 
                                         if (seed != -1)
                                         {
-                                            PropertyModifierIndex2DParameters propertyModifierIndex2DParameters = Processor.GetParametersInstance(typeof(PropertyModifierIndex2DParameters)) as PropertyModifierIndex2DParameters;
+                                            PropertyModifierIndex2DParameters propertyModifierIndex2DParameters = Processor.CreateParametersInstance(typeof(PropertyModifierIndex2DParameters)) as PropertyModifierIndex2DParameters;
                                             propertyModifierIndex2DParameters.Init(fallbackType, json, SerializableGuid.Empty, seed);
                                             propertyModifierIndex2DParameters.Init(new Vector2Int(x, y), grid2DDimensions);
 

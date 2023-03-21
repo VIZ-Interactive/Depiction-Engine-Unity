@@ -87,14 +87,17 @@ namespace DepictionEngine
                 if (!UpdateRelations(() => 
                 {
                     if (!isFallbackValues)
-                        CreateComponents(initializingContext); 
+                    {
+                        CreateComponents(initializingContext);
+                        InitializeFields(initializingContext);
+                    }
+
+                    InitializeSerializedFields(initializingContext);
+
+                    if (!isFallbackValues)
+                        InitializeLastFields();
                 }))
                     return false;
-
-                if (!isFallbackValues)
-                    InitializeFields(initializingContext);
-
-                InitializeSerializedFields(initializingContext);
 
                 if (_initializationPropertyModifiers != null)
                 {
@@ -108,6 +111,20 @@ namespace DepictionEngine
             return false;
         }
 
+        protected virtual void InitializeFieldsBeforeChildren(InitializationContext initializingContext)
+        {
+
+        }
+
+        /// <summary>
+        /// Initialize SerializedField's to their default values.
+        /// </summary>
+        /// <param name="initializingContext"></param>
+        protected virtual void InitializeSerializedFieldsBeforeChildren(InitializationContext initializingContext)
+        {
+
+        }
+
         protected virtual void CreateComponents(InitializationContext initializingContext)
         {
 
@@ -118,8 +135,6 @@ namespace DepictionEngine
 #if UNITY_EDITOR
             RenderingManager.UpdateIcon(this);
 #endif
-
-            InitializeLastFields();
 
             UpdateActiveAndEnabled();
         }
@@ -493,17 +508,14 @@ namespace DepictionEngine
 
             if (initialized)
             {
+#if UNITY_EDITOR
                 if (SceneManager.IsUserChangeContext() && property is IJson)
                 {
                     IJson iJson = property as IJson;
-                    if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
-                    {
-#if UNITY_EDITOR
-                        if (!iJson.IsDynamicProperty(GetPropertyKey(name)))
-                            EditorUndoRedoDetected();
-#endif
-                    }
+                    if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo) && !iJson.IsDynamicProperty(GetPropertyKey(name)))
+                        EditorUndoRedoDetected();
                 }
+#endif
 
                 PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
             }

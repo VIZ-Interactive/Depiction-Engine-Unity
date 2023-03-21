@@ -88,7 +88,6 @@ namespace DepictionEngine
                 if (loadingResults.HasDebugErrorMsg())
                     Debug.LogError(loadingResults.errorMsg);
 #endif
-
                 _operationResultCallback?.Invoke(loadingResults.success, loadingResults.operationResult);
 
                 KillLoading();
@@ -318,6 +317,7 @@ namespace DepictionEngine
                 {
                     foreach (LoadResultData loadData in _children)
                         DisposeManager.Dispose(loadData);
+
                     _children.Clear();
                 }
 

@@ -63,8 +63,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_webRequestDataProcessor, value))
                     return;
 
-                if (_webRequestDataProcessor != null)
-                    _webRequestDataProcessor.Cancel();
+                _webRequestDataProcessor?.Cancel();
 
                 _webRequestDataProcessor = value;
             }
@@ -74,8 +73,7 @@ namespace DepictionEngine
         {
             base.KillLoading();
           
-            if (_webRequestDataProcessor != null)
-                _webRequestDataProcessor.Dispose();
+            _webRequestDataProcessor?.Dispose();
 
             if (_monoBehaviour != null && _coroutine != null)
                 _monoBehaviour.StopCoroutine(_coroutine);
@@ -173,6 +171,7 @@ namespace DepictionEngine
         {
             return typeof(WebRequestProcessorParameters);
         }
+
 
         protected virtual void InitWebRequestProcessorParameters(ProcessorParameters parameters)
         {

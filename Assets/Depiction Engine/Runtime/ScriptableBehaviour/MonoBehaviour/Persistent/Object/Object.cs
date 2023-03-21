@@ -32,9 +32,6 @@ namespace DepictionEngine
         [SerializeField, ConditionalShow(nameof(IsPhysicsObject)), Tooltip("Used to determine the amount of gravitational force to apply when '"+nameof(Object.useGravity)+"' is enabled."), EndFoldout]
         private double _mass;
 
-        /// <summary>
-        /// Field used internally to hide some utilitarian GameObjects.
-        /// </summary>
         [SerializeField, HideInInspector]
         private bool _isHiddenInHierarchy;
       
@@ -434,7 +431,7 @@ namespace DepictionEngine
             base.RegisterInitializeObjectUndo(initializingContext);
 
             //Register GameObject name/layer/enabled etc...
-            //Editor.UndoManager.RegisterCompleteObjectUndo(gameObject, initializingContext);
+            Editor.UndoManager.RegisterCompleteObjectUndo(gameObject, initializingContext);
         }
 #endif
 

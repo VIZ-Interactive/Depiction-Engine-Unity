@@ -36,7 +36,7 @@ namespace DepictionEngine
             get { return _mesh; }
             set 
             {
-                if (_mesh == value)
+                if (Object.ReferenceEquals(_mesh, value))
                     return;
 
                 _mesh = value;

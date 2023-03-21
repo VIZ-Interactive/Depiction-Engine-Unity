@@ -224,7 +224,7 @@ namespace DepictionEngine
                 Feature oldValue = _feature;
                 Feature newValue = value;
 
-                if (oldValue == newValue)
+                if (Object.ReferenceEquals(oldValue, newValue))
                     return;
 
                 RemoveFeatureDelgates(oldValue);

@@ -158,17 +158,14 @@ namespace DepictionEngine
         {
             if (initialized)
             {
+#if UNITY_EDITOR
                 if (SceneManager.IsUserChangeContext() && property is IJson)
                 {
                     IJson iJson = property as IJson;
-                    if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
-                    {
-#if UNITY_EDITOR
-                        if (!iJson.IsDynamicProperty(PropertyMonoBehaviour.GetPropertyKey(name)))
-                            EditorUndoRedoDetected();
-#endif
-                    }
+                    if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo) && !iJson.IsDynamicProperty(PropertyMonoBehaviour.GetPropertyKey(name)))
+                        EditorUndoRedoDetected();
                 }
+#endif
 
                 PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
             }

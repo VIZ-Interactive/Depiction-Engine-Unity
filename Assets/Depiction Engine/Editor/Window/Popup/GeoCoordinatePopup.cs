@@ -41,7 +41,7 @@ namespace DepictionEngine.Editor
                 }
                 Close();
             }
-            if (GUILayout.Button("Close", GUILayout.Width(100.0f)))
+            if (GUILayout.Button("Cancel", GUILayout.Width(100.0f)))
                 Close();
             GUILayout.EndHorizontal();
         }

@@ -35,10 +35,10 @@ namespace DepictionEngine
 #endif
 
         [BeginFoldout("Load Scope")]
-        [SerializeField, Tooltip("The interval (in seconds) at which we call the " + nameof(ReloadAll) + " function. Automatically calling " + nameof(ReloadAll) + " can be useful to keep objects in synch. Set to zero to deactivate."), EndFoldout]
+        [SerializeField, Tooltip("The interval (in seconds) at which we call the " + nameof(ReloadAll) + " function. Automatically calling " + nameof(ReloadAll) + " can be useful to keep objects in synch. Set to zero to deactivate.")]
         private float _autoReloadInterval;
 #if UNITY_EDITOR
-        [SerializeField, Button(nameof(ReloadAllBtn)), ConditionalShow(nameof(IsNotFallbackValues)), Tooltip("Create missing " + nameof(LoadScope) + "(s), reload existing ones and dispose those that are no longer required.")]
+        [SerializeField, Button(nameof(ReloadAllBtn)), ConditionalShow(nameof(IsNotFallbackValues)), Tooltip("Create missing " + nameof(LoadScope) + "(s), reload existing ones and dispose those that are no longer required."), EndFoldout]
         private bool _reloadAll;
 #endif
 
@@ -590,6 +590,8 @@ namespace DepictionEngine
         {
             if (base.OnDispose(disposeContext))
             {
+                datasource?.OnDispose(disposeContext);
+
                 KillTimers();
 
                 return true;

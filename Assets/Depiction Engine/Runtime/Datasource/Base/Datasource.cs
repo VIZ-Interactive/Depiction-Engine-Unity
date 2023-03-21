@@ -987,9 +987,9 @@ namespace DepictionEngine
         {
             if (loadScope.loader != Disposable.NULL)
             {
-                loadScope.IterateOverPersistents((i, persistent) =>
+                loadScope.IterateOverPersistents((persistentId, persistent) =>
                 {
-                    if (GetPersistent(persistent.id, out persistent))
+                    if (GetPersistent(persistentId, out persistent))
                         AutoDisposePersistent(persistent, disposeContext);
 
                     return true;
@@ -999,33 +999,46 @@ namespace DepictionEngine
 
         private bool AutoDisposePersistent(IPersistent persistent, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            if (!Disposable.IsDisposed(persistent))
+            return !Disposable.IsDisposed(persistent) && DisposePersistent(persistent, disposeContext , () => 
             {
-                bool dispose = GetPersistentCanBeAutoDisposed(persistent);
+                bool dispose = true;
 
-                if (dispose)
+                IterateOverLoaders((loader) =>
                 {
-                    IterateOverLoaders((loader) =>
+                    if (loader.Contains(persistent) && loader.GetLoadScope(out LoadScope loadScope, persistent))
                     {
-                        if (loader.Contains(persistent) && loader.GetLoadScope(out LoadScope loadScope, persistent))
-                        {
-                            dispose = false;
+                        dispose = false;
 
-                            return false;
-                        }
-                        return true;
-                    });
-                }
-
-                if (dispose)
-                {
-                    DisposeManager.Dispose(persistent is PersistentMonoBehaviour ? (persistent as PersistentMonoBehaviour).gameObject : persistent, disposeContext);
-
+                        return false;
+                    }
                     return true;
-                }
+                });
+
+                return dispose;
+            });
+        }
+
+        private bool DisposePersistent(IPersistent persistent, DisposeContext disposeContext = DisposeContext.Programmatically_Pool, Func<bool> validateCallback = null)
+        {
+            if (GetPersistentCanBeAutoDisposed(persistent) && (validateCallback == null || validateCallback()))
+            {
+                //Null check is required for when the scene destroys before Play and the persistent as already been destroyed.
+                if (!Disposable.IsDisposed(persistent))
+                    DisposeManager.Dispose(persistent is PersistentMonoBehaviour ? (persistent as PersistentMonoBehaviour).gameObject : persistent, disposeContext);
+                
+                return true;
             }
-            
             return false;
+        }
+
+        public void OnDispose(DisposeContext disposeContext)
+        {
+            IterateOverPersistents((persistentId, persistent) => 
+            {
+                DisposePersistent(persistent, disposeContext);
+
+                return true;
+            });
         }
 
         /// <summary>

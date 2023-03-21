@@ -1097,7 +1097,7 @@ namespace DepictionEngine
 
             //We initialize right away if the gameObject is being duplicated to make sure the Undo operations are recorded together as one.
             if (IsDuplicateInitializing())
-                InstanceManager.Initialize(this);
+                Initialize();
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

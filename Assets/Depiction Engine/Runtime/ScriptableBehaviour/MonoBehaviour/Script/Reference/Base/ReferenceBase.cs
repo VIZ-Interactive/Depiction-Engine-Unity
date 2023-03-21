@@ -151,6 +151,8 @@ namespace DepictionEngine
             Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { dataIndex2D = value; }, ref _dataIndex2D, ref _lastDataIndex2D);
 
             Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { loadScope = value; }, ref _loadScope, ref _lastLoadScope);
+
+            _data = (PersistentScriptableObject)Editor.SerializationUtility.FindLostReferencedObject(_data);
             Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { data = value; }, ref _data, ref _lastData);
         }
 #endif
@@ -235,9 +237,9 @@ namespace DepictionEngine
                 data.DisposedEvent += DataDisposedHandler;
         }
 
-        private void DataDisposedHandler(IDisposable disposable, DisposeContext disposeContex)
+        private void DataDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
-            SetData(null);
+            SetData(null, disposeContext);
         }
 
         public LoaderBase loader
@@ -369,7 +371,12 @@ namespace DepictionEngine
 
         private bool SetLoadScope(LoadScope value, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            return SetValue(nameof(loadScope), value, ref _loadScope, (newValue, oldValue) => 
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.RecordObject(this);
+#endif
+
+            bool changed = SetValue(nameof(loadScope), value, ref _loadScope, (newValue, oldValue) => 
             {
                 if (HasChanged(newValue, oldValue, false))
                 {
@@ -401,6 +408,13 @@ namespace DepictionEngine
                     UpdateData();
                 }
             });
+
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.FlushUndoRecordObjects();
+#endif
+
+            return changed;
         }
 
         private void RemoveReferenceFromLoader(LoadScope loadScope, DisposeContext disposeContext)
@@ -446,9 +460,14 @@ namespace DepictionEngine
             private set { SetData(value); }
         }
 
-        private bool SetData(PersistentScriptableObject value)
+        private bool SetData(PersistentScriptableObject value, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            return SetValue(nameof(data), value, ref _data, (newValue, oldValue) =>
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.RecordObject(this);
+#endif
+
+            bool changed = SetValue(nameof(data), value, ref _data, (newValue, oldValue) =>
             {
                 if (HasChanged(newValue, oldValue, false))
                 {
@@ -461,6 +480,12 @@ namespace DepictionEngine
                     DataChanged(newValue, oldValue);
                 }
             });
+
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.FlushUndoRecordObjects();
+#endif
+            return changed;
         }
 
         protected virtual void DataChanged(PersistentScriptableObject newValue, PersistentScriptableObject oldValue)

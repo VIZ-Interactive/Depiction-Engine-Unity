@@ -25,7 +25,6 @@ namespace DepictionEngine
             base.Recycle();
 
             _progress = default;
-
             _currentLerpTime = default;
             _playing = default;
         }

@@ -273,5 +273,16 @@ namespace DepictionEngine
         {
             return new Datasource();
         }
+
+        public override bool OnDispose(DisposeContext disposeContext)
+        {
+            if (base.OnDispose(disposeContext))
+            {
+                sceneDatasource?.OnDispose(disposeContext);
+
+                return true;
+            }
+            return false;
+        }
     }
 }

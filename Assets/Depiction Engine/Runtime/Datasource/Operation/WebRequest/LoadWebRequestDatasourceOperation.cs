@@ -112,7 +112,7 @@ namespace DepictionEngine
                                     {
                                         JSONNode levelMeshObjectJsonResult = jsonResult["levels"][i];
 
-                                        JSONObject levelJsonResult = new JSONObject();
+                                        JSONObject levelJsonResult = new();
                                         levelJsonResult["id"] = SerializableGuid.NewGuid().ToString();
                                         levelJsonResult["name"] = levelMeshObjectJsonResult["name"];
                                         jsonResult["children"].Add(levelJsonResult);
@@ -228,6 +228,7 @@ namespace DepictionEngine
                 return loadResultData;
             }
 
+
             private static LoadResultData GetLoadResultDataFromAsset(LoadWebRequestProcessorParameters loadOperationResultParameters)
             {
                 LoadResultData loadResultData = null;
@@ -238,7 +239,7 @@ namespace DepictionEngine
                 {
                     if (typeof(AssetBase).IsAssignableFrom(type))
                     {
-                        JSONObject json = new JSONObject();
+                        JSONObject json = new();
                         JSONObject jsonFallback = loadOperationResultParameters.jsonFallback;
                         List<PropertyModifier> propertyModifiers = null;
 

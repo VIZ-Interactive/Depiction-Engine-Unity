@@ -191,7 +191,6 @@ namespace DepictionEngine
                     width = 2;
                 if (height == 0)
                     height = 2;
-
                 SetData(new Texture2D(width, height, format, mipChain, linear), initializingContext);
             }
         }
@@ -252,6 +251,7 @@ namespace DepictionEngine
                 _height = 0;
             }
         }
+
 
         protected virtual Type GetProcessorParametersType()
         {
@@ -396,7 +396,6 @@ namespace DepictionEngine
         }
     }
 
-    [SerializeField]
     public class TextureModifier : AssetModifier
     {
         private Texture2D _texture2D;
@@ -426,7 +425,6 @@ namespace DepictionEngine
         public TextureModifier Init(Texture2D texture2D)
         {
             _texture2D = texture2D;
-
             return this;
         }
 
@@ -443,13 +441,14 @@ namespace DepictionEngine
             return this;
         }
 
+
         public override void ModifyProperties(IScriptableBehaviour scriptableBehaviour)
         {
             base.ModifyProperties(scriptableBehaviour);
 
             Texture texture= scriptableBehaviour as Texture;
 
-            if (_texture2D != null)
+            if (!Object.ReferenceEquals(_texture2D, null))
             {
                 texture.SetData(_texture2D);
                 _texture2D = null;

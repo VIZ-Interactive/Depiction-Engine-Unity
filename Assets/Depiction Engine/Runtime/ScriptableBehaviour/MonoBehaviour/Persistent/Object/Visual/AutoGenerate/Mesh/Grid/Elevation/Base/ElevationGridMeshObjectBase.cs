@@ -69,7 +69,7 @@ namespace DepictionEngine
                 Elevation oldValue = _elevation;
                 Elevation newValue = value;
 
-                if (oldValue == newValue)
+                if (Object.ReferenceEquals(oldValue, newValue))
                     return;
 
                 RemoveElevationDelgates(oldValue);

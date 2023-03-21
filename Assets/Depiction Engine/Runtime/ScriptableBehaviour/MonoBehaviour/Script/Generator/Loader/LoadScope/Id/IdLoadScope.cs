@@ -29,7 +29,7 @@ namespace DepictionEngine
         public SerializableGuid scopeId
         {
             get { return _scopeId; }
-            set { _scopeId = value; }
+            private set { _scopeId = value; }
         }
 
         public override JSONObject GetLoadScopeFallbackValuesJson()

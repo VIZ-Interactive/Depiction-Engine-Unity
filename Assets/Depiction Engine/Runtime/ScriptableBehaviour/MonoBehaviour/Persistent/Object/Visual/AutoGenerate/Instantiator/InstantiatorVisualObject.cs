@@ -122,7 +122,7 @@ namespace DepictionEngine
             get { return _assetBundle; }
             set
             {
-                if (_assetBundle == value)
+                if (Object.ReferenceEquals(_assetBundle, value))
                     return;
 
                 RemoveAssetBundleDelegates();

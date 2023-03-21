@@ -18,9 +18,6 @@ namespace DepictionEngine
         [Serializable]
         private class PoolStackDictionary : SerializableDictionary<Type, string> { };
 
-        public static string NEW_GAME_OBJECT_NAME = "New Game Object";
-        public static string NEW_SCRIPT_OBJECT_NAME = "New Script Object";
-
         [BeginFoldout("Pool")]
         [SerializeField, Tooltip("When enabled, pooling improves performance by reusing the instances to reduce the number of expensive operations such as object creation or garbage collection. The trade-off is an increased memory footprint.")]
         private bool _enablePooling;

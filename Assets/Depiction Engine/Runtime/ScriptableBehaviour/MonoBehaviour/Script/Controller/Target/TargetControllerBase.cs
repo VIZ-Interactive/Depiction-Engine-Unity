@@ -52,6 +52,9 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
+            if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Programmatically || initializingContext == InitializationContext.Reset)
+                SetRotation(QuaternionDouble.identity);
+
             InitValue(value => targetId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(targetId, target, initializingContext); }, initializingContext);
             InitValue(value => minMaxDistance = value, GetDefaultMinMaxDistance(), initializingContext);
             InitValue(value => distance = value, DEFAULT_DISTANCE_VALUE, initializingContext);

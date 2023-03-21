@@ -51,7 +51,7 @@ namespace DepictionEngine
 
         public virtual void Recycle()
         {
-            name = PoolManager.NEW_SCRIPT_OBJECT_NAME;
+            name = null;
             hideFlags = default;
 
             _instanceID = default;
@@ -75,14 +75,14 @@ namespace DepictionEngine
                 _initializingContext = InitializationContext.Existing;
 
                 //If the instanceID is not the same it means the component is new.
-                if (IsDuplicateInitializing())
+                if (GetInstanceID() != instanceID)
                 {
                     bool isEditor = InstanceManager.initializingContext == InitializationContext.Editor || InstanceManager.initializingContext == InitializationContext.Editor_Duplicate;
 
                     //If serialized instanceID is zero it means this is not a duplicate.
                     if (instanceID == 0)
                         _initializingContext = isEditor ? InitializationContext.Editor : InitializationContext.Programmatically;
-                    else if (GetInstanceID() < 0)
+                    else if (IsDuplicateInitializing())
                         _initializingContext = isEditor ? InitializationContext.Editor_Duplicate : InitializationContext.Programmatically_Duplicate;
                 }
 
@@ -127,7 +127,7 @@ namespace DepictionEngine
 
         protected bool IsDuplicateInitializing()
         {
-            return GetInstanceID() != instanceID;
+            return instanceID != 0 && GetInstanceID() < 0;
         }
 
         protected virtual void DestroyAfterFailedInitialization()

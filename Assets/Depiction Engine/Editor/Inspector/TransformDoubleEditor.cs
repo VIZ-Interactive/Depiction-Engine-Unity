@@ -1,5 +1,6 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -13,7 +14,8 @@ namespace DepictionEngine.Editor
         {
             base.OnSceneGUI();
 
-            if (Event.current.type == EventType.Repaint)
+            Event evt = Event.current;
+            if (evt.type == EventType.Repaint)
             {
                 SceneCamera sceneCamera = Camera.current as SceneCamera;
 
@@ -24,37 +26,45 @@ namespace DepictionEngine.Editor
                     {
                         SceneViewDouble sceneViewDouble = SceneViewDouble.GetSceneViewDouble(sceneCamera);
 
-                        if (sceneViewDouble != Disposable.NULL && sceneViewDouble.showMockHandles && sceneViewDouble.handleCount == 0)
+                        SceneViewDouble lastActiveSceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
+                        if (lastActiveSceneViewDouble != Disposable.NULL)
                         {
-                            if (Selection.ApplyOriginShifting(sceneCamera.GetOrigin()))
+                            bool showMockHandles = false;
+                            if (UnityEditor.Selection.transforms.Length == Selection.GetTransformDoubleSelectionCount())
+                                showMockHandles = sceneViewDouble.toolsHidden;
+
+                            if (sceneViewDouble != Disposable.NULL && showMockHandles && sceneViewDouble.handleCount == 0)
                             {
-                                Vector3 handlePosition;
-
-                                if (Tools.GetHandlePosition(out handlePosition))
+                                if (Selection.ApplyOriginShifting(sceneCamera.GetOrigin()))
                                 {
-                                    Quaternion handleRotation = Tools.handleRotation;
+                                    Vector3 handlePosition;
 
-                                    Vector3 handleSize = Vector3.one;
-
-                                    switch (Tools.current)
+                                    if (Tools.GetHandlePosition(out handlePosition))
                                     {
-                                        case Tool.Move:
-                                            Handles.PositionHandle(handlePosition, handleRotation);
-                                            break;
-                                        case Tool.Rotate:
-                                            Handles.RotationHandle(handleRotation, handlePosition);
-                                            break;
-                                        case Tool.Scale:
-                                            Handles.ScaleHandle(handleSize, handlePosition, handleRotation);
-                                            break;
-                                        case Tool.Transform:
-                                            Handles.TransformHandle(ref handlePosition, ref handleRotation, ref handleSize);
-                                            break;
+                                        Quaternion handleRotation = Tools.handleRotation;
+
+                                        Vector3 handleSize = Vector3.one;
+
+                                        switch (Tools.current)
+                                        {
+                                            case Tool.Move:
+                                                Handles.PositionHandle(handlePosition, handleRotation);
+                                                break;
+                                            case Tool.Rotate:
+                                                Handles.RotationHandle(handleRotation, handlePosition);
+                                                break;
+                                            case Tool.Scale:
+                                                Handles.ScaleHandle(handleSize, handlePosition, handleRotation);
+                                                break;
+                                            case Tool.Transform:
+                                                Handles.TransformHandle(ref handlePosition, ref handleRotation, ref handleSize);
+                                                break;
+                                        }
                                     }
                                 }
-                            }
 
-                            sceneViewDouble.handleCount++;
+                                sceneViewDouble.handleCount++;
+                            }
                         }
                     }
                 }
