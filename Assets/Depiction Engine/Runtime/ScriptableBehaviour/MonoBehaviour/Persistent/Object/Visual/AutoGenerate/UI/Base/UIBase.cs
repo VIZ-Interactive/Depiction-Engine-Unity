@@ -255,7 +255,7 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
                         if (!Application.isPlaying)
-                            currentCamera = Editor.SceneViewDouble.lastActiveSceneViewDouble != Disposable.NULL ? Editor.SceneViewDouble.lastActiveSceneViewDouble.camera : null;
+                            currentCamera = Editor.SceneViewDouble.lastActiveOrMouseOverSceneViewDouble != Disposable.NULL ? Editor.SceneViewDouble.lastActiveOrMouseOverSceneViewDouble.camera : null;
 #endif
 
                         if (!afterRendering || camera == currentCamera)

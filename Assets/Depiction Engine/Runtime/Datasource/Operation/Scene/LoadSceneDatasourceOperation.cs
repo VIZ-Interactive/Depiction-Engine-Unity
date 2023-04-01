@@ -73,8 +73,7 @@ namespace DepictionEngine
         {
             base.KillLoading();
 
-            if (_proceduralDataProcessor != null)
-                _proceduralDataProcessor.Dispose();
+            _proceduralDataProcessor?.Dispose();
         }
 
         private bool IsProcedural()

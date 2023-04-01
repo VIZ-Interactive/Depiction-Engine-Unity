@@ -98,7 +98,7 @@ namespace DepictionEngine
 
                     _lensFlare = go.AddSafeComponent<LensFlareComponentSRP>(initializingContext);
                     _lensFlare.lensFlareData = Resources.Load("LensFlare/Sun Lens Flare (SRP)") as LensFlareDataSRP;
-                    _lensFlare.useOcclusion = false;
+                    _lensFlare.useOcclusion = true;
                 }
             }
         }
@@ -220,8 +220,6 @@ namespace DepictionEngine
             }
         }
 
-        private float _lastLensFlareIntensity;
-        private RayDouble _lensFlareOcclusionRay;
         public void UpdateStar(Camera camera)
         {
             Vector3Double starPosition = transform.position;
@@ -233,35 +231,7 @@ namespace DepictionEngine
 
             LensFlareComponentSRP lensFlare = this.lensFlare;
             if (lensFlare != null)
-            {
                 lensFlare.scale = (float)(size / 8.0d / camera.GetDistanceScaleForCamera(gameObject.transform.position)) * lensFlareScale;
-
-                _lastLensFlareIntensity = lensFlare.intensity;
-
-                if (!camera.orthographic)
-                {
-                    if (_lensFlareOcclusionRay == null)
-                        _lensFlareOcclusionRay = new RayDouble();
-
-                    _lensFlareOcclusionRay.origin = cameraPosition;
-                    _lensFlareOcclusionRay.direction = -cameraToStarDirection;
-
-                    if (PhysicsDouble.Raycast(_lensFlareOcclusionRay, out RaycastHitDouble hit, (float)Vector3Double.Distance(starPosition, cameraPosition)))
-                        lensFlare.intensity = 0.0f;
-                }
-            }
-        }
-
-        public override bool HierarchicalEndCameraRendering(Camera camera)
-        {
-            if (base.HierarchicalEndCameraRendering(camera))
-            {
-                if (lensFlare != null)
-                    lensFlare.intensity = _lastLensFlareIntensity;
-
-                return true;
-            }
-            return false;
         }
 
         public override bool PreHierarchicalUpdate()

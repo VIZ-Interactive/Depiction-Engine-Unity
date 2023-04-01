@@ -342,12 +342,17 @@ namespace DepictionEngine.Editor
 
         public static SceneViewDouble lastActiveSceneViewDouble
         {
+            get => GetSceneViewDouble(SceneView.lastActiveSceneView);
+        }
+
+        public static SceneViewDouble lastActiveOrMouseOverSceneViewDouble
+        {
             get 
             {
-                SceneViewDouble lastActiveSceneViewDouble = GetSceneViewDouble(EditorWindow.mouseOverWindow as SceneView);
-                if (lastActiveSceneViewDouble == Disposable.NULL)
-                    lastActiveSceneViewDouble = GetSceneViewDouble(SceneView.lastActiveSceneView);
-                return lastActiveSceneViewDouble;
+                SceneViewDouble lastActiveOrMouseOverSceneViewDouble = GetSceneViewDouble(EditorWindow.mouseOverWindow as SceneView);
+                if (lastActiveOrMouseOverSceneViewDouble == Disposable.NULL)
+                    lastActiveOrMouseOverSceneViewDouble = lastActiveSceneViewDouble;
+                return lastActiveOrMouseOverSceneViewDouble;
             }
         }
 
@@ -362,7 +367,7 @@ namespace DepictionEngine.Editor
 
         public bool toolsHidden
         {
-            get => renderingManager.originShifting && sceneView.camera != lastActiveSceneViewDouble.camera.unityCamera;
+            get => renderingManager.originShifting && sceneView.camera != lastActiveOrMouseOverSceneViewDouble.camera.unityCamera;
         }
 
         public int handleCount
@@ -1435,7 +1440,7 @@ namespace DepictionEngine.Editor
             {
                 _lastToolCurrent = Tools.current;
 
-                SceneViewDouble lastActiveSceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
+                SceneViewDouble lastActiveSceneViewDouble = SceneViewDouble.lastActiveOrMouseOverSceneViewDouble;
                 if (lastActiveSceneViewDouble != Disposable.NULL)
                 {
                     Vector3Double origin = lastActiveSceneViewDouble.camera.GetOrigin();
@@ -1546,7 +1551,7 @@ namespace DepictionEngine.Editor
 
                     Vector3Double sceneCameraPosition = TargetControllerBase.GetTargetPosition(_sceneViewDoubleComponents.targetPosition, _sceneViewDoubleComponents.rotation, _sceneViewDoubleComponents.cameraDistance);
                     Vector3Double sceneCameraTargetPosition = _sceneViewDoubleComponents.targetPosition;
-                    sceneView.pivot = TransformDouble.SubtractPointFromCameraOrigin(sceneCameraTargetPosition, lastActiveSceneViewDouble.camera);
+                    sceneView.pivot = TransformDouble.SubtractPointFromCameraOrigin(sceneCameraTargetPosition, lastActiveOrMouseOverSceneViewDouble.camera);
                     if (!sceneView.in2DMode)
                         sceneView.rotation = _sceneViewDoubleComponents.rotation;
                     sceneView.size = (float)GetSizeFromCameraDistance((float)Vector3Double.Distance(sceneCameraTargetPosition, sceneCameraPosition));

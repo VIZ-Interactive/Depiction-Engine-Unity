@@ -155,6 +155,16 @@ namespace DepictionEngine
             UpdateFields();
         }
 
+
+#if UNITY_EDITOR
+        protected override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            UpdateRelations();
+        }
+#endif
+
         /// <summary>
         /// Should this object be added to the <see cref="DepictionEngine.InstanceManager"/>.
         /// </summary>
@@ -513,7 +523,7 @@ namespace DepictionEngine
                 {
                     IJson iJson = property as IJson;
                     if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo) && !iJson.IsDynamicProperty(GetPropertyKey(name)))
-                        EditorUndoRedoDetected();
+                        MarkAsNotPoolable();
                 }
 #endif
 
@@ -1028,7 +1038,7 @@ namespace DepictionEngine
 
                 Editor.UndoManager.RevertAllInCurrentGroup();
 
-                EditorUndoRedoDetected();
+                MarkAsNotPoolable();
             }
         }
 

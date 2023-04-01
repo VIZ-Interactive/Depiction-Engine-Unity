@@ -103,7 +103,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                 if (renderingManager.wasFirstUpdated && renderingManager.originShifting && (initializingContext == InitializationContext.Reset || initializingContext == InitializationContext.Editor) && transformLocalPosition != Vector3.zero)
                 {
-                    Editor.SceneCamera sceneCamera = Editor.SceneViewDouble.lastActiveSceneViewDouble != Disposable.NULL ? Editor.SceneViewDouble.lastActiveSceneViewDouble.camera : null;
+                    Editor.SceneCamera sceneCamera = Editor.SceneViewDouble.lastActiveOrMouseOverSceneViewDouble != Disposable.NULL ? Editor.SceneViewDouble.lastActiveOrMouseOverSceneViewDouble.camera : null;
                     localPosition += sceneCamera.GetOrigin();
                 }
 #endif
@@ -663,7 +663,7 @@ namespace DepictionEngine
             if (DetectDirectTransformLocalPositionManipulation() || DetectDirectTransformLocalRotationManipulation() || DetectDirectTransformLocalScaleManipulation())
             {
 #if UNITY_EDITOR
-                EditorUndoRedoDetected();
+                MarkAsNotPoolable();
 #endif
                 SetComponents(CaptureLocalPosition(), CaptureLocalRotation(), CaptureLocalScale());
 

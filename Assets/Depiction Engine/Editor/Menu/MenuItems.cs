@@ -1,5 +1,6 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -7,8 +8,6 @@ namespace DepictionEngine.Editor
 {
     public class MenuItems
     {
-        private const string MAPBOX_KEY = "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA";
-
         //Tip: If context menu order changes do not immediately show up in the editor, change the MenuItem itemName for changes to take effect
 
         //Depiction Engine Object
@@ -70,10 +69,17 @@ namespace DepictionEngine.Editor
         [MenuItem("GameObject/Depiction Engine/Astro/Planet/Earth (Realistic)", false, 28)]
         private static void CreatePlanetEarthRealistic(MenuCommand menuCommand)
         {
-            bool spherical = true;
-            InitializeSceneCameraSkybox(!spherical);
+            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "Mapbox API Key", "OSMBuildings API Key" }, new List<string> { "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA", "dixw8kmb" });
+            textInputPopup.ClosedEvent = (closeState, keys) =>
+            {
+                if (closeState == APIKeyInputsPopup.DialogCloseState.Ok)
+                {
+                    bool spherical = true;
+                    InitializeSceneCameraSkybox(!spherical);
 
-            SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical));
+                    SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical, keys[0], keys[1]));
+                }
+            };
         }
 
         [MenuItem("GameObject/Depiction Engine/Astro/Planet/Earth (Basic)", false, 29)]
@@ -88,10 +94,17 @@ namespace DepictionEngine.Editor
         [MenuItem("GameObject/Depiction Engine/Astro/Planet/Moon (Realistic)", false, 30)]
         private static void CreatePlanetMoonRealistic(MenuCommand menuCommand)
         {
-            bool spherical = true;
-            InitializeSceneCameraSkybox(!spherical);
+            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "ArcGIS API Key" }, new List<string> { "WQ9KVmV6xGGMnCiQ" });
+            textInputPopup.ClosedEvent = (closeState, keys) =>
+            {
+                if (closeState == APIKeyInputsPopup.DialogCloseState.Ok)
+                {
+                    bool spherical = true;
+                    InitializeSceneCameraSkybox(!spherical);
 
-            SetAlignViewToGeoAstroObject(CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical));
+                    SetAlignViewToGeoAstroObject(CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical, keys[0]));
+                }
+            };
         }
 
         [MenuItem("GameObject/Depiction Engine/Astro/Map/Map (Empty)", false, 31)]
@@ -106,10 +119,17 @@ namespace DepictionEngine.Editor
         [MenuItem("GameObject/Depiction Engine/Astro/Map/Earth (Realistic)", false, 32)]
         private static void CreateMapEarthRealistic(MenuCommand menuCommand)
         {
-            bool spherical = false;
-            InitializeSceneCameraSkybox(!spherical);
+            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "Mapbox API Key", "OSMBuildings API Key" }, new List<string> { "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA", "dixw8kmb" });
+            textInputPopup.ClosedEvent = (closeState, keys) =>
+            {
+                if (closeState == APIKeyInputsPopup.DialogCloseState.Ok)
+                {
+                    bool spherical = false;
+                    InitializeSceneCameraSkybox(!spherical);
 
-            SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical));
+                    SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical, keys[0], keys[1]));
+                }
+            };
         }
 
         [MenuItem("GameObject/Depiction Engine/Astro/Map/Earth (Basic)", false, 33)]
@@ -124,10 +144,17 @@ namespace DepictionEngine.Editor
         [MenuItem("GameObject/Depiction Engine/Astro/Map/Moon (Realistic)", false, 34)]
         private static void CreateMapMoonRealistic(MenuCommand menuCommand)
         {
-            bool spherical = false;
-            InitializeSceneCameraSkybox(!spherical);
+            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "ArcGIS API Key"}, new List<string> { "WQ9KVmV6xGGMnCiQ" });
+            textInputPopup.ClosedEvent = (closeState, keys) =>
+            {
+                if (closeState == APIKeyInputsPopup.DialogCloseState.Ok)
+                {
+                    bool spherical = false;
+                    InitializeSceneCameraSkybox(!spherical);
 
-            SetAlignViewToGeoAstroObject(CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical));
+                    SetAlignViewToGeoAstroObject(CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical, keys[0]));
+                }
+            };
         }
 
         private static void InitializeSceneCameraSkybox(bool atmosphere = false)
@@ -330,7 +357,7 @@ namespace DepictionEngine.Editor
             colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
             colorTextureLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 30));
             colorTextureLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
-            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=" + MAPBOX_KEY;
+            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=";
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(colorTextureLoaderJson, earthJson);
 
@@ -347,7 +374,7 @@ namespace DepictionEngine.Editor
             JSONArray buildingFeatureDataLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(BuildingFeature));
             string buildingFeatureDataLoaderId = buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.id)];
             buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(buildingFeatureDatasource.id);
-            buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tile/{0}/{1}/{2}.json?token=dixw8kmb";
+            buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tile/{0}/{1}/{2}.json?token=";
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(buildingFeatureDataLoaderJson, earthJson);
 
@@ -390,7 +417,7 @@ namespace DepictionEngine.Editor
             return earth;
         }
 
-        private static Planet CreateEarthRealistic(Transform parent, string name, bool spherical)
+        private static Planet CreateEarthRealistic(Transform parent, string name, bool spherical, string mapboxKey, string osmBuildingsKey)
         {
             UndoManager.CreateNewGroup("Create " + name);
 
@@ -407,13 +434,19 @@ namespace DepictionEngine.Editor
             //Add Earth
             JSONObject earthJson = new();
 
+            List<string> headers = new List<string>();
+            //Forcing a different Referer spams warnings but it is only ment to be used as an Editor demo, A real development key should be used.
+            if (mapboxKey == "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA")
+                headers.Add("Referer#https://www.mapbox.com/");
+
             //Add Earth -> Color Texture Index2DLoader
             JSONArray colorTextureLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
             string colorTextureLoaderId = colorTextureLoaderJson[0][nameof(Index2DLoader.id)];
             colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
             colorTextureLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 30));
             colorTextureLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
-            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "v4/mapbox.satellite/{0}/{1}/{2}@2x.jpg90?access_token=" + MAPBOX_KEY;
+            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "v4/mapbox.satellite/{0}/{1}/{2}@2x.jpg90?access_token=" + mapboxKey;
+            colorTextureLoaderJson[0][nameof(LoaderBase.headers)] = JsonUtility.ToJson(headers);
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(colorTextureLoaderJson, earthJson);
 
@@ -422,10 +455,12 @@ namespace DepictionEngine.Editor
             string elevationLoaderId = elevationLoaderJson[0][nameof(Index2DLoader.id)];
             elevationLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
             elevationLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 13));
-            //LoaderBase.DataType.ElevationMapboxTerrainRGBWebP
             elevationLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw);
-            //"raster/v1/mapbox.mapbox-terrain-dem-v1/{0}/{1}/{2}.webp?sku=101WQxhVS07ft&access_token=" + MAPBOX_KEY
-            elevationLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "v4/mapbox.terrain-rgb/{0}/{1}/{2}.pngraw?access_token=" + MAPBOX_KEY;
+            elevationLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "v4/mapbox.terrain-rgb/{0}/{1}/{2}.pngraw?access_token=" + mapboxKey;
+            //Alternative Elevation
+            //LoaderBase.DataType.ElevationMapboxTerrainRGBWebP
+            //"raster/v1/mapbox.mapbox-terrain-dem-v1/{0}/{1}/{2}.webp?sku=101WQxhVS07ft&access_token=" + mapboxKey
+            elevationLoaderJson[0][nameof(LoaderBase.headers)] = JsonUtility.ToJson(headers);
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(elevationLoaderJson, earthJson);
 
@@ -435,17 +470,22 @@ namespace DepictionEngine.Editor
             surfaceLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
             surfaceLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 14));
             surfaceLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
-            surfaceLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=" + MAPBOX_KEY;
+            surfaceLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=" + mapboxKey;
+            surfaceLoaderJson[0][nameof(LoaderBase.headers)] = JsonUtility.ToJson(headers);
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(surfaceLoaderJson, earthJson);
 
             //Add Earth => BuildingFeature Index2DLoader
-            JSONArray buildingFeatureDataLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(BuildingFeature));
-            string buildingFeatureDataLoaderId = buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.id)];
-            buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(buildingFeatureDatasource.id);
-            buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tile/{0}/{1}/{2}.json?token=dixw8kmb";
+            string buildingFeatureDataLoaderId = null;
+            if (!string.IsNullOrEmpty(osmBuildingsKey))
+            {
+                JSONArray buildingFeatureDataLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(BuildingFeature));
+                buildingFeatureDataLoaderId = buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.id)];
+                buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(buildingFeatureDatasource.id);
+                buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tile/{0}/{1}/{2}.json?token=" + osmBuildingsKey;
 
-            InstanceUtility.MergeComponentsToObjectInitializationJson(buildingFeatureDataLoaderJson, earthJson);
+                InstanceUtility.MergeComponentsToObjectInitializationJson(buildingFeatureDataLoaderJson, earthJson);
+            }
 
             //Add Earth -> Reflection
             InstanceUtility.MergeComponentsToObjectInitializationJson(InstanceUtility.GetComponentJson(typeof(TerrainSurfaceReflectionEffect)), earthJson);
@@ -475,24 +515,27 @@ namespace DepictionEngine.Editor
             CreateLayer(earth, "Terrain", terrainJson);
 
             //Add BuildingsRoot -> BuildingGridMeshObject CameraGrid2DLoader
-            JSONObject buildingsJson = new();
+            if (!string.IsNullOrEmpty(buildingFeatureDataLoaderId))
+            {
+                JSONObject buildingsJson = new();
 
-            JSONArray buildingMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(BuildingGridMeshObject));
-            buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 5.0f;
-            buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(14, 14));
-            buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(Vector2Int.zero);
-            buildingMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
-            buildingMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = buildingFeatureDataLoaderId;
-            buildingMeshObjectCameraGrid2DLoaderJson[4][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
+                JSONArray buildingMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(BuildingGridMeshObject));
+                buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 5.0f;
+                buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(14, 14));
+                buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(Vector2Int.zero);
+                buildingMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
+                buildingMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = buildingFeatureDataLoaderId;
+                buildingMeshObjectCameraGrid2DLoaderJson[4][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
 
-            InstanceUtility.MergeComponentsToObjectInitializationJson(buildingMeshObjectCameraGrid2DLoaderJson, buildingsJson);
+                InstanceUtility.MergeComponentsToObjectInitializationJson(buildingMeshObjectCameraGrid2DLoaderJson, buildingsJson);
 
-            CreateLayer(earth, "Buildings", buildingsJson);
+                CreateLayer(earth, "Buildings", buildingsJson);
+            }
 
             return earth;
         }
 
-        private static Planet CreateMoonRealistic(Transform parent, string name, bool spherical)
+        private static Planet CreateMoonRealistic(Transform parent, string name, bool spherical, string arcGISKey)
         {
             UndoManager.CreateNewGroup("Create " + name);
 
@@ -508,7 +551,7 @@ namespace DepictionEngine.Editor
             string colorTextureLoaderId = colorTextureLoaderJson[0][nameof(Index2DLoader.id)];
             colorTextureLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 7));
             colorTextureLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
-            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tiles/WQ9KVmV6xGGMnCiQ/arcgis/rest/services/Moon_Basemap_Tile0to9/MapServer/tile/{0}/{2}/{1}";
+            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tiles/"+ arcGISKey + "/arcgis/rest/services/Moon_Basemap_Tile0to9/MapServer/tile/{0}/{2}/{1}";
             colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(arcGISDatasource.id);
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(colorTextureLoaderJson, planetJson);
@@ -518,7 +561,7 @@ namespace DepictionEngine.Editor
             string elevationLoaderId = elevationLoaderJson[0][nameof(Index2DLoader.id)];
             elevationLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 7));
             elevationLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.ElevationEsriLimitedErrorRasterCompression);
-            elevationLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tiles/WQ9KVmV6xGGMnCiQ/arcgis/rest/services/Moon_Elevation_Surface/ImageServer/tile/{0}/{2}/{1}?blankTile=false";
+            elevationLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tiles/"+ arcGISKey + "/arcgis/rest/services/Moon_Elevation_Surface/ImageServer/tile/{0}/{2}/{1}?blankTile=false";
             elevationLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(arcGISDatasource.id);
             
             elevationLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(Elevation.elevationMultiplier)] = 0.2f;
@@ -745,11 +788,7 @@ namespace DepictionEngine.Editor
             }
 
             GeoCoordinatePopup geoCoordiantePopup = ScriptableObject.CreateInstance<GeoCoordinatePopup>();
-            geoCoordiantePopup.minSize = Vector2.zero;
-            Rect mainWindowRect = EditorGUIUtility.GetMainWindowPosition();
-            float width = 700.0f;
-            float height = 23.0f;
-            geoCoordiantePopup.position = new Rect(mainWindowRect.x + (mainWindowRect.width / 2.0f) - (width / 2.0f), mainWindowRect.y + (mainWindowRect.height / 2.0f) - (height / 2.0f), width, height);
+            PositionPopup(geoCoordiantePopup);
             geoCoordiantePopup.ShowPopup();
             geoCoordiantePopup.FocusOnLatControl();
         }
@@ -766,6 +805,24 @@ namespace DepictionEngine.Editor
             if (sceneViewDouble != Disposable.NULL)
                 return sceneViewDouble.alignViewToGeoAstroObject != Disposable.NULL;
             return false;
+        }
+
+        private static APIKeyInputsPopup ShowMapAPIKeyDialog(List<string> labels, List<string> inputs)
+        {
+            APIKeyInputsPopup textInputPopup = ScriptableObject.CreateInstance<APIKeyInputsPopup>();
+            textInputPopup.labels = labels;
+            textInputPopup.inputs = inputs;
+            PositionPopup(textInputPopup, 20.0f * (labels.Count + 1) + 3);
+            textInputPopup.ShowPopup();
+            return textInputPopup;
+        }
+
+        private static void PositionPopup(EditorWindow popup, float height = 23.0f)
+        {
+            popup.minSize = Vector2.zero;
+            Rect mainWindowRect = EditorGUIUtility.GetMainWindowPosition();
+            float width = 700.0f;
+            popup.position = new Rect(mainWindowRect.x + (mainWindowRect.width / 2.0f) - (width / 2.0f), mainWindowRect.y + (mainWindowRect.height / 2.0f) - (height / 2.0f), width, height);
         }
 
         private static bool HasSceneViewDouble()

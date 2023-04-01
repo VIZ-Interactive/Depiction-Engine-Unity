@@ -163,7 +163,7 @@ namespace DepictionEngine
                 {
                     IJson iJson = property as IJson;
                     if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo) && !iJson.IsDynamicProperty(PropertyMonoBehaviour.GetPropertyKey(name)))
-                        EditorUndoRedoDetected();
+                        MarkAsNotPoolable();
                 }
 #endif
 
@@ -197,7 +197,7 @@ namespace DepictionEngine
 
                 Editor.UndoManager.RevertAllInCurrentGroup();
 
-                EditorUndoRedoDetected();
+                MarkAsNotPoolable();
             }
         }
 

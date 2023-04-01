@@ -58,7 +58,7 @@ namespace DepictionEngine.Editor
                     case nameof(SerializableGuid):
                         propertyFieldsOverrided = AddSerializableGuidPropertyField(position, serializedProperty, label, customAttributes);
                         break;
-                    case "PPtr<$" + nameof(Datasource) + ">":
+                    case nameof(Datasource):
                         propertyFieldsOverrided = AddDatasourcePropertyField(position, serializedProperty, label);
                         break;
                     case "bool":
@@ -499,7 +499,7 @@ namespace DepictionEngine.Editor
 
                     break;
 
-                case "PPtr<$" + nameof(Datasource) + ">":
+                case nameof(Datasource):
 
                     Datasource datasource = EditorBase.GetDatasourceFromSerializedProperty(serializedProperty.serializedObject.targetObject); ;
 

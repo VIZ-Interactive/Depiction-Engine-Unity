@@ -645,49 +645,30 @@ namespace DepictionEngine
         {
             base.Initializing();
 
-            if (_geoCoordinateGeometries == null)
-                _geoCoordinateGeometries = new List<GeoCoordinateGeometries>();
+            _geoCoordinateGeometries ??= new List<GeoCoordinateGeometries>();
 
-            if (_hasRoofColor == null)
-                _hasRoofColor = new List<bool>();
-            if (_hasWallColor == null)
-                _hasWallColor = new List<bool>();
-            if (_hasRoofDirection == null)
-                _hasRoofDirection = new List<bool>();
-            if (_hasHeight == null)
-                _hasHeight = new List<bool>();
-            if (_hasMinLevel == null)
-                _hasMinLevel = new List<bool>();
-            if (_hasLevels == null)
-                _hasLevels = new List<bool>();
+            _hasRoofColor ??= new();
+            _hasWallColor ??= new();
+            _hasRoofDirection ??= new();
+            _hasHeight ??= new();
+            _hasMinLevel ??= new();
+            _hasLevels ??= new();
 
-            if (_materialIsGlass == null)
-                _materialIsGlass = new List<bool>();
+            _materialIsGlass ??= new();
 
-            if (_roofColor == null)
-                _roofColor = new List<Color>();
-            if (_wallColor == null)
-                _wallColor = new List<Color>();
+            _roofColor ??= new();
+            _wallColor ??= new();
 
-            if (_shape == null)
-                _shape = new List<BuildingFeature.Shape>();
-            if (_roofShape == null)
-                _roofShape = new List<BuildingFeature.RoofShape>();
-            if (_roofHeight == null)
-                _roofHeight = new List<float>();
-            if (_roofLevels == null)
-                _roofLevels = new List<int>();
-            if (_roofDirection == null)
-                _roofDirection = new List<float>();
+            _shape ??= new();
+            _roofShape ??= new();
+            _roofHeight ??= new();
+            _roofLevels ??= new();
+            _roofDirection ??= new();
 
-            if (_minHeight == null)
-                _minHeight = new List<float>();
-            if (_height == null)
-                _height = new List<float>();
-            if (_minLevel == null)
-                _minLevel = new List<int>();
-            if (_levels == null)
-                _levels = new List<int>();
+            _minHeight ??= new();
+            _height ??= new();
+            _minLevel ??= new();
+            _levels ??= new();
         }
 
         public override FeatureModifier Init(int featureCount)

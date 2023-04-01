@@ -13,12 +13,10 @@ namespace DepictionEngine
     [AddComponentMenu(SceneManager.NAMESPACE + "/Manager/" + nameof(DatasourceManager))]
     [RequireComponent(typeof(SceneManager))]
     [DisallowMultipleComponent]
-    public class DatasourceManager : ManagerBase, ILoadDatasource
+    public class DatasourceManager : ManagerBase, ILoadDatasource, IDatasource
     {
-        [SerializeField]
-#if UNITY_EDITOR
-        [ConditionalShow(nameof(GetShowDebug))]
-#endif
+        [BeginFoldout("Persistents")]
+        [SerializeField, EndFoldout]
         private Datasource _sceneDatasource;
 
         /// <summary>
@@ -45,6 +43,16 @@ namespace DepictionEngine
             base.Recycle();
 
             sceneDatasource?.Recycle();
+        }
+
+        protected override bool InitializeLastFields()
+        {
+            if (base.InitializeLastFields())
+            {
+                sceneDatasource?.InitializeLastFields();
+                return true;
+            }
+            return false;
         }
 
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
@@ -141,13 +149,18 @@ namespace DepictionEngine
             DatasourceLoadersChangedEvent?.Invoke(loader);
         }
 
+        public bool IsIdMatching(SerializableGuid datasourceId)
+        {
+            return datasourceId == SerializableGuid.Empty;
+        }
+
         public Datasource sceneDatasource
         {
             get => _sceneDatasource;
             private set => _sceneDatasource = value;
         }
 
-        public DatasourceOperationBase Load(Action<List<IPersistent>> operationResult, LoadScope loadScope)
+        public DatasourceOperationBase Load(Action<List<IPersistent>, DatasourceOperationBase.LoadingState> operationResult, LoadScope loadScope)
         {
             LoadSceneDatasourceOperation loadSceneDatasourceOperation = CreateLoadSceneDatasourceOperation(loadScope);
 

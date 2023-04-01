@@ -28,7 +28,12 @@ namespace DepictionEngine
         /// <summary>
         /// Can the object be found on the Editor undo or redo stack.
         /// </summary>
-        bool hasEditorUndoRedo { get; }
+        bool notPoolable { get; }
+
+        /// <summary>
+        /// Marking the object as not poolable ensures that the object will always be destroyed when disposed. If the object is a Component the entire GameObject will be destroyed when disposed.
+        /// </summary>
+        void MarkAsNotPoolable();
 #endif
 
         /// <summary>

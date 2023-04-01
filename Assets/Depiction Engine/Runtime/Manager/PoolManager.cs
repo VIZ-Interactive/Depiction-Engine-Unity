@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -54,7 +55,7 @@ namespace DepictionEngine
 
         private void ClearPoolBtn()
         {
-            ClearPool();
+            DestroyAllDisposable();
         }
 
         private bool GetShowClearPool()
@@ -126,14 +127,32 @@ namespace DepictionEngine
         {
             base.DebugChanged();
 
-            if (_pools != null)
+            IterateOverDisposable((disposable) =>
             {
-                foreach (List<IDisposable> disposableList in _pools.Values)
-                {
-                    foreach (IDisposable disposable in disposableList)
-                        UpdateHideFlags(disposable);
-                }
-            }
+                UpdateHideFlags(disposable);
+            });
+        }
+
+        protected override void Saving(UnityEngine.SceneManagement.Scene scene, string path)
+        {
+            base.Saving(scene ,path);
+
+            IterateOverDisposable((disposable) =>
+            {
+                UnityEngine.Object unityObject = GetUnityObject(disposable);
+                if (unityObject != null)
+                    unityObject.hideFlags |= HideFlags.DontSave;
+            });
+        }
+
+        protected override void Saved(UnityEngine.SceneManagement.Scene scene)
+        {
+            base.Saved(scene);
+
+            IterateOverDisposable((disposable) =>
+            {
+                UpdateHideFlags(disposable);
+            });
         }
 #endif
 
@@ -149,7 +168,7 @@ namespace DepictionEngine
                 SetValue(nameof(enablePooling), value, ref _enablePooling, (newValue, oldValue) =>
                 {
                     if (!newValue)
-                        ClearPool();
+                        DestroyAllDisposable();
                 });
             }
         }
@@ -276,8 +295,8 @@ namespace DepictionEngine
         {
             if (disposable is UnityEngine.Object)
             {
-                HideFlags hideFlags = SceneManager.Debugging() ? HideFlags.DontSave : HideFlags.HideAndDontSave;
-                
+                HideFlags hideFlags = SceneManager.Debugging() ? HideFlags.None : HideFlags.HideInHierarchy;
+
                 UnityEngine.Object unityObject = disposable as UnityEngine.Object;
 
                 unityObject.hideFlags = hideFlags;
@@ -411,6 +430,18 @@ namespace DepictionEngine
             }
         }
 
+        private void IterateOverDisposable(Action<IDisposable> callback)
+        {
+            if (_pools != null)
+            {
+                foreach (List<IDisposable> pool in _pools.Values)
+                {
+                    for (int i = pool.Count - 1; i >= 0; i--)
+                        callback?.Invoke(pool[i]);
+                }
+            }
+        }
+
 #if UNITY_EDITOR
         private void UpdateDebug(Type type, List<IDisposable> pool)
         {
@@ -428,51 +459,49 @@ namespace DepictionEngine
         /// <summary>
         /// Destroy all pooled objects.
         /// </summary>
-        public void ClearPool()
+        public void DestroyAllDisposable()
         {
-            if (_pools != null)
+            try
             {
-                try
-                {
-                    foreach (int key in _pools.Keys)
-                    {
-                        foreach (IDisposable disposable in _pools[key])
-                            Destroy(disposable);
-                    }
-                }
-                catch(InvalidOperationException e)
-                {
-                    Debug.LogError(e);
-                }
-               
-                _pools.Clear();
+                IterateOverDisposable((disposable) => { Destroy(disposable); });
+            }
+            catch(InvalidOperationException e)
+            {
+                Debug.LogError(e);
             }
 
-            if (_types != null)
-                _types.Clear();
+            _pools?.Clear();
+
+            _types?.Clear();
 
 #if UNITY_EDITOR
-            if (_debug != null)
-                _debug.Clear();
+            _debug?.Clear();
 #endif
+        }
+
+        private UnityEngine.Object GetUnityObject(IDisposable disposable)
+        {
+            if (disposable is UnityEngine.Object)
+            {
+                UnityEngine.Object unityOject = disposable as UnityEngine.Object;
+                if (unityOject is Component)
+                    unityOject = (unityOject as Component).gameObject;
+
+                return unityOject;
+            }
+            return null;
         }
 
         private void Destroy(IDisposable disposable)
         {
-            object obj = disposable;
-
-            if (disposable is MonoBehaviour)
-                obj = (disposable as MonoBehaviour).gameObject;
-
-            if (obj is UnityEngine.Object)
-                DisposeManager.Destroy(obj as UnityEngine.Object);
+            DisposeManager.Destroy(GetUnityObject(disposable));
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
 
-            ClearPool();
+            DestroyAllDisposable();
         }
 
         public override bool OnDispose(DisposeContext disposeContext)
@@ -481,7 +510,7 @@ namespace DepictionEngine
             {
                 resizeTimer = null;
 
-                ClearPool();
+                DestroyAllDisposable();
 
                 return true;
             }

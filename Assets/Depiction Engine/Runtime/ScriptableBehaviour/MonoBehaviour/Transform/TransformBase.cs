@@ -588,7 +588,7 @@ namespace DepictionEngine
                         added = true;
 #if UNITY_EDITOR
                         if (initialized && SceneManager.IsUserChangeContext())
-                            EditorUndoRedoDetected();
+                            MarkAsNotPoolable();
 #endif
                     }
                 }
@@ -622,7 +622,7 @@ namespace DepictionEngine
                         removed = true;
 #if UNITY_EDITOR
                         if (initialized && SceneManager.IsUserChangeContext())
-                            EditorUndoRedoDetected();
+                            MarkAsNotPoolable();
 #endif
                     }
                 }
@@ -1095,9 +1095,11 @@ namespace DepictionEngine
         {
             base.Awake();
 
+#if UNITY_EDITOR
             //We initialize right away if the gameObject is being duplicated to make sure the Undo operations are recorded together as one.
             if (IsDuplicateInitializing())
                 Initialize();
+#endif
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

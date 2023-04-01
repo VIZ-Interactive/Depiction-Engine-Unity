@@ -32,7 +32,7 @@ namespace DepictionEngine
 
         public bool Initialize()
         {
-            if (!_initializing)
+            if (!IsDisposing() && !_initializing)
             {
                 Initializing();
 
@@ -104,9 +104,14 @@ namespace DepictionEngine
             get { return _disposingContext; }
         }
 
-        public bool hasEditorUndoRedo
+        public bool notPoolable
         {
             get { return false; }
+        }
+
+        public void MarkAsNotPoolable()
+        {
+            
         }
 
         public Action<IDisposable> InitializedEvent

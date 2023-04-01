@@ -439,7 +439,7 @@ namespace DepictionEngine.Editor
                         }
 
                         foreach (TransformBase affectedSibling in affectedSiblings)
-                            affectedSibling.EditorUndoRedoDetected();
+                            affectedSibling.MarkAsNotPoolable();
                     }
                 }
             }

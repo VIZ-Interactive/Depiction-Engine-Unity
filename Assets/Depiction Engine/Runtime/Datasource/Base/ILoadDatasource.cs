@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System;
+using Unity.Loading;
 
 namespace DepictionEngine
 {
@@ -10,6 +11,6 @@ namespace DepictionEngine
     /// </summary>
     public interface ILoadDatasource
     {
-        DatasourceOperationBase Load(Action<List<IPersistent>> operationResult, LoadScope loadScope);
+        DatasourceOperationBase Load(Action<List<IPersistent>, DatasourceOperationBase.LoadingState> operationResult, LoadScope loadScope);
     }
 }

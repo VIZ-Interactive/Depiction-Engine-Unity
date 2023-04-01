@@ -48,51 +48,82 @@ namespace DepictionEngine
                 _idLoadScopes?.Clear();
             }
 
+            if (initializingContext == InitializationContext.Existing)
+                PerformAddRemoveAnFixBrokenLoadScopes(idLoadScopes, idLoadScopes);
+
             InitValue(value => ids = value, new List<SerializableGuid>(), initializingContext);
         }
 
-        public override bool LateInitialize()
+        protected override bool InitializeLastFields()
         {
-            if (base.LateInitialize())
+            if (base.InitializeLastFields())
             {
-                if (_ids != null && _idReferences != null)
+#if UNITY_EDITOR
+                lastIdReferences.Clear();
+                for (int i = idReferences.Count - 1; i >= 0; i--)
                 {
-                    for (int i = _ids.Count - 1; i >= 0; i--)
-                    {
-                        SerializableGuid id = _ids[i];
-
-                        if (_idReferences.TryGetValue(id, out ReferencesList references))
-                        {
-                            if (references.RemoveNullReferences())
-                            {
-                                _idReferences.Remove(id);
-                                _ids.RemoveAt(i);
-
-                                if (GetLoadScope(out IdLoadScope loadScope, id))
-                                    DisposeLoadScope(loadScope);
-                            }
-                        }
-                    }
+                    KeyValuePair<SerializableGuid, ReferencesList> keyValuePair = idReferences.ElementAt(i);
+                    ReferencesList referencesList = new();
+                    lastIdReferences.Add(keyValuePair.Key, referencesList);
+                    for (int e = keyValuePair.Value.Count - 1; e >= 0; e--)
+                        referencesList.Add(keyValuePair.Value[e]);
                 }
 
+                lastIdLoadScopes.Clear();
+                lastIdLoadScopes.CopyFrom(idLoadScopes);
+#endif
                 return true;
             }
             return false;
         }
 
-        protected override int GetLoadScopeCount()
+#if UNITY_EDITOR
+        private IdReferencesDictionary _lastIdReferences;
+        private IdReferencesDictionary lastIdReferences
         {
-            return base.GetLoadScopeCount() + idLoadScopes.Count;
+            get => _lastIdReferences ??= new ();
         }
+
+        private IdLoadScopeDictionary _lastIdLoadScopes;
+        private IdLoadScopeDictionary lastIdLoadScopes
+        {
+            get => _lastIdLoadScopes ??= new ();
+        }
+
+        protected override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            UndoRedoPerformedReferencesLoadScopes(idReferences, lastIdReferences, idLoadScopes, lastIdLoadScopes);
+        }
+#endif
 
         private IdLoadScopeDictionary idLoadScopes
         {
-            get 
+            get => _idLoadScopes ??= new IdLoadScopeDictionary();
+            set => _idLoadScopes = value;
+        }
+
+        protected override void IterateOverLoadScopeKeys(Action<int, object, ReferencesList> callback)
+        {
+            base.IterateOverLoadScopeKeys(callback);
+
+            if (callback != null)
             {
-                _idLoadScopes ??= new IdLoadScopeDictionary();
-                return _idLoadScopes; 
+                for (int i = ids.Count - 1; i >= 0; i--)
+                {
+                    SerializableGuid id = ids[i];
+
+                    idReferences.TryGetValue(id, out ReferencesList references);
+                
+                    callback(i, id, references);
+                }
             }
-            set { _idLoadScopes = value; }
+        }
+
+        protected override int GetLoadScopeCount()
+        {
+            return base.GetLoadScopeCount() + idLoadScopes.Count;
         }
 
         /// <summary>
@@ -111,11 +142,7 @@ namespace DepictionEngine
 
         private IdReferencesDictionary idReferences
         {
-            get
-            {
-                _idReferences ??= new IdReferencesDictionary();
-                return _idReferences;
-            }
+            get => _idReferences ??= new IdReferencesDictionary();
         }
 
         public bool AddId(SerializableGuid id)
@@ -142,64 +169,75 @@ namespace DepictionEngine
             return false;
         }
 
-        public override bool AddReference(LoadScope loadScope, ReferenceBase reference)
+        public override bool AddReference(object loadScopeKey, ReferenceBase reference)
         {
-            IdLoadScope idLoadScope = loadScope as IdLoadScope;
-            if (idLoadScope != Disposable.NULL)
+            SerializableGuid scopeId = (SerializableGuid)loadScopeKey;
+            if (scopeId != SerializableGuid.Empty)
             {
-                SerializableGuid scopeId = idLoadScope.scopeId;
-                if (scopeId != SerializableGuid.Empty)
+#if UNITY_EDITOR
+                if (!lastIdReferences.TryGetValue(scopeId, out ReferencesList lastReferences))
                 {
-                    if (!idReferences.TryGetValue(scopeId, out ReferencesList references))
-                    {
-                        references = new ReferencesList();
-                        idReferences[scopeId] = references;
-                    }
+                    lastReferences = new ReferencesList();
+                    lastIdReferences[scopeId] = new ReferencesList();
+                }
 
-                    if (!references.Contains(reference))
-                    {
-                        references.Add(reference);
+                if (!lastReferences.Contains(reference))
+                    lastReferences.Add(reference);
+#endif
 
-                        AddId(scopeId);
+                if (!idReferences.TryGetValue(scopeId, out ReferencesList references))
+                {
+                    references = new ReferencesList();
+                    idReferences[scopeId] = references;
+                }
 
-                        return true;
-                    }
+                if (!references.Contains(reference))
+                {
+                    references.Add(reference);
+
+                    AddId(scopeId);
+
+                    return true;
                 }
             }
             return false;
         }
 
-        public override bool RemoveReference(LoadScope loadScope, ReferenceBase reference, DisposeContext disposeContext)
+        public override bool RemoveReference(object loadScopeKey, ReferenceBase reference = null, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            if (base.RemoveReference(loadScope, reference, disposeContext))
+            if (base.RemoveReference(loadScopeKey, reference, disposeContext))
             {
-                bool removed = false;
-
-                IdLoadScope idLoadScope = loadScope as IdLoadScope;
-                if (idLoadScope != Disposable.NULL)
+                SerializableGuid loadScopeId = (SerializableGuid)loadScopeKey;
+                if (loadScopeId != SerializableGuid.Empty)
                 {
-                    SerializableGuid scopeId = idLoadScope.scopeId;
-                    if (scopeId != SerializableGuid.Empty)
+#if UNITY_EDITOR
+                    if (disposeContext == DisposeContext.Editor_Destroy)
+                        Editor.UndoManager.RecordObject(this);
+
+                    if (lastIdReferences.TryGetValue(loadScopeId, out ReferencesList lastReferences))
                     {
-#if UNITY_EDITOR
-                        if (disposeContext == DisposeContext.Editor_Destroy)
-                            Editor.UndoManager.RecordObject(this);
-#endif
-                        if (idReferences.TryGetValue(scopeId, out ReferencesList references) && references.Remove(reference))
-                        {
-                            if (references.IsEmpty() && RemoveId(scopeId))
-                                DisposeLoadScope(loadScope, disposeContext);
-
-                            removed = true;
-                        }
-#if UNITY_EDITOR
-                        if (disposeContext == DisposeContext.Editor_Destroy)
-                            Editor.UndoManager.FlushUndoRecordObjects();
-#endif
+                        if (lastReferences.IsEmpty() || lastReferences.Remove(reference))
+                            lastIdReferences.Remove(loadScopeId);
                     }
-                }
+#endif
 
-                return removed;
+                    if (idReferences.TryGetValue(loadScopeId, out ReferencesList references))
+                    {
+                        if (references.IsEmpty() || references.Remove(reference))
+                        {
+                            idReferences.Remove(loadScopeId);
+
+                            RemoveId(loadScopeId);
+
+                            return true;
+                        }
+                    }
+
+#if UNITY_EDITOR
+                    if (disposeContext == DisposeContext.Editor_Destroy)
+                        Editor.UndoManager.FlushUndoRecordObjects();
+#endif
+                }
             }
             return false;
         }
@@ -225,10 +263,12 @@ namespace DepictionEngine
                 {
                     IdLoadScope idLoadScope = loadScope as IdLoadScope;
 
-                    SerializableGuid key = idLoadScope.scopeId;
-                    if (!idLoadScopes.ContainsKey(key))
+                    SerializableGuid id = idLoadScope.scopeId;
+                    if (idLoadScopes.TryAdd(id, idLoadScope))
                     {
-                        idLoadScopes.Add(key, idLoadScope);
+#if UNITY_EDITOR
+                        lastIdLoadScopes.Add(id, idLoadScope);
+#endif
                         return true;
                     }
                 }
@@ -236,28 +276,26 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool RemoveLoadScopeInternal(LoadScope loadScope)
+        protected override bool RemoveLoadScopeInternal(object loadScopeKey, out LoadScope loadScope)
         {
-            if (base.RemoveLoadScopeInternal(loadScope))
+            if (base.RemoveLoadScopeInternal(loadScopeKey, out loadScope))
             {
-                if (loadScope is IdLoadScope)
+                SerializableGuid id = (SerializableGuid)loadScopeKey;
+                if (idLoadScopes.TryGetValue(id, out IdLoadScope idLoadScope) && idLoadScopes.Remove(id))
                 {
-                    IdLoadScope idLoadScope = loadScope as IdLoadScope;
-                    if (idLoadScopes.Remove(idLoadScope.scopeId))
-                        return true;
+                    loadScope = idLoadScope;
+#if UNITY_EDITOR
+                    lastIdLoadScopes.Remove(id);
+#endif
+                    return true;
                 }
             }
             return false;
         }
 
-        protected override bool RemoveLoadScopeKey(object key)
-        {
-            return base.RemoveLoadScopeKey(key) && idLoadScopes.Remove((SerializableGuid)key);
-        }
-
         public override bool GetLoadScope(out LoadScope loadScope, IPersistent persistent)
         {
-            if (GetLoadScope(out IdLoadScope idLoadScope, persistent.id))
+            if (GetLoadScope(out LoadScope idLoadScope, persistent.id))
             {
                 loadScope = idLoadScope;
                 return true;
@@ -267,20 +305,24 @@ namespace DepictionEngine
             return false;
         }
 
-        public bool GetLoadScope(out IdLoadScope loadScope, SerializableGuid id, bool reload = false, bool createIfMissing = false)
+         public override bool GetLoadScope(out LoadScope loadScope, object loadScopeKey, bool reload = false, bool createIfMissing = false, float loadInterval = 0.0f)
         {
             bool load = false;
 
             loadScope = null;
 
+            SerializableGuid id = (SerializableGuid)loadScopeKey;
             if (id != SerializableGuid.Empty)
             {
-                if (idLoadScopes.TryGetValue(id, out loadScope) && loadScope != Disposable.NULL)
+                if (idLoadScopes.TryGetValue(id, out IdLoadScope idLoadScope) && loadScope != Disposable.NULL)
+                {
+                    loadScope = idLoadScope;
                     load = reload;
+                }
                 else if (createIfMissing)
                 {
                     if (loadScope is not null)
-                        RemoveLoadScope(loadScope);
+                        RemoveLoadScope(id);
 
                     loadScope = CreateIdLoadScope(id);
 
@@ -306,7 +348,7 @@ namespace DepictionEngine
 
             foreach (SerializableGuid id in ids)
             {
-                if (GetLoadScope(out IdLoadScope loadScope, id, reload, true))
+                if (GetLoadScope(out LoadScope loadScope, id, reload, true))
                 {
                     loadScopes ??= new List<LoadScope>();
                     loadScopes.Add(loadScope);
@@ -325,7 +367,7 @@ namespace DepictionEngine
                     for (int i = idLoadScopes.Count - 1; i >= 0; i--)
                     {
                         KeyValuePair<SerializableGuid, IdLoadScope> idLoadScope = idLoadScopes.ElementAt(i);
-                        if (idLoadScope.Value != Disposable.NULL && !callback(idLoadScope.Key, idLoadScope.Value))
+                        if (!callback(idLoadScope.Key, idLoadScope.Value))
                             return false;
                     }
                 }

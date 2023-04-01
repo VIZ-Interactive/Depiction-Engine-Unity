@@ -26,7 +26,7 @@ namespace DepictionEngine.Editor
                     {
                         SceneViewDouble sceneViewDouble = SceneViewDouble.GetSceneViewDouble(sceneCamera);
 
-                        SceneViewDouble lastActiveSceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
+                        SceneViewDouble lastActiveSceneViewDouble = SceneViewDouble.lastActiveOrMouseOverSceneViewDouble;
                         if (lastActiveSceneViewDouble != Disposable.NULL)
                         {
                             bool showMockHandles = false;

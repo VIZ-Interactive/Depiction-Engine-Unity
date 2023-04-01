@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -10,7 +9,7 @@ namespace DepictionEngine
     /// <summary>
     /// Wrapper class to allow the use of Datasource as script.
     /// </summary>
-    public class DatasourceBase : Script, ILoadDatasource
+    public class DatasourceBase : Script, ILoadDatasource, IDatasource
     {
         public const string NOTHING_TO_SAVE_MSG = "Nothing to Save";
         public const string NOTHING_TO_SYNCHRONIZE_MSG = "Nothing to Synchronize";
@@ -44,9 +43,6 @@ namespace DepictionEngine
 
         [BeginFoldout("Persistents")]
         [SerializeField, EndFoldout]
-#if UNITY_EDITOR
-        [ConditionalShow(nameof(GetShowDebug))]
-#endif
         private Datasource _datasource;
 
         private DatasourceOperationBase _datasourceOperation;
@@ -150,6 +146,16 @@ namespace DepictionEngine
             base.Recycle();
         
             datasource?.Recycle();
+        }
+
+        protected override bool InitializeLastFields()
+        {
+            if (base.InitializeLastFields())
+            {
+                datasource?.InitializeLastFields();
+                return true;
+            }
+            return false;
         }
 
         protected override void InitializeFields(InitializationContext initializingContext)
@@ -304,6 +310,11 @@ namespace DepictionEngine
         public virtual string GetDatasourceName()
         {
             return null;
+        }
+
+        public bool IsIdMatching(SerializableGuid datasourceId)
+        {
+            return id == datasourceId;
         }
 
         /// <summary>
@@ -477,7 +488,7 @@ namespace DepictionEngine
         /// <param name="operationResult"></param>
         /// <param name="loadScope"></param>
         /// <returns>A <see cref="DepictionEngine.DatasourceOperationBase"/> containing the synch or async result of the operation.</returns>
-        public DatasourceOperationBase Load(Action<List<IPersistent>> operationResult, LoadScope loadScope)
+        public DatasourceOperationBase Load(Action<List<IPersistent>, DatasourceOperationBase.LoadingState> operationResult, LoadScope loadScope)
         {
             DatasourceOperationBase datasourceOperation = CreateLoadDatasourceOperation(loadScope);
 

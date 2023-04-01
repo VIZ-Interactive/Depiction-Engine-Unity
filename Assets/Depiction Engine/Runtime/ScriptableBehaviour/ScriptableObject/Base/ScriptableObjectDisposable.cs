@@ -15,9 +15,9 @@ namespace DepictionEngine
         private bool _isFallbackValues;
 
 #if UNITY_EDITOR
-        private bool _lastHasEditorUndoRedo;
+        private bool _lastNotPoolable;
         [SerializeField, HideInInspector]
-        private bool _hasEditorUndoRedo;
+        private bool _notPoolable;
 #endif
 
         [NonSerialized]
@@ -61,14 +61,14 @@ namespace DepictionEngine
             _initializingContext = default;
 
 #if UNITY_EDITOR
-            _lastHasEditorUndoRedo = _hasEditorUndoRedo = default;
+            _lastNotPoolable = _notPoolable = default;
             _inspectorComponentNameOverride = default;
 #endif
         }
 
         public bool Initialize()
         {
-            if (!_initializing)
+            if (!IsDisposing() && !_initializing)
             {
                 Initializing();
 
@@ -87,8 +87,9 @@ namespace DepictionEngine
                 }
 
 #if UNITY_EDITOR
-                if (_initializingContext == InitializationContext.Editor || _initializingContext == InitializationContext.Editor_Duplicate)
-                    EditorUndoRedoDetected();
+                //Existing could be the result of Undoing a Destroy so we keep it out of the pool just in case.
+                if (_initializingContext == InitializationContext.Existing || _initializingContext == InitializationContext.Editor || _initializingContext == InitializationContext.Editor_Duplicate)
+                    MarkAsNotPoolable();
 #endif
 
                 InitializeUID(_initializingContext);
@@ -451,14 +452,14 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        public bool hasEditorUndoRedo
+        public bool notPoolable
         {
-            get { return _hasEditorUndoRedo; }
+            get { return _notPoolable; }
         }
 
-        public void EditorUndoRedoDetected()
+        public void MarkAsNotPoolable()
         {
-            _lastHasEditorUndoRedo = _hasEditorUndoRedo = true;
+            _lastNotPoolable = _notPoolable = true;
         }
 #endif
 
@@ -641,15 +642,15 @@ namespace DepictionEngine
         public virtual void OnBeforeSerialize()
         {
 #if UNITY_EDITOR
-            _lastHasEditorUndoRedo = _hasEditorUndoRedo;
+            _lastNotPoolable = _notPoolable;
 #endif
         }
 
         public virtual void OnAfterDeserialize()
         {
 #if UNITY_EDITOR
-            if (_lastHasEditorUndoRedo)
-                _hasEditorUndoRedo = true;
+            if (_lastNotPoolable)
+                _notPoolable = true;
 #endif     
             //Update Delegates after Recompile since they are not serialized and will be null
             if (initialized && !_delegatesInitialized)

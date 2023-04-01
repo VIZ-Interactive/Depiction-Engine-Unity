@@ -341,7 +341,8 @@ namespace DepictionEngine
                         {
                             DisposeManager.Dispose(_buildingLoadScope);
 
-                            idLoader.GetLoadScope(out _buildingLoadScope, buildingId, false, true);
+                            if (idLoader.GetLoadScope(out LoadScope loadScope, buildingId, false, true))
+                                _buildingLoadScope = (IdLoadScope)loadScope;
 
                             return false;
                         }

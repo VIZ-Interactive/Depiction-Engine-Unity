@@ -59,13 +59,11 @@ namespace DepictionEngine
 
             //Force Destroy if object is MonoBehaviour or Pooling is not enabled
             PoolManager poolManager = PoolManager.Instance(false);
-            if (obj is MonoBehaviour || poolManager == Disposable.NULL || !poolManager.enablePooling)
+            if (SceneManager.sceneClosing || obj is MonoBehaviour || poolManager == Disposable.NULL || !poolManager.enablePooling)
                 disposeContext = disposeContext == DisposeContext.Editor_Destroy ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Destroy;
             else
             {
-                if (disposeContext == DisposeContext.Editor_Unknown)
-                    disposeContext = DisposeContext.Programmatically_Destroy;
-                if (disposeContext == DisposeContext.Editor_UndoRedo)
+                if (disposeContext == DisposeContext.Editor_Unknown || disposeContext == DisposeContext.Editor_UndoRedo)
                     disposeContext = DisposeContext.Programmatically_Destroy;
             }
 
@@ -91,7 +89,7 @@ namespace DepictionEngine
                             {
                                 if (component is MonoBehaviourDisposable)
                                 {
-                                    if ((component as MonoBehaviourDisposable).hasEditorUndoRedo)
+                                    if ((component as MonoBehaviourDisposable).notPoolable)
                                     {
                                         goDisposeContext = DisposeContext.Programmatically_Destroy;
                                         break;
@@ -138,7 +136,7 @@ namespace DepictionEngine
                     IDisposable disposable = obj as IDisposable;
 
 #if UNITY_EDITOR
-                    if (disposable is IScriptableBehaviour && (disposable as IScriptableBehaviour).hasEditorUndoRedo)
+                    if (disposable is IScriptableBehaviour && (disposable as IScriptableBehaviour).notPoolable)
                         disposeContext = disposeContext == DisposeContext.Editor_Destroy ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Destroy;
 #endif
 

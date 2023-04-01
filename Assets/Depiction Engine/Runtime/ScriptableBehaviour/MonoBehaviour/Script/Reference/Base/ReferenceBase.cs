@@ -2,6 +2,7 @@
 
 using System;
 using UnityEngine;
+using static UnityEngine.Rendering.PostProcessing.HistogramMonitor;
 
 namespace DepictionEngine
 {
@@ -105,13 +106,6 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeFields(InitializationContext initializingContext)
-        {
-            base.InitializeFields(initializingContext);
-
-            AddReferenceFromLoader(loadScope);
-        }
-
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
@@ -152,7 +146,9 @@ namespace DepictionEngine
 
             Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { loadScope = value; }, ref _loadScope, ref _lastLoadScope);
 
-            _data = (PersistentScriptableObject)Editor.SerializationUtility.FindLostReferencedObject(_data);
+            UnityEngine.Object dataUnityObject = _data;
+            if (SerializationUtility.RecoverLostReferencedObject(ref dataUnityObject))
+                _data = (PersistentScriptableObject)dataUnityObject;
             Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { data = value; }, ref _data, ref _lastData);
         }
 #endif
@@ -202,6 +198,7 @@ namespace DepictionEngine
                 loadScope.DisposedEvent -= LoadScopeDisposedHandler;
                 loadScope.LoadingStateChangedEvent -= LoadScopeChangedHandler;
                 loadScope.PersistentAddedEvent -= LoadScopeChangedHandler;
+                loadScope.PersistentRemovedEvent -= LoadScopeChangedHandler;
             }
         }
 
@@ -212,6 +209,7 @@ namespace DepictionEngine
                 loadScope.DisposedEvent += LoadScopeDisposedHandler;
                 loadScope.LoadingStateChangedEvent += LoadScopeChangedHandler;
                 loadScope.PersistentAddedEvent += LoadScopeChangedHandler;
+                loadScope.PersistentRemovedEvent += LoadScopeChangedHandler;
             }
         }
 
@@ -222,7 +220,7 @@ namespace DepictionEngine
 
         private void LoadScopeChangedHandler(LoadScope loadScope)
         {
-            UpdateData();
+            UpdateData(SceneManager.IsUserChangeContext() ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Pool);
         }
 
         private void RemoveDataDelegates(ScriptableObjectDisposable data)
@@ -350,7 +348,7 @@ namespace DepictionEngine
                 IdLoader idLoader = loader as IdLoader;
                 if (idLoader != Disposable.NULL)
                 {
-                    if (idLoader != Disposable.NULL && idLoader.GetLoadScope(out IdLoadScope idLoadScope, dataId, createIfMissing: createLoadScopeIfMissing))
+                    if (idLoader != Disposable.NULL && idLoader.GetLoadScope(out LoadScope idLoadScope, dataId, createIfMissing: createLoadScopeIfMissing))
                         loadScope = idLoadScope;
                     else
                         loadScope = null;
@@ -359,7 +357,7 @@ namespace DepictionEngine
                 Index2DLoader index2DLoader = loader as Index2DLoader;
                 if (index2DLoader != Disposable.NULL)
                 { 
-                    if (index2DLoader != Disposable.NULL && index2DLoader.GetLoadScope(out Index2DLoadScope index2DLoadScope, dataIndex2D.dimensions, dataIndex2D.index, createIfMissing: createLoadScopeIfMissing))
+                    if (index2DLoader != Disposable.NULL && index2DLoader.GetLoadScope(out LoadScope index2DLoadScope, new Grid2DIndex(dataIndex2D.index, dataIndex2D.dimensions), createIfMissing: createLoadScopeIfMissing))
                         loadScope = index2DLoadScope;
                     else
                         loadScope = null;
@@ -390,7 +388,7 @@ namespace DepictionEngine
                     }
                     if (newValue != Disposable.NULL)
                     {
-                        AddReferenceFromLoader(newValue);
+                        AddReferenceToLoadScope(newValue);
                         AddLoadScopeDelegate(newValue);
                     }
 
@@ -411,7 +409,11 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
             if (disposeContext == DisposeContext.Editor_Destroy)
+            {
                 Editor.UndoManager.FlushUndoRecordObjects();
+                if (changed)
+                    MarkAsNotPoolable();
+            }
 #endif
 
             return changed;
@@ -425,30 +427,50 @@ namespace DepictionEngine
                 if (SceneManager.IsUserChangeContext())
                     disposeContext = DisposeContext.Editor_Destroy;
 #endif
-                loadScope.loader.RemoveReference(loadScope, this, disposeContext);
+                loadScope.loader.RemoveReference(loadScope.scopeKey, this, disposeContext);
             }
         }
 
-        private void AddReferenceFromLoader(LoadScope loadScope)
+        private void AddReferenceToLoadScope(LoadScope loadScope)
         {
             if (loadScope != Disposable.NULL && loadScope.loader != Disposable.NULL)
                 loadScope.loader.AddReference(loadScope, this);
         }
 
-        private bool UpdateData()
+        private bool UpdateData(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.RecordObject(this);
+#endif
+
             PersistentScriptableObject data = null;
+
+            bool changed = false;
 
             if (loadScope != Disposable.NULL)
             {
-                loadingState = loadScope.loadingState;
+                if (SetLoadingState(loadScope.loadingState))
+                    changed = true;
                 if (loadingState == DatasourceOperationBase.LoadingState.Loaded)
                     data = loadScope.GetFirstPersistent() as PersistentScriptableObject;
             }
             else
-                loadingState = DatasourceOperationBase.LoadingState.None;
+            {
+                if (SetLoadingState(DatasourceOperationBase.LoadingState.None))
+                    changed = true;
+            }
 
-            return SetData(data != Disposable.NULL ? data : null);
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+            {
+                Editor.UndoManager.FlushUndoRecordObjects();
+                if (changed)
+                    MarkAsNotPoolable();
+            }
+#endif
+
+            return SetData(data != Disposable.NULL ? data : null, disposeContext);
         }
 
         /// <summary>
@@ -483,7 +505,11 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
             if (disposeContext == DisposeContext.Editor_Destroy)
+            {
                 Editor.UndoManager.FlushUndoRecordObjects();
+                if (changed)
+                    MarkAsNotPoolable();
+            }
 #endif
             return changed;
         }
@@ -514,13 +540,16 @@ namespace DepictionEngine
         public DatasourceOperationBase.LoadingState loadingState
         {
             get { return _loadingState; }
-            private set
-            {
-                if (_loadingState == value)
-                    return;
+            private set { SetLoadingState(value); }
+        }
 
-                _loadingState = value;
-            }
+        private bool SetLoadingState(DatasourceOperationBase.LoadingState value)
+        {
+            if (_loadingState == value)
+                return false;
+
+            _loadingState = value;
+            return true;
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

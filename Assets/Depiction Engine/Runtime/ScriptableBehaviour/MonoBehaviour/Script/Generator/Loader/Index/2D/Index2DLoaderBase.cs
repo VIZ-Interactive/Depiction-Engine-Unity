@@ -11,7 +11,7 @@ namespace DepictionEngine
     public class Index2DLoaderBase : LoaderBase
     {
         [Serializable]
-        private class IndexLoadScopeDictionary : SerializableDictionary<int, Index2DLoadScope> { };
+        protected class IndexLoadScopeDictionary : SerializableDictionary<int, Index2DLoadScope> { };
 
         public const int MAX_ZOOM = 30;
 
@@ -51,26 +51,46 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
 
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
-                _index2DLoadScopes?.Clear();
+                index2DLoadScopes.Clear();
+
+            if (initializingContext == InitializationContext.Existing)
+                PerformAddRemoveAnFixBrokenLoadScopes(index2DLoadScopes, index2DLoadScopes);
 
             InitValue(value => minMaxZoom = value, new Vector2Int(0, 20), initializingContext);
             InitValue(value => indexUrlParamType = value, Index2DLoadScope.URLParametersType.ZoomXY, initializingContext);
             InitValue(value => xyTilesRatio = value, 1.0f, initializingContext);
         }
 
+        protected override bool InitializeLastFields()
+        {
+            if (base.InitializeLastFields())
+            {
+#if UNITY_EDITOR
+                lastIndex2DLoadScopes.Clear();
+                lastIndex2DLoadScopes.CopyFrom(index2DLoadScopes);
+#endif
+                return true;
+            }
+            return false;
+        }
+
+#if UNITY_EDITOR
+        protected IndexLoadScopeDictionary _lastIndex2DLoadScopes;
+        protected IndexLoadScopeDictionary lastIndex2DLoadScopes
+        {
+            get => _lastIndex2DLoadScopes ??= new ();
+        }
+#endif
+
+        protected IndexLoadScopeDictionary index2DLoadScopes
+        {
+            get => _index2DLoadScopes ??= new IndexLoadScopeDictionary();
+            private set => _index2DLoadScopes = value;
+        }
+
         protected override int GetLoadScopeCount()
         {
             return base.GetLoadScopeCount() + index2DLoadScopes.Count;
-        }
-
-        private IndexLoadScopeDictionary index2DLoadScopes
-        {
-            get 
-            {
-                _index2DLoadScopes ??= new IndexLoadScopeDictionary();
-                return _index2DLoadScopes; 
-            }
-            set { _index2DLoadScopes = value; }
         }
 
         /// <summary>
@@ -158,10 +178,12 @@ namespace DepictionEngine
                 {
                     Index2DLoadScope index2DLoadScope = loadScope as Index2DLoadScope;
 
-                    int key = index2DLoadScope.GetHashCode();
-                    if (!index2DLoadScopes.ContainsKey(key))
+                    int grid2DIndex = index2DLoadScope.GetHashCode();
+                    if (index2DLoadScopes.TryAdd(grid2DIndex, index2DLoadScope))
                     {
-                        index2DLoadScopes.Add(key, index2DLoadScope);
+#if UNITY_EDITOR
+                        lastIndex2DLoadScopes.Add(grid2DIndex, index2DLoadScope);
+#endif
                         return true;
                     }
                 }
@@ -169,24 +191,21 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool RemoveLoadScopeInternal(LoadScope loadScope)
+        protected override bool RemoveLoadScopeInternal(object loadScopeKey, out LoadScope loadScope)
         {
-            if (base.RemoveLoadScopeInternal(loadScope))
+            if (base.RemoveLoadScopeInternal(loadScopeKey, out loadScope))
             {
-                if (loadScope is Index2DLoadScope)
+                int grid2DIndex = loadScopeKey.GetHashCode();
+                if (index2DLoadScopes.TryGetValue(grid2DIndex, out Index2DLoadScope index2DLoadScope) && index2DLoadScopes.Remove(grid2DIndex))
                 {
-                    Index2DLoadScope index2DLoadScope = loadScope as Index2DLoadScope;
-
-                    if (index2DLoadScopes.Remove(index2DLoadScope.GetHashCode()))
-                        return true;
+                    loadScope = index2DLoadScope;
+#if UNITY_EDITOR
+                    lastIndex2DLoadScopes.Remove(grid2DIndex);
+#endif
+                    return true;
                 }
             }
             return false;
-        }
-
-        protected override bool RemoveLoadScopeKey(object key)
-        {
-            return base.RemoveLoadScopeKey(key) && index2DLoadScopes.Remove((int)key);
         }
 
         private bool IsValidZoom(int zoom)
@@ -199,7 +218,7 @@ namespace DepictionEngine
             if (persistent is IGrid2DIndex)
             {
                 IGrid2DIndex gridIndexObject = persistent as IGrid2DIndex;
-                if (GetLoadScope(out Index2DLoadScope index2DLoadScope, gridIndexObject.grid2DDimensions, gridIndexObject.grid2DIndex))
+                if (GetLoadScope(out LoadScope index2DLoadScope, new Grid2DIndex(gridIndexObject.grid2DIndex, gridIndexObject.grid2DDimensions)))
                 {
                     loadScope = index2DLoadScope;
                     return true;
@@ -209,35 +228,29 @@ namespace DepictionEngine
             return false;
         }
 
-        /// <summary>
-        /// Returns true if a loadScope exists or a new one was created.
-        /// </summary>
-        /// <param name="loadScope">Will be set to an existing or new loadScope.</param>
-        /// <param name="dimensions"></param>
-        /// <param name="index"></param>
-        /// <param name="loadInterval"></param>
-        /// <param name="reload">If true any pre-existing loadScope will be reloaded before being returned.</param>
-        /// <param name="createIfMissing">Create a new load scope if none exists.</param>
-        /// <returns></returns>
-        public bool GetLoadScope(out Index2DLoadScope loadScope, Vector2Int dimensions, Vector2Int index, float loadInterval = 0.0f, bool reload = false, bool createIfMissing = false)
+        public override bool GetLoadScope(out LoadScope loadScope, object loadScopeKey, bool reload = false, bool createIfMissing = false, float loadInterval = 0.0f)
         {
             bool load = false;
 
             loadScope = null;
 
-            if (index != Vector2Int.minusOne)
+            Grid2DIndex loadScopeGrid2DIndex = (Grid2DIndex)loadScopeKey;
+            if (loadScopeGrid2DIndex.index != Vector2Int.minusOne)
             {
-                int zoom = MathPlus.GetZoomFromGrid2DDimensions(dimensions);
+                int zoom = MathPlus.GetZoomFromGrid2DDimensions(loadScopeGrid2DIndex.dimensions);
                 if (IsValidZoom(zoom))
                 {
-                    if (index2DLoadScopes.TryGetValue(Index2DLoadScope.GetHashCode(dimensions, index), out loadScope) && loadScope != Disposable.NULL)
+                    if (index2DLoadScopes.TryGetValue(Index2DLoadScope.GetHashCode(loadScopeGrid2DIndex.dimensions, loadScopeGrid2DIndex.index), out Index2DLoadScope index2DLoadScope) && loadScope != Disposable.NULL)
+                    {
+                        loadScope = index2DLoadScope;
                         load = reload;
+                    }
                     else if (createIfMissing)
                     {
                         if (loadScope is not null)
-                            RemoveLoadScope(loadScope);
+                            RemoveLoadScope(loadScopeGrid2DIndex);
 
-                        loadScope = CreateIndex2DLoadScope(index, dimensions);
+                        loadScope = CreateIndex2DLoadScope(loadScopeGrid2DIndex.index, loadScopeGrid2DIndex.dimensions);
 
                         if (AddLoadScope(loadScope))
                             load = true;
@@ -265,7 +278,7 @@ namespace DepictionEngine
                 {
                     float loadInterval = IsFullyInitialized() ? GetLoadInterval(index, dimensions, centerIndex) : 0.0f;
 
-                    if (GetLoadScope(out Index2DLoadScope loadScope, dimensions, index, loadInterval, reload, true))
+                    if (GetLoadScope(out LoadScope loadScope, new Grid2DIndex(index, dimensions), reload, true, loadInterval))
                     {
                         loadScopes ??= new List<LoadScope>();
                         loadScopes.Add(loadScope);
@@ -306,7 +319,7 @@ namespace DepictionEngine
                     for (int i = index2DLoadScopes.Count - 1; i >= 0; i--)
                     {
                         KeyValuePair<int, Index2DLoadScope> indexLoadScope = index2DLoadScopes.ElementAt(i);
-                        if (indexLoadScope.Value != Disposable.NULL && !callback(indexLoadScope.Key, indexLoadScope.Value))
+                        if (!callback(indexLoadScope.Key, indexLoadScope.Value))
                             return false;
                     }
                 }

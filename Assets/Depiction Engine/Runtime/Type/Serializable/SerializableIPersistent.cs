@@ -27,5 +27,17 @@ namespace DepictionEngine
         {
             get => !Object.ReferenceEquals(_persistentMonoBehaviour, null) ? _persistentMonoBehaviour : _persistentScriptableObject;
         }
+
+        public static implicit operator UnityEngine.Object(SerializableIPersistent d) => (UnityEngine.Object)d.persistent;
+        public static explicit operator SerializableIPersistent(UnityEngine.Object b) => new SerializableIPersistent(b is IPersistent ? (IPersistent)b : null);
+      
+        public override bool Equals(object obj)
+        {
+            if (obj is SerializableIPersistent)
+                return Object.ReferenceEquals(this, obj);
+            return persistent == obj;
+        }
+
+        public override int GetHashCode() => persistent.GetHashCode();
     }
 }

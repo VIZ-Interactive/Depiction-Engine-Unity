@@ -10,7 +10,10 @@ using UnityEngine;
 namespace DepictionEngine
 {
     [Serializable]
-    public class Datasource
+    public class PersistentsDictionary : SerializableDictionary<SerializableGuid, SerializableIPersistent> { };
+
+    [Serializable]
+    public class Datasource : IPersistentList
     {
         /// <summary>
         /// The different types of datasource operation. <br/><br/>
@@ -32,9 +35,6 @@ namespace DepictionEngine
         }
 
         [Serializable]
-        public class PersistentDictionary : SerializableDictionary<SerializableGuid, SerializableIPersistent> { };
-
-        [Serializable]
         private class PersistentsComponentsOutOfSyncDictionary : SerializableDictionary<SerializableGuid, ComponentsOutOfSyncDictionary> { };
         [Serializable]
         private class ComponentsOutOfSyncDictionary : SerializableDictionary<SerializableGuid, ComponentOutOfSyncKeysDictionary> { };
@@ -44,23 +44,23 @@ namespace DepictionEngine
         [Serializable]
         private class SerializableGuidHashSet : SerializableHashSet<SerializableGuid> { };
 
-        [SerializeField]
-        private PersistentDictionary _persistentsDictionary;
-        [SerializeField]
-        private PersistentsComponentsOutOfSyncDictionary _persistentComponentOutOfSyncDictionary;
-        [SerializeField]
-        private SerializableGuidHashSet _persistentIsOutOfSync;
-        [SerializeField]
-        private SerializableGuidHashSet _persistentCanBeAutoDisposed;
+        [SerializeField, HideInInspector]
+        private PersistentsDictionary _persistentsDictionary;
+        [SerializeField, HideInInspector]
+        private PersistentsComponentsOutOfSyncDictionary _persistentsComponentsOutOfSyncDictionary;
+        [SerializeField, HideInInspector]
+        private SerializableGuidHashSet _persistentsIsOutOfSync;
+        [SerializeField, HideInInspector]
+        private SerializableGuidHashSet _persistentsCanBeAutoDisposed;
 
-        [SerializeField]
+        [SerializeField, HideInInspector]
         private bool _supportsSave;
-        [SerializeField]
+        [SerializeField, HideInInspector]
         private bool _supportsSynchronize;
-        [SerializeField]
+        [SerializeField, HideInInspector]
         private bool _supportsDelete;
 
-        [SerializeField]
+        [SerializeField, HideInInspector]
         private JsonMonoBehaviour _datasourceWrapper;
 
         private List<LoaderBase> _loaders;
@@ -74,9 +74,9 @@ namespace DepictionEngine
         {
             _persistentsDictionary?.Clear();
 
-            _persistentComponentOutOfSyncDictionary?.Clear();
-            _persistentIsOutOfSync.Clear();
-            _persistentCanBeAutoDisposed.Clear();
+            _persistentsComponentsOutOfSyncDictionary?.Clear();
+            _persistentsIsOutOfSync.Clear();
+            _persistentsCanBeAutoDisposed.Clear();
 
             _supportsSave = default;
             _supportsSynchronize = default;
@@ -94,7 +94,7 @@ namespace DepictionEngine
             {
                 instanceManager.IterateOverInstances<LoaderBase>((loader) =>
                 {
-                    if (loader.GetDatasource() == this)
+                    if ((this.datasourceWrapper as IDatasource).IsIdMatching(loader.datasourceId))
                         AddLoader(loader);
 
                     return true;
@@ -102,16 +102,49 @@ namespace DepictionEngine
             }
 
             if (initializingContext == InitializationContext.Existing)
-            {
-                IterateOverPersistents((persistentId, persistent) =>
-                {
-                    if (Disposable.IsDisposed(persistent))
-                        RemovePersistent(persistent);
-                    return true;
-                });
-            }
+                PerformAddRemovePersistents(persistentsDictionary, persistentsDictionary);
 
             return this;
+        }
+
+        private void PerformAddRemovePersistents(PersistentsDictionary persistentsDictionary, PersistentsDictionary lastPersistentsDictionary)
+        {
+            List<(bool, SerializableGuid, IPersistent, ComponentsOutOfSyncDictionary)> changedPersistents = null;
+
+            SerializationUtility.FindAddedRemovedObjects(persistentsDictionary, lastPersistentsDictionary,
+            (persistentId) =>
+            {
+                changedPersistents ??= new();
+                changedPersistents.Add((false, persistentId, null, null));
+            },
+            (persistentId, serializableIPersistent) =>
+            {
+                changedPersistents ??= new();
+                changedPersistents.Add((true, persistentId, serializableIPersistent.persistent, persistentsComponentsOutOfSyncDictionary[persistentId]));
+            });
+
+#if UNITY_EDITOR
+            persistentsComponentsOutOfSyncDictionary.Clear();
+            persistentsComponentsOutOfSyncDictionary.CopyFrom(lastPersistentsComponentsOutOfSyncDictionary);
+#endif
+            if (changedPersistents != null)
+            {
+                foreach ((bool, SerializableGuid, IPersistent, ComponentsOutOfSyncDictionary) changedPersistent in changedPersistents)
+                {
+                    bool success = changedPersistent.Item1 ? AddPersistent(changedPersistent.Item3, false, changedPersistent.Item4) : RemovePersistent(changedPersistent.Item2, DisposeContext.Programmatically_Destroy);
+                }
+            }
+        }
+
+        public void InitializeLastFields()
+        {
+#if UNITY_EDITOR
+            lastPersistentsDictionary.Clear();
+            lastPersistentsDictionary.CopyFrom(persistentsDictionary);
+
+            lastPersistentsComponentsOutOfSyncDictionary.Clear();
+            lastPersistentsComponentsOutOfSyncDictionary.CopyFrom(persistentsComponentsOutOfSyncDictionary);
+#endif
         }
 
         public bool UpdateAllDelegates(bool isDisposing)
@@ -128,6 +161,13 @@ namespace DepictionEngine
                 return true;
             });
 
+            UpdatePersistentsDelegates(isDisposing);
+
+            return true;
+        }
+
+        private void UpdatePersistentsDelegates(bool isDisposing = false)
+        {
             IterateOverPersistents((persistentId, persistent) =>
             {
                 RemovePersistentDelegates(persistent);
@@ -135,13 +175,11 @@ namespace DepictionEngine
 
                 return true;
             });
-
-            return true;
         }
 
         private void DatasourceLoadersChangedHandler(LoaderBase loader)
         {
-            if (loader != Disposable.NULL && loader.GetDatasource() == this)
+            if (loader != Disposable.NULL && (datasourceWrapper as IDatasource).IsIdMatching(loader.datasourceId))
                 AddLoader(loader);
             else
                 RemoveLoader(loader);
@@ -151,8 +189,9 @@ namespace DepictionEngine
         {
             if (loader is not null)
             {
-                loader.LoadScopeDisposedEvent -= LoadScopeDisposedHandler;
-                loader.LoadScopeLoadingStateChangedEvent -= LoadScopeLoadingStateChangedHandler;
+                loader.LoadScopeDisposedEvent -= LoaderLoadScopeDisposedHandler;
+                loader.LoadScopeLoadingStateChangedEvent -= LoaderLoadScopeLoadingStateChangedHandler;
+                loader.PropertyAssignedEvent -= LoaderPropertyAssignedHandler;
             }
         }
 
@@ -160,20 +199,34 @@ namespace DepictionEngine
         {
             if (!isDisposing && loader != Disposable.NULL)
             {
-                loader.LoadScopeDisposedEvent += LoadScopeDisposedHandler;
-                loader.LoadScopeLoadingStateChangedEvent += LoadScopeLoadingStateChangedHandler;
+                loader.LoadScopeDisposedEvent += LoaderLoadScopeDisposedHandler;
+                loader.LoadScopeLoadingStateChangedEvent += LoaderLoadScopeLoadingStateChangedHandler;
+                loader.PropertyAssignedEvent += LoaderPropertyAssignedHandler;
             }
         }
 
-        private void LoadScopeDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
+        private void LoaderLoadScopeDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
             AutoDisposeLoadScopePersistents(disposable as LoadScope, disposeContext);
         }
 
-        private void LoadScopeLoadingStateChangedHandler(LoadScope loadScope)
+        private void LoaderLoadScopeLoadingStateChangedHandler(LoadScope loadScope)
         {
             if (_reloadingLoadScopes != null && _reloadingLoadScopes.Remove(loadScope) && _reloadingLoadScopes.Count == 0)
                 ReloadCompleted();
+        }
+
+        private void LoaderPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
+        {
+            if (name == nameof(LoaderBase.datasource))
+            {
+                DisposeContext disposeContext = SceneManager.IsUserChangeContext() ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Pool;
+                IterateOverPersistents((persistentId, persistent) => 
+                {
+                    AutoDisposePersistent(persistent, disposeContext);
+                    return true; 
+                });
+            }
         }
 
         private bool RemovePersistentDelegates(IPersistent persistent)
@@ -284,7 +337,7 @@ namespace DepictionEngine
                                 newIndex = (Vector2Int)newValue;
                             }
 
-                            ChangeLoadScope(persistent, index2DLoader.GetLoadScope(out Index2DLoadScope newLoadScope, newDimensions, newIndex) ? newLoadScope : null, index2DLoader.GetLoadScope(out Index2DLoadScope oldLoadScope, oldDimensions, oldIndex) ? oldLoadScope : null);
+                            ChangeLoadScope(persistent, index2DLoader.GetLoadScope(out LoadScope newLoadScope, new Grid2DIndex(newIndex, newDimensions)) ? newLoadScope : null, index2DLoader.GetLoadScope(out LoadScope oldLoadScope, new Grid2DIndex(oldIndex, oldDimensions)) ? oldLoadScope : null);
                         }
                         return true;
                     });
@@ -354,11 +407,29 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        private PersistentsDictionary _lastPersistentsDictionary;
+        private PersistentsDictionary lastPersistentsDictionary
+        {
+            get => _lastPersistentsDictionary ??= new ();
+        }
+
+        private PersistentsComponentsOutOfSyncDictionary _lastPersistentsComponentsOutOfSyncDictionary;
+        private PersistentsComponentsOutOfSyncDictionary lastPersistentsComponentsOutOfSyncDictionary
+        {
+            get => _lastPersistentsComponentsOutOfSyncDictionary ??= new ();
+        }
+
         public void UndoRedoPerformed()
         {
-            Editor.SerializationUtility.FixBrokenPersistentsDictionary(IterateOverPersistents, persistentsDictionary);
+            if (SerializationUtility.RecoverLostReferencedObjectsInCollections(persistentsDictionary, lastPersistentsDictionary))
+                PerformAddRemovePersistents(persistentsDictionary, lastPersistentsDictionary);
         }
 #endif
+
+        private PersistentsDictionary persistentsDictionary
+        {
+            get => _persistentsDictionary ??= new ();
+        }
 
         public static bool EnablePersistenceOperations()
         {
@@ -440,14 +511,9 @@ namespace DepictionEngine
             get { return persistentsDictionary.Count; }
         }
 
-        private PersistentDictionary persistentsDictionary
-        {
-            get => _persistentsDictionary ??= new PersistentDictionary();
-        }
-
         private PersistentsComponentsOutOfSyncDictionary persistentsComponentsOutOfSyncDictionary
         {
-            get => _persistentComponentOutOfSyncDictionary ??= new PersistentsComponentsOutOfSyncDictionary();
+            get => _persistentsComponentsOutOfSyncDictionary ??= new PersistentsComponentsOutOfSyncDictionary();
         }
 
         private bool GetPersistentComponentOutOfSyncDictionary(IPersistent persistent, out ComponentsOutOfSyncDictionary componentOutOfSynchDictionary)
@@ -457,14 +523,14 @@ namespace DepictionEngine
 
         private SerializableGuidHashSet persistentIsOutOfSync
         {
-            get => _persistentIsOutOfSync ??= new SerializableGuidHashSet();
+            get => _persistentsIsOutOfSync ??= new SerializableGuidHashSet();
         }
 
-        private bool SetPersistentIsOutOfSynch(IPersistent persistent, bool outOfSynch)
+        private bool SetPersistentIsOutOfSynch(IPersistent persistent, bool outOfSynch, bool autoDispose = true)
         {
             if (outOfSynch ? persistentIsOutOfSync.Add(persistent.id) : persistentIsOutOfSync.Remove(persistent.id))
             {
-                UpdateCanBeAutoDisposed(persistent);
+                UpdateCanBeAutoDisposed(persistent, autoDispose);
                 return true;
             }
             return false;
@@ -472,7 +538,7 @@ namespace DepictionEngine
 
         private SerializableGuidHashSet persistentCanBeAutoDisposed
         {        
-            get => _persistentCanBeAutoDisposed ??= new SerializableGuidHashSet();
+            get => _persistentsCanBeAutoDisposed ??= new SerializableGuidHashSet();
         }
 
         private bool GetPersistentCanBeAutoDisposed(IPersistent persistent)
@@ -480,34 +546,39 @@ namespace DepictionEngine
             return persistentCanBeAutoDisposed.Contains(persistent.id);
         }
 
-        private bool SetPersistentCanBeAutoDisposed(IPersistent persistent, bool outOfSynch, bool autoDispose = true)
+        private bool SetPersistentCanBeAutoDisposed(IPersistent persistent, bool canBeDisposed, bool autoDispose = true)
         {
-            if (outOfSynch ? persistentCanBeAutoDisposed.Add(persistent.id) : persistentCanBeAutoDisposed.Remove(persistent.id))
+            if (canBeDisposed ? persistentCanBeAutoDisposed.Add(persistent.id) : persistentCanBeAutoDisposed.Remove(persistent.id))
             {
                 if (autoDispose)
                     AutoDisposePersistent(persistent);
 
                 if (persistent is Object)
-                    UpdateCanBeAutoDisposed((persistent as Object).transform.objectBase);
-                
+                {
+                    //If the parent Object also comes from this datasource, update its 'canBeAutoDisposed' value
+                    Object parentObject = (persistent as Object).transform.parentObject;
+                    if (parentObject != Disposable.NULL && GetPersistent(parentObject.id, out IPersistent parentPersistent))
+                        UpdateCanBeAutoDisposed(parentPersistent);
+                }
+
                 return true;
             }
             return false;
         }
 
-        private void UpdateCanBeAutoDisposed(IPersistent persistent, bool autoDispose = true)
+        private bool UpdateCanBeAutoDisposed(IPersistent persistent, bool autoDispose = true)
         {
             if (Disposable.IsDisposed(persistent))
-                return;
+                return false;
 
             bool canBeDisposed = persistent.autoDispose && (persistent is Interior || !IsPersistentOutOfSync(persistent, true));
 
             if (canBeDisposed && persistent is Object)
             {
                 Object objectBase = persistent as Object;
-                objectBase.transform.IterateOverChildrenObject<Object>((objectBase) =>
+                objectBase.transform.IterateOverChildrenObject<Object>((childObject) =>
                 {
-                    if (!GetPersistentCanBeAutoDisposed(persistent))
+                    if (!GetPersistentCanBeAutoDisposed(childObject))
                     {
                         canBeDisposed = false;
                         return false;
@@ -516,7 +587,7 @@ namespace DepictionEngine
                 });
             }
 
-            SetPersistentCanBeAutoDisposed(persistent, canBeDisposed, autoDispose);
+            return SetPersistentCanBeAutoDisposed(persistent, canBeDisposed, autoDispose);
         }
 
         public bool IsPersistentOutOfSync(IPersistent persistent, bool autoDispose = false)
@@ -563,7 +634,7 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SetPersistentAllOutOfSync(IPersistent persistent, IJson component = null, bool allowAutoDispose = false)
+        public bool SetPersistentAllOutOfSync(IPersistent persistent, IJson component = null, bool allowAutoDispose = false, bool autoDispose = true)
         {
             bool outOfSynchChanged = false;
 
@@ -574,17 +645,20 @@ namespace DepictionEngine
             });
 
             if (outOfSynchChanged)
-                UpdateIsOutOfSync(persistent);
+                return UpdateIsOutOfSync(persistent, autoDispose);
+            return false;
         }
 
-        private void UpdateIsOutOfSync(IPersistent persistent)
+        private bool UpdateIsOutOfSync(IPersistent persistent, bool autoDispose = true)
         {
-            SetPersistentIsOutOfSynch(persistent, IsPersistentOutOfSync(persistent));
+            return SetPersistentIsOutOfSynch(persistent, IsPersistentOutOfSync(persistent), autoDispose);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool SetPersistentComponentPropertyOutOfSync(IPersistent persistent, IJson component, PropertyInfo propertyInfo, bool allowAutoDispose = false)
         {
+            bool changed = false;
+
             int key = PropertyMonoBehaviour.GetPropertyKey(propertyInfo.Name);
             if (!component.IsDynamicProperty(key) && GetPersistentComponentOutOfSyncDictionary(persistent, out ComponentsOutOfSyncDictionary componentsOutOfSynchDictionary))
             {
@@ -598,12 +672,19 @@ namespace DepictionEngine
                 if (!componentOutOfSyncKeys.ContainsKey(key))
                 {
                     componentOutOfSyncKeys.Add(key, allowAutoDispose);
-                    return true;
+                    changed = true;
                 }
                 else
-                    componentOutOfSyncKeys[key] = allowAutoDispose;
+                {
+                    if (componentOutOfSyncKeys[key] != allowAutoDispose)
+                    {
+                        componentOutOfSyncKeys[key] = allowAutoDispose;
+                        changed = true;
+                    }
+                }
             }
-            return false;
+
+            return changed;
         }
 
         private void IteratePersistentComponentOverOutOfSync(IPersistent persistent, Func<IJson, int, bool, bool> callback)
@@ -651,57 +732,80 @@ namespace DepictionEngine
             }
         }
 
-        private void AddPersistent(IPersistent persistent, bool allOutOfSync = false)
+        public bool AddPersistent(IPersistent persistent)
+        {
+            return AddPersistent(persistent, false);
+        }
+
+        private bool AddPersistent(IPersistent persistent, bool allOutOfSync = false, ComponentsOutOfSyncDictionary outOfSynch = null)
         {
             SerializableGuid persistentId = persistent.id;
-            if (!persistentsDictionary.TryGetValue(persistentId, out SerializableIPersistent serializableIPersistent))
+            SerializableIPersistent serializableIPersistent = new SerializableIPersistent(persistent);
+            if (persistentsDictionary.TryAdd(persistentId, serializableIPersistent))
             {
-                serializableIPersistent = new SerializableIPersistent(persistent);
-                persistentsDictionary.Add(persistentId, serializableIPersistent);
-                persistentsComponentsOutOfSyncDictionary.Add(persistentId, new ComponentsOutOfSyncDictionary());
+                outOfSynch ??= new();
+                persistentsComponentsOutOfSyncDictionary.Add(persistentId, outOfSynch);
 
-                UpdateCanBeAutoDisposed(persistent, false);
+                if (!(allOutOfSync ? SetPersistentAllOutOfSync(persistent, persistent, false, false) : UpdateIsOutOfSync(persistent, false)))
+                    UpdateCanBeAutoDisposed(persistent, false);
 
                 AddPersistentDelegates(persistent);
 
-                if (allOutOfSync)
-                    SetPersistentAllOutOfSync(persistent, persistent);
-
 #if UNITY_EDITOR
+                lastPersistentsDictionary.Add(persistentId, serializableIPersistent);
+                lastPersistentsComponentsOutOfSyncDictionary.Add(persistentId, outOfSynch);
                 UnityEditor.EditorUtility.SetDirty(datasourceWrapper);
 #endif
+                return true;
             }
+            return false;
         }
 
-        private void RemovePersistent(IPersistent persistent, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
+        public bool RemovePersistent(IPersistent persistent, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
+        {
+            if (RemovePersistent(persistent.id, disposeContext))
+            {
+                RemovePersistentDelegates(persistent);
+
+                return true;
+            }
+            return false;
+        }
+
+        public bool RemovePersistent(SerializableGuid persistentId, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
 #if UNITY_EDITOR
             if (disposeContext == DisposeContext.Editor_Destroy)
-                Editor.UndoManager.RegisterCompleteObjectUndo(datasourceWrapper);
+            {
+                if (datasourceWrapper != Disposable.NULL)
+                {
+                    Editor.UndoManager.RegisterCompleteObjectUndo(datasourceWrapper);
+                    datasourceWrapper.MarkAsNotPoolable();
+                }
+            }
 #endif
 
-            SerializableGuid persistentId = persistent.id;
             if (persistentsDictionary.Remove(persistentId))
             {
                 persistentsComponentsOutOfSyncDictionary.Remove(persistentId);
                 persistentIsOutOfSync.Remove(persistentId);
                 persistentCanBeAutoDisposed.Remove(persistentId);
 
-                RemovePersistentDelegates(persistent);
-
 #if UNITY_EDITOR
-                UnityEditor.EditorUtility.SetDirty(datasourceWrapper);
+                lastPersistentsDictionary.Remove(persistentId);
+                lastPersistentsComponentsOutOfSyncDictionary.Remove(persistentId);
+                if (datasourceWrapper != Disposable.NULL)
+                    UnityEditor.EditorUtility.SetDirty(datasourceWrapper);
 #endif
+                return true;
             }
+
+            return false;
         }
 
         private List<LoaderBase> loaders
         {
-            get
-            {
-                _loaders ??= new List<LoaderBase>();
-                return _loaders;
-            }
+            get => _loaders ??= new List<LoaderBase>();
         }
 
         private bool RemoveLoader(LoaderBase loader)
@@ -794,7 +898,7 @@ namespace DepictionEngine
             });
         }
 
-        public void Load(DatasourceOperationBase datasourceOperation, Action<List<IPersistent>> resultCallback, LoadScope loadScope)
+        public void Load(DatasourceOperationBase datasourceOperation, Action<List<IPersistent>, DatasourceOperationBase.LoadingState> resultCallback, LoadScope loadScope)
         {
             if (datasourceOperation != Disposable.NULL)
             {
@@ -805,7 +909,7 @@ namespace DepictionEngine
                         if (success)
                             persistents = CreatePersistents(loadScope.loader, operationResult);
 
-                        resultCallback?.Invoke(persistents);
+                        resultCallback?.Invoke(persistents, datasourceOperation.loadingState);
                     });
             }
         }
@@ -1005,7 +1109,7 @@ namespace DepictionEngine
 
                 IterateOverLoaders((loader) =>
                 {
-                    if (loader.Contains(persistent) && loader.GetLoadScope(out LoadScope loadScope, persistent))
+                    if (loader != Disposable.NULL && (datasourceWrapper as IDatasource).IsIdMatching(loader.datasourceId) && loader.Contains(persistent) && loader.GetLoadScope(out LoadScope loadScope, persistent) && loadScope != Disposable.NULL)
                     {
                         dispose = false;
 

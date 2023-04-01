@@ -71,7 +71,7 @@ namespace DepictionEngine
 
         protected virtual bool GetDefaultUseCollider()
         {
-            return true;
+            return false;
         }
 
         protected virtual bool GetDefaultConvexCollider()

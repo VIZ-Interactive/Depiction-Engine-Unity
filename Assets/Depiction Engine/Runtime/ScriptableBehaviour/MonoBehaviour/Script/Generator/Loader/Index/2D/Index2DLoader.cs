@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -40,33 +41,56 @@ namespace DepictionEngine
             InitValue(value => indices = value, new List<Grid2DIndex>(), initializingContext);
         }
 
-        public override bool LateInitialize()
+        protected override bool InitializeLastFields()
         {
-            if (base.LateInitialize())
+            if (base.InitializeLastFields())
             {
-                if (_indices != null && _indexReferences != null)
+#if UNITY_EDITOR
+                lastIndexReferences.Clear();
+                for (int i = indexReferences.Count - 1; i >= 0; i--)
                 {
-                    for (int i = _indices.Count - 1; i >= 0; i--)
-                    {
-                        Grid2DIndex index = _indices[i];
-
-                        if (_indexReferences.TryGetValue(index, out ReferencesList references))
-                        {
-                            if (references.RemoveNullReferences())
-                            {
-                                _indexReferences.Remove(index);
-                                _indices.RemoveAt(i);
-
-                                if (GetLoadScope(out Index2DLoadScope loadScope, index.dimensions, index.index))
-                                    DisposeLoadScope(loadScope);
-                            }
-                        }
-                    }
+                    KeyValuePair<Grid2DIndex, ReferencesList> keyValuePair = indexReferences.ElementAt(i);
+                    ReferencesList referencesList = new();
+                    lastIndexReferences.Add(keyValuePair.Key, referencesList);
+                    for (int e = keyValuePair.Value.Count - 1; e >= 0; e--)
+                        referencesList.Add(keyValuePair.Value[e]);
                 }
-
+#endif
                 return true;
             }
             return false;
+        }
+
+#if UNITY_EDITOR
+        private IndexReferencesDictionary _lastIndexReferences;
+        private IndexReferencesDictionary lastIndexReferences
+        {
+            get => _lastIndexReferences ??= new();
+        }
+
+        protected override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            UndoRedoPerformedReferencesLoadScopes(indexReferences, lastIndexReferences, index2DLoadScopes, lastIndex2DLoadScopes);
+        }
+#endif
+
+        protected override void IterateOverLoadScopeKeys(Action<int, object, ReferencesList> callback)
+        {
+            base.IterateOverLoadScopeKeys(callback);
+
+            if (callback != null)
+            {
+                for (int i = indices.Count - 1; i >= 0; i--)
+                {
+                    Grid2DIndex index = indices[i];
+
+                    indexReferences.TryGetValue(index, out ReferencesList references);
+
+                    callback(i, index, references);
+                }
+            }
         }
 
         /// <summary>
@@ -85,11 +109,7 @@ namespace DepictionEngine
 
         private IndexReferencesDictionary indexReferences
         {
-            get
-            {
-                _indexReferences ??= new IndexReferencesDictionary();
-                return _indexReferences;
-            }
+            get => _indexReferences ??= new IndexReferencesDictionary();
         }
 
         public bool AddIndex(Grid2DIndex index)
@@ -116,68 +136,78 @@ namespace DepictionEngine
             return false;
         }
 
-        public override bool AddReference(LoadScope loadScope, ReferenceBase reference)
+        public override bool AddReference(object loadScopeKey, ReferenceBase reference)
         {
-            Index2DLoadScope index2DLoadScope = loadScope as Index2DLoadScope;
-            if (index2DLoadScope != Disposable.NULL)
+            Grid2DIndex scopeGrid2DIndex = (Grid2DIndex)loadScopeKey;
+            if (scopeGrid2DIndex != Grid2DIndex.Empty)
             {
-                Grid2DIndex scopeGrid2DIndex = index2DLoadScope.scopeGrid2DIndex;
-                if (scopeGrid2DIndex != Grid2DIndex.Empty)
+#if UNITY_EDITOR
+                if (!lastIndexReferences.TryGetValue(scopeGrid2DIndex, out ReferencesList lastReferences))
                 {
-                    if (!indexReferences.TryGetValue(scopeGrid2DIndex, out ReferencesList references))
-                    {
-                        references = new ReferencesList();
-                        indexReferences[scopeGrid2DIndex] = references;
-                    }
+                    lastReferences = new ReferencesList();
+                    lastIndexReferences[scopeGrid2DIndex] = lastReferences;
+                }
 
-                    if (!references.Contains(reference))
-                    {
-                        references.Add(reference);
+                if (!lastReferences.Contains(reference))
+                    lastReferences.Add(reference);
+#endif
 
-                        AddIndex(scopeGrid2DIndex);
+                if (!indexReferences.TryGetValue(scopeGrid2DIndex, out ReferencesList references))
+                {
+                    references = new ReferencesList();
+                    indexReferences[scopeGrid2DIndex] = references;
+                }
 
-                        return true;
-                    }
+                if (!references.Contains(reference))
+                {
+                    references.Add(reference);
+
+                    AddIndex(scopeGrid2DIndex);
+
+                    return true;
                 }
             }
             return false;
         }
 
-        public override bool RemoveReference(LoadScope loadScope, ReferenceBase reference, DisposeContext disposeContext)
+        public override bool RemoveReference(object loadScopeKey, ReferenceBase reference = null, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            if (base.RemoveReference(loadScope, reference, disposeContext))
+            if (base.RemoveReference(loadScopeKey, reference, disposeContext))
             {
-                bool removed = false;
-
-                Index2DLoadScope index2DLoadScope = loadScope as Index2DLoadScope;
-                if (index2DLoadScope != Disposable.NULL)
+                Grid2DIndex loadScopeGrid2DIndex = (Grid2DIndex)loadScopeKey;
+                if (loadScopeGrid2DIndex != Grid2DIndex.Empty)
                 {
-                    Grid2DIndex scopeGrid2DIndex = index2DLoadScope.scopeGrid2DIndex;
-                    if (scopeGrid2DIndex != Grid2DIndex.Empty)
+#if UNITY_EDITOR
+                    if (disposeContext == DisposeContext.Editor_Destroy)
+                        Editor.UndoManager.RecordObject(this);
+
+                    if (lastIndexReferences.TryGetValue(loadScopeGrid2DIndex, out ReferencesList lastReferences))
                     {
-#if UNITY_EDITOR
-                        if (disposeContext == DisposeContext.Editor_Destroy)
-                            Editor.UndoManager.RecordObject(this);
-#endif
-                        if (indexReferences.TryGetValue(scopeGrid2DIndex, out ReferencesList references) && references.Remove(reference))
-                        {
-                            if (references.IsEmpty())
-                            {
-                                indexReferences.Remove(scopeGrid2DIndex);
-
-                                RemoveIndex(scopeGrid2DIndex);
-                                DisposeLoadScope(loadScope, disposeContext);
-                            }
-
-                            removed = true;
-                        }
-#if UNITY_EDITOR
-                        if (disposeContext == DisposeContext.Editor_Destroy)
-                            Editor.UndoManager.FlushUndoRecordObjects();
-#endif
+                        if (lastReferences.IsEmpty() || lastReferences.Remove(reference))
+                            lastIndexReferences.Remove(loadScopeGrid2DIndex);
                     }
+#endif
+
+                    if (indexReferences.TryGetValue(loadScopeGrid2DIndex, out ReferencesList references))
+                    {
+                        if (references.IsEmpty() || references.Remove(reference))
+                        {
+                            indexReferences.Remove(loadScopeGrid2DIndex);
+
+                            RemoveIndex(loadScopeGrid2DIndex);
+
+                            if (GetLoadScope(out LoadScope loadScope, loadScopeKey))
+                                DisposeLoadScope(loadScope, disposeContext);
+
+                            return true;
+                        }
+                    }
+
+#if UNITY_EDITOR
+                    if (disposeContext == DisposeContext.Editor_Destroy)
+                        Editor.UndoManager.FlushUndoRecordObjects();
+#endif
                 }
-                return removed;
             }
             return false;
         }

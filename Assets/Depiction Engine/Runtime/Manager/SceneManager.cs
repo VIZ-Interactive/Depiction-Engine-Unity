@@ -351,7 +351,7 @@ namespace DepictionEngine
             UpdateHarmonyPatches(true);
 
             tweenManager.DisposeAllTweens();
-            poolManager.ClearPool();
+            poolManager.DestroyAllDisposable();
 
             BeforeAssemblyReloadEvent?.Invoke();
         }

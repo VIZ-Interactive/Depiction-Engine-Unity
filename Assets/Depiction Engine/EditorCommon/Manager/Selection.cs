@@ -18,6 +18,9 @@ namespace DepictionEngine.Editor
         public static void SelectionChanged()
         {
             _selectionOriginShiftDirty = true;
+
+            foreach(TransformDouble selectedTransform in GetTransforms())
+                selectedTransform.MarkAsNotPoolable();
         }
 
         public static bool Contains(TransformDouble transformDouble)

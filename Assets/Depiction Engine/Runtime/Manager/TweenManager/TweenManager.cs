@@ -75,8 +75,11 @@ namespace DepictionEngine
 
         private Tween CreateTween(float from, float to, float duration, Action<float> onUpdate, Action onComplete, Action onKill, EasingType easing = EasingType.Linear)
         {
-            Tween tween = instanceManager.CreateInstance<Tween>().Init(from, to, duration, onUpdate, onComplete, onKill, easing);
-            AddTween(tween);
+            Tween tween = instanceManager.CreateInstance<Tween>();
+            
+            if (tween != Disposable.NULL)
+                AddTween(tween.Init(from, to, duration, onUpdate, onComplete, onKill, easing));
+
             return tween;
         }
 
@@ -106,7 +109,11 @@ namespace DepictionEngine
 
         public Tween To(float from, float to, float duration, Action<float> onUpdate = null, Action onComplete = null, Action onKill = null, EasingType easing = EasingType.Linear)
         {
-            Tween tween = CreateTween(from, to, duration, onUpdate, onComplete, onKill, easing).Play();
+            Tween tween = CreateTween(from, to, duration, onUpdate, onComplete, onKill, easing);
+            
+            if (!Object.ReferenceEquals(tween, null))
+                tween.Play();
+      
             return tween != Disposable.NULL ? tween : null;
         }
 

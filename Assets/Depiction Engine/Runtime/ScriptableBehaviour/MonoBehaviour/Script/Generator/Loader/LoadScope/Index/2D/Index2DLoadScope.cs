@@ -55,18 +55,23 @@ namespace DepictionEngine
 
         public Vector2Int scopeIndex
         {
-            get { return _scopeGrid2DIndex.index; }
+            get => _scopeGrid2DIndex.index; 
         }
 
         public Vector2Int scopeDimensions
         {
-            get { return _scopeGrid2DIndex.dimensions; }
+            get => _scopeGrid2DIndex.dimensions; 
         }
 
         public Grid2DIndex scopeGrid2DIndex
         {
-            get { return _scopeGrid2DIndex; }
-            private set { _scopeGrid2DIndex = value; }
+            get => _scopeGrid2DIndex; 
+            private set => _scopeGrid2DIndex = value;
+        }
+
+        public override object scopeKey
+        {
+            get => scopeGrid2DIndex;
         }
 
         public URLParametersType indexUrlParamType

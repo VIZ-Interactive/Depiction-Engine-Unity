@@ -252,7 +252,6 @@ namespace DepictionEngine
             }
         }
 
-
         protected virtual Type GetProcessorParametersType()
         {
             return typeof(TextureParameters);

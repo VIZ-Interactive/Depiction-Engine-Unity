@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    public class LoadScope : ScriptableObjectDisposable
+    public class LoadScope : ScriptableObjectDisposable, IPersistentList
     {
         [SerializeField]
         private DatasourceOperationBase.LoadingState _loadingState;
@@ -15,7 +15,7 @@ namespace DepictionEngine
         private DatasourceOperationBase _datasourceOperation;
 
         [SerializeField]
-        protected Datasource.PersistentDictionary _persistentsDictionary;
+        protected PersistentsDictionary _persistentsDictionary;
 
         [SerializeField, HideInInspector]
         private LoaderBase _loader;
@@ -30,30 +30,61 @@ namespace DepictionEngine
         /// Dispatched when an <see cref="DepictionEngine.IPersistent"/> loaded from a <see cref="DepictionEngine.ILoadDatasource"/> is added to the <see cref="DepictionEngine.LoadScope"/>.
         /// </summary>
         public Action<LoadScope> PersistentAddedEvent;
+        /// <summary>
+        /// Dispatched when an <see cref="DepictionEngine.IPersistent"/> loaded from a <see cref="DepictionEngine.ILoadDatasource"/> is removed from the <see cref="DepictionEngine.LoadScope"/>.
+        /// </summary>
+        public Action<LoadScope> PersistentRemovedEvent;
 
         public override void Recycle()
         {
             base.Recycle();
 
+            _loadingState = default;
+            _datasourceOperation = null;
+
             _persistentsDictionary?.Clear();
 
-            _loadingState = default;
             _loader = default;
+        }
+
+        public bool PerformAddRemovePersistents(bool compareWithLastDictionary = false)
+        {
+            PersistentsDictionary lastPersistentsDictionary = persistentsDictionary;
+#if UNITY_EDITOR
+            if (compareWithLastDictionary)
+                lastPersistentsDictionary = this.lastPersistentsDictionary;
+#endif
+            List<(bool, SerializableGuid, IPersistent)> changedPersistents = LoaderBase.PerformAddRemovePersistents(this, persistentsDictionary, lastPersistentsDictionary);
+
+            bool removed = false;
+
+            if (changedPersistents != null)
+            {
+                foreach ((bool, SerializableGuid, IPersistent) changedPersistent in changedPersistents)
+                {
+                    if (!changedPersistent.Item1)
+                    {
+                        removed = true;
+                        break;
+                    }
+                }
+            }
+
+            return removed;
+        }
+
+        public void InitializeLastFields()
+        {
+#if UNITY_EDITOR
+            lastPersistentsDictionary.Clear();
+            lastPersistentsDictionary.CopyFrom(persistentsDictionary);
+#endif
         }
 
         public bool LoadingWasCompromised()
         {
             //Problem: Loading was interrupted before finishing(Often because the scene is Played while LoadScopes are still loading)
             return initialized && (datasourceOperation == null || datasourceOperation.LoadingWasCompromised());
-        }
-
-        public override void Initialized(InitializationContext initializingContext)
-        {
-            base.Initialized(initializingContext);
-
-#if UNITY_EDITOR
-            FixBrokenPersistentsDictionary();
-#endif
         }
 
         public LoadScope Init(LoaderBase loader)
@@ -63,44 +94,29 @@ namespace DepictionEngine
             return this;
         }
 
-        public bool RemoveNullPersistents()
+        public void KillLoading()
         {
-            bool removed = false;
-
-            IterateOverPersistents((persistentId, persistent) =>
+            if (LoadInProgress())
             {
-                if (Disposable.IsDisposed(persistent))
-                {
-                    RemovePersistentId(persistentId);
-                    removed = true;
-                }
-                return true;
-            });
-
-            return removed;
+                if (loadIntervalTween != null)
+                    loadIntervalTween = null;
+                if (datasourceOperation != null && datasourceOperation.loadingState == DatasourceOperationBase.LoadingState.Loading)
+                    datasourceOperation = null;
+                loadingState = DatasourceOperationBase.LoadingState.Interrupted;
+            }
         }
 
 #if UNITY_EDITOR
-        protected override void UndoRedoPerformed()
+        protected PersistentsDictionary _lastPersistentsDictionary;
+        public PersistentsDictionary lastPersistentsDictionary
         {
-            base.UndoRedoPerformed();
-
-            FixBrokenPersistentsDictionary();
-        }
-
-        private void FixBrokenPersistentsDictionary()
-        {
-            Editor.SerializationUtility.FixBrokenPersistentsDictionary(IterateOverPersistents, persistentsDictionary);
+            get => _lastPersistentsDictionary ??= new ();
         }
 #endif
 
-        private Datasource.PersistentDictionary persistentsDictionary
+        public PersistentsDictionary persistentsDictionary
         {
-            get
-            {
-                _persistentsDictionary ??= new Datasource.PersistentDictionary();
-                return _persistentsDictionary;
-            }
+            get => _persistentsDictionary ??= new ();
         }
 
         public IPersistent GetFirstPersistent()
@@ -115,31 +131,66 @@ namespace DepictionEngine
 
         public virtual bool AddPersistent(IPersistent persistent)
         {
-            bool added = false;
-
             if (!persistentsDictionary.ContainsKey(persistent.id))
             {
                 persistentsDictionary.Add(persistent.id, new SerializableIPersistent(persistent));
-                added = true;
-            }
-
-            if (added)
                 PersistentAddedEvent?.Invoke(this);
 
-            return added;
+                return true;
+            }
+
+            return false;
         }
 
         public virtual bool RemovePersistent(IPersistent persistent, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            if (IsDisposing())
-                return false;
-
-            return RemovePersistentId(persistent.id);
+            return RemovePersistent(persistent.id, disposeContext);
         }
 
-        private bool RemovePersistentId(SerializableGuid id)
+        public bool RemovePersistent(SerializableGuid persistentId, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            return persistentsDictionary.Remove(id);
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.RecordObject(this);
+#endif
+
+            bool removed = persistentsDictionary.Remove(persistentId);
+            if (removed)
+                PersistentRemovedEvent?.Invoke(this);
+
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+            {
+                Editor.UndoManager.FlushUndoRecordObjects();
+                if (removed)
+                    MarkAsNotPoolable();
+            }
+#endif
+            return removed;
+        }
+
+        public void DatasourceChanged(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
+        {
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+                Editor.UndoManager.RecordObject(this);
+#endif
+
+            KillLoading();
+
+            if (persistentsDictionary.Count > 0)
+            {
+                persistentsDictionary.Clear();
+                PersistentRemovedEvent?.Invoke(this);
+            }
+
+#if UNITY_EDITOR
+            if (disposeContext == DisposeContext.Editor_Destroy)
+            {
+                Editor.UndoManager.FlushUndoRecordObjects();
+                MarkAsNotPoolable();
+            }
+#endif
         }
 
         public void IterateOverPersistents(Func<SerializableGuid, IPersistent, bool> callback)
@@ -153,6 +204,11 @@ namespace DepictionEngine
                         break;
                 }
             }
+        }
+
+        public virtual object scopeKey
+        {
+            get => null;
         }
 
         public int seed { get { return loader.seed; } }
@@ -199,8 +255,6 @@ namespace DepictionEngine
                 DisposeManager.Dispose(_datasourceOperation);
 
                 _datasourceOperation = value;
-
-                UpdateLoadingState();
             }
         }
 
@@ -298,40 +352,38 @@ namespace DepictionEngine
         {
             datasourceOperation = null;
 
+            loadingState = DatasourceOperationBase.LoadingState.Interval;
+
             loadIntervalTween = tweenManager.DelayedCall(loadInterval, null, () =>
             {
-                ILoadDatasource loadDatasource = loader.datasource;
+                loadingState = DatasourceOperationBase.LoadingState.None;
 
-                if (loader.datasource == Disposable.NULL)
-                    loadDatasource = datasourceManager;
-
-                datasourceOperation = loadDatasource.Load((persistents) =>
+                ILoadDatasource datasource = loader.datasource as ILoadDatasource;
+                if (!Disposable.IsDisposed(datasource))
                 {
-                    IterateOverPersistents((persistentId, persistent) => 
+                    loadingState = DatasourceOperationBase.LoadingState.Loading;
+                    datasourceOperation = datasource.Load((persistents, loadingResult) =>
                     {
-                        if (persistents == null || !persistents.Contains(persistent))
-                            RemovePersistent(persistent);
-                        return true;
-                    });
-
-                    if (persistents != null)
-                    {
-                        foreach (IPersistent persistent in persistents)
+                        IterateOverPersistents((persistentId, persistent) =>
                         {
-                            if (loader.AddPersistent(persistent))
-                                AddPersistent(persistent);
+                            if (persistents == null || !persistents.Contains(persistent))
+                                RemovePersistent(persistent);
+                            return true;
+                        });
+
+                        if (persistents != null)
+                        {
+                            foreach (IPersistent persistent in persistents)
+                            {
+                                if (loader.AddPersistent(persistent))
+                                    AddPersistent(persistent);
+                            }
                         }
-                    }
 
-                    UpdateLoadingState();
-                }, this);
+                        loadingState = loadingResult;
+                    }, this);
+                }
             }, () => loadIntervalTween = null);
-        }
-
-
-        private void UpdateLoadingState()
-        {
-            loadingState = datasourceOperation != Disposable.NULL ? datasourceOperation.loadingState : DatasourceOperationBase.LoadingState.Interval;
         }
 
         public virtual bool IsInScope(IPersistent persistent)
@@ -360,6 +412,7 @@ namespace DepictionEngine
                 DisposeManager.Dispose(_datasourceOperation, disposeContext);
 
                 PersistentAddedEvent = null;
+                PersistentRemovedEvent = null;
 
                 return true;
             }

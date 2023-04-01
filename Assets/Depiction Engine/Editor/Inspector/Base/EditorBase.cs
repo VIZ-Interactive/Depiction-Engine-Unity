@@ -79,7 +79,7 @@ namespace DepictionEngine.Editor
                     GUI.DrawTexture(new Rect(0.0f, 24.0f, EditorGUIUtility.currentViewWidth, 1.0f), headerLineTexture);
                 }
 
-                if (SceneManager.Debugging() && property.hasEditorUndoRedo)
+                if (SceneManager.Debugging() && property.notPoolable)
                     GUI.Label(new Rect(20, 5, 150, 15), "Not Poolable");
 
                 Rect position = new Rect(inspectorWidth - 27.0f, 3.0f, width, EditorGUIUtility.singleLineHeight);

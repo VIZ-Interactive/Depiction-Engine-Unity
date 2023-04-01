@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -401,7 +402,14 @@ namespace DepictionEngine
             if (typeof(IPersistent).IsAssignableFrom(type))
             {
                 if (typeof(PersistentMonoBehaviour).IsAssignableFrom(type))
-                    IterateOverEnumerable(type, persistentMonoBehaviours.Values, callback);
+                {
+                    if (typeof(Camera).IsAssignableFrom(type))
+                        IterateOverEnumerable(type, cameras, callback);
+                    else if (typeof(VisualObject).IsAssignableFrom(type))
+                        IterateOverEnumerable(type, visualObjects.Values, callback);
+                    else
+                        IterateOverEnumerable(type, persistentMonoBehaviours.Values, callback);
+                }
                 if (typeof(PersistentScriptableObject).IsAssignableFrom(type))
                     IterateOverEnumerable(type, persistentScriptableObjects.Values, callback);
             }
@@ -430,8 +438,9 @@ namespace DepictionEngine
 
         private void IterateOverEnumerable(Type type, IEnumerable<IProperty> iProperties, Func<IProperty, bool> callback)
         {
-            foreach (IProperty iProperty in iProperties)
+            for (int i = iProperties.Count() - 1; i >= 0; i--)
             {
+                IProperty iProperty = iProperties.ElementAt(i);
                 if (!Disposable.IsDisposed(iProperty) && type.IsAssignableFrom(iProperty.GetType()) && !callback(iProperty))
                     return;
             }
@@ -1049,7 +1058,7 @@ namespace DepictionEngine
         /// <returns>The newly created instance.</returns>
         public IDisposable CreateInstance(Type type, Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false)
         {
-            if (type == null)
+            if (SceneManager.sceneClosing || type == null)
                 return null;
 
             if (initializingContext == InitializationContext.Existing)
