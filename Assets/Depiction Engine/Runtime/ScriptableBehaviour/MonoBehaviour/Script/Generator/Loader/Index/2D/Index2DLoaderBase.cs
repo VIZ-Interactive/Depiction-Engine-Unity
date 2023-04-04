@@ -54,7 +54,7 @@ namespace DepictionEngine
                 index2DLoadScopes.Clear();
 
             if (initializingContext == InitializationContext.Existing)
-                PerformAddRemoveAnFixBrokenLoadScopes(index2DLoadScopes, index2DLoadScopes);
+                PerformAddRemoveChangeAndFixBrokenLoadScopes(index2DLoadScopes, index2DLoadScopes);
 
             InitValue(value => minMaxZoom = value, new Vector2Int(0, 20), initializingContext);
             InitValue(value => indexUrlParamType = value, Index2DLoadScope.URLParametersType.ZoomXY, initializingContext);
@@ -79,6 +79,13 @@ namespace DepictionEngine
         protected IndexLoadScopeDictionary lastIndex2DLoadScopes
         {
             get => _lastIndex2DLoadScopes ??= new ();
+        }
+
+        protected override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            PerformAddRemoveChangeAndFixBrokenLoadScopes(index2DLoadScopes, lastIndex2DLoadScopes, true);
         }
 #endif
 
@@ -240,7 +247,7 @@ namespace DepictionEngine
                 int zoom = MathPlus.GetZoomFromGrid2DDimensions(loadScopeGrid2DIndex.dimensions);
                 if (IsValidZoom(zoom))
                 {
-                    if (index2DLoadScopes.TryGetValue(Index2DLoadScope.GetHashCode(loadScopeGrid2DIndex.dimensions, loadScopeGrid2DIndex.index), out Index2DLoadScope index2DLoadScope) && loadScope != Disposable.NULL)
+                    if (index2DLoadScopes.TryGetValue(loadScopeGrid2DIndex.GetHashCode(), out Index2DLoadScope index2DLoadScope) && index2DLoadScope != Disposable.NULL)
                     {
                         loadScope = index2DLoadScope;
                         load = reload;

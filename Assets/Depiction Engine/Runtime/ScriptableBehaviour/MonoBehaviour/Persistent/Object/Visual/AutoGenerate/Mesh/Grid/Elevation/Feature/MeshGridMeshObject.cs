@@ -11,6 +11,8 @@ namespace DepictionEngine
     [CreateComponent(typeof(AssetReference))]
     public class MeshGridMeshObject : FeatureGridMeshObjectBase
     {
+        private const string MESH_REFERENCE_DATATYPE = nameof(Mesh);
+
         [BeginFoldout("Material")]
         [SerializeField, Tooltip("The path of the material's shader from within the Resources directory."), EndFoldout]
         private string _shaderPath;
@@ -28,6 +30,13 @@ namespace DepictionEngine
                 _material = null;
 
             InitValue(value => shaderPath = value, RenderingManager.SHADER_BASE_PATH + "BuildingGrid", initializingContext);
+        }
+
+        protected override void CreateComponents(InitializationContext initializingContext)
+        {
+            base.CreateComponents(initializingContext);
+
+            InitializeReferenceDataType(MESH_REFERENCE_DATATYPE, typeof(AssetReference));
         }
 
         protected override bool UpdateAllDelegates()
@@ -135,7 +144,7 @@ namespace DepictionEngine
 
         private AssetReference meshAssetReference
         {
-            get { return AppendToReferenceComponentName(GetReferenceAt(2), typeof(Mesh).Name) as AssetReference; }
+            get { return GetFirstReferenceOfType(MESH_REFERENCE_DATATYPE) as AssetReference; }
         }
 
         private void UpdateAsset()

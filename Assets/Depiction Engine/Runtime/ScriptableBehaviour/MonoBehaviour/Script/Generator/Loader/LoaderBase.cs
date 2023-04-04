@@ -1,6 +1,7 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -182,11 +183,7 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
 
             if (initializingContext == InitializationContext.Existing)
-            {
-                PerformAddRemovePersistents(persistentsDictionary, persistentsDictionary);
-
-                PerformAddRemoveReferences();
-            }
+                PerformAddRemovePersistentsChange(persistentsDictionary, persistentsDictionary);
 
             InitValue(value => datasourceId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(datasourceId, datasource, initializingContext); }, initializingContext);
             InitValue(value => loadEndpoint = value, "", initializingContext);
@@ -200,16 +197,19 @@ namespace DepictionEngine
             InitValue(value => autoUpdateDelay = value, GetDefaultLoadDelay(), initializingContext);
         }
 
-        private void PerformAddRemovePersistents(PersistentsDictionary persistentsDictionary, PersistentsDictionary lastPersistentsDictionary)
+        private void PerformAddRemovePersistentsChange(PersistentsDictionary persistentsDictionary, PersistentsDictionary lastPersistentsDictionary)
         {
-            PerformAddRemovePersistents(this, persistentsDictionary, lastPersistentsDictionary);
+#if UNITY_EDITOR
+            SerializationUtility.RecoverLostReferencedObjectsInCollection(persistentsDictionary);
+#endif
+            PerformAddRemovePersistentsChange(this, persistentsDictionary, lastPersistentsDictionary);
         }
 
-        public static List<(bool, SerializableGuid, IPersistent)> PerformAddRemovePersistents(IPersistentList persistentList, PersistentsDictionary persistentsDictionary, PersistentsDictionary lastPersistentsDictionary)
+        public static List<(bool, SerializableGuid, IPersistent)> PerformAddRemovePersistentsChange(IPersistentList persistentList, PersistentsDictionary persistentsDictionary, PersistentsDictionary lastPersistentsDictionary)
         {
             List<(bool, SerializableGuid, IPersistent)> changedPersistents = null;
-
-            SerializationUtility.FindAddedRemovedObjects(persistentsDictionary, lastPersistentsDictionary,
+          
+            SerializationUtility.FindAddedRemovedObjectsChange(persistentsDictionary, lastPersistentsDictionary,
             (persistentId) =>
             {
                 changedPersistents ??= new();
@@ -232,31 +232,28 @@ namespace DepictionEngine
             return changedPersistents;
         }
 
-        protected void PerformAddRemoveReferences()
+        protected void PerformAddRemoveChangeAndFixBrokenLoadScopes<T, T1>(IDictionary<T, T1> loadScopesDictionary, IDictionary<T, T1> lastLoadScopesDictionary, bool performingUndoRedo = false) where T1 : LoadScope
         {
-            IterateOverLoadScopeKeys((i, loadScopeKey, references) =>
-            {
-                if (references.RemoveNullReferences() && RemoveReference(loadScopeKey, null, DisposeContext.Programmatically_Destroy))
-                {
-                    if (GetLoadScope(out LoadScope loadScope, loadScopeKey))
-                        DisposeLoadScope(loadScope, DisposeContext.Programmatically_Destroy);
-                }
-            });
-        }
+#if UNITY_EDITOR
+            SerializationUtility.RecoverLostReferencedObjectsInCollection(loadScopesDictionary);
 
-        protected void PerformAddRemoveAnFixBrokenLoadScopes<T, T1>(IDictionary<T, T1> loadScopesDictionary, IDictionary<T, T1> lastLoadScopesDictionary) where T1 : LoadScope
-        {
-            PerformAddRemoveLoadScopes(loadScopesDictionary, lastLoadScopesDictionary);
-            FixBrokenLoadScopes();
+            IterateOverLoadScopes((loadScopeKey, loadScope) =>
+            {
+                loadScope.RecoverLostReferencedObjects();
+                return true;
+            });
+#endif
+            List<(bool, object, LoadScope)>  changedLoadScopes = PerformAddRemoveLoadScopesChange(loadScopesDictionary, lastLoadScopesDictionary);
+            FixBrokenLoadScopes(performingUndoRedo, changedLoadScopes);
         }
 
         //Problem: When undoing a "AddComponent"(Loader) action done in the inspector and redoing it, some null loadScopes can be found in the LoadScope Dictionary
         //Fix: If this initialization is the result of an Undo/Redo operation, we look for null LoadScope in the Dictionary and Clear it all if we find some
-        private List<(bool, object, LoadScope)> PerformAddRemoveLoadScopes<T, T1>(IDictionary<T, T1> loadScopesDictionary, IDictionary<T, T1> lastLoadScopesDictionary) where T1 : LoadScope
+        private List<(bool, object, LoadScope)> PerformAddRemoveLoadScopesChange<T, T1>(IDictionary<T, T1> loadScopesDictionary, IDictionary<T, T1> lastLoadScopesDictionary) where T1 : LoadScope
         {
             List<(bool, object, LoadScope)> changedLoadScopes = null;
 
-            SerializationUtility.FindAddedRemovedObjects(loadScopesDictionary, lastLoadScopesDictionary,
+            SerializationUtility.FindAddedRemovedObjectsChange(loadScopesDictionary, lastLoadScopesDictionary,
             (loadScopeKey) =>
             {
                 changedLoadScopes ??= new();
@@ -275,21 +272,41 @@ namespace DepictionEngine
                     bool success = changedLoadScope.Item1 ? AddLoadScope(changedLoadScope.Item3) : RemoveLoadScope(changedLoadScope.Item2, DisposeContext.Programmatically_Destroy);
                 }
             }
+
             return changedLoadScopes;
         }
 
-        protected void FixBrokenLoadScopes(bool compareWithLastDictionary = false)
+        protected void FixBrokenLoadScopes(bool performingUndoRedo = false, List<(bool, object, LoadScope)> changedLoadScopes = null)
         {
             float loadInterval = 0.5f;
 
             IterateOverLoadScopes((loadScopeKey, loadScope) =>
             {
+                List<(bool, SerializableGuid, IPersistent)> changedLoadScopePersistents = loadScope.PerformAddRemovePersistents(performingUndoRedo);
+              
                 bool reload = false;
 
-                if (loadScope.PerformAddRemovePersistents(compareWithLastDictionary))
-                    reload = true;
-                if (loadScope.LoadingWasCompromised())
-                    reload = true;
+                if (!performingUndoRedo || changedLoadScopes?.Where(changedLoadScope => changedLoadScope.Item1 && changedLoadScope.Item2 == loadScopeKey) != null)
+                {
+                    bool persistentRemoved = false;
+
+                    if (changedLoadScopePersistents != null)
+                    {
+                        foreach ((bool, SerializableGuid, IPersistent) changedPersistent in changedLoadScopePersistents)
+                        {
+                            if (!changedPersistent.Item1)
+                            {
+                                persistentRemoved = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (persistentRemoved)
+                        reload = true;
+                    if (loadScope.LoadingWasCompromised())
+                        reload = true;
+                }
 
                 //The interval is required because creating Assets, such as Texture2D, too quickly after InitializeOnLoadMethod will cause them to become null shortly after creation.
                 if (CanAutoLoad() && reload)
@@ -300,6 +317,69 @@ namespace DepictionEngine
 
                 return true;
             });
+        }
+
+        protected List<(bool, object, ReferenceBase)> PerformAddRemoveReferencesChange<T>(IDictionary<T, ReferencesList> referencesDictionary, IDictionary<T, ReferencesList> lastReferencesDictionary)
+        {
+#if UNITY_EDITOR
+            for (int i = referencesDictionary.Count - 1; i >= 0; i--)
+                SerializationUtility.RecoverLostReferencedObjectsInCollection(referencesDictionary.ElementAt(i).Value);
+#endif
+            List<(bool, object, ReferenceBase)> changedReferences = null;
+
+            //Find reference that were newly destroyed
+            for (int i = lastReferencesDictionary.Count - 1; i >= 0; i--)
+            {
+                KeyValuePair<T, ReferencesList> objectKeyPair = lastReferencesDictionary.ElementAt(i);
+                ReferencesList referenceList = objectKeyPair.Value;
+                for (int e = referenceList.Count - 1; e >= 0; e--)
+                {
+                    ReferenceBase reference = referenceList.ElementAt(e);
+                    if (Disposable.IsDisposed(reference))
+                    {
+                        changedReferences ??= new();
+                        changedReferences.Add((false, objectKeyPair.Key, reference));
+                    }
+                }
+            }
+
+            if (!Object.ReferenceEquals(referencesDictionary, lastReferencesDictionary))
+            {
+                //Find reference that were newly created
+                for (int i = referencesDictionary.Count - 1; i >= 0; i--)
+                {
+                    KeyValuePair<T, ReferencesList> objectKeyPair = referencesDictionary.ElementAt(i);
+                    ReferencesList referenceList = objectKeyPair.Value;
+                    for (int e = referenceList.Count - 1; e >= 0; e--)
+                    {
+                        ReferenceBase reference = referenceList.ElementAt(e);
+                        if (!Disposable.IsDisposed(reference) && (!lastReferencesDictionary.TryGetValue(objectKeyPair.Key, out ReferencesList references) || !references.Contains(reference)))
+                        {
+                            changedReferences ??= new();
+                            changedReferences.Add((true, objectKeyPair.Key, reference));
+                        }
+                    }
+                }
+
+                referencesDictionary.Clear();
+                foreach (KeyValuePair<T, ReferencesList> objectKeyPair in lastReferencesDictionary)
+                {
+                    ReferencesList references = new ReferencesList();
+                    foreach (ReferenceBase reference in objectKeyPair.Value)
+                        references.Add(reference);
+                    referencesDictionary.Add(objectKeyPair.Key, references);
+                }
+            }
+            
+            if (changedReferences != null)
+            {
+                foreach ((bool, object, ReferenceBase) changedReference in changedReferences)
+                {
+                    bool success = changedReference.Item1 ? AddReference(changedReference.Item2, changedReference.Item3) : RemoveReference(changedReference.Item2, changedReference.Item3, DisposeContext.Programmatically_Destroy);
+                }
+            }
+
+            return changedReferences;
         }
 
         protected override bool InitializeLastFields()
@@ -455,39 +535,7 @@ namespace DepictionEngine
             if (SerializationUtility.RecoverLostReferencedObject(ref datasourceUnityObject))
                 _datasource = (PropertyMonoBehaviour)datasourceUnityObject;
 
-            if (SerializationUtility.RecoverLostReferencedObjectsInCollections(persistentsDictionary, lastPersistentsDictionary))
-                PerformAddRemovePersistents(persistentsDictionary, lastPersistentsDictionary);
-        }
-
-        protected void UndoRedoPerformedReferencesLoadScopes<T, T1, T2>(IDictionary<T, ReferencesList> referencesDictionary, IDictionary<T, ReferencesList> lastReferencesDictionary, IDictionary<T1, T2> loadScopesDictionary, IDictionary<T1, T2> lastLoadScopesDictionary) where T2 : LoadScope
-        {
-            bool referencesUndoRedoDetected = false;
-            for(int i = referencesDictionary.Count - 1; i >= 0; i--)
-            {
-                if (SerializationUtility.RecoverLostReferencedObjectsInCollection(referencesDictionary.ElementAt(i).Value))
-                    referencesUndoRedoDetected = true;
-            }
-            for (int i = lastReferencesDictionary.Count - 1; i >= 0; i--)
-            {
-                if (SerializationUtility.RecoverLostReferencedObjectsInCollection(lastReferencesDictionary.ElementAt(i).Value))
-                    referencesUndoRedoDetected = true;
-            }
-            if (referencesUndoRedoDetected)
-                PerformAddRemoveReferences();
-
-            bool loadScopesPersistentsUndoRedoDetected = false;
-
-            if (SerializationUtility.RecoverLostReferencedObjectsInCollections(loadScopesDictionary, lastLoadScopesDictionary))
-                loadScopesPersistentsUndoRedoDetected = PerformAddRemoveLoadScopes(loadScopesDictionary, lastLoadScopesDictionary)?.Count > 0;
-
-            IterateOverLoadScopes((loadScopeKey, loadScope) =>
-            {
-                if (SerializationUtility.RecoverLostReferencedObjectsInCollections(loadScope.persistentsDictionary, loadScope.lastPersistentsDictionary))
-                    loadScopesPersistentsUndoRedoDetected = true;
-                return true;
-            });
-            if (loadScopesPersistentsUndoRedoDetected)
-                FixBrokenLoadScopes(true);
+            PerformAddRemovePersistentsChange(persistentsDictionary, lastPersistentsDictionary);
         }
 #endif
 
@@ -575,7 +623,7 @@ namespace DepictionEngine
         {
 #if UNITY_EDITOR
             if (SceneManager.IsUserChangeContext())
-                Editor.UndoManager.RegisterCompleteObjectUndo(this);
+                RegisterCompleteObjectUndo();
 #endif
 
             return SetValue(nameof(datasource), value, ref _datasource, (newValue, oldValue) =>
@@ -797,7 +845,7 @@ namespace DepictionEngine
             return true;
         }
 
-        public virtual bool RemoveReference(object loadScopeKey, ReferenceBase reference = null, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
+        public virtual bool RemoveReference(object loadScopeKey, ReferenceBase reference, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
             return true;
         }
@@ -936,6 +984,7 @@ namespace DepictionEngine
                 AddPersistentDelegates(persistent);
 #if UNITY_EDITOR
                 lastPersistentsDictionary.Add(persistent.id, serializableIPersistent);
+
                 if (!Application.isPlaying)
                     UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
 #endif
@@ -959,8 +1008,7 @@ namespace DepictionEngine
         public bool RemovePersistent(SerializableGuid persistentId, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
 #if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-                Editor.UndoManager.RecordObject(this);
+            RegisterCompleteObjectUndo(disposeContext);
 #endif
 
             if (persistentsDictionary.Remove(persistentId))
@@ -970,15 +1018,10 @@ namespace DepictionEngine
 
                 if (!Application.isPlaying)
                     UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
-                if (disposeContext == DisposeContext.Editor_Destroy)
-                    MarkAsNotPoolable();
 #endif
                 return true;
             }
-#if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-                Editor.UndoManager.FlushUndoRecordObjects();
-#endif
+
             return false;
         }
 
@@ -987,17 +1030,16 @@ namespace DepictionEngine
             if (persistentsDictionary.Count > 0)
             {
 #if UNITY_EDITOR
-                if (disposeContext == DisposeContext.Editor_Destroy)
-                    Editor.UndoManager.RegisterCompleteObjectUndo(this);
+                RegisterCompleteObjectUndo(disposeContext);
 #endif
 
                 persistentsDictionary.Clear();
 
 #if UNITY_EDITOR
+                lastPersistentsDictionary.Clear();
+
                 if (!Application.isPlaying)
                     UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
-                if (disposeContext == DisposeContext.Editor_Destroy)
-                    MarkAsNotPoolable();
 #endif
             }
         } 
@@ -1027,29 +1069,17 @@ namespace DepictionEngine
         protected bool RemoveLoadScope(object loadScopeKey, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
 #if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-                Editor.UndoManager.RecordObject(this);
+            RegisterCompleteObjectUndo(disposeContext);
 #endif
-
-            bool removed = false;
 
             if (RemoveLoadScopeInternal(loadScopeKey, out LoadScope loadScope) && loadScope is not null)
             {
                 RemoveLoadScopeDelegates(loadScope);
 
-                removed = true;
+                return true;
             }
 
-#if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                Editor.UndoManager.FlushUndoRecordObjects();
-                if (removed)
-                    MarkAsNotPoolable();
-            }
-#endif
-
-            return removed;
+            return false;
         }
 
         protected virtual bool RemoveLoadScopeInternal(object loadScopeKey, out LoadScope loadScope)
@@ -1077,8 +1107,7 @@ namespace DepictionEngine
             if (GetLoadScopeCount() != 0)
             {
 #if UNITY_EDITOR
-                if (disposeContext == DisposeContext.Editor_Destroy)
-                    Editor.UndoManager.RecordObject(this);
+                RegisterCompleteObjectUndo(disposeContext);
 #endif
 
                 IterateOverLoadScopes((loadScopeKey, loadScope) =>
@@ -1087,14 +1116,6 @@ namespace DepictionEngine
 
                     return true;
                 });
-
-#if UNITY_EDITOR
-                if (disposeContext == DisposeContext.Editor_Destroy)
-                {
-                    Editor.UndoManager.FlushUndoRecordObjects();
-                    MarkAsNotPoolable();
-                }
-#endif
             }
         }
 
@@ -1129,23 +1150,123 @@ namespace DepictionEngine
             return false;
         }
 
-        [Serializable]
-        protected class ReferencesList : List<ReferenceBase>
+        protected override void LateUpdate()
         {
+            base.LateUpdate();
+
+#if UNITY_EDITOR
+            ResetRegisterCompleteUndo();
+            IterateOverLoadScopes((loadScopeKey, loadScope) => 
+            {
+                loadScope.ResetRegisterCompleteUndo();
+                return true; 
+            });
+#endif
+        }
+
+#if UNITY_EDITOR
+        private bool _registeredCompleteObjectUndo;
+        protected void RegisterCompleteObjectUndo(DisposeContext disposeContext = DisposeContext.Editor_Destroy)
+        {
+            if (disposeContext == DisposeContext.Editor_Destroy)
+            {
+                if (!_registeredCompleteObjectUndo)
+                {
+                    _registeredCompleteObjectUndo = true;
+                    Editor.UndoManager.RegisterCompleteObjectUndo(this);
+                }
+                MarkAsNotPoolable();
+            }
+        }
+
+        private void ResetRegisterCompleteUndo()
+        {
+            _registeredCompleteObjectUndo = false;
+        }
+#endif
+
+
+        [Serializable]
+        protected class ReferencesList : IList<ReferenceBase>
+        {
+            [SerializeField]
+            private List<ReferenceBase> _references;
+
+            public int Count => _references.Count;
+
+            public bool IsReadOnly => false;
+
+            public ReferenceBase this[int index] { get => _references[index]; set => _references[index] = value; }
+
+            public ReferencesList()
+            {
+                _references = new List<ReferenceBase>();
+            }
+
+            public bool Contains(ReferenceBase reference)
+            {
+                return _references.Contains(reference);
+            }
+
             public bool IsEmpty()
             {
-                return Count == 0;
+                return _references.Count == 0;
+            }
+
+            public void Add(ReferenceBase reference)
+            {
+                _references.Add(reference);
+            }
+
+            public bool Remove(ReferenceBase reference)
+            {
+                return _references.Remove(reference);
             }
 
             public bool RemoveNullReferences()
             {
-                for (int i = Count - 1; i >= 0; i--)
+                for (int i = _references.Count - 1; i >= 0; i--)
                 {
-                    if (this[i] == Disposable.NULL)
-                        RemoveAt(i);
+                    if (_references[i] == Disposable.NULL)
+                        _references.RemoveAt(i);
                 }
 
                 return IsEmpty();
+            }
+
+            public int IndexOf(ReferenceBase item)
+            {
+                return _references.IndexOf(item);
+            }
+
+            public void Insert(int index, ReferenceBase item)
+            {
+                _references.Insert(index, item);
+            }
+
+            public void RemoveAt(int index)
+            {
+                _references.RemoveAt(index);
+            }
+
+            public void Clear()
+            {
+                _references.Clear();
+            }
+
+            public void CopyTo(ReferenceBase[] array, int arrayIndex)
+            {
+                _references.CopyTo(array, arrayIndex);
+            }
+
+            public IEnumerator<ReferenceBase> GetEnumerator()
+            {
+                return _references.GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return _references.GetEnumerator();
             }
         }
     }

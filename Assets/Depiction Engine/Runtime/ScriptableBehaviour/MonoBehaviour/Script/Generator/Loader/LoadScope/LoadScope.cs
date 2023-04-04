@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -47,30 +48,21 @@ namespace DepictionEngine
             _loader = default;
         }
 
-        public bool PerformAddRemovePersistents(bool compareWithLastDictionary = false)
+        public LoadScope Init(LoaderBase loader)
+        {
+            this.loader = loader;
+
+            return this;
+        }
+
+        public List<(bool, SerializableGuid, IPersistent)> PerformAddRemovePersistents(bool compareWithLastDictionary = false)
         {
             PersistentsDictionary lastPersistentsDictionary = persistentsDictionary;
 #if UNITY_EDITOR
             if (compareWithLastDictionary)
                 lastPersistentsDictionary = this.lastPersistentsDictionary;
 #endif
-            List<(bool, SerializableGuid, IPersistent)> changedPersistents = LoaderBase.PerformAddRemovePersistents(this, persistentsDictionary, lastPersistentsDictionary);
-
-            bool removed = false;
-
-            if (changedPersistents != null)
-            {
-                foreach ((bool, SerializableGuid, IPersistent) changedPersistent in changedPersistents)
-                {
-                    if (!changedPersistent.Item1)
-                    {
-                        removed = true;
-                        break;
-                    }
-                }
-            }
-
-            return removed;
+            return LoaderBase.PerformAddRemovePersistentsChange(this, persistentsDictionary, lastPersistentsDictionary);
         }
 
         public void InitializeLastFields()
@@ -81,40 +73,24 @@ namespace DepictionEngine
 #endif
         }
 
-        public bool LoadingWasCompromised()
-        {
-            //Problem: Loading was interrupted before finishing(Often because the scene is Played while LoadScopes are still loading)
-            return initialized && (datasourceOperation == null || datasourceOperation.LoadingWasCompromised());
-        }
-
-        public LoadScope Init(LoaderBase loader)
-        {
-            this.loader = loader;
-
-            return this;
-        }
-
-        public void KillLoading()
-        {
-            if (LoadInProgress())
-            {
-                if (loadIntervalTween != null)
-                    loadIntervalTween = null;
-                if (datasourceOperation != null && datasourceOperation.loadingState == DatasourceOperationBase.LoadingState.Loading)
-                    datasourceOperation = null;
-                loadingState = DatasourceOperationBase.LoadingState.Interrupted;
-            }
-        }
-
 #if UNITY_EDITOR
         protected PersistentsDictionary _lastPersistentsDictionary;
-        public PersistentsDictionary lastPersistentsDictionary
+        private PersistentsDictionary lastPersistentsDictionary
         {
             get => _lastPersistentsDictionary ??= new ();
         }
+
+        public void RecoverLostReferencedObjects()
+        {
+            UnityEngine.Object loaderUnityObject = _loader;
+            if (SerializationUtility.RecoverLostReferencedObject(ref loaderUnityObject))
+                _loader = loaderUnityObject as LoaderBase;
+            
+            SerializationUtility.RecoverLostReferencedObjectsInCollection(persistentsDictionary);
+        }
 #endif
 
-        public PersistentsDictionary persistentsDictionary
+        private PersistentsDictionary persistentsDictionary
         {
             get => _persistentsDictionary ??= new ();
         }
@@ -131,9 +107,13 @@ namespace DepictionEngine
 
         public virtual bool AddPersistent(IPersistent persistent)
         {
-            if (!persistentsDictionary.ContainsKey(persistent.id))
+            SerializableIPersistent serializableIPersistent = new SerializableIPersistent(persistent);
+            if (persistentsDictionary.TryAdd(persistent.id, serializableIPersistent))
             {
-                persistentsDictionary.Add(persistent.id, new SerializableIPersistent(persistent));
+#if UNITY_EDITOR
+                lastPersistentsDictionary.Add(persistent.id, serializableIPersistent);
+#endif
+
                 PersistentAddedEvent?.Invoke(this);
 
                 return true;
@@ -150,47 +130,42 @@ namespace DepictionEngine
         public bool RemovePersistent(SerializableGuid persistentId, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
 #if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-                Editor.UndoManager.RecordObject(this);
+            RegisterCompleteObjectUndo(disposeContext);
 #endif
 
-            bool removed = persistentsDictionary.Remove(persistentId);
-            if (removed)
+            if (persistentsDictionary.Remove(persistentId))
+            {
+#if UNITY_EDITOR
+                lastPersistentsDictionary.Remove(persistentId);
+#endif
                 PersistentRemovedEvent?.Invoke(this);
 
-#if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                Editor.UndoManager.FlushUndoRecordObjects();
-                if (removed)
-                    MarkAsNotPoolable();
+                return true;
             }
-#endif
-            return removed;
+
+            return false;
         }
 
         public void DatasourceChanged(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
 #if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-                Editor.UndoManager.RecordObject(this);
+            RegisterCompleteObjectUndo(disposeContext);
 #endif
+
+            SetDatasourceOperation(null, disposeContext);
 
             KillLoading();
 
             if (persistentsDictionary.Count > 0)
             {
                 persistentsDictionary.Clear();
-                PersistentRemovedEvent?.Invoke(this);
-            }
 
 #if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                Editor.UndoManager.FlushUndoRecordObjects();
-                MarkAsNotPoolable();
-            }
+                lastPersistentsDictionary.Clear();
 #endif
+
+                PersistentRemovedEvent?.Invoke(this);
+            }
         }
 
         public void IterateOverPersistents(Func<SerializableGuid, IPersistent, bool> callback)
@@ -206,17 +181,25 @@ namespace DepictionEngine
             }
         }
 
-        public virtual object scopeKey
+        public bool LoadingWasCompromised()
         {
-            get => null;
+            //Problem: Loading was interrupted before finishing(Often because the scene is Played while LoadScopes are still loading)
+            return initialized && (datasourceOperation == null || datasourceOperation.LoadingWasCompromised());
         }
 
-        public int seed { get { return loader.seed; } }
-        public LoaderBase.DataType dataType { get { return loader.dataType; } }
-        public int depth { get { return loader.depth; } }
-        public int timeout { get { return loader.timeout; } }
-        public List<string> headers { get { return loader.headers; } }
-        public string loadEndpoint { get { return loader.loadEndpoint; } }
+        public void KillLoading()
+        {
+            if (LoadInProgress())
+            {
+                if (loadIntervalTween != null)
+                    loadIntervalTween = null;
+                if (datasourceOperation != null && datasourceOperation.loadingState == DatasourceOperationBase.LoadingState.Loading)
+                    datasourceOperation = null;
+                loadingState = DatasourceOperationBase.LoadingState.Interrupted;
+            }
+        }
+
+        public virtual object scopeKey { get => null; }
 
         public LoaderBase loader
         {
@@ -247,15 +230,19 @@ namespace DepictionEngine
         private DatasourceOperationBase datasourceOperation
         {
             get { return _datasourceOperation; }
-            set 
-            {
-                if (Object.ReferenceEquals(_datasourceOperation, value))
-                    return;
+            set { SetDatasourceOperation(value); }
+        }
 
-                DisposeManager.Dispose(_datasourceOperation);
+        private bool SetDatasourceOperation(DatasourceOperationBase value, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
+        {
+            if (Object.ReferenceEquals(_datasourceOperation, value))
+                return false;
 
-                _datasourceOperation = value;
-            }
+            DisposeManager.Dispose(_datasourceOperation, disposeContext);
+
+            _datasourceOperation = value;
+
+            return true;
         }
 
         public DatasourceOperationBase.LoadingState loadingState
@@ -361,6 +348,7 @@ namespace DepictionEngine
                 ILoadDatasource datasource = loader.datasource as ILoadDatasource;
                 if (!Disposable.IsDisposed(datasource))
                 {
+                    Debug.Log("LOADING");
                     loadingState = DatasourceOperationBase.LoadingState.Loading;
                     datasourceOperation = datasource.Load((persistents, loadingResult) =>
                     {
@@ -409,7 +397,7 @@ namespace DepictionEngine
                 LoadingStateChangedEvent = null;
 
                 loadIntervalTween = null;
-                DisposeManager.Dispose(_datasourceOperation, disposeContext);
+                SetDatasourceOperation(null, disposeContext);
 
                 PersistentAddedEvent = null;
                 PersistentRemovedEvent = null;
@@ -418,5 +406,26 @@ namespace DepictionEngine
             }
             return false;
         }
+
+#if UNITY_EDITOR
+        private bool _registeredCompleteObjectUndo;
+        private void RegisterCompleteObjectUndo(DisposeContext disposeContext = DisposeContext.Editor_Destroy)
+        {
+            if (disposeContext == DisposeContext.Editor_Destroy)
+            {
+                if (!_registeredCompleteObjectUndo)
+                {
+                    _registeredCompleteObjectUndo = true;
+                    Editor.UndoManager.RegisterCompleteObjectUndo(this);
+                }
+                MarkAsNotPoolable();
+            }
+        }
+
+        public void ResetRegisterCompleteUndo()
+        {
+            _registeredCompleteObjectUndo = false;
+        }
+#endif
     }
 }

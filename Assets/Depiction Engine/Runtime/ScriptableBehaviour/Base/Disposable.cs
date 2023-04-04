@@ -132,15 +132,13 @@ namespace DepictionEngine
             set { _disposedEvent = value; }
         }
 
-        public static bool IsDisposed(object disposable)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsDisposed<T>(T disposable)
         {
-            if (disposable is null)
+            if (Object.ReferenceEquals(disposable, null))
                 return true;
 
-            if (disposable is IDisposable)
-                return (disposable as IDisposable).Equals(NULL);
-            else
-                return disposable == null;
+            return disposable is IDisposable ? (disposable as IDisposable).Equals(NULL) : disposable.Equals(null);
         }
 
         public virtual void OnBeforeSerialize()

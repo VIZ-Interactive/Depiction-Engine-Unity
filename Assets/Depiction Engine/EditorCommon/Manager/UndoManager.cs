@@ -157,22 +157,22 @@ namespace DepictionEngine.Editor
         /// <param name="initializingContext"></param>
         public static void RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext = InitializationContext.Editor)
         {
-            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is not null && (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate))
+            //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the wrong Group
+            //Fix: We Queue the operation to perform it later(at the Beginning of the next Update) when the Undo Group name as been updated
+            if (initializingContext == InitializationContext.Editor_Duplicate)
             {
-                //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the wrong Group
-                //Fix: We Queue the operation to perform it later(at the Beginning of the next Update) when the Undo Group name as been updated
-                if (initializingContext == InitializationContext.Editor_Duplicate)
-                {
-                    QueueUndoOperation(objectToUndo, UndoOperationType.Created);
-                    _processingEditorCopyPasteOrDuplicateOrDragDropComponent = true;
-                }
-                else
-                    RegisterCreatedObjectUndo(objectToUndo);
+                QueueUndoOperation(objectToUndo, UndoOperationType.Created);
+                _processingEditorCopyPasteOrDuplicateOrDragDropComponent = true;
             }
+            else if (initializingContext == InitializationContext.Editor)
+                RegisterCreatedObjectUndo(objectToUndo);
         }
 
         private static void RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo)
         {
+            if (!IsValidUnityObject(objectToUndo))
+                return;
+
             Undo.RegisterCreatedObjectUndo(objectToUndo, Undo.GetCurrentGroupName());
         }
 
@@ -183,22 +183,22 @@ namespace DepictionEngine.Editor
         /// <param name="initializingContext"></param>
         public static void RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext = InitializationContext.Editor)
         {
-            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is not null && (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate))
+            //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the wrong Group
+            //Fix: We Queue the operation to perform it later(at the Beginning of the next Update) when the Undo Group name as been updated
+            if (initializingContext == InitializationContext.Editor_Duplicate)
             {
-                //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the wrong Group
-                //Fix: We Queue the operation to perform it later(at the Beginning of the next Update) when the Undo Group name as been updated
-                if (initializingContext == InitializationContext.Editor_Duplicate)
-                {
-                    QueueUndoOperation(objectToUndo, UndoOperationType.Complete);
-                    _processingEditorCopyPasteOrDuplicateOrDragDropComponent = true;
-                }
-                else
-                    RegisterCompleteObjectUndo(objectToUndo);
+                QueueUndoOperation(objectToUndo, UndoOperationType.Complete);
+                _processingEditorCopyPasteOrDuplicateOrDragDropComponent = true;
             }
+            else if (initializingContext == InitializationContext.Editor)
+                RegisterCompleteObjectUndo(objectToUndo);
         }
 
         private static void RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo)
         {
+            if (!IsValidUnityObject(objectToUndo))
+                return;
+
             Undo.RegisterCompleteObjectUndo(objectToUndo, Undo.GetCurrentGroupName());
         }
 
@@ -208,6 +208,9 @@ namespace DepictionEngine.Editor
         /// <param name="objectToUndo"></param>
         public static void RegisterFullObjectHierarchyUndo(UnityEngine.Object objectToUndo)
         {
+            if (!IsValidUnityObject(objectToUndo))
+                return;
+
             Undo.RegisterFullObjectHierarchyUndo(objectToUndo, Undo.GetCurrentGroupName());
         }
 
@@ -217,7 +220,10 @@ namespace DepictionEngine.Editor
         /// <param name="objectToUndo"></param>
         public static void RecordObject(UnityEngine.Object objectToUndo, InitializationContext initializingContext = InitializationContext.Editor)
         {
-            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo) && objectToUndo is not null && (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate))
+            if (!IsValidUnityObject(objectToUndo))
+                return;
+
+            if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate)
                 Undo.RecordObject(objectToUndo, Undo.GetCurrentGroupName());
         }
 
@@ -231,7 +237,7 @@ namespace DepictionEngine.Editor
 
             foreach (UnityEngine.Object objectToUndo in objectToUndos)
             {
-                if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo))
+                if (IsValidUnityObject(objectToUndo))
                     objectToUndosCount++;
             }
 
@@ -245,7 +251,7 @@ namespace DepictionEngine.Editor
                     for (int i = 0; i < objectToUndos.Length; i++)
                     {
                         UnityEngine.Object objectToUndo = objectToUndos[i];
-                        if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo))
+                        if (IsValidUnityObject(objectToUndo))
                             filteredObjetToUndos[i] = objectToUndo;
                     }
                 }
@@ -262,6 +268,9 @@ namespace DepictionEngine.Editor
         /// <param name="wordlPositionStays"></param>
         public static void SetTransformParent(Transform transform, Transform newParent, bool wordlPositionStays, InitializationContext initializingContext = InitializationContext.Editor)
         {
+            if (!IsValidUnityObject(transform))
+                return;
+
             if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate)
                 Undo.SetTransformParent(transform, newParent, wordlPositionStays, Undo.GetCurrentGroupName());
             else
@@ -275,6 +284,9 @@ namespace DepictionEngine.Editor
         /// <param name="newParent"></param>
         public static void SetTransformParent(Transform transform, Transform newParent, InitializationContext initializingContext = InitializationContext.Editor)
         {
+            if (!IsValidUnityObject(transform))
+                return;
+
             if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate)
                 Undo.SetTransformParent(transform, newParent, Undo.GetCurrentGroupName());
             else
@@ -288,19 +300,12 @@ namespace DepictionEngine.Editor
         /// <returns></returns>
         public static bool DestroyObjectImmediate(UnityEngine.Object objectToUndo)
         {
-            if (!IsDisposing(objectToUndo) && !IsEditorObject(objectToUndo))
-            {
-                Undo.DestroyObjectImmediate(objectToUndo);
+            if (!IsValidUnityObject(objectToUndo))
+                return false;
 
-                return true;
-            }
+            Undo.DestroyObjectImmediate(objectToUndo);
 
-            return false;
-        }
-
-        private static bool IsDisposing(UnityEngine.Object objectToUndo)
-        {
-            return objectToUndo is null || objectToUndo.Equals(Disposable.NULL);
+            return true;
         }
 
         /// <summary>
@@ -348,6 +353,11 @@ namespace DepictionEngine.Editor
             Undo.CollapseUndoOperations(groupIndex);
         }
 
+        private static bool IsValidUnityObject(UnityEngine.Object unityObject)
+        {
+            return unityObject is not null && unityObject != null && !IsEditorObject(unityObject);
+        }
+
         //This should not be necessary since no Undo operations should be performed on Editor UnityObjects  
         private static bool IsEditorObject(UnityEngine.Object unityObject)
         {
@@ -364,13 +374,6 @@ namespace DepictionEngine.Editor
         {
             _validatedObjects ??= new List<UnityEngine.Object>();
             _validatedObjects.Add(value);
-        }
-
-        public static void PerformUndoRedoPropertyChange<T>(Action<T> callback, ref T field, ref T lastField)
-        {
-            T newValue = field;
-            field = lastField;
-            callback?.Invoke(newValue);
         }
 
         public static void Update()

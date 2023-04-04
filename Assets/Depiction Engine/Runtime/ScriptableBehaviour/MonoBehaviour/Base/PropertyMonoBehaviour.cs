@@ -921,6 +921,7 @@ namespace DepictionEngine
         {
             if (RemoveListItem(children, child))
             {
+                Debug.Log(child);
                 RemoveChildDelegates(child);
                 return true;
             }

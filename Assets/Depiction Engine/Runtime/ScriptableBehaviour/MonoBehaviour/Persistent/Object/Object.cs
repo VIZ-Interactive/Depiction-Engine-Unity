@@ -729,7 +729,7 @@ namespace DepictionEngine
         {
             if (reference is not null)
             {
-                reference.DataChangedEvent -= ReferenceDataChangedHandler;
+                reference.PropertyAssignedEvent -= ReferencePropertyAssignedHandler;
                 reference.LoaderPropertyAssignedChangedEvent -= ReferenceLoaderPropertyAssignedChangedHandler;
                 
                 return true;
@@ -741,7 +741,7 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && reference != Disposable.NULL)
             {
-                reference.DataChangedEvent += ReferenceDataChangedHandler;
+                reference.PropertyAssignedEvent += ReferencePropertyAssignedHandler;
                 reference.LoaderPropertyAssignedChangedEvent += ReferenceLoaderPropertyAssignedChangedHandler;
 
                 return true;
@@ -749,9 +749,10 @@ namespace DepictionEngine
             return false;
         }
 
-        private void ReferenceDataChangedHandler(ReferenceBase reference, ScriptableObjectDisposable newValue, ScriptableObjectDisposable oldValue)
+        private void ReferencePropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
-            UpdateReferences();
+            if (name == nameof(ReferenceBase.data) || name == nameof(ReferenceBase.dataType))
+                UpdateReferences();
         }
 
         protected virtual bool UpdateReferences(bool forceUpdate = false)
@@ -943,11 +944,7 @@ namespace DepictionEngine
 
         private VisibleCamerasDictionary visibleCameras
         {
-            get 
-            {
-                _visibleCameras ??= new VisibleCamerasDictionary();
-                return _visibleCameras; 
-            }
+            get => _visibleCameras ??= new VisibleCamerasDictionary();
         }
 
         protected virtual bool GetDefaultIsHiddenInHierarchy()
@@ -1399,11 +1396,7 @@ namespace DepictionEngine
         [Json(propertyName: nameof(generatorsJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<GeneratorBase> generators
         {
-            get 
-            {
-                _generators ??= new List<GeneratorBase>();
-                return _generators; 
-            }
+            get => _generators ??= new List<GeneratorBase>();
             private set { SetValue(nameof(generators), value, ref _generators); }
         }
 
@@ -1413,11 +1406,7 @@ namespace DepictionEngine
         [Json(propertyName: nameof(referencesJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<ReferenceBase> references
         {
-            get 
-            {
-                _references ??= new List<ReferenceBase>();
-                return _references; 
-            }
+            get => _references ??= new List<ReferenceBase>();
             private set { SetValue(nameof(references), value, ref _references); }
         }
 
@@ -1427,11 +1416,7 @@ namespace DepictionEngine
         [Json(propertyName: nameof(effectsJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<EffectBase> effects
         {
-            get 
-            {
-                _effects ??= new List<EffectBase>();
-                return _effects; 
-            }
+            get => _effects ??= new List<EffectBase>();
             private set { SetValue(nameof(effects), value, ref _effects); }
         }
 
@@ -1441,11 +1426,7 @@ namespace DepictionEngine
         [Json(propertyName: nameof(fallbackValuesJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<FallbackValues> fallbackValues
         {
-            get 
-            {
-                _fallbackValues ??= new List<FallbackValues>();
-                return _fallbackValues; 
-            }
+            get => _fallbackValues ??= new List<FallbackValues>();
             private set { SetValue(nameof(fallbackValues), value, ref _fallbackValues); }
         }
 
@@ -1455,66 +1436,48 @@ namespace DepictionEngine
         [Json(propertyName: nameof(datasourcesJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<DatasourceBase> datasources
         {
-            get 
-            {
-                _datasources ??= new List<DatasourceBase>();
-                return _datasources; 
-            }
+            get => _datasources ??= new List<DatasourceBase>();
             private set { SetValue(nameof(datasources), value, ref _datasources); }
         }
 
-        private JSONNode transformJson
+        private JSONNode transformJson { get { return JsonUtility.ToJson(GetComponent<TransformBase>()); } }
+
+        private JSONNode animatorJson { get { return JsonUtility.ToJson(GetComponent<AnimatorBase>()); } }
+
+        private JSONNode controllerJson { get { return JsonUtility.ToJson(GetComponent<ControllerBase>()); } }
+
+        private JSONNode generatorsJson { get { return JsonUtility.ToJson(GetComponents<GeneratorBase>()); } }
+
+        private JSONNode referencesJson { get { return JsonUtility.ToJson(GetComponents<ReferenceBase>()); } }
+
+        private JSONNode effectsJson { get { return JsonUtility.ToJson(GetComponents<EffectBase>()); } }
+
+        private JSONNode fallbackValuesJson { get { return JsonUtility.ToJson(GetComponents<FallbackValues>()); } }
+
+        private JSONNode datasourcesJson { get { return JsonUtility.ToJson(GetComponents<DatasourceBase>()); } }
+
+        protected void InitializeReferenceDataType(string dataType, Type referenceType = null)
         {
-            get { return JsonUtility.ToJson(GetComponent<TransformBase>()); }
+            if (!typeof(ReferenceBase).IsAssignableFrom(referenceType))
+            {
+                Debug.LogError("ReferenceType must extend "+nameof(ReferenceBase));
+                return;
+            }
+
+            if (referenceType == null)
+                referenceType = typeof(ReferenceBase);
+
+            if (GetFirstReferenceOfType(dataType) == Disposable.NULL)
+            {
+                ReferenceBase reference = references.Where(reference => referenceType.IsAssignableFrom(reference.GetType()) && string.IsNullOrEmpty(reference.dataType)).FirstOrDefault();
+                if (reference != Disposable.NULL)
+                    reference.dataType = dataType;
+            }
         }
 
-        private JSONNode animatorJson
+        public ReferenceBase GetFirstReferenceOfType(string dataType)
         {
-            get { return JsonUtility.ToJson(GetComponent<AnimatorBase>()); }
-        }
-
-        private JSONNode controllerJson
-        {
-            get { return JsonUtility.ToJson(GetComponent<ControllerBase>()); }
-        }
-
-        private JSONNode generatorsJson
-        {
-            get { return JsonUtility.ToJson(GetComponents<GeneratorBase>()); }
-        }
-
-        private JSONNode referencesJson
-        {
-            get { return JsonUtility.ToJson(GetComponents<ReferenceBase>()); }
-        }
-
-        private JSONNode effectsJson
-        {
-            get { return JsonUtility.ToJson(GetComponents<EffectBase>()); }
-        }
-
-        private JSONNode fallbackValuesJson
-        {
-            get { return JsonUtility.ToJson(GetComponents<FallbackValues>()); }
-        }
-
-        private JSONNode datasourcesJson
-        {
-            get { return JsonUtility.ToJson(GetComponents<DatasourceBase>()); }
-        }
-
-        protected ReferenceBase AppendToReferenceComponentName(ReferenceBase reference, string postfix)
-        {
-#if UNITY_EDITOR
-            if (reference != null)
-                reference.inspectorComponentNameOverride = Editor.ObjectNames.GetInspectorTitle(reference, true) + " (" + postfix + ")";
-#endif
-            return reference;
-        }
-
-        public ReferenceBase GetReferenceAt(int index)
-        {
-            return references.Count > index ? references[index] : null;
+            return references.Where(reference => reference.dataType == dataType).FirstOrDefault();
         }
 
         protected override bool SetParent(PropertyMonoBehaviour value)
@@ -1985,7 +1948,6 @@ namespace DepictionEngine
 
             return masked;
         }
-
 
         private void UpdateGeoController()
         {

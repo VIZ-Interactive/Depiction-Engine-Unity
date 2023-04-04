@@ -129,12 +129,7 @@ namespace DepictionEngine
 
         private bool UpdateGridIndex()
         {
-            bool changed = false;
-
-            if (transform != Disposable.NULL)
-                changed = SetGrid2DIndex(GetGrid2DIndex(grid2DDimensions));
-
-            return changed;
+            return transform != Disposable.NULL ? SetGrid2DIndex(GetGrid2DIndex(grid2DDimensions)) : false;
         }
 
         public Vector2Int grid2DIndex

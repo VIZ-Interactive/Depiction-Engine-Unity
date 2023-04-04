@@ -68,6 +68,9 @@ namespace DepictionEngine
     [CreateComponent(typeof(AssetReference), typeof(AssetReference))]
     public class BuildingGridMeshObject : FeatureGridMeshObjectBase
     {
+        private const string COLORMAP_REFERENCE_DATATYPE = nameof(Texture) + " ColorMap";
+        private const string ADDITIONALMAP_REFERENCE_DATATYPE = nameof(Texture) + " AdditionalMap";
+
         [BeginFoldout("Building")]
         [SerializeField, Tooltip("A fallback color value used by the parser if no other value are present in the feature. ")]
         private Color _defaultColor;
@@ -96,6 +99,14 @@ namespace DepictionEngine
             InitValue(value => defaultLevelHeight = value, 3.0f, initializingContext);
             InitValue(value => shaderPath = value, RenderingManager.SHADER_BASE_PATH + "BuildingGrid", initializingContext);
             InitValue(value => color = value, Color.clear, initializingContext);
+        }
+
+        protected override void CreateComponents(InitializationContext initializingContext)
+        {
+            base.CreateComponents(initializingContext);
+
+            InitializeReferenceDataType(COLORMAP_REFERENCE_DATATYPE, typeof(AssetReference));
+            InitializeReferenceDataType(ADDITIONALMAP_REFERENCE_DATATYPE, typeof(AssetReference));
         }
 
         protected override bool UpdateReferences(bool forceUpdate = false)
@@ -167,7 +178,7 @@ namespace DepictionEngine
 
         private AssetReference colorMapAssetReference
         {
-            get { return AppendToReferenceComponentName(GetReferenceAt(2), typeof(Texture).Name + " ColorMap") as AssetReference; }
+            get { return GetFirstReferenceOfType(COLORMAP_REFERENCE_DATATYPE) as AssetReference; }
         }
 
         private void UpdateColorMap()
@@ -194,7 +205,7 @@ namespace DepictionEngine
 
         private AssetReference additionalMapAssetReference
         {
-            get { return AppendToReferenceComponentName(GetReferenceAt(3), typeof(Texture).Name + " AdditionalMap") as AssetReference; }
+            get { return GetFirstReferenceOfType(ADDITIONALMAP_REFERENCE_DATATYPE) as AssetReference; }
         }
 
         private void UpdateAdditionalMap()

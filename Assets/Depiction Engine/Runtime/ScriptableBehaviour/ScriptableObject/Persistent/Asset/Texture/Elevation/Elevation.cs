@@ -105,7 +105,7 @@ namespace DepictionEngine
         {
             base.UndoRedoPerformed();
 
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { elevationMultiplier = value; }, ref _elevationMultiplier, ref _lastElevationMultiplier);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { elevationMultiplier = value; }, ref _elevationMultiplier, ref _lastElevationMultiplier);
         }
 #endif
 

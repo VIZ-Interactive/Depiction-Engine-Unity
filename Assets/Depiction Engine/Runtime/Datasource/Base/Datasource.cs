@@ -44,6 +44,9 @@ namespace DepictionEngine
         [Serializable]
         private class SerializableGuidHashSet : SerializableHashSet<SerializableGuid> { };
 
+        [Serializable]
+        private class LoadersDictionary : SerializableDictionary<SerializableGuid, LoaderBase> { };
+
         [SerializeField, HideInInspector]
         private PersistentsDictionary _persistentsDictionary;
         [SerializeField, HideInInspector]
@@ -63,7 +66,7 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private JsonMonoBehaviour _datasourceWrapper;
 
-        private List<LoaderBase> _loaders;
+        private LoadersDictionary _loaders;
 
         /// <summary>
         /// Dispatched when a <see cref="DepictionEngine.IPersistent.PersistenceSaveOperationEvent"/>, <see cref="DepictionEngine.IPersistent.PersistenceSynchronizeOperationEvent"/> or <see cref="DepictionEngine.IPersistent.PersistenceDeleteOperationEvent"/> is dispatched by the encapsulated <see cref="DepictionEngine.IPersistent"/>.
@@ -102,16 +105,19 @@ namespace DepictionEngine
             }
 
             if (initializingContext == InitializationContext.Existing)
-                PerformAddRemovePersistents(persistentsDictionary, persistentsDictionary);
+                PerformAddRemovePersistentsChange(persistentsDictionary, persistentsDictionary);
 
             return this;
         }
 
-        private void PerformAddRemovePersistents(PersistentsDictionary persistentsDictionary, PersistentsDictionary lastPersistentsDictionary)
+        private void PerformAddRemovePersistentsChange(PersistentsDictionary persistentsDictionary, PersistentsDictionary lastPersistentsDictionary)
         {
+#if UNITY_EDITOR
+            SerializationUtility.RecoverLostReferencedObjectsInCollection(persistentsDictionary);
+#endif
             List<(bool, SerializableGuid, IPersistent, ComponentsOutOfSyncDictionary)> changedPersistents = null;
 
-            SerializationUtility.FindAddedRemovedObjects(persistentsDictionary, lastPersistentsDictionary,
+            SerializationUtility.FindAddedRemovedObjectsChange(persistentsDictionary, lastPersistentsDictionary,
             (persistentId) =>
             {
                 changedPersistents ??= new();
@@ -219,14 +225,17 @@ namespace DepictionEngine
         private void LoaderPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             if (name == nameof(LoaderBase.datasource))
+                LoaderChanged();
+        }
+
+        private void LoaderChanged()
+        {
+            DisposeContext disposeContext = SceneManager.IsUserChangeContext() ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Pool;
+            IterateOverPersistents((persistentId, persistent) =>
             {
-                DisposeContext disposeContext = SceneManager.IsUserChangeContext() ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Pool;
-                IterateOverPersistents((persistentId, persistent) => 
-                {
-                    AutoDisposePersistent(persistent, disposeContext);
-                    return true; 
-                });
-            }
+                AutoDisposePersistent(persistent, disposeContext);
+                return true;
+            });
         }
 
         private bool RemovePersistentDelegates(IPersistent persistent)
@@ -421,8 +430,7 @@ namespace DepictionEngine
 
         public void UndoRedoPerformed()
         {
-            if (SerializationUtility.RecoverLostReferencedObjectsInCollections(persistentsDictionary, lastPersistentsDictionary))
-                PerformAddRemovePersistents(persistentsDictionary, lastPersistentsDictionary);
+            PerformAddRemovePersistentsChange(persistentsDictionary, lastPersistentsDictionary);
         }
 #endif
 
@@ -566,6 +574,7 @@ namespace DepictionEngine
             return false;
         }
 
+        private List<Object> _childrenObjects;
         private bool UpdateCanBeAutoDisposed(IPersistent persistent, bool autoDispose = true)
         {
             if (Disposable.IsDisposed(persistent))
@@ -573,18 +582,24 @@ namespace DepictionEngine
 
             bool canBeDisposed = persistent.autoDispose && (persistent is Interior || !IsPersistentOutOfSync(persistent, true));
 
-            if (canBeDisposed && persistent is Object)
+            if (canBeDisposed)
             {
                 Object objectBase = persistent as Object;
-                objectBase.transform.IterateOverChildrenObject<Object>((childObject) =>
+                if (objectBase != Disposable.NULL)
                 {
-                    if (!GetPersistentCanBeAutoDisposed(childObject))
+                    //The Object may not be initialized so we cannot rely on objectBase.transform.IterateOverChildren()...
+                    _childrenObjects ??= new();
+                    _childrenObjects.Clear();
+                    objectBase.gameObject.transform.GetComponentsInChildren<Object>(true, _childrenObjects);
+                    foreach (Object childObject in _childrenObjects)
                     {
-                        canBeDisposed = false;
-                        return false;
+                        if (!GetPersistentCanBeAutoDisposed(childObject))
+                        {
+                            canBeDisposed = false;
+                            break;
+                        }
                     }
-                    return true;
-                });
+                }
             }
 
             return SetPersistentCanBeAutoDisposed(persistent, canBeDisposed, autoDispose);
@@ -713,7 +728,7 @@ namespace DepictionEngine
             {
                 for (int i = _loaders.Count - 1; i >= 0; i--)
                 {
-                    if (!callback(_loaders[i]))
+                    if (!callback(_loaders.ElementAt(i).Value))
                         break;
                 }
             }
@@ -775,14 +790,7 @@ namespace DepictionEngine
         public bool RemovePersistent(SerializableGuid persistentId, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
 #if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                if (datasourceWrapper != Disposable.NULL)
-                {
-                    Editor.UndoManager.RegisterCompleteObjectUndo(datasourceWrapper);
-                    datasourceWrapper.MarkAsNotPoolable();
-                }
-            }
+            RegisterCompleteObjectUndo();
 #endif
 
             if (persistentsDictionary.Remove(persistentId))
@@ -803,16 +811,18 @@ namespace DepictionEngine
             return false;
         }
 
-        private List<LoaderBase> loaders
+        private LoadersDictionary loaders
         {
-            get => _loaders ??= new List<LoaderBase>();
+            get => _loaders ??= new LoadersDictionary();
         }
 
         private bool RemoveLoader(LoaderBase loader)
         {
-            if (loaders.Remove(loader))
+            if (loaders.Remove(loader.id))
             {
                 RemoveLoaderDelegates(loader);
+
+                LoaderChanged();
 
                 return true;
             }
@@ -821,10 +831,8 @@ namespace DepictionEngine
 
         private bool AddLoader(LoaderBase loader)
         {
-            if (!loaders.Contains(loader))
+            if (loaders.TryAdd(loader.id, loader))
             {
-                loaders.Add(loader);
-
                 AddLoaderDelegates(loader);
 
                 return true;
@@ -1144,6 +1152,37 @@ namespace DepictionEngine
                 return true;
             });
         }
+
+        public void LateUpdate()
+        {
+#if UNITY_EDITOR
+            ResetRegisterCompleteUndo();
+#endif
+        }
+
+#if UNITY_EDITOR
+        private bool _registeredCompleteObjectUndo;
+        private void RegisterCompleteObjectUndo(DisposeContext disposeContext = DisposeContext.Editor_Destroy)
+        {
+            if (datasourceWrapper == Disposable.NULL)
+                return;
+
+            if (disposeContext == DisposeContext.Editor_Destroy)
+            {
+                if (!_registeredCompleteObjectUndo)
+                {
+                    _registeredCompleteObjectUndo = true;
+                    Editor.UndoManager.RegisterCompleteObjectUndo(datasourceWrapper);
+                }
+                datasourceWrapper.MarkAsNotPoolable();
+            }
+        }
+
+        public void ResetRegisterCompleteUndo()
+        {
+            _registeredCompleteObjectUndo = false;
+        }
+#endif
 
         /// <summary>
         /// Data used to create a persistence operation.

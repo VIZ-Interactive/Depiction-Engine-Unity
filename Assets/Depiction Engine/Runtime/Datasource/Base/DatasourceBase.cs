@@ -609,5 +609,14 @@ namespace DepictionEngine
             }
             return false;
         }
+
+        protected override void LateUpdate()
+        {
+            base.LateUpdate();
+
+#if UNITY_EDITOR
+            datasource?.ResetRegisterCompleteUndo();
+#endif
+        }
     }
 }

@@ -2,13 +2,15 @@
 
 using System;
 using UnityEngine;
-using static UnityEngine.Rendering.PostProcessing.HistogramMonitor;
 
 namespace DepictionEngine
 {
     public class ReferenceBase : Script
     {
         [BeginFoldout("Reference")]
+        [SerializeField, Tooltip("Optional metadata used to identify the type of data referenced.")]
+        private string _dataType;
+
         [SerializeField, ComponentReference, Tooltip("The id of the loader containing the referenced data.")]
         private SerializableGuid _loaderId;
 
@@ -42,10 +44,6 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private LoadScope _loadScope;
 
-        /// <summary>
-        /// Dispatched when the <see cref="DepictionEngine.ReferenceBase.data"/> changed.
-        /// </summary>
-        public Action<ReferenceBase, PersistentScriptableObject, PersistentScriptableObject> DataChangedEvent;
         /// <summary>
         /// Dispatched when a property assignment is detected in the <see cref="DepictionEngine.ReferenceBase.loader"/>. 
         /// </summary>
@@ -95,6 +93,7 @@ namespace DepictionEngine
             if (base.InitializeLastFields())
             {
 #if UNITY_EDITOR
+                _lastDataType = dataType;
                 _lastLoaderId = loaderId;
                 _lastDataId = dataId;
                 _lastDataIndex2D = dataIndex2D;
@@ -120,6 +119,7 @@ namespace DepictionEngine
                 _loadedOrfailedIndexLoadScope = default;
             }
 
+            InitValue(value => dataType = value, "", initializingContext);
             InitValue(value => loaderId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(loaderId, loader, initializingContext); }, initializingContext);
             InitValue(value => dataId = value, SerializableGuid.Empty, initializingContext);
             InitValue(value => dataIndex2D = value, Grid2DIndex.Empty, initializingContext);
@@ -131,6 +131,7 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        private string _lastDataType;
         private SerializableGuid _lastLoaderId;
         private SerializableGuid _lastDataId;
         private Grid2DIndex _lastDataIndex2D;
@@ -140,16 +141,17 @@ namespace DepictionEngine
         {
             base.UndoRedoPerformed();
 
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { loaderId = value; }, ref _loaderId, ref _lastLoaderId);
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { dataId = value; }, ref _dataId, ref _lastDataId);
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { dataIndex2D = value; }, ref _dataIndex2D, ref _lastDataIndex2D);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataType = value; }, ref _dataType, ref _lastDataType);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { loaderId = value; }, ref _loaderId, ref _lastLoaderId);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataId = value; }, ref _dataId, ref _lastDataId);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataIndex2D = value; }, ref _dataIndex2D, ref _lastDataIndex2D);
 
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { loadScope = value; }, ref _loadScope, ref _lastLoadScope);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { loadScope = value; }, ref _loadScope, ref _lastLoadScope);
 
             UnityEngine.Object dataUnityObject = _data;
             if (SerializationUtility.RecoverLostReferencedObject(ref dataUnityObject))
                 _data = (PersistentScriptableObject)dataUnityObject;
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { data = value; }, ref _data, ref _lastData);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { data = value; }, ref _data, ref _lastData);
         }
 #endif
 
@@ -238,6 +240,25 @@ namespace DepictionEngine
         private void DataDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
             SetData(null, disposeContext);
+        }
+
+        /// <summary>
+        /// Optional metadata used to identify the type of data referenced.
+        /// </summary>
+        [Json]
+        public string dataType
+        {
+            get { return _dataType; }
+            set
+            {
+                SetValue(nameof(dataType), value, ref _dataType, (newValue, oldValue) =>
+                {
+#if UNITY_EDITOR
+                    _lastDataType = newValue;
+                    inspectorComponentNameOverride = Editor.ObjectNames.GetInspectorTitle(this, true) + " (" + newValue + ")";
+#endif
+                });
+            }
         }
 
         public LoaderBase loader
@@ -434,7 +455,7 @@ namespace DepictionEngine
         private void AddReferenceToLoadScope(LoadScope loadScope)
         {
             if (loadScope != Disposable.NULL && loadScope.loader != Disposable.NULL)
-                loadScope.loader.AddReference(loadScope, this);
+                loadScope.loader.AddReference(loadScope.scopeKey, this);
         }
 
         private bool UpdateData(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
@@ -516,7 +537,7 @@ namespace DepictionEngine
 
         protected virtual void DataChanged(PersistentScriptableObject newValue, PersistentScriptableObject oldValue)
         {
-            DataChangedEvent?.Invoke(this, newValue, oldValue);
+
         }
 
         private bool LoadingWasAttempted()
@@ -558,7 +579,6 @@ namespace DepictionEngine
             {
                 RemoveReferenceFromLoader(loadScope, disposeContext);
 
-                DataChangedEvent = null;
                 LoaderPropertyAssignedChangedEvent = null;
 
                 return true;

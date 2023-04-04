@@ -23,7 +23,7 @@ namespace DepictionEngine.Editor
             {
                 string targetName = typeof(SceneCameraTarget).Name;
 
-                UnityEditor.SceneView sceneView = SceneViewDouble.GetSceneView(objectBase as Camera);
+                SceneView sceneView = SceneViewDouble.GetSceneView(objectBase as Camera);
                 if (sceneView != null)
                 {
                     targetName += " (SceneViewId: " + sceneView.GetInstanceID() + ")";

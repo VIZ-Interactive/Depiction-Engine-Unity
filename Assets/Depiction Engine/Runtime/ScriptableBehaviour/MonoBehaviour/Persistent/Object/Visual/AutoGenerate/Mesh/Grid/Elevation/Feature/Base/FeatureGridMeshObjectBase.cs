@@ -66,6 +66,8 @@ namespace DepictionEngine
     [CreateComponent(typeof(AssetReference))]
     public class FeatureGridMeshObjectBase : ElevationGridMeshObjectBase
     {
+        private const string FEATURE_REFERENCE_DATATYPE = nameof(Feature);
+
         [Serializable]
         private class MeshRendererMaterialDictionary : SerializableDictionary<int, Material> { };
 
@@ -100,6 +102,13 @@ namespace DepictionEngine
                 if (_materialsDictionary != null)
                     _materialsDictionary.Clear();
             }
+        }
+
+        protected override void CreateComponents(InitializationContext initializingContext)
+        {
+            base.CreateComponents(initializingContext);
+
+            InitializeReferenceDataType(FEATURE_REFERENCE_DATATYPE, typeof(AssetReference));
         }
 
         protected override bool UpdateAllDelegates()
@@ -208,7 +217,7 @@ namespace DepictionEngine
 
         protected AssetReference featureAssetReference
         {
-            get { return AppendToReferenceComponentName(GetReferenceAt(1), typeof(Feature).Name) as AssetReference; }
+            get { return GetFirstReferenceOfType(FEATURE_REFERENCE_DATATYPE) as AssetReference; }
         }
 
         private void UpdateFeature()

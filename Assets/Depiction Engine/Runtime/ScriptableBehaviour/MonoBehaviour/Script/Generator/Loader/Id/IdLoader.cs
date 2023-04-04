@@ -43,13 +43,16 @@ namespace DepictionEngine
 
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
             {
-                _ids?.Clear();
-                _idReferences?.Clear();
-                _idLoadScopes?.Clear();
+                ids.Clear();
+                idReferences.Clear();
+                idLoadScopes.Clear();
             }
 
             if (initializingContext == InitializationContext.Existing)
-                PerformAddRemoveAnFixBrokenLoadScopes(idLoadScopes, idLoadScopes);
+            {
+                PerformAddRemoveChangeAndFixBrokenLoadScopes(idLoadScopes, idLoadScopes);
+                PerformAddRemoveReferencesChange(idReferences, idReferences);
+            }
 
             InitValue(value => ids = value, new List<SerializableGuid>(), initializingContext);
         }
@@ -78,23 +81,25 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        private IdLoadScopeDictionary _lastIdLoadScopes;
+        private IdLoadScopeDictionary lastIdLoadScopes
+        {
+            get => _lastIdLoadScopes ??= new();
+        }
+
         private IdReferencesDictionary _lastIdReferences;
         private IdReferencesDictionary lastIdReferences
         {
             get => _lastIdReferences ??= new ();
         }
 
-        private IdLoadScopeDictionary _lastIdLoadScopes;
-        private IdLoadScopeDictionary lastIdLoadScopes
-        {
-            get => _lastIdLoadScopes ??= new ();
-        }
-
         protected override void UndoRedoPerformed()
         {
             base.UndoRedoPerformed();
 
-            UndoRedoPerformedReferencesLoadScopes(idReferences, lastIdReferences, idLoadScopes, lastIdLoadScopes);
+            PerformAddRemoveChangeAndFixBrokenLoadScopes(idLoadScopes, lastIdLoadScopes, true);
+
+            PerformAddRemoveReferencesChange(idReferences, lastIdReferences);
         }
 #endif
 
@@ -132,11 +137,7 @@ namespace DepictionEngine
         [Json]
         protected List<SerializableGuid> ids
         {
-            get 
-            { 
-                _ids ??= new List<SerializableGuid>();
-                return _ids; 
-            }
+            get => _ids ??= new List<SerializableGuid>();
             set { SetValue(nameof(ids), value, ref _ids); }
         }
 
@@ -203,7 +204,7 @@ namespace DepictionEngine
             return false;
         }
 
-        public override bool RemoveReference(object loadScopeKey, ReferenceBase reference = null, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
+        public override bool RemoveReference(object loadScopeKey, ReferenceBase reference, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
             if (base.RemoveReference(loadScopeKey, reference, disposeContext))
             {
@@ -211,32 +212,29 @@ namespace DepictionEngine
                 if (loadScopeId != SerializableGuid.Empty)
                 {
 #if UNITY_EDITOR
-                    if (disposeContext == DisposeContext.Editor_Destroy)
-                        Editor.UndoManager.RecordObject(this);
+                    RegisterCompleteObjectUndo(disposeContext);
 
                     if (lastIdReferences.TryGetValue(loadScopeId, out ReferencesList lastReferences))
                     {
-                        if (lastReferences.IsEmpty() || lastReferences.Remove(reference))
+                        if (lastReferences.Remove(reference) && lastReferences.IsEmpty())
                             lastIdReferences.Remove(loadScopeId);
                     }
 #endif
 
                     if (idReferences.TryGetValue(loadScopeId, out ReferencesList references))
                     {
-                        if (references.IsEmpty() || references.Remove(reference))
+                        if (references.Remove(reference) && references.IsEmpty())
                         {
                             idReferences.Remove(loadScopeId);
 
                             RemoveId(loadScopeId);
 
+                            if (GetLoadScope(out LoadScope loadScope, loadScopeKey))
+                                DisposeLoadScope(loadScope, disposeContext);
+
                             return true;
                         }
                     }
-
-#if UNITY_EDITOR
-                    if (disposeContext == DisposeContext.Editor_Destroy)
-                        Editor.UndoManager.FlushUndoRecordObjects();
-#endif
                 }
             }
             return false;
@@ -314,7 +312,7 @@ namespace DepictionEngine
             SerializableGuid id = (SerializableGuid)loadScopeKey;
             if (id != SerializableGuid.Empty)
             {
-                if (idLoadScopes.TryGetValue(id, out IdLoadScope idLoadScope) && loadScope != Disposable.NULL)
+                if (idLoadScopes.TryGetValue(id, out IdLoadScope idLoadScope) && idLoadScope != Disposable.NULL)
                 {
                     loadScope = idLoadScope;
                     load = reload;

@@ -12,6 +12,10 @@ namespace DepictionEngine
     [CreateComponent(typeof(AssetReference), typeof(AssetReference), typeof(AssetReference))]
     public class TerrainGridMeshObject : ElevationGridMeshObjectBase
     {
+        private const string COLORMAP_REFERENCE_DATATYPE = nameof(Texture) + " ColorMap";
+        private const string ADDITIONALMAP_REFERENCE_DATATYPE = nameof(Texture) + " AdditionalMap";
+        private const string SURFACETYPEMAP_REFERENCE_DATATYPE = nameof(Texture) + " SurfaceTypeMap";
+
         /// <summary>
         /// The different types of normals that can be generated for terrains. <br/><br/>
         /// <b><see cref="DerivedFromElevation"/>:</b> <br/>
@@ -101,6 +105,15 @@ namespace DepictionEngine
             InitValue(value => shaderPath = value, GetDefaultShaderPath(), initializingContext);
             InitValue(value => edgeOverlapThickness = value, 0.12f, initializingContext);
             InitValue(value => color = value, Color.clear, initializingContext);
+        }
+
+        protected override void CreateComponents(InitializationContext initializingContext)
+        {
+            base.CreateComponents(initializingContext);
+
+            InitializeReferenceDataType(COLORMAP_REFERENCE_DATATYPE, typeof(AssetReference));
+            InitializeReferenceDataType(ADDITIONALMAP_REFERENCE_DATATYPE, typeof(AssetReference));
+            InitializeReferenceDataType(SURFACETYPEMAP_REFERENCE_DATATYPE, typeof(AssetReference));
         }
 
         protected override bool UpdateReferences(bool forceUpdate = false)
@@ -251,7 +264,7 @@ namespace DepictionEngine
 
         private AssetReference colorMapAssetReference
         {
-            get { return AppendToReferenceComponentName(GetReferenceAt(1), typeof(Texture).Name + " ColorMap") as AssetReference; }
+            get { return GetFirstReferenceOfType(COLORMAP_REFERENCE_DATATYPE) as AssetReference; }
         }
 
         private void UpdateColorMap()
@@ -278,7 +291,7 @@ namespace DepictionEngine
 
         private AssetReference additionalMapAssetReference
         {
-            get { return AppendToReferenceComponentName(GetReferenceAt(2), typeof(Texture).Name + " AdditionalMap") as AssetReference; }
+            get { return GetFirstReferenceOfType(ADDITIONALMAP_REFERENCE_DATATYPE) as AssetReference; }
         }
 
         private void UpdateAdditionalMap()
@@ -305,7 +318,7 @@ namespace DepictionEngine
 
         private AssetReference surfaceTypeMapAssetReference
         {
-            get { return AppendToReferenceComponentName(GetReferenceAt(3), typeof(Texture).Name + " SurfaceTypeMap") as AssetReference; }
+            get { return GetFirstReferenceOfType(SURFACETYPEMAP_REFERENCE_DATATYPE) as AssetReference; }
         }
 
         private void UpdateSurfaceTypeMap()

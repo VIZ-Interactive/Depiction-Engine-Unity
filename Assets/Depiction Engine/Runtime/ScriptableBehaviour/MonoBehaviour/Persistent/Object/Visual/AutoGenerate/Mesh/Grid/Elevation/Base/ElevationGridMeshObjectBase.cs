@@ -8,7 +8,16 @@ namespace DepictionEngine
     [CreateComponent(typeof(AssetReference))]
     public class ElevationGridMeshObjectBase : Grid2DMeshObjectBase
     {
+        private const string ELEVATION_REFERENCE_DATATYPE = nameof(Elevation);
+
         private Elevation _elevation;
+
+        protected override void CreateComponents(InitializationContext initializingContext)
+        {
+            base.CreateComponents(initializingContext);
+
+            InitializeReferenceDataType(ELEVATION_REFERENCE_DATATYPE, typeof(AssetReference));
+        }
 
         protected override bool UpdateAllDelegates()
         {
@@ -53,7 +62,7 @@ namespace DepictionEngine
 
         private AssetReference elevationAssetReference
         {
-            get { return AppendToReferenceComponentName(GetReferenceAt(0), typeof(Elevation).Name) as AssetReference; }
+            get { return GetFirstReferenceOfType(ELEVATION_REFERENCE_DATATYPE) as AssetReference; }
         }
 
         private void UpdateElevation()

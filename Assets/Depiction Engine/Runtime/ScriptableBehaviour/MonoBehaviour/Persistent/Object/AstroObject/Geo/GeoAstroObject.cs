@@ -46,11 +46,12 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private float _sphericalRatio;
 
+        [SerializeField, HideInInspector]
+        private Grid2DIndexTerrainGridMeshObjectDictionary[] _grid2DIndexTerrainGridMeshObjects;
+
         private Tween _sphericalRatioTween;
 
         private double _radius;
-
-        private Grid2DIndexTerrainGridMeshObjectDictionary[] _grid2DIndexTerrainGridMeshObjects;
 
         /// <summary>
         /// Dispatched when a <see cref="DepictionEngine.Grid2DIndexTerrainGridMeshObjects"/> is added at a specific zoom level and index in the <see cref="GeoAstroObject"/> grid.
@@ -192,8 +193,8 @@ namespace DepictionEngine
         {
             base.UndoRedoPerformed();
 
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { size = value; }, ref _size, ref _lastSize);
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { spherical = value; }, ref _spherical, ref _lastSpherical);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { size = value; }, ref _size, ref _lastSize);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { spherical = value; }, ref _spherical, ref _lastSpherical);
         }
 #endif
 
@@ -826,9 +827,12 @@ namespace DepictionEngine
     [Serializable]
     public class Grid2DIndexTerrainGridMeshObjects : Disposable
     {
+        [SerializeField]
         private Vector2Int _grid2DDimensions;
+        [SerializeField]
         private Vector2Int _grid2DIndex;
 
+        [SerializeField]
         private List<TerrainGridMeshObject> _terrainGridMeshObjects;
 
         /// <summary>

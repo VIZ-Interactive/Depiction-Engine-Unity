@@ -175,7 +175,7 @@ namespace DepictionEngine
 
             FallbackValues firstPersistentFallbackValues = loadScope.GetFirstPersistentFallbackValues();
             if (firstPersistentFallbackValues != Disposable.NULL)
-                loadSceneDatasourceOperation = instanceManager.CreateInstance<LoadSceneDatasourceOperation>().Init(firstPersistentFallbackValues.GetFallbackValuesType(), loadScope.GetLoadScopeFallbackValuesJson(), firstPersistentFallbackValues.id, loadScope.seed);
+                loadSceneDatasourceOperation = instanceManager.CreateInstance<LoadSceneDatasourceOperation>().Init(firstPersistentFallbackValues.GetFallbackValuesType(), loadScope.GetLoadScopeFallbackValuesJson(), firstPersistentFallbackValues.id, loadScope.loader.seed);
 
             return loadSceneDatasourceOperation;
         }
@@ -296,6 +296,15 @@ namespace DepictionEngine
                 return true;
             }
             return false;
+        }
+
+        protected override void LateUpdate()
+        {
+            base.LateUpdate();
+
+#if UNITY_EDITOR
+            sceneDatasource?.ResetRegisterCompleteUndo();
+#endif
         }
     }
 }

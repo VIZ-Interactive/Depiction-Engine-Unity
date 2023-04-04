@@ -251,9 +251,9 @@ namespace DepictionEngine
 
         protected override DatasourceOperationBase CreateLoadDatasourceOperation(LoadScope loadScope)
         {
-            LoadWebRequestDatasourceOperation loadWebRequestDatasourceOperation = CreateWebRequestDatasourceOperation<LoadWebRequestDatasourceOperation>(loadScope.loadEndpoint, null, loadScope.depth, loadScope.GetURLParams(), loadScope.timeout, loadScope.headers);
+            LoadWebRequestDatasourceOperation loadWebRequestDatasourceOperation = CreateWebRequestDatasourceOperation<LoadWebRequestDatasourceOperation>(loadScope.loader.loadEndpoint, null, loadScope.loader.depth, loadScope.GetURLParams(), loadScope.loader.timeout, loadScope.loader.headers);
 
-            loadWebRequestDatasourceOperation.Init(loadScope.dataType, loadScope.GetLoadScopeFallbackValuesJson(), loadScope.GetPersistentFallbackValuesJson());
+            loadWebRequestDatasourceOperation.Init(loadScope.loader.dataType, loadScope.GetLoadScopeFallbackValuesJson(), loadScope.GetPersistentFallbackValuesJson());
 
             return loadWebRequestDatasourceOperation;
         }

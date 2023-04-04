@@ -8,7 +8,16 @@ namespace DepictionEngine
     [CreateComponent(typeof(AssetReference))]
     public class MeshObject : MeshObjectBase
     {
+        private const string MESH_REFERENCE_DATATYPE = nameof(Mesh);
+
         private Mesh _mesh;
+
+        protected override void CreateComponents(InitializationContext initializingContext)
+        {
+            base.CreateComponents(initializingContext);
+
+            InitializeReferenceDataType(MESH_REFERENCE_DATATYPE, typeof(AssetReference));
+        }
 
         protected override bool UpdateReferences(bool forceUpdate = false)
         {
@@ -23,7 +32,7 @@ namespace DepictionEngine
 
         private AssetReference meshAssetReference
         {
-            get { return AppendToReferenceComponentName(GetReferenceAt(0), typeof(Mesh).Name) as AssetReference; }
+            get { return GetFirstReferenceOfType(MESH_REFERENCE_DATATYPE) as AssetReference; }
         }
 
         private void UpdateMesh()

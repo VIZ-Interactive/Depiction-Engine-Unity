@@ -151,11 +151,11 @@ namespace DepictionEngine
             base.UndoRedoPerformed();
 
             if (isGeoCoordinateTransform)
-                Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { geoCoordinate = value; }, ref _geoCoordinate, ref _lastGeoCoordinate);
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { geoCoordinate = value; }, ref _geoCoordinate, ref _lastGeoCoordinate);
             else
-                Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { localPosition = value; }, ref _localPosition, ref _lastLocalPosition);
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { localRotation = value; }, ref _localRotation, ref _lastLocalRotation);
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { localScale = value; }, ref _localScale, ref _lastLocalScale);
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { localPosition = value; }, ref _localPosition, ref _lastLocalPosition);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { localRotation = value; }, ref _localRotation, ref _lastLocalRotation);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { localScale = value; }, ref _localScale, ref _lastLocalScale);
         }
 #endif
 

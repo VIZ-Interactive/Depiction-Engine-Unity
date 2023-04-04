@@ -96,7 +96,7 @@ namespace DepictionEngine
         {
             base.UndoRedoPerformed();
 
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { alpha = value; }, ref _alpha, ref _lastAlpha);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { alpha = value; }, ref _alpha, ref _lastAlpha);
         }
 #endif
 
@@ -168,20 +168,12 @@ namespace DepictionEngine
 
         private List<MeshRenderer> managedMeshRenderers
         {
-            get 
-            {
-                _managedMeshRenderers ??= new List<MeshRenderer>();
-                return _managedMeshRenderers;
-            }
+            get => _managedMeshRenderers ??= new List<MeshRenderer>();
         }
 
         private MaterialPropertyBlock materialPropertyBlock
         {
-            get 
-            {
-                _materialPropertyBlock ??= new MaterialPropertyBlock();
-                return _materialPropertyBlock; 
-            }
+            get => _materialPropertyBlock ??= new MaterialPropertyBlock();
         }
 
         protected virtual void DontSaveVisualsToSceneChanged(bool newValue, bool oldValue)

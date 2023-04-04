@@ -294,8 +294,8 @@ namespace DepictionEngine
         {
             base.UndoRedoPerformed();
 
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { debug = value; }, ref _debug, ref _lastDebug);
-            Editor.UndoManager.PerformUndoRedoPropertyChange((value) => { runInBackground = value; }, ref _runInBackground, ref _lastRunInBackground);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { debug = value; }, ref _debug, ref _lastDebug);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { runInBackground = value; }, ref _runInBackground, ref _lastRunInBackground);
         }
 
         /// <summary>
@@ -362,6 +362,7 @@ namespace DepictionEngine
             //Necessary?
             Resources.UnloadUnusedAssets();
         }
+
 
         private void SelectionChangedHandler()
         {
@@ -776,11 +777,7 @@ namespace DepictionEngine
 
         private List<TransformBase> sceneChildren
         {
-            get 
-            {
-                _sceneChildren ??= new List<TransformBase>();
-                return _sceneChildren; 
-            }
+            get => _sceneChildren ??= new List<TransformBase>();
         }
 
         /// <summary>

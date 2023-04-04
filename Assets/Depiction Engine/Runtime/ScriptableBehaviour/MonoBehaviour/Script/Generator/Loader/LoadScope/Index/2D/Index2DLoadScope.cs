@@ -1,6 +1,5 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -168,29 +167,9 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetHashCode(Vector2Int dimensions, Vector2Int index)
-        {
-            IEnumerable<int> hashCodes = new int[] { index.x, index.y, dimensions.x, dimensions.y };
-            int hash1 = (5381 << 16) + 5381;
-            int hash2 = hash1;
-
-            int i = 0;
-            foreach (var hashCode in hashCodes)
-            {
-                if (i % 2 == 0)
-                    hash1 = ((hash1 << 5) + hash1 + (hash1 >> 27)) ^ hashCode;
-                else
-                    hash2 = ((hash2 << 5) + hash2 + (hash2 >> 27)) ^ hashCode;
-
-                ++i;
-            }
-            return hash1 + (hash2 * 1566083941);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-            return GetHashCode(scopeDimensions, scopeIndex);
+            return scopeGrid2DIndex.GetHashCode();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

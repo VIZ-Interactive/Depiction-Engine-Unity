@@ -13,6 +13,8 @@ namespace DepictionEngine
     [CreateComponent(typeof(AssetReference))]
     public class InstantiatorVisualObject : AutoGenerateVisualObject
     {
+        private const string ASSETBUNDLE_REFERENCE_DATATYPE = nameof(AssetBundle);
+
         [BeginFoldout("GameObjects")]
 #if UNITY_EDITOR
         [SerializeField, Button(nameof(DisposeAllVisualsBtn)), ConditionalShow(nameof(IsNotFallbackValues)), Tooltip("Dispose all children.")]
@@ -55,6 +57,13 @@ namespace DepictionEngine
             base.Recycle();
 
             _gameObjects = default;
+        }
+
+        protected override void CreateComponents(InitializationContext initializingContext)
+        {
+            base.CreateComponents(initializingContext);
+
+            InitializeReferenceDataType(ASSETBUNDLE_REFERENCE_DATATYPE, typeof(AssetReference));
         }
 
         protected override bool UpdateAllDelegates() 
@@ -109,7 +118,7 @@ namespace DepictionEngine
 
         private AssetReference assetBundleAssetReference
         {
-            get { return AppendToReferenceComponentName(GetReferenceAt(0), typeof(AssetBundle).Name) as AssetReference; }
+            get { return GetFirstReferenceOfType(ASSETBUNDLE_REFERENCE_DATATYPE) as AssetReference; }
         }
 
         private void UpdateAssetBundle()

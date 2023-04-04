@@ -536,6 +536,10 @@ namespace DepictionEngine
             return false;
         }
 
+        protected virtual void LateUpdate()
+        {
+        }
+
         public bool UpdateDisposingContext()
         {
             if (!_disposingContextUpdated)
