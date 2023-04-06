@@ -113,6 +113,17 @@ namespace DepictionEngine
             return false;
         }
 
+#if UNITY_EDITOR
+        public override bool AfterAssemblyReload()
+        {
+            if (base.AfterAssemblyReload())
+            {
+                return !IsDisposing();
+            }
+            return false;
+        }
+#endif
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override bool SetValue<T>(string name, T value, ref T valueField, Action<T, T> assignedCallback = null)
         {

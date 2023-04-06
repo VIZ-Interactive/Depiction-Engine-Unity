@@ -22,7 +22,7 @@ public abstract class SerializableHashSet<T> : SerializableHashSetBase, ISet<T>,
 {
     HashSet<T> m_hashSet;
     [SerializeField]
-    T[] m_keys;
+    List<T> m_keys;
 
     public SerializableHashSet()
     {
@@ -38,37 +38,29 @@ public abstract class SerializableHashSet<T> : SerializableHashSetBase, ISet<T>,
     {
         m_hashSet.Clear();
         foreach (var value in set)
-        {
             m_hashSet.Add(value);
-        }
     }
 
     public void OnAfterDeserialize()
     {
-        if (m_keys != null)
+        if (m_keys != null && m_keys.Count > 0)
         {
             m_hashSet.Clear();
-            int n = m_keys.Length;
+            int n = m_keys.Count;
             for (int i = 0; i < n; ++i)
             {
                 m_hashSet.Add(m_keys[i]);
             }
-
-            m_keys = null;
         }
     }
 
     public void OnBeforeSerialize()
     {
-        int n = m_hashSet.Count;
-        m_keys = new T[n];
+        m_keys ??= new ();
+        m_keys.Clear();
 
-        int i = 0;
         foreach (var value in m_hashSet)
-        {
-            m_keys[i] = value;
-            ++i;
-        }
+            m_keys.Add(value);
     }
 
     #region ISet<TValue>

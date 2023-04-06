@@ -66,6 +66,13 @@ namespace DepictionEngine
             sceneDatasource.Initialize(this, initializingContext);
         }
 
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
+
+            sceneDatasource.Initialized(initializingContext);
+        }
+
 #if UNITY_EDITOR
         protected override void UndoRedoPerformed()
         {
@@ -117,7 +124,7 @@ namespace DepictionEngine
         protected override void InstanceAddedHandler(IProperty property)
         {
             base.InstanceAddedHandler(property);
-
+            
             if (property is LoaderBase)
             {
                 LoaderBase loader = property as LoaderBase;
@@ -296,15 +303,6 @@ namespace DepictionEngine
                 return true;
             }
             return false;
-        }
-
-        protected override void LateUpdate()
-        {
-            base.LateUpdate();
-
-#if UNITY_EDITOR
-            sceneDatasource?.ResetRegisterCompleteUndo();
-#endif
         }
     }
 }

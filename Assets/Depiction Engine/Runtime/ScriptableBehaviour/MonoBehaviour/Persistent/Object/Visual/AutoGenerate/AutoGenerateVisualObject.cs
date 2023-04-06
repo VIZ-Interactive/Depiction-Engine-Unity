@@ -1,7 +1,6 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. <contact@vizinteractive.io> | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -376,6 +375,7 @@ namespace DepictionEngine
         {
 
         }
+
         public override bool OnDispose(DisposeContext disposeContext)
         {
             if (base.OnDispose(disposeContext))

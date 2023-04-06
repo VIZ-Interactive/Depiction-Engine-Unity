@@ -46,8 +46,8 @@ namespace DepictionEngine
         /// Marks all newly initialized objects as 'UnityInitialized'. <br/><br/>
         /// <b><see cref="DelayedOnDestroy"/>:</b> <br/>
         /// Objects that were waiting to be destroyed are destroyed. <br/><br/>
-        /// <b><see cref="DelayedDispose"/>:</b> <br/>
-        /// Objects that were waiting to be disposed are disposed. <br/><br/>
+        /// <b><see cref="ResetRegisterCompleteUndo"/>:</b> <br/>
+        /// Reset the registerCompleteUndo flag so that RegisterCompleteUndo can be called the next update. <br/><br/>
         /// </summary> 
         public enum ExecutionState
         {
@@ -61,7 +61,7 @@ namespace DepictionEngine
             PastingComponentValues,
             UnityInitialized,
             DelayedOnDestroy,
-            DelayedDispose,
+            ResetRegisterCompleteUndo
         };
 
         public const string NAMESPACE = "DepictionEngine";
@@ -131,10 +131,6 @@ namespace DepictionEngine
         private static bool _sceneClosing;
 
         /// <summary>
-        /// Dispatched right after all objects have been initialized. 
-        /// </summary>
-        public static Action PostLateInitializeEvent;
-        /// <summary>
         /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
         /// </summary>
         public static Action LateUpdateEvent;
@@ -144,6 +140,11 @@ namespace DepictionEngine
         public static Action DelayedOnDestroyEvent;
 
 #if UNITY_EDITOR
+        /// <summary>
+        /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
+        /// </summary>
+        public static Action ResetRegisterCompleteUndoEvent;
+
         /// <summary>
         /// Dispatched when the parent Scene of the <see cref="DepictionEngine.SceneManager"/> gameObject is closing.
         /// </summary>
@@ -356,13 +357,21 @@ namespace DepictionEngine
             BeforeAssemblyReloadEvent?.Invoke();
         }
 
+#if UNITY_EDITOR
         [UnityEditor.InitializeOnLoadMethod]
         private static void AfterAssemblyReloadHandler()
         {
+            MonoBehaviourDisposable[] monoBehaviourDisposables = FindObjectsOfType<MonoBehaviourDisposable>(true);
+            foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
+                monoBehaviourDisposable.AfterAssemblyReload();
+            ScriptableObjectDisposable[] scriptableObjectDisposables = FindObjectsOfType<ScriptableObjectDisposable>(true);
+            foreach(ScriptableObjectDisposable scriptableObjectDisposable in scriptableObjectDisposables)
+                scriptableObjectDisposable.AfterAssemblyReload();
+
             //Necessary?
             Resources.UnloadUnusedAssets();
         }
-
+#endif
 
         private void SelectionChangedHandler()
         {
@@ -1056,7 +1065,6 @@ namespace DepictionEngine
 #endif
                     sceneExecutionState = ExecutionState.LateInitialize;
                     LateInitialize();
-                    PostLateInitializeEvent?.Invoke();
 #if UNITY_EDITOR
                     Editor.UndoManager.PostInitialize();
 
@@ -1201,8 +1209,10 @@ namespace DepictionEngine
         }
 #endif
 
-        public void LateUpdate()
+        protected override void LateUpdate()
         {
+            base.LateUpdate();
+
 #if UNITY_EDITOR
             if (_resetingObjects != null && _resetingObjects.Count > 0)
             {
@@ -1260,6 +1270,8 @@ namespace DepictionEngine
             }, DisposeContext.Editor_Destroy);
 
 #if UNITY_EDITOR
+            InvokeAction(ref ResetRegisterCompleteUndoEvent, "ResetRegisterCompleteUndo", ExecutionState.ResetRegisterCompleteUndo);
+
             //Unsubscribe and Subscribe again to stay at the bottom of the invocation list. 
             //Could be replaced with [DefaultExecutionOrder(-3)] potentialy?
             UpdateUpdateDelegate();

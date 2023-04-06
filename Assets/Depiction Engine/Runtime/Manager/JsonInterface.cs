@@ -104,16 +104,21 @@ namespace DepictionEngine
             }
             return false;
         }
+
         protected override void InstanceAddedHandler(IProperty property)
         {
             base.InstanceAddedHandler(property);
+
             SentExternalEventMessage(INSTANCE_ADDED_EVENT, GetInstanceEventJSON(property));
         }
+
         protected override void InstanceRemovedHandler(IProperty property)
         {
             base.InstanceRemovedHandler(property);
+
             SentExternalEventMessage(INSTANCE_REMOVED_EVENT, GetInstanceEventJSON(property));
         }
+
         private JSONObject _instanceEventJson;
         private JSONObject GetInstanceEventJSON(IProperty property)
         {
@@ -123,34 +128,42 @@ namespace DepictionEngine
             _instanceEventJson[TYPE] = JsonUtility.ToJson(property.GetType());
             return _instanceEventJson;
         }
+
         private void InputManagerOnMouseMoveHandler(RaycastHitDouble raycastHitDouble)
         {
             SentExternalEventMessage(MOUSE_MOVE_EVENT, GetMouseEventJSON(raycastHitDouble));
         }
+
         private void InputManagerOnMouseEnterHandler(RaycastHitDouble raycastHitDouble)
         {
             SentExternalEventMessage(MOUSE_ENTER_EVENT, GetMouseEventJSON(raycastHitDouble));
         }
+
         private void InputManagerOnMouseExitHandler(RaycastHitDouble raycastHitDouble)
         {
             SentExternalEventMessage(MOUSE_EXIT_EVENT, GetMouseEventJSON(raycastHitDouble));
         }
+
         private void InputManagerOnMouseUpHandler(RaycastHitDouble raycastHitDouble)
         {
             SentExternalEventMessage(MOUSE_UP_EVENT, GetMouseEventJSON(raycastHitDouble));
         }
+
         private void InputManagerOnMouseDownHandler(RaycastHitDouble raycastHitDouble)
         {
             SentExternalEventMessage(MOUSE_DOWN_EVENT, GetMouseEventJSON(raycastHitDouble));
         }
+
         private void InputManagerOnMouseClickedHandler(RaycastHitDouble raycastHitDouble)
         {
             SentExternalEventMessage(MOUSE_CLICKED_EVENT, GetMouseEventJSON(raycastHitDouble));
         }
+
         public static string NewGuid()
         {
             return SerializableGuid.NewGuid().ToString();
         }
+
         private JSONObject _mouseEventJson;
         private JSONObject _mouseEventVisualObjectJson;
         private JSONObject GetMouseEventJSON(RaycastHitDouble raycastHitDouble)
@@ -178,12 +191,14 @@ namespace DepictionEngine
             }
             return null;
         }
+
         private IJson GetIJSONFromId(string id)
         {
             if (!string.IsNullOrEmpty(id) && SerializableGuid.TryParse(id, out SerializableGuid guid))
                 return instanceManager.GetIJson(guid);
             return null;
         }
+
         public override bool PreHierarchicalUpdate()
         {
             if (base.PreHierarchicalUpdate())
@@ -193,6 +208,7 @@ namespace DepictionEngine
             }
             return false;
         }
+
         public override bool HierarchicalUpdate()
         {
             if (base.HierarchicalUpdate())
@@ -202,6 +218,7 @@ namespace DepictionEngine
             }
             return false;
         }
+
         public override bool PostHierarchicalUpdate()
         {
             if (base.PostHierarchicalUpdate())
@@ -211,11 +228,13 @@ namespace DepictionEngine
             }
             return false;
         }
+
         public override void HierarchicalFixedUpdate()
         {
             base.HierarchicalFixedUpdate();
             SentExternalEventMessage(HIERARCHICAL_FIXED_UPDATE_EVENT);
         }
+
         private JSONObject _hierarchicalBeginCameraRenderingarameters;
         public override bool HierarchicalBeginCameraRendering(Camera camera)
         {
@@ -229,6 +248,7 @@ namespace DepictionEngine
             }
             return false;
         }
+
         private JSONObject _hierarchicalEndCameraRenderingarameters;
         public override bool HierarchicalEndCameraRendering(Camera camera)
         {
@@ -242,6 +262,7 @@ namespace DepictionEngine
             }
             return false;
         }
+
         public void ReceiveExternalMessage(string jsonStr)
         {
             JSONArray results = null;
@@ -262,6 +283,7 @@ namespace DepictionEngine
             if (results != null)
                 SendExternalMessage(results);
         }
+
         private JSONNode ProcessOperation(JSONNode operation)
         {
             JSONNode result = null;
@@ -491,6 +513,7 @@ namespace DepictionEngine
             }
             return result;
         }
+
         private void SentExternalEventMessage(string type, JSONNode parameters = null)
         {
             JSONNode json = parameters;

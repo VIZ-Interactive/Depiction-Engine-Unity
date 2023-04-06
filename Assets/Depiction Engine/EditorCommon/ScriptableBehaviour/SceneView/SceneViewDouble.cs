@@ -418,11 +418,7 @@ namespace DepictionEngine.Editor
         private SceneView _sceneView;
         public SceneView sceneView
         {
-            get
-            {
-                _sceneView ??= GetSceneView(this);
-                return _sceneView;
-            }
+            get => _sceneView ??= GetSceneView(this);
         }
 
         private SceneCamera _camera;

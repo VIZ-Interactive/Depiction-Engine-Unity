@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -146,6 +145,24 @@ namespace DepictionEngine
             return false;
         }
 
+        public void IterateOverPersistents(Func<SerializableGuid, IPersistent, bool> callback)
+        {
+            if (_persistentsDictionary != null)
+            {
+                for (int i = _persistentsDictionary.Count - 1; i >= 0; i--)
+                {
+                    KeyValuePair<SerializableGuid, SerializableIPersistent> persistentKey = _persistentsDictionary.ElementAt(i);
+                    if (!callback(persistentKey.Key, persistentKey.Value.persistent))
+                        break;
+                }
+            }
+        }
+
+        public bool ContainsPersistent(SerializableGuid persistentId)
+        {
+            return persistentsDictionary.ContainsKey(persistentId);
+        }
+
         public void DatasourceChanged(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
 #if UNITY_EDITOR
@@ -165,19 +182,6 @@ namespace DepictionEngine
 #endif
 
                 PersistentRemovedEvent?.Invoke(this);
-            }
-        }
-
-        public void IterateOverPersistents(Func<SerializableGuid, IPersistent, bool> callback)
-        {
-            if (_persistentsDictionary != null)
-            {
-                for (int i = _persistentsDictionary.Count - 1; i >= 0; i--)
-                {
-                    KeyValuePair<SerializableGuid, SerializableIPersistent> persistentKey = _persistentsDictionary.ElementAt(i);
-                    if (!callback(persistentKey.Key, persistentKey.Value.persistent))
-                        break;
-                }
             }
         }
 
@@ -348,7 +352,6 @@ namespace DepictionEngine
                 ILoadDatasource datasource = loader.datasource as ILoadDatasource;
                 if (!Disposable.IsDisposed(datasource))
                 {
-                    Debug.Log("LOADING");
                     loadingState = DatasourceOperationBase.LoadingState.Loading;
                     datasourceOperation = datasource.Load((persistents, loadingResult) =>
                     {
@@ -377,6 +380,28 @@ namespace DepictionEngine
         public virtual bool IsInScope(IPersistent persistent)
         {
             return false;
+        }
+
+        public void Merge(LoadScope loadScope)
+        {
+            bool addedPersistent = false;
+
+            loadScope.IterateOverPersistents((persistentId, persistent) =>
+            {
+                if (!Disposable.IsDisposed(persistent) && AddPersistent(persistent))
+                    addedPersistent = true;
+                return true;
+            });
+
+            if (addedPersistent)
+            {
+                if (datasourceOperation == null)
+                {
+                    datasourceOperation = loadScope.datasourceOperation;
+                    loadScope._datasourceOperation = null;
+                }
+                loadingState = DatasourceOperationBase.LoadingState.Loaded;
+            }
         }
 
         public override string ToString()
@@ -408,17 +433,25 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        public override void MarkAsNotPoolable()
+        {
+            base.MarkAsNotPoolable();
+
+            if (datasourceOperation != Disposable.NULL)
+                datasourceOperation.MarkAsNotPoolable();
+        }
+
         private bool _registeredCompleteObjectUndo;
         private void RegisterCompleteObjectUndo(DisposeContext disposeContext = DisposeContext.Editor_Destroy)
         {
             if (disposeContext == DisposeContext.Editor_Destroy)
             {
+                MarkAsNotPoolable();
                 if (!_registeredCompleteObjectUndo)
                 {
                     _registeredCompleteObjectUndo = true;
                     Editor.UndoManager.RegisterCompleteObjectUndo(this);
                 }
-                MarkAsNotPoolable();
             }
         }
 

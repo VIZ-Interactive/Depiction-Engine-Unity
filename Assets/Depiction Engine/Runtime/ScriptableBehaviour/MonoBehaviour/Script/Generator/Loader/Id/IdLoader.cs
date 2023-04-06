@@ -50,7 +50,7 @@ namespace DepictionEngine
 
             if (initializingContext == InitializationContext.Existing)
             {
-                PerformAddRemoveChangeAndFixBrokenLoadScopes(idLoadScopes, idLoadScopes);
+                PerformAddRemoveLoadScopesChange(idLoadScopes, idLoadScopes);
                 PerformAddRemoveReferencesChange(idReferences, idReferences);
             }
 
@@ -97,9 +97,21 @@ namespace DepictionEngine
         {
             base.UndoRedoPerformed();
 
-            PerformAddRemoveChangeAndFixBrokenLoadScopes(idLoadScopes, lastIdLoadScopes, true);
+            PerformAddRemoveLoadScopesChange(idLoadScopes, lastIdLoadScopes, true);
 
             PerformAddRemoveReferencesChange(idReferences, lastIdReferences);
+        }
+
+        public override bool AfterAssemblyReload()
+        {
+            if (base.AfterAssemblyReload())
+            {
+                //Trigger Load() on any loadScopes that were interrupted by the assembly reload.
+                PerformAddRemoveLoadScopesChange(idLoadScopes, idLoadScopes);
+
+                return true;
+            }
+            return false;
         }
 #endif
 

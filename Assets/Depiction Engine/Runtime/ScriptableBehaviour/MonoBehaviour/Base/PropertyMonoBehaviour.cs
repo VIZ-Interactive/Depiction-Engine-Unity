@@ -155,7 +155,6 @@ namespace DepictionEngine
             UpdateFields();
         }
 
-
 #if UNITY_EDITOR
         protected override void UndoRedoPerformed()
         {
@@ -242,9 +241,10 @@ namespace DepictionEngine
             return false;
         }
 
+
         protected virtual void InstanceAddedHandler(IProperty property)
         {
-            IterateOverComponentReference((id, callback) => 
+            IterateOverComponentReference((id, callback) =>
             {
                 if (property.id == id)
                     callback();
@@ -570,11 +570,7 @@ namespace DepictionEngine
 
         public List<PropertyMonoBehaviour> children
         {
-            get 
-            {
-                _children ??= new List<PropertyMonoBehaviour>();
-                return _children; 
-            }
+            get => _children ??= new List<PropertyMonoBehaviour>();
         }
 
         protected virtual bool CanBeDisabled()
@@ -684,9 +680,7 @@ namespace DepictionEngine
 
         protected virtual bool SetParent(PropertyMonoBehaviour value)
         {
-            value = ValidatedParent(value);
-
-            return SetValue(nameof(parent), value, ref _parent, (newValue, oldValue) =>
+            return SetValue(nameof(parent), ValidatedParent(value), ref _parent, (newValue, oldValue) =>
                {
                     if (RemoveParentDelegates(oldValue))
                         oldValue.RemoveChild(this);
@@ -828,6 +822,17 @@ namespace DepictionEngine
             return initialized && lateInitialized;
         }
 
+#if UNITY_EDITOR
+        public override bool AfterAssemblyReload()
+        {
+            if (base.AfterAssemblyReload())
+            {
+                return !IsDisposing();
+            }
+            return false;
+        }
+#endif
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PreHierarchicalUpdateChild(PropertyMonoBehaviour child) { child.PreHierarchicalUpdate(); }
         /// <summary>
@@ -921,7 +926,6 @@ namespace DepictionEngine
         {
             if (RemoveListItem(children, child))
             {
-                Debug.Log(child);
                 RemoveChildDelegates(child);
                 return true;
             }

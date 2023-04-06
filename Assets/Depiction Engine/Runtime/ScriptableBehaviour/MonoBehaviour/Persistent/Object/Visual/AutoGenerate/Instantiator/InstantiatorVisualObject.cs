@@ -73,7 +73,7 @@ namespace DepictionEngine
                 RemoveAssetBundleDelegates();
                 if (!IsDisposing())
                     AddAssetBundleDelegates();
-
+               
                 return true;
             }
             return false;

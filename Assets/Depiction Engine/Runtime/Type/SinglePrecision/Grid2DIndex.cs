@@ -18,7 +18,7 @@ namespace DepictionEngine
         public Vector2Int index;
         public Vector2Int dimensions;
 
-        [SerializeField]
+        [SerializeField, HideInInspector]
         private int _hashCode;
 
         public Grid2DIndex(Vector2Int index, Vector2Int dimensions)

@@ -20,8 +20,6 @@ namespace DepictionEngine
         private bool _notPoolable;
 #endif
 
-        [NonSerialized]
-        private bool _delegatesInitialized;
         private bool _wasFirstUpdated;
 
         private bool _initializing;
@@ -64,6 +62,11 @@ namespace DepictionEngine
             _lastNotPoolable = _notPoolable = default;
             _inspectorComponentNameOverride = default;
 #endif
+        }
+
+        protected virtual void Awake()
+        {
+            Initialize();
         }
 
         public bool Initialize()
@@ -237,22 +240,36 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Called after <see cref="DepictionEngine.IDisposable.Initialize"/> and when the component enable state changed.
+        /// Experimental, do not use.
         /// </summary>
         public virtual void ExplicitOnEnable()
         {
-            //Call UpdateAllDelegates in case some delegates need to be activated/deactivated for a specific state
-            UpdateAllDelegates();
+
         }
 
         /// <summary>
-        /// Called after the component enable state changed.
+        /// Experimental, do not use.
         /// </summary>
         public virtual void ExplicitOnDisable()
         {
-            //Call UpdateAllDelegates in case some delegates need to be activated/deactivated for a specific state
-            UpdateAllDelegates();
+         
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Use to reinitialize any fields that were not serialized and kept between assembly reloads.
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool AfterAssemblyReload()
+        {
+            if (initialized)
+            {
+                UpdateAllDelegates();
+                return true;
+            }
+            return false;
+        }
+#endif
 
         /// <summary>
         /// Function to initialize event handlers.
@@ -260,9 +277,6 @@ namespace DepictionEngine
         /// <returns></returns>
         protected virtual bool UpdateAllDelegates()
         {
-            _delegatesInitialized = true;
-            SceneManager.PostLateInitializeEvent -= UpdateAllDelegatesHandler;
-
 #if UNITY_EDITOR
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= Saving;
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaved -= Saved;
@@ -281,11 +295,6 @@ namespace DepictionEngine
                 this.sceneManager.PropertyAssignedEvent += SceneManagerPropertyAssignedHandler;
 #endif
             return !isFallbackValues;
-        }
-
-        private void UpdateAllDelegatesHandler()
-        {
-            UpdateAllDelegates();
         }
 
 #if UNITY_EDITOR
@@ -457,7 +466,7 @@ namespace DepictionEngine
             get { return _notPoolable; }
         }
 
-        public void MarkAsNotPoolable()
+        public virtual void MarkAsNotPoolable()
         {
             _lastNotPoolable = _notPoolable = true;
         }
@@ -574,7 +583,7 @@ namespace DepictionEngine
             return false;
         }
 
-        private void OnDisposingInternal()
+        private void OnDestroyInternal()
         {
 #if UNITY_EDITOR
             Editor.UndoManager.UndoRedoPerformedEvent -= TriggerOnDestroyIfNullHandler;
@@ -591,13 +600,13 @@ namespace DepictionEngine
             if (GetDisposingContext() == DisposeContext.Editor_Unknown)
             {
                 //Give us more time to identify whether this is an Editor Undo/Redo dispose
-                SceneManager.DelayedOnDestroyEvent += OnDisposingInternal;
+                SceneManager.DelayedOnDestroyEvent += OnDestroyInternal;
                 Editor.UndoManager.UndoRedoPerformedEvent -= TriggerOnDestroyIfNullHandler;
                 Editor.UndoManager.UndoRedoPerformedEvent += TriggerOnDestroyIfNullHandler;
             }
             else
 #endif
-            OnDisposingInternal();
+            OnDestroyInternal();
         }
 
 #if UNITY_EDITOR
@@ -619,11 +628,6 @@ namespace DepictionEngine
 #endif
 
             return destroyingContext;
-        }
-
-        protected virtual void Awake()
-        {
-            Initialize();
         }
 
         private bool _inhibitExplicitOnEnableDisable;
@@ -652,12 +656,6 @@ namespace DepictionEngine
             if (_lastNotPoolable)
                 _notPoolable = true;
 #endif     
-            //Update Delegates after Recompile since they are not serialized and will be null
-            if (initialized && !_delegatesInitialized)
-            {
-                SceneManager.PostLateInitializeEvent -= UpdateAllDelegatesHandler;
-                SceneManager.PostLateInitializeEvent += UpdateAllDelegatesHandler;
-            }
         }
 
         public virtual void OnValidate()

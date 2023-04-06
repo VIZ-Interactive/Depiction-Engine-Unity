@@ -38,6 +38,10 @@ namespace DepictionEngine
         void ExplicitOnEnable();
         void ExplicitOnDisable();
 
+#if UNITY_EDITOR
+        bool AfterAssemblyReload();
+#endif
+
         /// <summary>
         /// This is where you destroy any remaining dependencies.
         /// </summary>

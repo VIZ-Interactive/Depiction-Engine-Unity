@@ -11,13 +11,13 @@ namespace DepictionEngine
     public class Index2DLoader : Index2DLoaderBase
     {
         [Serializable]
-        private class Index2DReferencesDictionary : SerializableDictionary<int, ReferencesList> { };
+        private class Index2DReferencesDictionary : SerializableDictionary<Grid2DIndex, ReferencesList> { };
 
         [BeginFoldout("Indices")]
         [SerializeField, Tooltip("The list of indices to load."), EndFoldout]
         private List<Grid2DIndex> _indices;
 
-        [SerializeField]
+        [SerializeField, HideInInspector]
         private Index2DReferencesDictionary _index2DReferences;
 
         public override void Recycle()
@@ -52,7 +52,7 @@ namespace DepictionEngine
                 lastIndexReferences.Clear();
                 for (int i = index2DReferences.Count - 1; i >= 0; i--)
                 {
-                    KeyValuePair<int, ReferencesList> keyValuePair = index2DReferences.ElementAt(i);
+                    KeyValuePair<Grid2DIndex, ReferencesList> keyValuePair = index2DReferences.ElementAt(i);
                     ReferencesList referencesList = new();
                     lastIndexReferences.Add(keyValuePair.Key, referencesList);
                     for (int e = keyValuePair.Value.Count - 1; e >= 0; e--)
@@ -89,7 +89,7 @@ namespace DepictionEngine
                 {
                     Grid2DIndex index = indices[i];
 
-                    index2DReferences.TryGetValue(index.GetHashCode(), out ReferencesList references);
+                    index2DReferences.TryGetValue(index, out ReferencesList references);
 
                     callback(i, index, references);
                 }
@@ -137,32 +137,31 @@ namespace DepictionEngine
 
         public override bool AddReference(object loadScopeKey, ReferenceBase reference)
         {
-            Grid2DIndex scopeGrid2DIndex = (Grid2DIndex)loadScopeKey;
-            if (scopeGrid2DIndex != Grid2DIndex.Empty)
+            Grid2DIndex loadScopeGrid2DIndex = (Grid2DIndex)loadScopeKey;
+            if (loadScopeGrid2DIndex != Grid2DIndex.Empty)
             {
-                int grid2DindexHashKey = scopeGrid2DIndex.GetHashCode();
 #if UNITY_EDITOR
-                if (!lastIndexReferences.TryGetValue(grid2DindexHashKey, out ReferencesList lastReferences))
+                if (!lastIndexReferences.TryGetValue(loadScopeGrid2DIndex, out ReferencesList lastReferences))
                 {
                     lastReferences = new ReferencesList();
-                    lastIndexReferences[grid2DindexHashKey] = lastReferences;
+                    lastIndexReferences[loadScopeGrid2DIndex] = lastReferences;
                 }
 
                 if (!lastReferences.Contains(reference))
                     lastReferences.Add(reference);
 #endif
 
-                if (!index2DReferences.TryGetValue(grid2DindexHashKey, out ReferencesList references))
+                if (!index2DReferences.TryGetValue(loadScopeGrid2DIndex, out ReferencesList references))
                 {
                     references = new ReferencesList();
-                    index2DReferences[grid2DindexHashKey] = references;
+                    index2DReferences[loadScopeGrid2DIndex] = references;
                 }
 
                 if (!references.Contains(reference))
                 {
                     references.Add(reference);
 
-                    AddIndex(scopeGrid2DIndex);
+                    AddIndex(loadScopeGrid2DIndex);
 
                     return true;
                 }
@@ -175,24 +174,24 @@ namespace DepictionEngine
             if (base.RemoveReference(loadScopeKey, reference, disposeContext))
             {
                 Grid2DIndex loadScopeGrid2DIndex = (Grid2DIndex)loadScopeKey;
+
                 if (loadScopeGrid2DIndex != Grid2DIndex.Empty)
                 {
-                    int grid2DindexHashKey = loadScopeGrid2DIndex.GetHashCode();
 #if UNITY_EDITOR
                     RegisterCompleteObjectUndo(disposeContext);
 
-                    if (lastIndexReferences.TryGetValue(grid2DindexHashKey, out ReferencesList lastReferences))
+                    if (lastIndexReferences.TryGetValue(loadScopeGrid2DIndex, out ReferencesList lastReferences))
                     {
                         if (lastReferences.Remove(reference) && lastReferences.IsEmpty())
-                            lastIndexReferences.Remove(grid2DindexHashKey);
+                            lastIndexReferences.Remove(loadScopeGrid2DIndex);
                     }
 #endif
 
-                    if (index2DReferences.TryGetValue(grid2DindexHashKey, out ReferencesList references))
+                    if (index2DReferences.TryGetValue(loadScopeGrid2DIndex, out ReferencesList references))
                     {
                         if (references.Remove(reference) && references.IsEmpty())
                         {
-                            index2DReferences.Remove(grid2DindexHashKey);
+                            index2DReferences.Remove(loadScopeGrid2DIndex);
 
                             RemoveIndex(loadScopeGrid2DIndex);
 

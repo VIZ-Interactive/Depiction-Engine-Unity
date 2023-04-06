@@ -80,6 +80,42 @@ namespace DepictionEngine
             _objectBase = default;
         }
 
+        protected override void Awake()
+        {
+            base.Awake();
+
+#if UNITY_EDITOR
+            //We initialize right away if the gameObject is being duplicated to make sure the Undo operations are recorded together as one.
+            if (IsDuplicateInitializing())
+                Initialize();
+#endif
+        }
+
+        protected override void InitializeFields(InitializationContext initializingContext)
+        {
+            base.InitializeFields(initializingContext);
+
+            //Make sure the gameObject is activated at least once so when we Destroy, the OnDestroy will be triggered even during Undo/Redo
+            if (!isActiveAndEnabled)
+                SceneManager.ActivateAll();
+
+            UpdateIsGeoCoordinateTransform();
+
+            SetComponentDirtyFlag(true, true, true);
+        }
+
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
+        {
+            base.InitializeSerializedFields(initializingContext);
+
+            if (initializingContext == InitializationContext.Reset)
+            {
+                transformLocalPosition = Vector3.zero;
+                transformLocalRotation = Quaternion.identity;
+                transformLocalScale = Vector3.one;
+            }
+        }
+
         protected override bool InitializeLastFields()
         {
             if (base.InitializeLastFields())
@@ -116,31 +152,6 @@ namespace DepictionEngine
         {
             if (!IsDestroying())
                 _lastTransformLocalScale = transformLocalScale;
-        }
-
-        protected override void InitializeFields(InitializationContext initializingContext)
-        {
-            base.InitializeFields(initializingContext);
-
-            //Make sure the gameObject is activated at least once so when we Destroy, the OnDestroy will be triggered even during Undo/Redo
-            if (!isActiveAndEnabled)
-                SceneManager.ActivateAll();
-
-            UpdateIsGeoCoordinateTransform();
-
-            SetComponentDirtyFlag(true, true, true);
-        }
-
-        protected override void InitializeSerializedFields(InitializationContext initializingContext)
-        {
-            base.InitializeSerializedFields(initializingContext);
-
-            if (initializingContext == InitializationContext.Reset)
-            {
-                transformLocalPosition = Vector3.zero;
-                transformLocalRotation = Quaternion.identity;
-                transformLocalScale = Vector3.one;
-            }
         }
 
         protected override JSONNode GetInitializationJson(JSONNode initializeJSON)
@@ -1089,17 +1100,6 @@ namespace DepictionEngine
             base.HierarchicalActivate();
             gameObject.SetActive(lastActiveSelf);
             UninhibitEnableDisableAll();
-        }
-
-        protected override void Awake()
-        {
-            base.Awake();
-
-#if UNITY_EDITOR
-            //We initialize right away if the gameObject is being duplicated to make sure the Undo operations are recorded together as one.
-            if (IsDuplicateInitializing())
-                Initialize();
-#endif
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

@@ -153,11 +153,7 @@ namespace DepictionEngine
         public int transformsCount { get { return transforms.Count; } }
         private TransformDictionary transforms
         {
-            get 
-            {
-                _transforms ??= new TransformDictionary();
-                return _transforms;
-            }
+            get => _transforms ??= new TransformDictionary();
         }
 
         /// <summary>
@@ -166,11 +162,7 @@ namespace DepictionEngine
         public int persistentMonoBehavioursCount { get { return persistentMonoBehaviours.Count; } }
         private PersistentMonoBehaviourDictionary persistentMonoBehaviours
         {
-            get
-            {
-                _persistentMonoBehaviours ??= new PersistentMonoBehaviourDictionary();
-                return _persistentMonoBehaviours;
-            }
+            get => _persistentMonoBehaviours ??= new PersistentMonoBehaviourDictionary();
         }
 
         /// <summary>
@@ -179,11 +171,7 @@ namespace DepictionEngine
         public int persistentScriptableObjectsCount { get { return persistentScriptableObjects.Count; } }
         private PersistentScriptableObjectDictionary persistentScriptableObjects
         {
-            get
-            {
-                _persistentScriptableObjects ??= new PersistentScriptableObjectDictionary();
-                return _persistentScriptableObjects;
-            }
+            get => _persistentScriptableObjects ??= new PersistentScriptableObjectDictionary();
         }
 
         /// <summary>
@@ -192,11 +180,7 @@ namespace DepictionEngine
         public int terrainGridMeshObjectsCount { get { return terrainGridMeshObjects.Count; } }
         private TerrainGridMeshObjectDictionary terrainGridMeshObjects
         {
-            get 
-            {
-                _terrainGridMeshObjects ??= new TerrainGridMeshObjectDictionary();
-                return _terrainGridMeshObjects; 
-            }
+            get => _terrainGridMeshObjects ??= new TerrainGridMeshObjectDictionary();
         }
 
         /// <summary>
@@ -205,11 +189,7 @@ namespace DepictionEngine
         public int astroObjectsCount { get { return astroObjects.Count; } }
         private AstroObjectDictionary astroObjects
         {
-            get 
-            {
-                _astroObjects ??= new AstroObjectDictionary();
-                return _astroObjects; 
-            }
+            get => _astroObjects ??= new AstroObjectDictionary();
         }
 
         /// <summary>
@@ -218,11 +198,7 @@ namespace DepictionEngine
         public int starSystemsCount { get { return starSystems.Count; } }
         private List<StarSystem> starSystems
         {
-            get 
-            {
-                _starSystems ??= new List<StarSystem>();
-                return _starSystems; 
-            }
+            get => _starSystems ??= new List<StarSystem>();
         }
 
         /// <summary>
@@ -231,11 +207,7 @@ namespace DepictionEngine
         public int starsCount { get { return stars.Count; } }
         private List<Star> stars
         {
-            get 
-            {
-                _stars ??= new List<Star>();
-                return _stars; 
-            }
+            get => _stars ??= new List<Star>();
         }
 
         /// <summary>
@@ -244,11 +216,7 @@ namespace DepictionEngine
         public int visualObjectsCount { get { return visualObjects.Count; } }
         private VisualObjectDictionary visualObjects
         {
-            get 
-            {
-                _visualObjects ??= new VisualObjectDictionary();
-                return _visualObjects; 
-            }
+            get => _visualObjects ??= new VisualObjectDictionary();
         }
 
         /// <summary>
@@ -257,11 +225,7 @@ namespace DepictionEngine
         public int animatorsCount { get { return animators.Count; } }
         private AnimatorDictionary animators
         {
-            get 
-            {
-                _animators ??= new AnimatorDictionary();
-                return _animators; 
-            }
+            get => _animators ??= new AnimatorDictionary();
         }
 
         /// <summary>
@@ -270,11 +234,7 @@ namespace DepictionEngine
         public int controllersCount { get { return controllers.Count; } }
         private ControllerDictionary controllers
         {
-            get 
-            {
-                _controllers ??= new ControllerDictionary();
-                return _controllers; 
-            }
+            get => _controllers ??= new ControllerDictionary();
         }
 
         /// <summary>
@@ -283,11 +243,7 @@ namespace DepictionEngine
         public int generatorsCount { get { return generators.Count; } }
         private GeneratorDictionary generators
         {
-            get 
-            {
-                _generators ??= new GeneratorDictionary();
-                return _generators; 
-            }
+            get => _generators ??= new GeneratorDictionary();
         }
 
         /// <summary>
@@ -296,11 +252,7 @@ namespace DepictionEngine
         public int referencesCount { get { return references.Count; } }
         private ReferenceDictionary references
         {
-            get 
-            {
-                _references ??= new ReferenceDictionary();
-                return _references; 
-            }
+            get => _references ??= new ReferenceDictionary();
         }
 
         /// <summary>
@@ -309,11 +261,7 @@ namespace DepictionEngine
         public int effectsCount { get { return effects.Count; } }
         private EffectDictionary effects
         {
-            get 
-            {
-                _effects ??= new EffectDictionary();
-                return _effects; 
-            }
+            get => _effects ??= new EffectDictionary();
         }
 
         /// <summary>
@@ -322,11 +270,7 @@ namespace DepictionEngine
         public int fallbackValuesCount { get { return fallbackValues.Count; } }
         private FallbackValuesDictionary fallbackValues
         {
-            get 
-            {
-                _fallbackValues ??= new FallbackValuesDictionary();
-                return _fallbackValues; 
-            }
+            get => _fallbackValues ??= new FallbackValuesDictionary();
         }
 
         /// <summary>
@@ -335,11 +279,7 @@ namespace DepictionEngine
         public int datasourcesCount { get { return datasources.Count; } }
         private DatasourceDictionary datasources
         {
-            get 
-            {
-                _datasources ??= new DatasourceDictionary();
-                return _datasources; 
-            }
+            get => _datasources ??= new DatasourceDictionary();
         }
 
         /// <summary>
@@ -347,11 +287,7 @@ namespace DepictionEngine
         /// </summary>
         public List<int> camerasInstanceIds
         {
-            get 
-            {
-                _camerasInstanceIds ??= new List<int>();
-                return _camerasInstanceIds; 
-            }
+            get => _camerasInstanceIds ??= new List<int>();
         }
 
         /// <summary>
@@ -360,11 +296,7 @@ namespace DepictionEngine
         public int camerasCount { get { return cameras.Count; } }
         private List<Camera> cameras
         {
-            get 
-            {
-                _cameras ??= new List<Camera>();
-                return _cameras; 
-            }
+            get => _cameras ??= new List<Camera>();
         }
 
         /// <summary>
@@ -373,14 +305,10 @@ namespace DepictionEngine
         public int managersCount { get { return managers.Count; } }
         private ManagerDictionary managers
         {
-            get 
-            {
-                _managers ??= new ManagerDictionary();
-                return _managers; 
-            }
+            get => _managers ??= new ManagerDictionary();
         }
 
-        public void IterateOverInstances<T>(Func<T, bool> callback) where T : IProperty
+        public void IterateOverInstances<T>(Func<T, bool> callback) where T : IScriptableBehaviour
         {
             IterateOverInstances(typeof(T), (property) => 
             {
@@ -392,7 +320,7 @@ namespace DepictionEngine
         {
             if (type == null || !typeof(IProperty).IsAssignableFrom(type))
             {
-                Debug.LogWarning(type != null ? type.Name : "Null" + " is no a valid "+nameof(IProperty)+"!");
+                Debug.LogWarning(type != null ? type.Name : "Null" + " is no a valid " + nameof(IProperty) + "!");
                 return;
             }
 
@@ -413,7 +341,7 @@ namespace DepictionEngine
                 if (typeof(PersistentScriptableObject).IsAssignableFrom(type))
                     IterateOverEnumerable(type, persistentScriptableObjects.Values, callback);
             }
-            
+
             if (typeof(Script).IsAssignableFrom(type))
             {
                 if (typeof(AnimatorBase).IsAssignableFrom(type))
@@ -431,7 +359,7 @@ namespace DepictionEngine
                 if (typeof(DatasourceBase).IsAssignableFrom(type))
                     IterateOverEnumerable(type, datasources.Values, callback);
             }
-            
+
             if (typeof(ManagerBase).IsAssignableFrom(type))
                 IterateOverEnumerable(type, managers.Values, callback);
         }
@@ -871,7 +799,7 @@ namespace DepictionEngine
                         if (manager.GetType() == managerType)
                         {
                             managerExist = true;
-                            errorMsg = "You can only have one '"+ managerType.Name+ "' instance per Scene.";
+                            errorMsg = "You can only have one '" + managerType.Name + "' instance per Scene.";
                             break;
                         }
                     }
@@ -977,7 +905,7 @@ namespace DepictionEngine
                         removed = true;
                 }
             }
-            else if (property is Script) 
+            else if (property is Script)
             {
                 if (property is AnimatorBase)
                 {
@@ -1023,7 +951,7 @@ namespace DepictionEngine
 
             if (removed)
                 RemovedEvent?.Invoke(property);
-            
+
             return removed;
         }
 

@@ -104,14 +104,7 @@ namespace DepictionEngine
                 if (recoveredObject != null)
                     unityObject = (T)recoveredObject;
             }
-            if (unityObject != null)
-            {
-                //if (unityObject is IDisposable)
-                //    InstanceManager.Initialize(unityObject as IDisposable, InitializationContext.Existing);
-
-                return true;
-            }
-            return false;
+            return unityObject != null;
         }
 
         public static void PerformUndoRedoPropertyChange<T>(Action<T> callback, ref T field, ref T lastField)

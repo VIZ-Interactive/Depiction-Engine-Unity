@@ -159,6 +159,11 @@ namespace DepictionEngine
         {
             if (base.UpdateAllDelegates())
             {
+#if UNITY_EDITOR
+                SceneManager.ResetRegisterCompleteUndoEvent -= ResetRegisterCompleteUndo;
+                if (!IsDisposing())
+                    SceneManager.ResetRegisterCompleteUndoEvent += ResetRegisterCompleteUndo;
+#endif
                 RemoveLoaderDelegate(loader);
                 AddLoaderDelegate(loader);
 
@@ -391,8 +396,7 @@ namespace DepictionEngine
         private bool SetLoadScope(LoadScope value, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
 #if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-                Editor.UndoManager.RecordObject(this);
+            RegisterCompleteObjectUndo(disposeContext);
 #endif
 
             bool changed = SetValue(nameof(loadScope), value, ref _loadScope, (newValue, oldValue) => 
@@ -428,15 +432,6 @@ namespace DepictionEngine
                 }
             });
 
-#if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                Editor.UndoManager.FlushUndoRecordObjects();
-                if (changed)
-                    MarkAsNotPoolable();
-            }
-#endif
-
             return changed;
         }
 
@@ -461,35 +456,20 @@ namespace DepictionEngine
         private bool UpdateData(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
 #if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-                Editor.UndoManager.RecordObject(this);
+            RegisterCompleteObjectUndo(disposeContext);
 #endif
 
             PersistentScriptableObject data = null;
 
-            bool changed = false;
-
             if (loadScope != Disposable.NULL)
             {
-                if (SetLoadingState(loadScope.loadingState))
-                    changed = true;
+                SetLoadingState(loadScope.loadingState);
+
                 if (loadingState == DatasourceOperationBase.LoadingState.Loaded)
                     data = loadScope.GetFirstPersistent() as PersistentScriptableObject;
             }
             else
-            {
-                if (SetLoadingState(DatasourceOperationBase.LoadingState.None))
-                    changed = true;
-            }
-
-#if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                Editor.UndoManager.FlushUndoRecordObjects();
-                if (changed)
-                    MarkAsNotPoolable();
-            }
-#endif
+                SetLoadingState(DatasourceOperationBase.LoadingState.None);
 
             return SetData(data != Disposable.NULL ? data : null, disposeContext);
         }
@@ -506,8 +486,7 @@ namespace DepictionEngine
         private bool SetData(PersistentScriptableObject value, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
 #if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-                Editor.UndoManager.RecordObject(this);
+            RegisterCompleteObjectUndo(disposeContext);
 #endif
 
             bool changed = SetValue(nameof(data), value, ref _data, (newValue, oldValue) =>
@@ -524,14 +503,6 @@ namespace DepictionEngine
                 }
             });
 
-#if UNITY_EDITOR
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                Editor.UndoManager.FlushUndoRecordObjects();
-                if (changed)
-                    MarkAsNotPoolable();
-            }
-#endif
             return changed;
         }
 
@@ -585,5 +556,26 @@ namespace DepictionEngine
             }
             return false;
         }
+
+#if UNITY_EDITOR
+        private bool _registeredCompleteObjectUndo;
+        protected void RegisterCompleteObjectUndo(DisposeContext disposeContext = DisposeContext.Editor_Destroy)
+        {
+            if (disposeContext == DisposeContext.Editor_Destroy)
+            {
+                MarkAsNotPoolable();
+                if (!_registeredCompleteObjectUndo)
+                {
+                    _registeredCompleteObjectUndo = true;
+                    Editor.UndoManager.RegisterCompleteObjectUndo(this);
+                }
+            }
+        }
+
+        private void ResetRegisterCompleteUndo()
+        {
+            _registeredCompleteObjectUndo = false;
+        }
+#endif
     }
 }

@@ -11,7 +11,7 @@ namespace DepictionEngine
     public class Index2DLoaderBase : LoaderBase
     {
         [Serializable]
-        protected class IndexLoadScopeDictionary : SerializableDictionary<int, Index2DLoadScope> { };
+        protected class IndexLoadScopeDictionary : SerializableDictionary<Grid2DIndex, Index2DLoadScope> { };
 
         public const int MAX_ZOOM = 30;
 
@@ -54,7 +54,7 @@ namespace DepictionEngine
                 index2DLoadScopes.Clear();
 
             if (initializingContext == InitializationContext.Existing)
-                PerformAddRemoveChangeAndFixBrokenLoadScopes(index2DLoadScopes, index2DLoadScopes);
+                PerformAddRemoveLoadScopesChange(index2DLoadScopes, index2DLoadScopes);
 
             InitValue(value => minMaxZoom = value, new Vector2Int(0, 20), initializingContext);
             InitValue(value => indexUrlParamType = value, Index2DLoadScope.URLParametersType.ZoomXY, initializingContext);
@@ -85,7 +85,19 @@ namespace DepictionEngine
         {
             base.UndoRedoPerformed();
 
-            PerformAddRemoveChangeAndFixBrokenLoadScopes(index2DLoadScopes, lastIndex2DLoadScopes, true);
+            PerformAddRemoveLoadScopesChange(index2DLoadScopes, lastIndex2DLoadScopes, true);
+        }
+
+        public override bool AfterAssemblyReload()
+        {
+            if (base.AfterAssemblyReload())
+            {
+                //Trigger Load() on any loadScopes that were interrupted by the assembly reload.
+                PerformAddRemoveLoadScopesChange(index2DLoadScopes, index2DLoadScopes);
+
+                return true;
+            }
+            return false;
         }
 #endif
 
@@ -185,11 +197,11 @@ namespace DepictionEngine
                 {
                     Index2DLoadScope index2DLoadScope = loadScope as Index2DLoadScope;
 
-                    int grid2DIndex = index2DLoadScope.GetHashCode();
-                    if (index2DLoadScopes.TryAdd(grid2DIndex, index2DLoadScope))
+                    Grid2DIndex loadScopeGrid2DIndex = index2DLoadScope.scopeGrid2DIndex;
+                    if (index2DLoadScopes.TryAdd(loadScopeGrid2DIndex, index2DLoadScope))
                     {
 #if UNITY_EDITOR
-                        lastIndex2DLoadScopes.Add(grid2DIndex, index2DLoadScope);
+                        lastIndex2DLoadScopes.Add(loadScopeGrid2DIndex, index2DLoadScope);
 #endif
                         return true;
                     }
@@ -202,12 +214,12 @@ namespace DepictionEngine
         {
             if (base.RemoveLoadScopeInternal(loadScopeKey, out loadScope))
             {
-                int grid2DIndex = loadScopeKey.GetHashCode();
-                if (index2DLoadScopes.TryGetValue(grid2DIndex, out Index2DLoadScope index2DLoadScope) && index2DLoadScopes.Remove(grid2DIndex))
+                Grid2DIndex loadScopeGrid2DIndex = (Grid2DIndex)loadScopeKey;
+                if (index2DLoadScopes.TryGetValue(loadScopeGrid2DIndex, out Index2DLoadScope index2DLoadScope) && index2DLoadScopes.Remove(loadScopeGrid2DIndex))
                 {
                     loadScope = index2DLoadScope;
 #if UNITY_EDITOR
-                    lastIndex2DLoadScopes.Remove(grid2DIndex);
+                    lastIndex2DLoadScopes.Remove(loadScopeGrid2DIndex);
 #endif
                     return true;
                 }
@@ -247,7 +259,7 @@ namespace DepictionEngine
                 int zoom = MathPlus.GetZoomFromGrid2DDimensions(loadScopeGrid2DIndex.dimensions);
                 if (IsValidZoom(zoom))
                 {
-                    if (index2DLoadScopes.TryGetValue(loadScopeGrid2DIndex.GetHashCode(), out Index2DLoadScope index2DLoadScope) && index2DLoadScope != Disposable.NULL)
+                    if (index2DLoadScopes.TryGetValue(loadScopeGrid2DIndex, out Index2DLoadScope index2DLoadScope) && index2DLoadScope != Disposable.NULL)
                     {
                         loadScope = index2DLoadScope;
                         load = reload;
@@ -325,7 +337,7 @@ namespace DepictionEngine
                 {
                     for (int i = index2DLoadScopes.Count - 1; i >= 0; i--)
                     {
-                        KeyValuePair<int, Index2DLoadScope> indexLoadScope = index2DLoadScopes.ElementAt(i);
+                        KeyValuePair<Grid2DIndex, Index2DLoadScope> indexLoadScope = index2DLoadScopes.ElementAt(i);
                         if (!callback(indexLoadScope.Key, indexLoadScope.Value))
                             return false;
                     }
