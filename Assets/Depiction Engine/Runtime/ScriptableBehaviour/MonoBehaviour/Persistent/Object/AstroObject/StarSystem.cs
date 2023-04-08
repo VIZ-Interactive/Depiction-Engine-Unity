@@ -89,7 +89,7 @@ namespace DepictionEngine
 
 		public AstroObject orbitAroundAstroObject
 		{
-			get { return _orbitAroundAstroObject; }
+			get => _orbitAroundAstroObject; 
 			set { orbitAroundAstroObjectId = value != Disposable.NULL ? value.id : SerializableGuid.Empty; }
 		}
 

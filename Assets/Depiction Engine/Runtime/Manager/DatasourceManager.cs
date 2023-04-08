@@ -66,13 +66,6 @@ namespace DepictionEngine
             sceneDatasource.Initialize(this, initializingContext);
         }
 
-        public override void Initialized(InitializationContext initializingContext)
-        {
-            base.Initialized(initializingContext);
-
-            sceneDatasource.Initialized(initializingContext);
-        }
-
 #if UNITY_EDITOR
         protected override void UndoRedoPerformed()
         {

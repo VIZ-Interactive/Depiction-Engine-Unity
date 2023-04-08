@@ -29,7 +29,9 @@ namespace DepictionEngine
         /// <b><see cref="None"/>:</b> <br/>
         /// Update code is not currently being executed. <br/><br/>
         /// <b><see cref="LateInitialize"/>:</b> <br/>
-        /// Objects that were not initialized are automatically initialized. <br/><br/>
+        /// All other object have been created and initialized at this point, even during a duplicate operation involving multiple objects. <br/><br/>
+        /// <b><see cref="PostLateInitialize"/>:</b> <br/>
+        /// All other object have been created and initialized at this point, even during a duplicate operation involving multiple objects. <br/><br/>
         /// <b><see cref="PreHierarchicalUpdate"/>:</b> <br/>
         /// The hierarchy is traversed and values are prepared for the update. <br/><br/>
         /// <b><see cref="HierarchicalUpdate"/>:</b> <br/>
@@ -42,26 +44,24 @@ namespace DepictionEngine
         /// The hierarchy is traversed and gameObjects that have never been active are temporarly activated and deactivated to allow for their Awake to be called. <br/><br/>
         /// <b><see cref="PastingComponentValues"/>:</b> <br/>
         /// Pasting component values from the inspector(Editor only). <br/><br/>
-        /// <b><see cref="UnityInitialized"/>:</b> <br/>
-        /// Marks all newly initialized objects as 'UnityInitialized'. <br/><br/>
+        /// <b><see cref="LateUpdate"/>:</b> <br/>
+        /// A Late Update. <br/><br/>
         /// <b><see cref="DelayedOnDestroy"/>:</b> <br/>
         /// Objects that were waiting to be destroyed are destroyed. <br/><br/>
-        /// <b><see cref="ResetRegisterCompleteUndo"/>:</b> <br/>
-        /// Reset the registerCompleteUndo flag so that RegisterCompleteUndo can be called the next update. <br/><br/>
         /// </summary> 
         public enum ExecutionState
         {
             None,
             LateInitialize,
+            PostLateInitialize,
             PreHierarchicalUpdate,
             HierarchicalUpdate,
             PostHierarchicalUpdate,
             HierarchicalClearDirtyFlags,
             HierarchicalActivate,
             PastingComponentValues,
-            UnityInitialized,
-            DelayedOnDestroy,
-            ResetRegisterCompleteUndo
+            LateUpdate,
+            DelayedOnDestroy
         };
 
         public const string NAMESPACE = "DepictionEngine";
@@ -104,8 +104,6 @@ namespace DepictionEngine
         }
 #endif
 
-        public TerrainGridMeshObject _test;
-
         private TweenManager _tweenManager;
         private PoolManager _poolManager;
         private InputManager _inputManager;
@@ -129,6 +127,15 @@ namespace DepictionEngine
         private static ExecutionState _sceneExecutionState;
 
         private static bool _sceneClosing;
+
+        /// <summary>
+        /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
+        /// </summary>
+        public static Action LateInitializeEvent;
+        /// <summary>
+        /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
+        /// </summary>
+        public static Action PostLateInitializeEvent;
 
         /// <summary>
         /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
@@ -314,7 +321,7 @@ namespace DepictionEngine
 
         public static UnityEditor.PlayModeStateChange playModeState
         {
-            get { return _playModeState; }
+            get => _playModeState;
             set
             {
                 if (_playModeState == value)
@@ -337,7 +344,7 @@ namespace DepictionEngine
 
         private static bool saving
         {
-            get { return _saving; }
+            get => _saving;
             set
             {
                 if (_saving == value)
@@ -358,9 +365,29 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        private static List<MonoBehaviourDisposable> _monoBehaviourDisposables;
         [UnityEditor.InitializeOnLoadMethod]
         private static void AfterAssemblyReloadHandler()
         {
+            //Editor objects are not listed in FindObjectsOfType, so we find them manually.
+            Instance(false)?.sceneCameraTransforms.ForEach((sceneCameraTransform) => 
+            {
+                if (sceneCameraTransform != Disposable.NULL)
+                {
+                    _monoBehaviourDisposables ??= new();
+
+                    _monoBehaviourDisposables.Clear();
+                    sceneCameraTransform.GetComponents(_monoBehaviourDisposables);
+                    foreach (MonoBehaviourDisposable monoBehaviourDisposable in _monoBehaviourDisposables)
+                        monoBehaviourDisposable.AfterAssemblyReload();
+
+                    _monoBehaviourDisposables.Clear();
+                    sceneCameraTransform.GetComponent<Editor.SceneCamera>()?.targetController?.target?.GetComponents(_monoBehaviourDisposables);
+                    foreach (MonoBehaviourDisposable monoBehaviourDisposable in _monoBehaviourDisposables)
+                        monoBehaviourDisposable.AfterAssemblyReload();
+                }
+            });
+
             MonoBehaviourDisposable[] monoBehaviourDisposables = FindObjectsOfType<MonoBehaviourDisposable>(true);
             foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
                 monoBehaviourDisposable.AfterAssemblyReload();
@@ -653,7 +680,7 @@ namespace DepictionEngine
 
         public int childCount
         {
-            get { return sceneChildren.Count; }
+            get => sceneChildren.Count;
         }
 
         public void IterateOverChildren<T>(Func<T, bool> callback) where T : PropertyMonoBehaviour
@@ -755,11 +782,15 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        private List<TransformBase> sceneCameraTransforms
+        {
+            get => _sceneCameraTransforms;
+        }
         [SerializeField, HideInInspector]
         private List<Editor.SceneViewDouble> _sceneViewDoubles;
         public List<Editor.SceneViewDouble> sceneViewDoubles
         {
-            get { return _sceneViewDoubles; }
+            get => _sceneViewDoubles;
         }
 
         public void SceneViewDoubleDisposed(Editor.SceneViewDouble sceneViewDouble)
@@ -775,12 +806,12 @@ namespace DepictionEngine
 
         public static bool sceneClosing
         {
-            get { return _sceneClosing; }
+            get => _sceneClosing;
         }
 
         public static ExecutionState sceneExecutionState
         {
-            get { return _sceneExecutionState; }
+            get => _sceneExecutionState; 
             set { _sceneExecutionState = value; }
         }
 
@@ -820,7 +851,7 @@ namespace DepictionEngine
         [Json]
         public bool logConsoleFiltering
         {
-            get { return _logConsoleFiltering; }
+            get => _logConsoleFiltering;
             set { SetValue(nameof(logConsoleFiltering), value, ref _logConsoleFiltering); }
         }
 
@@ -830,7 +861,7 @@ namespace DepictionEngine
         [Json]
         public bool runInBackground
         {
-            get { return _runInBackground; }
+            get => _runInBackground;
             set 
             { 
                 SetValue(nameof(runInBackground), value, ref _runInBackground, (newValue, oldValue) =>
@@ -854,26 +885,26 @@ namespace DepictionEngine
         [Json]
         public bool enableMultithreading
         {
-            get { return _enableMultithreading; }
+            get => _enableMultithreading;
             set { SetValue(nameof(enableMultithreading), value, ref _enableMultithreading); }
         }
 
 #if UNITY_EDITOR
         public string buildOutputPath
         {
-            get { return _buildOutputPath; }
+            get => _buildOutputPath;
             set { SetValue(nameof(buildOutputPath), value, ref _buildOutputPath); }
         }
 
         public UnityEditor.BuildAssetBundleOptions buildOptions
         {
-            get { return _buildOptions; }
+            get => _buildOptions;
             set { SetValue(nameof(buildOptions), value, ref _buildOptions); }
         }
 
         public UnityEditor.BuildTarget buildTarget
         {
-            get { return _buildTarget; }
+            get => _buildTarget;
             set { SetValue(nameof(buildTarget), value, ref _buildTarget); }
         }
 
@@ -1060,13 +1091,11 @@ namespace DepictionEngine
                             }
                         }
                     }
+
+                    InvokeAction(ref LateInitializeEvent, "LateInitialize", ExecutionState.LateInitialize);
+                    InvokeAction(ref PostLateInitializeEvent, "PostLateInitialize", ExecutionState.PostLateInitialize);
 #if UNITY_EDITOR
                     Editor.UndoManager.Update();
-#endif
-                    sceneExecutionState = ExecutionState.LateInitialize;
-                    LateInitialize();
-#if UNITY_EDITOR
-                    Editor.UndoManager.PostInitialize();
 
                     if (_queuedRecordObjects != null)
                     {
@@ -1262,7 +1291,7 @@ namespace DepictionEngine
             sceneExecutionState = ExecutionState.None;
 #endif
 
-            InvokeAction(ref LateUpdateEvent, "UnityInitialized", ExecutionState.UnityInitialized);
+            InvokeAction(ref LateUpdateEvent, "LateUpdate", ExecutionState.LateUpdate);
 
             DisposeManager.DisposingContext(() => 
             {
@@ -1270,7 +1299,7 @@ namespace DepictionEngine
             }, DisposeContext.Editor_Destroy);
 
 #if UNITY_EDITOR
-            InvokeAction(ref ResetRegisterCompleteUndoEvent, "ResetRegisterCompleteUndo", ExecutionState.ResetRegisterCompleteUndo);
+            ResetRegisterCompleteUndoEvent?.Invoke();
 
             //Unsubscribe and Subscribe again to stay at the bottom of the invocation list. 
             //Could be replaced with [DefaultExecutionOrder(-3)] potentialy?

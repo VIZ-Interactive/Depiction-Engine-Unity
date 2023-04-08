@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.AccessControl;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -101,23 +102,22 @@ namespace DepictionEngine
             }
 
             if (initializingContext == InitializationContext.Existing)
+            {
                 PerformAddRemovePersistentsChange(persistentsDictionary, persistentsDictionary);
+
+                InitializeAutoDisposePersistents();
+            }
 
             return this;
         }
 
-        public Datasource Initialized(InitializationContext initializingContext)
+        private void InitializeAutoDisposePersistents()
         {
-            if (initializingContext == InitializationContext.Existing)
+            IterateOverPersistents((persistentId, persistent) =>
             {
-                IterateOverPersistents((persistentId, persistent) =>
-                {
-                    AutoDisposePersistent(persistent);
-                    return true;
-                });
-            }
-
-            return this;
+                AutoDisposePersistent(persistent);
+                return true;
+            });
         }
 
         private List<(bool, SerializableGuid, IPersistent, ComponentsOutOfSyncDictionary)> PerformAddRemovePersistentsChange(PersistentsDictionary persistentsDictionary, PersistentsDictionary lastPersistentsDictionary)
@@ -346,8 +346,7 @@ namespace DepictionEngine
             if (name == nameof(PersistentMonoBehaviour.autoDispose))
                 UpdateCanBeAutoDisposed(persistent);
 
-            if (SceneManager.IsUserChangeContext() && persistent.GetJsonAttribute(name, out JsonAttribute _, out PropertyInfo propertyInfo) && SetPersistentComponentPropertyOutOfSync(persistent, persistent, propertyInfo))
-                SetPersistentIsOutOfSynch(persistent, true);
+            SetComponentPropertyOutOfSynch(persistent, persistent, name);
 
             if (property is IGrid2DIndex)
             {
@@ -402,11 +401,14 @@ namespace DepictionEngine
 
         private void ObjectComponentPropertyAssignedHandler(Object objectBase, IJson component, string name, object newValue, object oldValue)
         {
-            if (SceneManager.IsUserChangeContext())
-            {
-                if (component.GetJsonAttribute(name, out JsonAttribute _, out PropertyInfo propertyInfo))
-                    SetPersistentComponentPropertyOutOfSync(objectBase, component, propertyInfo);
-            }
+            IPersistent persistent = objectBase as IPersistent;
+            SetComponentPropertyOutOfSynch(persistent, component, name);
+        }
+
+        private void SetComponentPropertyOutOfSynch(IPersistent persistent, IJson component, string propertyName)
+        {
+            if (SceneManager.IsUserChangeContext() && component.GetJsonAttribute(propertyName, out JsonAttribute _, out PropertyInfo propertyInfo) && SetPersistentComponentPropertyOutOfSync(persistent, component, propertyInfo, allowAutoDispose))
+                SetPersistentIsOutOfSynch(persistent, true);
         }
 
         private void ObjectChildRemovedHandler(Object objectBase, PropertyMonoBehaviour child)
@@ -482,6 +484,19 @@ namespace DepictionEngine
         private PersistentsDictionary persistentsDictionary
         {
             get => _persistentsDictionary ??= new ();
+        }
+
+        private static bool _allowAutoDispose;
+        private static bool allowAutoDispose { get => _allowAutoDispose; }
+        public static void AllowAutoDisposeOnOutOfSynchProperty(Action callback, bool allowAutoDispose)
+        {
+            if (callback != null)
+            {
+                bool lastAllowAutoDispose = _allowAutoDispose;
+                _allowAutoDispose = allowAutoDispose;
+                callback();
+                _allowAutoDispose = lastAllowAutoDispose;
+            }
         }
 
         public static bool EnablePersistenceOperations()
@@ -621,7 +636,7 @@ namespace DepictionEngine
                 if (persistent is Object)
                 {
                     //If the parent Object also comes from this datasource, update its 'canBeAutoDisposed' value
-                    Object parentObject = (persistent as Object).transform.parentObject;
+                    Object parentObject = (persistent as Object).GetParentObject();
                     if (parentObject != Disposable.NULL && GetPersistent(parentObject.id, out IPersistent parentPersistent))
                         UpdateCanBeAutoDisposed(parentPersistent);
                 }
@@ -643,16 +658,15 @@ namespace DepictionEngine
                 Object objectBase = persistent as Object;
                 if (objectBase != Disposable.NULL)
                 {
-                    //The Object may not be initialized so we cannot rely on objectBase.transform.IterateOverChildren()...
-                    foreach (Transform childTransform in objectBase.gameObject.transform)
-                    {
-                        Object childObject = childTransform.GetComponent<Object>();
+                    objectBase.IterateOverChildrenObject((childObject) => 
+                    { 
                         if (childObject != Disposable.NULL && !GetPersistentCanBeAutoDisposed(childObject))
                         {
                             canBeDisposed = false;
-                            break;
+                            return false;
                         }
-                    }
+                        return true; 
+                    });
                 }
             }
 
@@ -753,14 +767,12 @@ namespace DepictionEngine
                 }
                 else
                 {
-                    if (componentOutOfSyncKeys[key] != allowAutoDispose)
+                    if (componentOutOfSyncKeys[key] && !allowAutoDispose)
                     {
                         componentOutOfSyncKeys[key] = allowAutoDispose;
                         changed = true;
                     }
                 }
-                if (changed)
-                    Debug.Log(persistent+", "+ propertyInfo.Name+", "+ allowAutoDispose);
             }
 
             return changed;

@@ -14,7 +14,7 @@ namespace DepictionEngine.Editor
     {
         private enum UndoOperationType
         {
-            Created, 
+            Created,
             Complete
         };
 
@@ -50,16 +50,6 @@ namespace DepictionEngine.Editor
             _undoOperationsQueue ??= new List<Tuple<UnityEngine.Object, UndoOperationType>>();
 
             _undoOperationsQueue.Add(Tuple.Create(objectToUndo, undoType));
-        }
-
-        public static void PostInitialize()
-        {
-            //Increment the Undo Operation Group to stop recording changes after a CopyPaste/Duplicate/DragDrop
-            if (_processingEditorCopyPasteOrDuplicateOrDragDropComponent)
-            {
-                _processingEditorCopyPasteOrDuplicateOrDragDropComponent = false;
-                IncrementCurrentGroup();
-            }
         }
 
         private static MethodInfo _getRecordsMethodInfo;
@@ -154,6 +144,9 @@ namespace DepictionEngine.Editor
         /// <param name="initializingContext"></param>
         public static void RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext = InitializationContext.Editor)
         {
+            if (!IsValidUnityObject(objectToUndo))
+                return;
+
             //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the wrong Group
             //Fix: We Queue the operation to perform it later(at the Beginning of the next Update) when the Undo Group name as been updated
             if (initializingContext == InitializationContext.Editor_Duplicate)
@@ -167,9 +160,6 @@ namespace DepictionEngine.Editor
 
         private static void RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo)
         {
-            if (!IsValidUnityObject(objectToUndo))
-                return;
-
             Undo.RegisterCreatedObjectUndo(objectToUndo, Undo.GetCurrentGroupName());
         }
 
@@ -180,7 +170,10 @@ namespace DepictionEngine.Editor
         /// <param name="initializingContext"></param>
         public static void RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext = InitializationContext.Editor)
         {
-            //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the wrong Group
+            if (!IsValidUnityObject(objectToUndo))
+                return;
+
+            //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the previous Group
             //Fix: We Queue the operation to perform it later(at the Beginning of the next Update) when the Undo Group name as been updated
             if (initializingContext == InitializationContext.Editor_Duplicate)
             {
@@ -193,9 +186,6 @@ namespace DepictionEngine.Editor
 
         private static void RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo)
         {
-            if (!IsValidUnityObject(objectToUndo))
-                return;
-
             Undo.RegisterCompleteObjectUndo(objectToUndo, Undo.GetCurrentGroupName());
         }
 
@@ -314,7 +304,6 @@ namespace DepictionEngine.Editor
         public static Component AddComponent(GameObject gameObject, Type type, InitializationContext initializingContext = InitializationContext.Editor)
         {
             Component component;
-
             if (!SceneManager.IsEditorNamespace(type) && (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate))
                 component = Undo.AddComponent(gameObject, type);
             else
@@ -464,6 +453,13 @@ namespace DepictionEngine.Editor
             }
 
             _wasFirstUpdated = true;
+
+            //Increment the Undo Operation Group to stop recording changes after a CopyPaste/Duplicate/DragDrop
+            if (_processingEditorCopyPasteOrDuplicateOrDragDropComponent)
+            {
+                _processingEditorCopyPasteOrDuplicateOrDragDropComponent = false;
+                IncrementCurrentGroup();
+            }
         }
     }
 }

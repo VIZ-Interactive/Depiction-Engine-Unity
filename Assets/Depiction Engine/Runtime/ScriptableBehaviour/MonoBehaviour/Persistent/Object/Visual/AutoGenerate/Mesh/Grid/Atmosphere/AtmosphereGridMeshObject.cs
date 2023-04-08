@@ -6,6 +6,11 @@ namespace DepictionEngine
 {
     public class AtmosphereGridMeshObject : TerrainGridMeshObject
     {
+        protected override bool CanBeDuplicated()
+        {
+            return false;
+        }
+
         protected override string GetDefaultShaderPath()
         {
             return RenderingManager.SHADER_BASE_PATH + "AtmosphereGrid";

@@ -83,7 +83,6 @@ namespace DepictionEngine
 
             object parsedValue = null;
 
-
             try
             {
                 if (type.IsSubclassOf(typeof(JSONNode)) || type == typeof(JSONNode))

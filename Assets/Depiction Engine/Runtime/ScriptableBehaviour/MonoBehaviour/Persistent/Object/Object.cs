@@ -172,25 +172,25 @@ namespace DepictionEngine
             if (objectAdditionalFallbackValues != null)
             {
                 InitValue(value => createAnimatorIfMissing = value, true, initializingContext);
-                InitValue(value => animatorId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.animatorId, objectAdditionalFallbackValues.animator, initializingContext); }, initializingContext);
+                InitValue(value => animatorId = value, SerializableGuid.Empty, () => GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.animatorId, objectAdditionalFallbackValues.animator, initializingContext), initializingContext);
 
                 InitValue(value => createControllerIfMissing = value, true, initializingContext);
-                InitValue(value => controllerId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.controllerId, objectAdditionalFallbackValues.controller, initializingContext); }, initializingContext);
+                InitValue(value => controllerId = value, SerializableGuid.Empty, () => GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.controllerId, objectAdditionalFallbackValues.controller, initializingContext), initializingContext);
 
                 InitValue(value => createGeneratorIfMissing = value, true, initializingContext);
-                InitValue(value => generatorsId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.generatorsId, objectAdditionalFallbackValues.generators, initializingContext); }, initializingContext);
+                InitValue(value => generatorsId = value, new List<SerializableGuid>(), () => GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.generatorsId, objectAdditionalFallbackValues.generators, initializingContext), initializingContext);
 
                 InitValue(value => createReferenceIfMissing = value, true, initializingContext);
-                InitValue(value => referencesId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.referencesId, objectAdditionalFallbackValues.references, initializingContext); }, initializingContext);
+                InitValue(value => referencesId = value, new List<SerializableGuid>(), () => GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.referencesId, objectAdditionalFallbackValues.references, initializingContext), initializingContext);
 
                 InitValue(value => createEffectIfMissing = value, true, initializingContext);
-                InitValue(value => effectsId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.effectsId, objectAdditionalFallbackValues.effects, initializingContext); }, initializingContext);
+                InitValue(value => effectsId = value, new List<SerializableGuid>(), () => GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.effectsId, objectAdditionalFallbackValues.effects, initializingContext), initializingContext);
 
                 InitValue(value => createFallbackValuesIfMissing = value, true, initializingContext);
-                InitValue(value => fallbackValuesId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.fallbackValuesId, objectAdditionalFallbackValues.fallbackValues, initializingContext); }, initializingContext);
+                InitValue(value => fallbackValuesId = value, new List<SerializableGuid>(), () => GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.fallbackValuesId, objectAdditionalFallbackValues.fallbackValues, initializingContext), initializingContext);
 
                 InitValue(value => createDatasourceIfMissing = value, true, initializingContext);
-                InitValue(value => datasourcesId = value, new List<SerializableGuid>(), () => { return GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.datasourcesId, objectAdditionalFallbackValues.datasources, initializingContext); }, initializingContext);
+                InitValue(value => datasourcesId = value, new List<SerializableGuid>(), () => GetDuplicateComponentReferenceId(objectAdditionalFallbackValues.datasourcesId, objectAdditionalFallbackValues.datasources, initializingContext), initializingContext);
             }
 
             InitValue(value => tags = value, "", initializingContext);
@@ -198,7 +198,7 @@ namespace DepictionEngine
             InitValue(value => mass = value, GetDefaultMass(), initializingContext);
             InitValue(value => layer = value, LayerUtility.GetDefaultLayer(GetType()), initializingContext);
             InitValue(value => tag = value, "Untagged", initializingContext);
-            InitValue(value => isHiddenInHierarchy = value, GetDefaultIsHiddenInHierarchy(), () => { return false; }, initializingContext);
+            InitValue(value => isHiddenInHierarchy = value, GetDefaultIsHiddenInHierarchy(), initializingContext);
         }
 
         protected T CreateOptionalProperties<T>(InitializationContext initializingContext) where T : OptionalPropertiesBase
@@ -244,11 +244,10 @@ namespace DepictionEngine
                     Component component = RemoveComponentFromList(requiredComponentType, components);
                     if (Disposable.IsDisposed(component))
                     {
-#if UNITY_EDITOR
-                        component = Editor.UndoManager.AddComponent(gameObject, requiredComponentType, initializingContext);
-#else
-                        component = gameObject.AddComponent(requiredComponentType);
-#endif
+                        //We do not register a create Undo here because when the Undo is executed it breaks the dispose process because the id is no longer set.
+                        //The problem was found when manually adding TerrainGridMeshObject to a GameObject in the Editor and undoing the Add Component.
+                        //Three of the four AssetReference could not be removed from the instanceManager because their id were missing when OnDispose was triggered.
+                         gameObject.AddComponent(requiredComponentType);
                     }
                 }
             }
@@ -446,9 +445,9 @@ namespace DepictionEngine
             return false;
         }
 
-        public override bool LateInitialize()
+        protected override bool LateInitialize(InitializationContext initializingContext)
         {
-            if (base.LateInitialize())
+            if (base.LateInitialize(initializingContext))
             {
 #if UNITY_EDITOR
                 transform.InitializeToTopInInspector();
@@ -492,6 +491,10 @@ namespace DepictionEngine
             return false;
         }
 
+        /// <summary>
+        /// Can the <see cref="UnityEngine.Object"/> be duplicated.
+        /// </summary>
+        /// <returns>True if the Object can be duplicated.</returns>
         protected virtual bool CanBeDuplicated()
         {
             return true;
@@ -882,7 +885,7 @@ namespace DepictionEngine
 
         public GeoAstroObject parentGeoAstroObject
         {
-            get { return _parentGeoAstroObject; }
+            get => _parentGeoAstroObject;
             private set 
             {
                 SetValue(nameof(parentGeoAstroObject), value, ref _parentGeoAstroObject, (newValue, oldValue) =>
@@ -896,6 +899,29 @@ namespace DepictionEngine
         {
             RemoveParentGeoAstroObjectDelegate(oldValue);
             AddParentGeoAstroObjectDelegate(newValue);
+        }
+
+        /// <summary>
+        /// Use this is the Object may not be initialized at the moment and we cannot rely on transform.parentObject.
+        /// </summary>
+        /// <returns>The parent Object or null if none exists.</returns>
+        public Object GetParentObject()
+        {
+            return gameObject.transform?.parent.GetComponent<Object>();
+        }
+
+        /// <summary>
+        /// Use this if the Object may not be initialized at the moment and we cannot rely on transform.IterateOverChildren().
+        /// </summary>
+        /// <param name="callback"></param>
+        public void IterateOverChildrenObject(Func<Object, bool> callback)
+        {
+            foreach (Transform childTransform in gameObject.transform)
+            {
+                Object childObject = childTransform.GetComponent<Object>();
+                if (!callback(childObject))
+                    break;
+            }
         }
 
         public void ApplyAutoAlignToSurface(LocalPositionParam localPositionParam, LocalRotationParam localRotationParam, GeoAstroObject parentGeoAstroObject, bool forceUpdate = false)
@@ -959,7 +985,7 @@ namespace DepictionEngine
 
         public ObjectAdditionalFallbackValues objectAdditionalFallbackValues
         {
-            get { return _objectAdditionalFallbackValues; }
+            get => _objectAdditionalFallbackValues;
             set 
             {
                 if (_objectAdditionalFallbackValues == value)
@@ -976,7 +1002,7 @@ namespace DepictionEngine
         [Json]
         public bool gameObjectActiveSelf
         {
-            get { return gameObject.activeSelf; }
+            get => gameObject.activeSelf;
             set
             {
                 if (!CanGameObjectBeDeactivated())
@@ -998,7 +1024,7 @@ namespace DepictionEngine
         [Json]
         public string tags
         {
-            get { return _tags; }
+            get => _tags;
             set { SetValue(nameof(tags), value, ref _tags); }
         }
 
@@ -1008,7 +1034,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsPhysicsObject))]
         public bool useGravity
         {
-            get { return _useGravity; }
+            get => _useGravity;
             set
             {
                 if (!IsPhysicsObject())
@@ -1026,7 +1052,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsPhysicsObject))]
         public double mass
         {
-            get { return _mass; }
+            get => _mass;
             set { SetValue(nameof(mass), value, ref _mass); }
         }
 
@@ -1037,7 +1063,7 @@ namespace DepictionEngine
         [Json]
         public int layer
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.layer : gameObject.layer; }
+            get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.layer : gameObject.layer;
             set
             {
                 int oldValue = layer;
@@ -1060,7 +1086,7 @@ namespace DepictionEngine
         [Json]
         public new string tag
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.tag : gameObject.tag; }
+            get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.tag : gameObject.tag;
             set
             {
                 string oldValue = tag;
@@ -1082,7 +1108,7 @@ namespace DepictionEngine
         [Json]
         public virtual bool isHiddenInHierarchy
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.isHiddenInHierarchy : _isHiddenInHierarchy; }
+            get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.isHiddenInHierarchy : _isHiddenInHierarchy;
             set
             {
                 SetValue(nameof(isHiddenInHierarchy), value, ref _isHiddenInHierarchy, (newValue, oldValue) =>
@@ -1101,7 +1127,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createAnimatorIfMissing
         {
-            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createAnimatorIfMissing; }
+            get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createAnimatorIfMissing;
             set 
             { 
                 if (objectAdditionalFallbackValues != null)
@@ -1115,7 +1141,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public SerializableGuid animatorId
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.animatorId : SerializableGuid.Empty; }
+            get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.animatorId : SerializableGuid.Empty;
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1139,7 +1165,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createControllerIfMissing
         {
-            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createControllerIfMissing; }
+            get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createControllerIfMissing;
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1153,7 +1179,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public SerializableGuid controllerId
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.controllerId : SerializableGuid.Empty; }
+            get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.controllerId : SerializableGuid.Empty;
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1177,7 +1203,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createGeneratorIfMissing
         {
-            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createGeneratorIfMissing; }
+            get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createGeneratorIfMissing;
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1191,7 +1217,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public List<SerializableGuid> generatorsId
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.generatorsId : null; }
+            get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.generatorsId : null;
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1215,7 +1241,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createReferenceIfMissing
         {
-            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createReferenceIfMissing; }
+            get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createReferenceIfMissing;
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1229,7 +1255,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public List<SerializableGuid> referencesId
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.referencesId : null; }
+            get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.referencesId : null;
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1253,7 +1279,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createEffectIfMissing
         {
-            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createEffectIfMissing; }
+            get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createEffectIfMissing;
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1267,7 +1293,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public List<SerializableGuid> effectsId
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.effectsId : null; }
+            get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.effectsId : null;
             set
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1291,7 +1317,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createFallbackValuesIfMissing
         {
-            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createFallbackValuesIfMissing; }
+            get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createFallbackValuesIfMissing;
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1305,7 +1331,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public List<SerializableGuid> fallbackValuesId
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.fallbackValuesId : null; }
+            get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.fallbackValuesId : null;
             set
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1329,7 +1355,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createDatasourceIfMissing
         {
-            get { return objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createDatasourceIfMissing; }
+            get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createDatasourceIfMissing;
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1343,7 +1369,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public List<SerializableGuid> datasourcesId
         {
-            get { return objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.datasourcesId : null; }
+            get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.datasourcesId : null;
             set 
             {
                 if (objectAdditionalFallbackValues != null)
@@ -1367,7 +1393,7 @@ namespace DepictionEngine
         [Json(propertyName: nameof(animatorJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public AnimatorBase animator
         {
-            get { return _animator; }
+            get => _animator;
             private set { SetValue(nameof(animator), value, ref _animator); }
         }
 
@@ -1377,7 +1403,7 @@ namespace DepictionEngine
         [Json(propertyName: nameof(controllerJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public ControllerBase controller
         {
-            get { return _controller; }
+            get => _controller;
             private set { SetController(value); }
         }
 
@@ -1440,21 +1466,21 @@ namespace DepictionEngine
             private set { SetValue(nameof(datasources), value, ref _datasources); }
         }
 
-        private JSONNode transformJson { get { return JsonUtility.ToJson(GetComponent<TransformBase>()); } }
+        private JSONNode transformJson { get => JsonUtility.ToJson(GetComponent<TransformBase>()); }
 
-        private JSONNode animatorJson { get { return JsonUtility.ToJson(GetComponent<AnimatorBase>()); } }
+        private JSONNode animatorJson { get => JsonUtility.ToJson(GetComponent<AnimatorBase>()); }
 
-        private JSONNode controllerJson { get { return JsonUtility.ToJson(GetComponent<ControllerBase>()); } }
+        private JSONNode controllerJson { get => JsonUtility.ToJson(GetComponent<ControllerBase>()); }
 
-        private JSONNode generatorsJson { get { return JsonUtility.ToJson(GetComponents<GeneratorBase>()); } }
+        private JSONNode generatorsJson { get => JsonUtility.ToJson(GetComponents<GeneratorBase>()); }
 
-        private JSONNode referencesJson { get { return JsonUtility.ToJson(GetComponents<ReferenceBase>()); } }
+        private JSONNode referencesJson { get => JsonUtility.ToJson(GetComponents<ReferenceBase>()); }
 
-        private JSONNode effectsJson { get { return JsonUtility.ToJson(GetComponents<EffectBase>()); } }
+        private JSONNode effectsJson { get => JsonUtility.ToJson(GetComponents<EffectBase>()); }
 
-        private JSONNode fallbackValuesJson { get { return JsonUtility.ToJson(GetComponents<FallbackValues>()); } }
+        private JSONNode fallbackValuesJson { get => JsonUtility.ToJson(GetComponents<FallbackValues>()); }
 
-        private JSONNode datasourcesJson { get { return JsonUtility.ToJson(GetComponents<DatasourceBase>()); } }
+        private JSONNode datasourcesJson { get => JsonUtility.ToJson(GetComponents<DatasourceBase>()); }
 
         protected void InitializeReferenceDataType(string dataType, Type referenceType = null)
         {
@@ -1499,7 +1525,7 @@ namespace DepictionEngine
 
         public TargetControllerBase targetController
         {
-            get { return controller as TargetControllerBase; }
+            get => controller as TargetControllerBase;
             set { SetTargetController(value); }
         }
 
@@ -1518,7 +1544,7 @@ namespace DepictionEngine
         [Json(propertyName: nameof(transformJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public new TransformDouble transform
         {
-            get { return _transform; }
+            get => _transform;
             protected set { SetTransform(value); }
         }
 
@@ -1982,7 +2008,7 @@ namespace DepictionEngine
 
         private Rigidbody rigidbodyInternal
         {
-            get { return _rigidbodyInternal; }
+            get => _rigidbodyInternal;
             set
             {
                 if (_rigidbodyInternal == value)
@@ -2185,7 +2211,13 @@ namespace DepictionEngine
                 {
                     Transform child = transform.transform.GetChild(i);
                     if (child != null)
+                    {
+#if UNITY_EDITOR
+                        if (disposeContext == DisposeContext.Programmatically_Pool && notPoolable)
+                            disposeContext = DisposeContext.Programmatically_Destroy;
+#endif
                         DisposeManager.Dispose(child.gameObject, disposeContext);
+                    }
                 }
 
                 return true;

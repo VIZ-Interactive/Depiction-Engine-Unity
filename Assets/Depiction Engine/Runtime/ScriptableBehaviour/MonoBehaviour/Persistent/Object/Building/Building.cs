@@ -34,7 +34,6 @@ namespace DepictionEngine
             InitValue(value => groundLevelId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(groundLevelId, groundLevel, initializingContext); }, initializingContext);
         }
 
-
         protected override void CreateComponents(InitializationContext initializingContext)
         {
             base.CreateComponents(initializingContext);

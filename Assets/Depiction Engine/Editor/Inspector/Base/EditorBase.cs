@@ -20,17 +20,22 @@ namespace DepictionEngine.Editor
 
         public override void OnInspectorGUI()
         {
-            if (serializedObject.targetObject != null)
+            if (SceneManager.Instance(false) != Disposable.NULL)
             {
-                EditorGUI.indentLevel = 1;
-                serializedObject.Update();
+                if (serializedObject.targetObject != null)
+                {
+                    EditorGUI.indentLevel = 1;
+                    serializedObject.Update();
 
-                SerializedProperty serializedProperty = serializedObject.GetIterator();
-                if (serializedProperty.NextVisible(true))
-                    AddPropertyFields(serializedProperty);
+                    SerializedProperty serializedProperty = serializedObject.GetIterator();
+                    if (serializedProperty.NextVisible(true))
+                        AddPropertyFields(serializedProperty);
+                }
+
+                UndoManager.FlushUndoRecordObjects();
             }
-
-            UndoManager.FlushUndoRecordObjects();
+            else
+                base.OnInspectorGUI();
         }
 
         protected virtual void AddPropertyFields(SerializedProperty serializedProperty)

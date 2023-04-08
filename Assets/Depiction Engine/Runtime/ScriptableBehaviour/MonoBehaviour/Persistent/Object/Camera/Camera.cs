@@ -217,9 +217,9 @@ namespace DepictionEngine
         }
 
         private bool moveComponentDown;
-        public override bool LateInitialize()
+        protected override bool LateInitialize(InitializationContext initializingContext)
         {
-            if (base.LateInitialize())
+            if (base.LateInitialize(initializingContext))
             {
 #if UNITY_EDITOR
                 if (moveComponentDown)
@@ -258,7 +258,7 @@ namespace DepictionEngine
 
         private int stackCount
         {
-            get { return _stacks == null ? 0 : _stacks.Count; }
+            get => _stacks == null ? 0 : _stacks.Count;
         }
 
         public virtual int GetDefaultDistancePass()
@@ -293,7 +293,7 @@ namespace DepictionEngine
 
         public UniversalAdditionalCameraData additionalData
         {
-            get { return _additionalData; }
+            get => _additionalData;
             private set
             {
                 if (_additionalData == value)
@@ -316,12 +316,7 @@ namespace DepictionEngine
 
         public Skybox skybox
         {
-            get 
-            { 
-                if (_skybox == null)
-                    _skybox = GetComponent<Skybox>();
-                return _skybox; 
-            }
+            get => _skybox ??= GetComponent<Skybox>();
         }
 
         private void UpdateSkybox()
@@ -332,7 +327,7 @@ namespace DepictionEngine
 
         public RenderTexture environmentCubemap
         {
-            get { return _environmentCubemap; }
+            get => _environmentCubemap;
             private set
             {
                 if (Object.ReferenceEquals(_environmentCubemap, value))
@@ -360,7 +355,7 @@ namespace DepictionEngine
 
         public static Camera main
         {
-            get { return UnityEngine.Camera.main != null ? UnityEngine.Camera.main.GetComponent<Camera>() : null; }
+            get => UnityEngine.Camera.main != null ? UnityEngine.Camera.main.GetComponent<Camera>() : null;
         }
 
         public Matrix4x4 GetViewToWorldMatrix()
@@ -411,7 +406,7 @@ namespace DepictionEngine
         [Json]
         public bool orthographic
         {
-            get { return _orthographic; }
+            get => _orthographic;
             set { SetValue(nameof(orthographic), value, ref _orthographic); }
         }
 
@@ -421,7 +416,7 @@ namespace DepictionEngine
         [Json]
         public float orthographicSize
         {
-            get { return _orthographicSize; }
+            get => _orthographicSize;
             set { SetValue(nameof(orthographicSize), value, ref _orthographicSize); }
         }
 
@@ -431,7 +426,7 @@ namespace DepictionEngine
         [Json]
         public float fieldOfView
         {
-            get { return _fieldOfView; }
+            get => _fieldOfView;
             set { SetValue(nameof(fieldOfView), value, ref _fieldOfView); }
         }
 
@@ -441,7 +436,7 @@ namespace DepictionEngine
         [Json]
         public float nearClipPlane
         {
-            get { return _nearClipPlane; }
+            get => _nearClipPlane;
             set { SetValue(nameof(nearClipPlane), value, ref _nearClipPlane); }
         }
 
@@ -454,7 +449,7 @@ namespace DepictionEngine
 #endif
         public float farClipPlane
         {
-            get { return _farClipPlane; }
+            get => _farClipPlane;
             set 
             {
                 if (value > 10000000000.0f)
@@ -485,7 +480,7 @@ namespace DepictionEngine
 #endif
         public bool postProcessing
         {
-            get { return _postProcessing; }
+            get => _postProcessing;
             set
             {
                 SetValue(nameof(postProcessing), value, ref _postProcessing, (newValue, oldValue) =>
@@ -506,7 +501,7 @@ namespace DepictionEngine
         [Json]
         public DepthTextureMode depthTextureMode
         {
-            get { return _depthTextureMode; }
+            get => _depthTextureMode;
             set { SetValue(nameof(depthTextureMode), value, ref _depthTextureMode); }
         }
 
@@ -516,7 +511,7 @@ namespace DepictionEngine
         [Json]
         public int cullingMask
         {
-            get { return _cullingMask; }
+            get => _cullingMask;
             set { SetValue(nameof(cullingMask), value, ref _cullingMask); }
         }
 
@@ -526,7 +521,7 @@ namespace DepictionEngine
         [Json]
         public bool useOcclusionCulling
         {
-            get { return _useOcclusionCulling; }
+            get => _useOcclusionCulling;
             set { SetValue(nameof(useOcclusionCulling), value, ref _useOcclusionCulling); }
         }
 
@@ -536,7 +531,7 @@ namespace DepictionEngine
         [Json]
         public CameraClearFlags clearFlags
         {
-            get { return _clearFlags; }
+            get => _clearFlags;
             set { SetValue(nameof(clearFlags), value, ref _clearFlags); }
         }
 
@@ -546,7 +541,7 @@ namespace DepictionEngine
         [Json]
         public Color backgroundColor
         {
-            get { return _backgroundColor; }
+            get => _backgroundColor;
             set { SetValue(nameof(backgroundColor), value, ref _backgroundColor); }
         }
 
@@ -568,7 +563,7 @@ namespace DepictionEngine
 #endif
         public string skyboxMaterialPath
         {
-            get { return _skyboxMaterialPath; }
+            get => _skyboxMaterialPath;
             set 
             {
                 SetValue(nameof(skyboxMaterialPath), value, ref _skyboxMaterialPath, (newValue, oldValue) =>
@@ -584,7 +579,7 @@ namespace DepictionEngine
         [Json]
         public int environmentTextureSize
         {
-            get { return _environmentTextureSize; }
+            get => _environmentTextureSize;
             set 
             {
                 if (value < 2)
@@ -599,23 +594,23 @@ namespace DepictionEngine
         [Json]
         public bool allowHDR
         {
-            get { return _allowHDR; }
+            get => _allowHDR;
             set { SetValue(nameof(allowHDR), value, ref _allowHDR); }
         }
 
         public float aspect
         {
-            get { return unityCamera.aspect; }
+            get => unityCamera.aspect;
         }
 
         public int pixelHeight
         {
-            get { return unityCamera.pixelHeight; }
+            get => unityCamera.pixelHeight;
         }
 
         public int pixelWidth
         {
-            get { return unityCamera.pixelWidth; }
+            get => unityCamera.pixelWidth;
         }
 
         public static Camera current

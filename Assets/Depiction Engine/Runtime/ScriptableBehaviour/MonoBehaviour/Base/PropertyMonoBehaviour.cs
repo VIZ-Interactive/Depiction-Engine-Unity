@@ -24,8 +24,6 @@ namespace DepictionEngine
 
         private bool _activeAndEnabled;
 
-        private bool _lateInitialized;
-
         private bool _hasDirtyFlags;
         private HashSet<int> _dirtyKeys;
 
@@ -44,8 +42,6 @@ namespace DepictionEngine
 
             ResetId();
 
-            _lateInitialized = default;
-
             ClearDirtyFlags();
         }
 
@@ -55,7 +51,7 @@ namespace DepictionEngine
         [Json]
         public Type type
         {
-            get { return GetType(); }
+            get => GetType();
         }
 
         protected override void Initializing()
@@ -69,7 +65,11 @@ namespace DepictionEngine
         {
             base.InitializeUID(initializingContext);
 
-            id = GetId(id, initializingContext);
+            SerializableGuid lastId = id;
+            SerializableGuid newId = GetId(id, initializingContext);
+            id = newId;
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+                InstanceManager.RegisterDuplicating(lastId, newId);
         }
 
         protected virtual SerializableGuid GetId(SerializableGuid id, InitializationContext initializingContext)
@@ -148,6 +148,20 @@ namespace DepictionEngine
 
         }
 
+        protected virtual bool InitializeLastFields()
+        {
+            if (!_initializeLastFields)
+            {
+                _initializeLastFields = true;
+
+#if UNITY_EDITOR
+                _lastParent = _parent;
+#endif
+                return true;
+            }
+            return false;
+        }
+
         public override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
@@ -156,10 +170,12 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        private PropertyMonoBehaviour _lastParent;
         protected override void UndoRedoPerformed()
         {
             base.UndoRedoPerformed();
 
+            _parent = _lastParent;
             UpdateRelations();
         }
 #endif
@@ -274,7 +290,7 @@ namespace DepictionEngine
         {
             if (child is not null)
             {
-                child.DisposedEvent -= ChildDisposed;
+                child.DisposedEvent -= ChildDisposedHandler;
                 return true;
             }
             return false;
@@ -284,13 +300,13 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && child != Disposable.NULL)
             {
-                child.DisposedEvent += ChildDisposed;
+                child.DisposedEvent += ChildDisposedHandler;
                 return true;
             }
             return false;
         }
 
-        private void ChildDisposed(IDisposable disposable, DisposeContext disposeContext)
+        private void ChildDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
             RemoveChild(disposable as PropertyMonoBehaviour);
         }
@@ -312,7 +328,7 @@ namespace DepictionEngine
         /// <param name="originator"></param>
         public virtual void UpdateParent(PropertyMonoBehaviour originator = null)
         {
-            Originator(() =>  { SetParent(GetParent()); }, originator);
+            Originator(() => { SetParent(GetParent()); }, originator);
         }
 
         protected void UpdateSiblings()
@@ -580,7 +596,7 @@ namespace DepictionEngine
 
         public Action<IProperty, string, object, object> PropertyAssignedEvent
         {
-            get { return _propertyAssignedEvent; }
+            get => _propertyAssignedEvent;
             set { _propertyAssignedEvent = value; }
         }
 
@@ -595,7 +611,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsNotFallbackValues))]
         public SerializableGuid id
         {
-            get { return _id; }
+            get => _id;
             set { _id = value; }
         }
 
@@ -630,7 +646,7 @@ namespace DepictionEngine
         /// </summary>
         public bool activeAndEnabled
         {
-            get { return _activeAndEnabled; }
+            get => _activeAndEnabled;
             private set 
             { 
                 SetValue(nameof(activeAndEnabled), value, ref _activeAndEnabled, (newValue, oldValue) => 
@@ -655,13 +671,13 @@ namespace DepictionEngine
         /// </summary>
         public PropertyMonoBehaviour parent
         {
-            get { return _parent; }
-            set { SetParent(value); }
+            get => _parent;
+            set => SetParent(value);
         }
 
         protected virtual JSONNode parentJson
         {
-            get { return null; }
+            get => null;
             set { }
         }
 
@@ -682,7 +698,10 @@ namespace DepictionEngine
         {
             return SetValue(nameof(parent), ValidatedParent(value), ref _parent, (newValue, oldValue) =>
                {
-                    if (RemoveParentDelegates(oldValue))
+#if UNITY_EDITOR
+                   _lastParent = parent;
+#endif
+                   if (RemoveParentDelegates(oldValue))
                         oldValue.RemoveChild(this);
 
                     if (AddParentDelegates(newValue))
@@ -739,17 +758,6 @@ namespace DepictionEngine
         {
         }
 
-        protected virtual bool InitializeLastFields()
-        {
-            if (!_initializeLastFields)
-            {
-                _initializeLastFields = true;
-
-                return true;
-            }
-            return false;
-        }
-
         private Camera _cameraParam;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void HierarchicalBeginCameraRenderingChild(PropertyMonoBehaviour child) { child.HierarchicalBeginCameraRendering(_cameraParam); }
@@ -798,28 +806,6 @@ namespace DepictionEngine
         public virtual void HierarchicalFixedUpdate()
         {
             IterateOverChildrenAndSiblings((child) => { child.HierarchicalFixedUpdate(); });
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void LateInitializeChild(PropertyMonoBehaviour child) { child.LateInitialize(); }
-        /// <summary>
-        /// Objects that were not initialized are automatically initialized.
-        /// </summary>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual bool LateInitialize()
-        {
-            bool lateInitialized = false;
-
-            if (!_lateInitialized)
-                lateInitialized = _lateInitialized = true;
-
-            IterateOverChildrenAndSiblings(LateInitializeChild);
-
-            if (IsDisposing())
-                return false;
-
-            return initialized && lateInitialized;
         }
 
 #if UNITY_EDITOR
@@ -946,7 +932,7 @@ namespace DepictionEngine
             }
 
             //Apply to Children
-            IterateOverChildren(callback);
+           IterateOverChildren(callback);
 
             if (SceneManager.sceneExecutionState != SceneManager.ExecutionState.HierarchicalActivate)
             {

@@ -50,9 +50,9 @@ namespace DepictionEngine
             InitValue(value => manageLoaders = value, true, initializingContext);
         }
 
-        public override bool LateInitialize()
+        protected override bool LateInitialize(InitializationContext initializingContext)
         {
-            if (base.LateInitialize())
+            if (base.LateInitialize(initializingContext))
             {
                 if (interior == Disposable.NULL)
                     CreateChild<Interior>(nameof(Interior));
@@ -89,7 +89,7 @@ namespace DepictionEngine
 
         public float groundY
         {
-            get { return _groundY; }
+            get => _groundY;
             set 
             {
                 SetValue(nameof(groundY), value, ref _groundY, (newValue, oldValue) => 
@@ -219,7 +219,7 @@ namespace DepictionEngine
         [Json]
         public bool showInteriorOnOpenOnly
         {
-            get { return _showInteriorOnOpenOnly; }
+            get => _showInteriorOnOpenOnly;
             set 
             { 
                 SetValue(nameof(showInteriorOnOpenOnly), value, ref _showInteriorOnOpenOnly, (newValue, oldValue) => 
@@ -235,7 +235,7 @@ namespace DepictionEngine
         [Json]
         public bool manageLoaders
         {
-            get { return _manageLoaders; }
+            get => _manageLoaders;
             set { SetValue(nameof(manageLoaders), value, ref _manageLoaders); }
         }
 

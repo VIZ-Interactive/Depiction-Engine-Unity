@@ -77,10 +77,8 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                 Editor.UndoManager.RegisterCreatedObjectUndo(meshRendererVisualDirtyFlags, initializingContext);
 #endif
-                if (duplicating)
-                    meshRendererVisualDirtyFlags.Recreate();
-                else
-                    meshRendererVisualDirtyFlags.AllDirty();
+                SetMeshRendererVisualsDirty(duplicating);
+
 #if UNITY_EDITOR
                 Editor.UndoManager.RegisterCompleteObjectUndo(meshRendererVisualDirtyFlags, initializingContext);
                 //Prevent further changes to the VisualDirtyFlags to be recorded as part of this undo operation.
@@ -175,13 +173,13 @@ namespace DepictionEngine
         [Json]
         public float popupDuration
         {
-            get { return _popupDuration; }
+            get => _popupDuration;
             set { SetValue(nameof(popupDuration), value, ref _popupDuration); }
         }
 
         public Tween popupTween
         {
-            get { return _popupTween; }
+            get => _popupTween;
             set
             {
                 if (Object.ReferenceEquals(_popupTween, value))
@@ -195,8 +193,8 @@ namespace DepictionEngine
 
         protected bool popup
         {
-            get { return _popup; }
-            set { _popup = value; }
+            get => _popup;
+            set => _popup = value;
         }
 
         protected float GetPopupT(PopupType popupType)
@@ -206,8 +204,8 @@ namespace DepictionEngine
 
         protected float popupT
         {
-            get { return _popupT; }
-            set { SetPopupT(value); }
+            get => _popupT;
+            set => SetPopupT(value);
         }
 
         protected virtual bool SetPopupT(float value)
@@ -232,8 +230,19 @@ namespace DepictionEngine
 
         protected VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags
         {
-            get { return _meshRendererVisualDirtyFlags; }
-            set { _meshRendererVisualDirtyFlags = value; }
+            get => _meshRendererVisualDirtyFlags;
+            set => _meshRendererVisualDirtyFlags = value;
+        }
+
+        public void SetMeshRendererVisualsDirty(bool recreate = false)
+        {
+            if (meshRendererVisualDirtyFlags != null)
+            {
+                if (recreate)
+                    meshRendererVisualDirtyFlags.Recreate();
+                else
+                    meshRendererVisualDirtyFlags.AllDirty();
+            }
         }
 
         protected override void Saving(Scene scene, string path)
@@ -247,8 +256,7 @@ namespace DepictionEngine
                     childGO.hideFlags |= HideFlags.DontSave;
                 });
 
-                if (meshRendererVisualDirtyFlags != null)
-                    meshRendererVisualDirtyFlags.AllDirty();
+                SetMeshRendererVisualsDirty();
             }
         }
 

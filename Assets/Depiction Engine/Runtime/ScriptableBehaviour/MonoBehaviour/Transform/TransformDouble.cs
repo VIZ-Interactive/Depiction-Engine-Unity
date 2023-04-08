@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
 
 namespace DepictionEngine
 {
@@ -71,21 +70,6 @@ namespace DepictionEngine
             localScaleParam.Recycle();
         }
 
-        protected override bool InitializeLastFields()
-        {
-            if (base.InitializeLastFields())
-            {
-#if UNITY_EDITOR
-                _lastLocalPosition = localPosition;
-                _lastGeoCoordinate = geoCoordinate;
-                _lastLocalRotation = localRotation;
-                _lastLocalScale = localScale;
-#endif
-                return true;
-            }
-            return false;
-        }
-
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
@@ -141,6 +125,21 @@ namespace DepictionEngine
             SetLocalScale(localScale);
         }
 
+        protected override bool InitializeLastFields()
+        {
+            if (base.InitializeLastFields())
+            {
+#if UNITY_EDITOR
+                _lastLocalPosition = localPosition;
+                _lastGeoCoordinate = geoCoordinate;
+                _lastLocalRotation = localRotation;
+                _lastLocalScale = localScale;
+#endif
+                return true;
+            }
+            return false;
+        }
+
 #if UNITY_EDITOR
         private Vector3Double _lastLocalPosition;
         private GeoCoordinate3Double _lastGeoCoordinate;
@@ -182,29 +181,17 @@ namespace DepictionEngine
 
         private LocalPositionParam localPositionParam
         {
-            get 
-            {
-                _localPositionParam ??= new LocalPositionParam();
-                return _localPositionParam; 
-            }
+            get => _localPositionParam ??= new LocalPositionParam();
         }
 
         private LocalRotationParam localRotationParam
         {
-            get 
-            {
-                _localRotationParam ??= new LocalRotationParam();
-                return _localRotationParam; 
-            }
+            get => _localRotationParam ??= new LocalRotationParam();
         }
 
         private LocalScaleParam localScaleParam
         {
-            get 
-            {
-                _localScaleParam ??= new LocalScaleParam();
-                return _localScaleParam; 
-            }
+            get => _localScaleParam ??= new LocalScaleParam();
         }
 
         /// <summary>
@@ -253,6 +240,7 @@ namespace DepictionEngine
                 return _worldToLocalMatrix;
             }
         }
+
 
         private Matrix4x4Double _localToWorldMatrix;
         /// <summary>
@@ -663,7 +651,8 @@ namespace DepictionEngine
             if (DetectDirectTransformLocalPositionManipulation() || DetectDirectTransformLocalRotationManipulation() || DetectDirectTransformLocalScaleManipulation())
             {
 #if UNITY_EDITOR
-                MarkAsNotPoolable();
+                if (SceneManager.IsUserChangeContext())
+                    RegisterCompleteObjectUndo();
 #endif
                 SetComponents(CaptureLocalPosition(), CaptureLocalRotation(), CaptureLocalScale());
 

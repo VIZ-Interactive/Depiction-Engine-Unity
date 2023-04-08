@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
 
 namespace DepictionEngine
 {
@@ -180,9 +179,9 @@ namespace DepictionEngine
             }
         }
 
-        public override bool LateInitialize()
+        protected override bool LateInitialize(InitializationContext initializingContext)
         {
-            if (base.LateInitialize())
+            if (base.LateInitialize(initializingContext))
             {
 #if UNITY_EDITOR
                 InitializeToTopInInspector();
@@ -365,26 +364,9 @@ namespace DepictionEngine
             return false;
         }
 
-#if UNITY_EDITOR
-        protected override void UndoRedoPerformed()
-        {
-            base.UndoRedoPerformed();
-
-            //IsNullOrDisposed required
-            if (!DisposeManager.IsNullOrDisposing(this) && ParentHasChanged())
-            {
-                base.SetParent(GetParent());
-                ParentChanged();
-            }
-        }
-#endif
-
         public override void UpdateParent(PropertyMonoBehaviour originator = null)
         {
-            Originator(() =>
-            {
-                SetParent(GetParent() as TransformBase, initialized);
-            }, originator);
+            Originator(() => { SetParent(GetParent() as TransformBase, initialized); }, originator);
         }
 
         protected override PropertyMonoBehaviour GetParent()
@@ -393,7 +375,7 @@ namespace DepictionEngine
 
             Type parentType = GetParentType();
             if (parentType != null)
-                parent = InitializeComponent(transform.parent != null ? transform.parent.GetComponentInParent(parentType, true) : null);
+                parent = InitializeComponent(transform.parent?.GetComponentInParent(parentType, true));
 
             return parent;
         }
@@ -415,11 +397,7 @@ namespace DepictionEngine
 
         private TransformComponents3 unityTransformComponents
         {
-            get 
-            {
-                _unityTransformComponents ??= new TransformComponents3();
-                return _unityTransformComponents; 
-            }
+            get => _unityTransformComponents ??= new TransformComponents3();
         }
 
 #if UNITY_EDITOR
@@ -469,7 +447,7 @@ namespace DepictionEngine
         [Json]
         public int index
         {
-            get { return transform.GetSiblingIndex(); }
+            get => transform.GetSiblingIndex();
             set 
             {
                 int oldValue = index;
@@ -497,7 +475,7 @@ namespace DepictionEngine
 
         public bool isGeoCoordinateTransform
         {
-            get { return _isGeoCoordinateTransform; }
+            get => _isGeoCoordinateTransform;
             protected set
             {
                 SetValue(nameof(isGeoCoordinateTransform), value, ref _isGeoCoordinateTransform, (newValue, oldValue) => 
@@ -514,13 +492,13 @@ namespace DepictionEngine
 
         public int childCount
         {
-            get { return children != null ? children.Count : 0; }
+            get => children != null ? children.Count : 0;
         }
 
         private Vector3 _lastTransformLocalPosition;
         public Vector3 transformLocalPosition
         {
-            get { return transform.localPosition; }
+            get => transform.localPosition;
             set
             {
                 if (_lastTransformLocalPosition.Equals(value))
@@ -533,7 +511,7 @@ namespace DepictionEngine
         private Quaternion _lastTransformLocalRotation;
         protected Quaternion transformLocalRotation
         {
-            get { return transform.localRotation; }
+            get => transform.localRotation;
             set
             {
                 if (_lastTransformLocalRotation.Equals(value))
@@ -546,7 +524,7 @@ namespace DepictionEngine
         private Vector3 _lastTransformLocalScale;
         protected Vector3 transformLocalScale
         {
-            get { return transform.localScale; }
+            get => transform.localScale;
             set
             {
                 if (_lastTransformLocalScale.Equals(value))
@@ -558,32 +536,32 @@ namespace DepictionEngine
 
         protected virtual bool positionDirty
         {
-            get { return _positionDirty; }
-            set { _positionDirty = value; }
+            get => _positionDirty;
+            set => _positionDirty = value;
         }
 
         protected virtual bool rotationDirty
         {
-            get { return _rotationDirty; }
-            set { _rotationDirty = value; }
+            get => _rotationDirty;
+            set => _rotationDirty = value;
         }
 
         protected virtual bool lossyScaleDirty
         {
-            get { return _lossyScaleDirty; }
-            set { _lossyScaleDirty = value; }
+            get => _lossyScaleDirty;
+            set => _lossyScaleDirty = value;
         }
 
         protected bool localToWorldMatrixDirty
         {
-            get { return _localToWorldMatrixDirty; }
-            private set { _localToWorldMatrixDirty = value; }
+            get => _localToWorldMatrixDirty;
+            private set => _localToWorldMatrixDirty = value;
         }
 
         protected bool worldToLocalMatrixDirty
         {
-            get { return _worldToLocalMatrixDirty; }
-            private set { _worldToLocalMatrixDirty = value; }
+            get => _worldToLocalMatrixDirty;
+            private set => _worldToLocalMatrixDirty = value;
         }
 
         protected override bool AddChild(PropertyMonoBehaviour child)
@@ -657,7 +635,7 @@ namespace DepictionEngine
 
         public Object objectBase
         {
-            get { return _objectBase; }
+            get => _objectBase;
             protected set { SetObjectBase(value); }
         }
 
@@ -675,35 +653,31 @@ namespace DepictionEngine
 
         public Object parentObject
         {
-            get { return _parentObject; }
-            protected set { SetParentObject(value); }
-        }
-
-        protected bool SetParentObject(Object value)
-        {
-            return SetValue(nameof(parentObject), value, ref _parentObject, (newValue, oldValue) =>
+            get => _parentObject;
+            protected set 
             {
-                if (!IsDisposing())
+                SetValue(nameof(parentObject), value, ref _parentObject, (newValue, oldValue) =>
                 {
-                    if (!UpdateParentGeoAstroObject())
-                        UpdateIsGeoCoordinateTransform();
-                }
-            });
+                    if (!IsDisposing())
+                    {
+                        if (!UpdateParentGeoAstroObject())
+                            UpdateIsGeoCoordinateTransform();
+                    }
+                });
+            }
         }
 
         public GeoAstroObject parentGeoAstroObject
         {
-            get { return _parentGeoAstroObject; }
-            private set { SetParentGeoAstroObject(value); }
-        }
-
-        protected bool SetParentGeoAstroObject(GeoAstroObject value)
-        {
-            return SetValue(nameof(parentGeoAstroObject), value, ref _parentGeoAstroObject, (newValue, oldValue) =>
+            get => _parentGeoAstroObject;
+            private set 
             {
-                if (!IsDisposing())
-                    UpdateIsGeoCoordinateTransform();
-            });
+                SetValue(nameof(parentGeoAstroObject), value, ref _parentGeoAstroObject, (newValue, oldValue) =>
+                {
+                    if (!IsDisposing())
+                        UpdateIsGeoCoordinateTransform();
+                });
+            }
         }
 
         protected void UpdateParentObject()
@@ -713,7 +687,7 @@ namespace DepictionEngine
 
         protected bool UpdateParentGeoAstroObject()
         {
-            return SetParentGeoAstroObject(FindParentGeoAstroObject());
+            return parentGeoAstroObject = FindParentGeoAstroObject();
         }
 
         private Object FindParentObject()
@@ -723,8 +697,20 @@ namespace DepictionEngine
             if (initialized)
                 parentObject = parent != Disposable.NULL && parent is TransformBase ? (parent as TransformBase).objectBase : null;
             else
-                parentObject = transform.parent != null ? transform.parent.GetComponent<Object>() : null;
+            {
+                try
+                {
+                    if (transform == null)
+                        Debug.Log("fffff");
 
+                    parentObject = transform.parent?.GetComponent<Object>();
+                }
+                catch(MissingReferenceException)
+                {
+                    parentObject = null;
+                    Debug.Log(this); 
+                }
+            }
             return parentObject;
         }
 
@@ -780,7 +766,7 @@ namespace DepictionEngine
 
         protected override JSONNode parentJson
         {
-            get { return parent != Disposable.NULL ? JsonUtility.ToJson(parent.id) : null; }
+            get => parent != Disposable.NULL ? JsonUtility.ToJson(parent.id) : null;
             set 
             {
                 if (JsonUtility.FromJson(out SerializableGuid parsedParentId, value))
@@ -817,25 +803,20 @@ namespace DepictionEngine
                             transform.SetParent(newTransform, false);
                     }
 
+                    InitLastTransformFields();
+
+                    UpdateParentObject();
+
 #if UNITY_EDITOR
                     if (SceneManager.IsUserChangeContext())
-                        Editor.UndoManager.RecordObject(this);
+                        RegisterCompleteObjectUndo();
 #endif
-
-                    ParentChanged();
 
                     return true;
                 }
             }
 
             return false;
-        }
-
-        private void ParentChanged()
-        {
-            InitLastTransformFields();
-
-            UpdateParentObject();
         }
 
         protected Vector3 CaptureLocalPositionDelta()
@@ -1135,21 +1116,21 @@ namespace DepictionEngine
             return overrideDestroyingContext;
         }
 
-        public T GetSafeComponent<T>(InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponent<T>(initializingContext); }
+        public T GetSafeComponent<T>(InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component => transform.GetSafeComponent<T>(initializingContext);
 
-        public UnityEngine.Component GetSafeComponent(Type type, InitializationContext initializingContext = InitializationContext.Programmatically) { return transform.GetSafeComponent(type, initializingContext); }
+        public UnityEngine.Component GetSafeComponent(Type type, InitializationContext initializingContext = InitializationContext.Programmatically) => transform.GetSafeComponent(type, initializingContext);
 
-        public T GetSafeComponentInParent<T>(bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponentInParent<T>(includeInactive, initializingContext); }
+        public T GetSafeComponentInParent<T>(bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component => transform.GetSafeComponentInParent<T>(includeInactive, initializingContext);
 
-        public UnityEngine.Component GetSafeComponentInParent(Type type, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically) { return transform.GetSafeComponentInParent(type, includeInactive, initializingContext); }
+        public UnityEngine.Component GetSafeComponentInParent(Type type, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically) => transform.GetSafeComponentInParent(type, includeInactive, initializingContext);
 
-        public List<T> GetSafeComponents<T>(InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponents<T>(initializingContext); }
+        public List<T> GetSafeComponents<T>(InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component => transform.GetSafeComponents<T>(initializingContext);
 
-        public List<UnityEngine.Component> GetSafeComponents(Type type, InitializationContext initializingContext = InitializationContext.Programmatically) { return transform.GetSafeComponents(type, initializingContext); }
+        public List<UnityEngine.Component> GetSafeComponents(Type type, InitializationContext initializingContext = InitializationContext.Programmatically) => transform.GetSafeComponents(type, initializingContext);
 
-        public List<T> GetSafeComponentsInChildren<T>(bool includeSibling = false, InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component { return transform.GetSafeComponentsInChildren<T>(includeSibling, initializingContext); }
+        public List<T> GetSafeComponentsInChildren<T>(bool includeSibling = false, InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component => transform.GetSafeComponentsInChildren<T>(includeSibling, initializingContext);
 
-        public List<UnityEngine.Component> GetSafeComponentsInChildren(Type type, bool includeSibling = false, InitializationContext initializingContext = InitializationContext.Programmatically) { return transform.GetSafeComponentsInChildren(type, includeSibling, initializingContext); }
+        public List<UnityEngine.Component> GetSafeComponentsInChildren(Type type, bool includeSibling = false, InitializationContext initializingContext = InitializationContext.Programmatically) => transform.GetSafeComponentsInChildren(type, includeSibling, initializingContext);
     }
 
     [Serializable]
@@ -1190,7 +1171,7 @@ namespace DepictionEngine
 
         public bool changed
         {
-            get { return _changed; }
+            get => _changed;
         }
 
         public void Changed()

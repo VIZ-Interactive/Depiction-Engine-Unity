@@ -179,13 +179,6 @@ namespace DepictionEngine
             InitValue(value => autoReloadInterval = value, 0.0f, initializingContext);
         }
 
-        public override void Initialized(InitializationContext initializingContext)
-        {
-            base.Initialized(initializingContext);
-
-            datasource.Initialized(initializingContext);
-        }
-
         protected override bool UpdateAllDelegates()
         {
             if (base.UpdateAllDelegates())

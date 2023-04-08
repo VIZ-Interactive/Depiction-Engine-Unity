@@ -88,6 +88,46 @@ namespace DepictionEngine
             _data = default;
         }
 
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
+        {
+            base.InitializeSerializedFields(initializingContext);
+
+            LoaderBase lastLoader = null;
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+            {
+                _loaderId = default;
+                lastLoader = _loader;
+                _loader = default;
+                _loadScope = default;
+                _data = default;
+                _loadingState = default;
+                _loadedOrfailedIdLoadScope = default;
+                _loadedOrfailedIndexLoadScope = default;
+            }
+
+            InitValue(value => dataType = value, "", initializingContext);
+            InitValue(value => loaderId = value, SerializableGuid.Empty, () => GetDuplicateComponentReferenceId(loaderId, lastLoader, initializingContext), initializingContext);
+            InitValue(value => dataId = value, SerializableGuid.Empty, initializingContext);
+            InitValue(value => dataIndex2D = value, Grid2DIndex.Empty, initializingContext);
+        }
+
+        protected override bool PostLateInitialize(InitializationContext initializingContext)
+        {
+            if (base.PostLateInitialize(initializingContext))
+            {
+                //Executed in PostLateInitialize because we have to wait for all potentially duplicating FallbackValues to update their loader id in the event of a bulk object duplicate.
+                UpdateLoadScope();
+           
+                return true;
+            }
+            return false;
+        }
+
+        protected override bool AddInstanceToManager()
+        {
+            return true;
+        }
+
         protected override bool InitializeLastFields()
         {
             if (base.InitializeLastFields())
@@ -103,31 +143,6 @@ namespace DepictionEngine
                 return true;
             }
             return false;
-        }
-
-        protected override void InitializeSerializedFields(InitializationContext initializingContext)
-        {
-            base.InitializeSerializedFields(initializingContext);
-
-            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
-            {
-                _loaderId = default;
-                _loader = default;
-                _loadScope = default;
-                _loadingState = default;
-                _loadedOrfailedIdLoadScope = default;
-                _loadedOrfailedIndexLoadScope = default;
-            }
-
-            InitValue(value => dataType = value, "", initializingContext);
-            InitValue(value => loaderId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(loaderId, loader, initializingContext); }, initializingContext);
-            InitValue(value => dataId = value, SerializableGuid.Empty, initializingContext);
-            InitValue(value => dataIndex2D = value, Grid2DIndex.Empty, initializingContext);
-        }
-
-        protected override bool AddInstanceToManager()
-        {
-            return true;
         }
 
 #if UNITY_EDITOR
@@ -159,11 +174,6 @@ namespace DepictionEngine
         {
             if (base.UpdateAllDelegates())
             {
-#if UNITY_EDITOR
-                SceneManager.ResetRegisterCompleteUndoEvent -= ResetRegisterCompleteUndo;
-                if (!IsDisposing())
-                    SceneManager.ResetRegisterCompleteUndoEvent += ResetRegisterCompleteUndo;
-#endif
                 RemoveLoaderDelegate(loader);
                 AddLoaderDelegate(loader);
 
@@ -253,14 +263,14 @@ namespace DepictionEngine
         [Json]
         public string dataType
         {
-            get { return _dataType; }
+            get => _dataType;
             set
             {
                 SetValue(nameof(dataType), value, ref _dataType, (newValue, oldValue) =>
                 {
 #if UNITY_EDITOR
                     _lastDataType = newValue;
-                    inspectorComponentNameOverride = Editor.ObjectNames.GetInspectorTitle(this, true) + " (" + newValue + ")";
+                    inspectorComponentNameOverride = Editor.ObjectNames.GetInspectorTitle(this, true) + (string.IsNullOrEmpty(newValue) ? "" : " (" + newValue + ")");
 #endif
                 });
             }
@@ -268,7 +278,7 @@ namespace DepictionEngine
 
         public LoaderBase loader
         {
-            get { return _loader; }
+            get => _loader;
             private set { loaderId = value != Disposable.NULL ? value.id : SerializableGuid.Empty; }
         }
 
@@ -278,7 +288,7 @@ namespace DepictionEngine
         [Json]
         public SerializableGuid loaderId
         {
-            get { return _loaderId ; }
+            get => _loaderId;
             set 
             { 
                 SetValue(nameof(loaderId), value, ref _loaderId, (newValue, oldValue) => 
@@ -311,7 +321,7 @@ namespace DepictionEngine
         [Json]
         public SerializableGuid dataId
         {
-            get { return _dataId; }
+            get => _dataId;
             set
             {
                 SetValue(nameof(dataId), value, ref _dataId, (newValue, oldValue) =>
@@ -333,7 +343,7 @@ namespace DepictionEngine
         [Json]
         public Grid2DIndex dataIndex2D
         {
-            get { return _dataIndex2D; }
+            get => _dataIndex2D;
             set
             {
                 SetValue(nameof(dataIndex2D), value, ref _dataIndex2D, (newValue, oldValue) =>
@@ -359,38 +369,42 @@ namespace DepictionEngine
 
         public LoadScope loadScope
         {
-            get { return _loadScope; }
+            get => _loadScope;
             private set { SetLoadScope(value); }
         }
 
         private bool UpdateLoadScope()
         {
-            LoadScope loadScope = null;
-
-            if (loader != Disposable.NULL)
+            if (initialized)
             {
-                bool createLoadScopeIfMissing = !SceneManager.IsSceneBeingDestroyed() && !LoadingWasAttempted();
+                LoadScope loadScope = null;
 
-                IdLoader idLoader = loader as IdLoader;
-                if (idLoader != Disposable.NULL)
+                if (loader != Disposable.NULL)
                 {
-                    if (idLoader != Disposable.NULL && idLoader.GetLoadScope(out LoadScope idLoadScope, dataId, createIfMissing: createLoadScopeIfMissing))
-                        loadScope = idLoadScope;
-                    else
-                        loadScope = null;
+                    bool createLoadScopeIfMissing = !SceneManager.IsSceneBeingDestroyed() && !LoadingWasAttempted();
+
+                    IdLoader idLoader = loader as IdLoader;
+                    if (idLoader != Disposable.NULL)
+                    {
+                        if (idLoader != Disposable.NULL && idLoader.GetLoadScope(out LoadScope idLoadScope, dataId, createIfMissing: createLoadScopeIfMissing))
+                            loadScope = idLoadScope;
+                        else
+                            loadScope = null;
+                    }
+
+                    Index2DLoader index2DLoader = loader as Index2DLoader;
+                    if (index2DLoader != Disposable.NULL)
+                    {
+                        if (index2DLoader != Disposable.NULL && index2DLoader.GetLoadScope(out LoadScope index2DLoadScope, new Grid2DIndex(dataIndex2D.index, dataIndex2D.dimensions), createIfMissing: createLoadScopeIfMissing))
+                            loadScope = index2DLoadScope;
+                        else
+                            loadScope = null;
+                    }
                 }
 
-                Index2DLoader index2DLoader = loader as Index2DLoader;
-                if (index2DLoader != Disposable.NULL)
-                { 
-                    if (index2DLoader != Disposable.NULL && index2DLoader.GetLoadScope(out LoadScope index2DLoadScope, new Grid2DIndex(dataIndex2D.index, dataIndex2D.dimensions), createIfMissing: createLoadScopeIfMissing))
-                        loadScope = index2DLoadScope;
-                    else
-                        loadScope = null;
-                }
+                return SetLoadScope(loadScope != Disposable.NULL ? loadScope : null);
             }
-
-            return SetLoadScope(loadScope != Disposable.NULL ? loadScope : null);
+            return false;
         }
 
         private bool SetLoadScope(LoadScope value, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
@@ -479,7 +493,7 @@ namespace DepictionEngine
         /// </summary>
         public PersistentScriptableObject data
         {
-            get { return _data; }
+            get => _data;
             private set { SetData(value); }
         }
 
@@ -531,7 +545,7 @@ namespace DepictionEngine
         /// </summary>
         public DatasourceOperationBase.LoadingState loadingState
         {
-            get { return _loadingState; }
+            get => _loadingState;
             private set { SetLoadingState(value); }
         }
 
@@ -556,26 +570,5 @@ namespace DepictionEngine
             }
             return false;
         }
-
-#if UNITY_EDITOR
-        private bool _registeredCompleteObjectUndo;
-        protected void RegisterCompleteObjectUndo(DisposeContext disposeContext = DisposeContext.Editor_Destroy)
-        {
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                MarkAsNotPoolable();
-                if (!_registeredCompleteObjectUndo)
-                {
-                    _registeredCompleteObjectUndo = true;
-                    Editor.UndoManager.RegisterCompleteObjectUndo(this);
-                }
-            }
-        }
-
-        private void ResetRegisterCompleteUndo()
-        {
-            _registeredCompleteObjectUndo = false;
-        }
-#endif
     }
 }

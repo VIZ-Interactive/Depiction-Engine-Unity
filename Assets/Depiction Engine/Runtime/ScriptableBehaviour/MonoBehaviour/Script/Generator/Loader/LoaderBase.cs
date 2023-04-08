@@ -182,10 +182,13 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+                persistentsDictionary.Clear();
+
             if (initializingContext == InitializationContext.Existing)
                 PerformAddRemovePersistentsChange(persistentsDictionary, persistentsDictionary);
 
-            InitValue(value => datasourceId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(datasourceId, datasource, initializingContext); }, initializingContext);
+            InitValue(value => datasourceId = value, SerializableGuid.Empty, () => GetDuplicateComponentReferenceId(datasourceId, datasource is DatasourceManager ? null : datasource, initializingContext), initializingContext);
             InitValue(value => loadEndpoint = value, "", initializingContext);
             InitValue(value => dataType = value, DataType.Json, initializingContext);
             InitValue(value => depth = value, 0, initializingContext);
@@ -262,27 +265,24 @@ namespace DepictionEngine
                 {
                     List<(bool, SerializableGuid, IPersistent)> changedPersistents = lastLoadScope.PerformAddRemovePersistents(performingUndoRedo);
 
-                    if (!performingUndoRedo)
-                    {
-                        bool reload = lastLoadScope.LoadingWasCompromised();
+                    bool reload = lastLoadScope.LoadingWasCompromised() && (!loadScopesDictionary.TryGetValue(objectKeyPair.Key, out T1 loadScope) || loadScope.LoadingWasCompromised());
 
-                        if (!reload && changedPersistents != null)
+                    if (!reload && changedPersistents != null)
+                    {
+                        foreach ((bool, SerializableGuid, IPersistent) changedPersistent in changedPersistents)
                         {
-                            foreach ((bool, SerializableGuid, IPersistent) changedPersistent in changedPersistents)
+                            if (!changedPersistent.Item1)
                             {
-                                if (!changedPersistent.Item1)
-                                {
-                                    reload = true;
-                                    break;
-                                }
+                                reload = true;
+                                break;
                             }
                         }
+                    }
 
-                        if (reload)
-                        {
-                            loadQueue ??= new();
-                            loadQueue.Add(lastLoadScope);
-                        }
+                    if (reload)
+                    {
+                        loadQueue ??= new();
+                        loadQueue.Add(lastLoadScope);
                     }
                 }
             }
@@ -302,7 +302,6 @@ namespace DepictionEngine
                             {
                                 lastLoadScope.Merge(loadScope);
 
-                                Debug.Log(dataType + ", " + lastLoadScope + ", " + lastLoadScope.GetFirstPersistent());
                                 DisposeManager.Dispose(loadScope, DisposeContext.Programmatically_Destroy);
                             }
                         }
@@ -430,12 +429,6 @@ namespace DepictionEngine
 
                 lastPersistentsDictionary.Clear();
                 lastPersistentsDictionary.CopyFrom(persistentsDictionary);
-
-                IterateOverLoadScopes((loadScopeKey, loadScope) => 
-                {
-                    loadScope.InitializeLastFields();
-                    return true;
-                });
 #endif
 
                 return true;
@@ -447,9 +440,9 @@ namespace DepictionEngine
         {
         }
 
-        public override bool LateInitialize()
+        protected override bool LateInitialize(InitializationContext initializingContext)
         {
-            if (base.LateInitialize())
+            if (base.LateInitialize(initializingContext))
             {
                 QueueAutoUpdate();
 
@@ -481,10 +474,6 @@ namespace DepictionEngine
                 SceneManager.BeforeAssemblyReloadEvent -= BeforeAssemblyReloadHandler;
                 if (!IsDisposing())
                     SceneManager.BeforeAssemblyReloadEvent += BeforeAssemblyReloadHandler;
-
-                SceneManager.ResetRegisterCompleteUndoEvent -= ResetRegisterCompleteUndo;
-                if (!IsDisposing())
-                    SceneManager.ResetRegisterCompleteUndoEvent += ResetRegisterCompleteUndo;
 #endif
                 UpdatePersistentsDelegates();
 
@@ -500,7 +489,6 @@ namespace DepictionEngine
             }
             return false;
         }
-
 
         private void UpdatePersistentsDelegates()
         {
@@ -650,7 +638,7 @@ namespace DepictionEngine
 
         public PropertyMonoBehaviour datasource
         {
-            get { return _datasource; }
+            get => _datasource;
             set { datasourceId = value != Disposable.NULL ? value.id : SerializableGuid.Empty; }
         }
 
@@ -672,15 +660,18 @@ namespace DepictionEngine
 
                     RemoveAllPersistents(disposeContext);
 
-                    float loadInterval = 0.5f;
-                    IterateOverLoadScopes((loadScopeKey, loadScope) =>
+                    Datasource.AllowAutoDisposeOnOutOfSynchProperty(() => 
                     {
-                        loadScope.DatasourceChanged(disposeContext);
+                        float loadInterval = 0.5f;
+                        IterateOverLoadScopes((loadScopeKey, loadScope) =>
+                        {
+                            loadScope.DatasourceChanged(disposeContext);
 
-                        Load(loadScope, loadInterval);
-                        loadInterval += 0.01f;
-                        return true;
-                    });
+                            Load(loadScope, loadInterval);
+                            loadInterval += 0.01f;
+                            return true;
+                        });
+                    }, true);
                 }
             });
         }
@@ -691,7 +682,7 @@ namespace DepictionEngine
         [Json]
         public SerializableGuid datasourceId
         {
-            get { return _datasourceId; }
+            get => _datasourceId;
             set
             {
                 SetValue(nameof(datasourceId), value, ref _datasourceId, (newValue, oldValue) =>
@@ -703,7 +694,7 @@ namespace DepictionEngine
 
         private void UpdateDatasource()
         {
-            SetDatasource(datasourceId != SerializableGuid.Empty ? GetComponentFromId<DatasourceBase>(datasourceId) : datasourceManager);
+            SetDatasource(datasourceId != SerializableGuid.Empty ? GetComponentFromId<PropertyMonoBehaviour>(datasourceId) : datasourceManager);
         }
 
         /// <summary>
@@ -712,7 +703,7 @@ namespace DepictionEngine
         [Json]
         public string loadEndpoint
         {
-            get { return _loadEndpoint; }
+            get => _loadEndpoint;
             set { SetValue(nameof(loadEndpoint), value, ref _loadEndpoint); }
         }
 
@@ -722,14 +713,14 @@ namespace DepictionEngine
         [Json]
         public DataType dataType
         {
-            get { return _dataType; }
+            get => _dataType;
             set { SetValue(nameof(dataType), value, ref _dataType); }
         }
 
         [Json]
         public int depth
         {
-            get { return _depth; }
+            get => _depth;
             set { SetValue(nameof(depth), value, ref _depth); }
         }
 
@@ -739,7 +730,7 @@ namespace DepictionEngine
         [Json]
         public int timeout
         {
-            get { return _timeout; }
+            get => _timeout;
             set { SetValue(nameof(timeout), value, ref _timeout); }
         }
 
@@ -749,7 +740,7 @@ namespace DepictionEngine
         [Json]
         public List<string> headers
         {
-            get { return _headers; }
+            get => _headers;
             set { SetValue(nameof(headers), value, ref _headers); }
         }
 
@@ -759,7 +750,7 @@ namespace DepictionEngine
         [Json]
         public bool autoUpdateWhenDisabled
         {
-            get { return _autoUpdateWhenDisabled; }
+            get => _autoUpdateWhenDisabled;
             set { SetValue(nameof(autoUpdateWhenDisabled), value, ref _autoUpdateWhenDisabled); }
         }
 
@@ -769,7 +760,7 @@ namespace DepictionEngine
         [Json]
         public float autoUpdateInterval
         {
-            get { return _autoUpdateInterval; }
+            get => _autoUpdateInterval;
             set { SetValue(nameof(autoUpdateInterval), value, ref _autoUpdateInterval); }
         }
 
@@ -779,7 +770,7 @@ namespace DepictionEngine
         [Json]
         public float autoUpdateDelay
         {
-            get { return _autoUpdateDelay; }
+            get => _autoUpdateDelay;
             set { SetValue(nameof(autoUpdateDelay), value, ref _autoUpdateDelay); }
         }
 
@@ -789,13 +780,13 @@ namespace DepictionEngine
         [Json]
         public bool autoDisposeUnused
         {
-            get { return _autoDisposeUnused; }
+            get => _autoDisposeUnused;
             set { SetValue(nameof(autoDisposeUnused), value, ref _autoDisposeUnused); }
         }
 
         private Tween waitBetweenLoadTimer
         {
-            get { return _waitBetweenLoadTimer; }
+            get => _waitBetweenLoadTimer;
             set
             {
                 if (Object.ReferenceEquals(_waitBetweenLoadTimer, value))
@@ -809,7 +800,7 @@ namespace DepictionEngine
 
         private Tween loadDelayTimer
         {
-            get { return _loadDelayTimer; }
+            get => _loadDelayTimer;
             set
             {
                 if (Object.ReferenceEquals(_loadDelayTimer, value))
@@ -1184,32 +1175,6 @@ namespace DepictionEngine
             }
             return false;
         }
-
-#if UNITY_EDITOR
-        private bool _registeredCompleteObjectUndo;
-        protected void RegisterCompleteObjectUndo(DisposeContext disposeContext = DisposeContext.Editor_Destroy)
-        {
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                MarkAsNotPoolable();
-                if (!_registeredCompleteObjectUndo)
-                {
-                    _registeredCompleteObjectUndo = true;
-                    Editor.UndoManager.RegisterCompleteObjectUndo(this);
-                }
-            }
-        }
-
-        private void ResetRegisterCompleteUndo()
-        {
-            IterateOverLoadScopes((loadScopeKey, loadScope) =>
-            {
-                loadScope.ResetRegisterCompleteUndo();
-                return true;
-            });
-            _registeredCompleteObjectUndo = false;
-        }
-#endif
 
         [Serializable]
         protected class ReferencesList : IList<ReferenceBase>

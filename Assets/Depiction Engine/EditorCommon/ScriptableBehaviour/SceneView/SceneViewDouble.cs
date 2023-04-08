@@ -212,6 +212,9 @@ namespace DepictionEngine.Editor
                 if (!IsDisposing())
                     SceneManager.PlayModeStateChangedEvent += PlayModeStateChangedHandler;
 
+                RemoveAlignViewToGeoAstroObjectDelegate(_alignViewToGeoAstroObject);
+                AddAlignViewToGeoAstroObjectDelegate(_alignViewToGeoAstroObject);
+
                 UpdateOnGUIDelegates();
 
                 return true;
@@ -314,13 +317,13 @@ namespace DepictionEngine.Editor
 
         public bool deleted
         {
-            get { return _deleted; }
-            set { _deleted = value; }
+            get => _deleted;
+            set => _deleted = value;
         }
 
         public int sceneViewInstanceId
         {
-            get { return _sceneViewInstanceId; }
+            get => _sceneViewInstanceId;
             private set
             {
                 if (_sceneViewInstanceId == value)
@@ -372,14 +375,14 @@ namespace DepictionEngine.Editor
 
         public int handleCount
         {
-            get { return _handleCount; }
-            set { _handleCount = value; }
+            get => _handleCount; 
+            set => _handleCount = value;
         }
 
         private bool _lastAutoSnapViewToTerrain;
         public bool autoSnapViewToTerrain
         {
-            get { return _autoSnapViewToTerrain; }
+            get => _autoSnapViewToTerrain;
             set
             {
                 if (_autoSnapViewToTerrain == value)
@@ -392,16 +395,42 @@ namespace DepictionEngine.Editor
         private GeoAstroObject _lastAlignViewToGeoAstroObject;
         public GeoAstroObject alignViewToGeoAstroObject
         {
-            get { return _alignViewToGeoAstroObject; }
+            get => _alignViewToGeoAstroObject;
             set
             {
                 if (Object.ReferenceEquals(_alignViewToGeoAstroObject, value))
                     return;
 
+                GeoAstroObject lastAlignViewToGeoAstroObject = _alignViewToGeoAstroObject;
+
                 _lastAlignViewToGeoAstroObject = _alignViewToGeoAstroObject = value;
+
+                RemoveAlignViewToGeoAstroObjectDelegate(lastAlignViewToGeoAstroObject);
+                AddAlignViewToGeoAstroObjectDelegate(_alignViewToGeoAstroObject);
 
                 UpdatePivotGeoCoordinate();
             }
+        }
+
+        private void RemoveAlignViewToGeoAstroObjectDelegate(GeoAstroObject alignViewToGeoAstroObject)
+        {
+            if (alignViewToGeoAstroObject is not null)
+            {
+                alignViewToGeoAstroObject.DisposedEvent -= AlignViewToGeoAstroObjectDisposedHandler;
+            }
+        }
+
+        private void AddAlignViewToGeoAstroObjectDelegate(GeoAstroObject alignViewToGeoAstroObject)
+        {
+            if (!IsDisposing() && alignViewToGeoAstroObject != Disposable.NULL)
+            {
+                alignViewToGeoAstroObject.DisposedEvent += AlignViewToGeoAstroObjectDisposedHandler;
+            }
+        }
+
+        private void AlignViewToGeoAstroObjectDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
+        {
+            alignViewToGeoAstroObject = null;
         }
 
         private AnimBool m_Ortho

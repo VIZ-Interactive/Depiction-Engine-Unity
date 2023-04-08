@@ -33,7 +33,7 @@ namespace DepictionEngine
         [Json]
         public Type type
         {
-            get { return GetType(); }
+            get => GetType();
         }
 
         protected override void Initializing()
@@ -46,8 +46,12 @@ namespace DepictionEngine
         protected override void InitializeUID(InitializationContext initializingContext)
         {
             base.InitializeUID(initializingContext);
-          
-           id = GetId(id, initializingContext);
+
+            SerializableGuid lastId = id;
+            SerializableGuid newId = GetId(id, initializingContext);
+            id = newId;
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+                InstanceManager.RegisterDuplicating(lastId, newId);
         }
 
         protected virtual SerializableGuid GetId(SerializableGuid id, InitializationContext initializingContext)
@@ -67,6 +71,9 @@ namespace DepictionEngine
 
                 InitializeSerializedFields(initializingContext);
 
+                if (!isFallbackValues)
+                    InitializeLastFields();
+
                 if (_initializationPropertyModifiers != null)
                 {
                     foreach (PropertyModifier propertyModifier in _initializationPropertyModifiers)
@@ -84,8 +91,6 @@ namespace DepictionEngine
 #if UNITY_EDITOR
             RenderingManager.UpdateIcon(this);
 #endif
-
-            InitializeLastFields();
         }
 
         /// <summary>

@@ -109,11 +109,15 @@ namespace DepictionEngine
             {
                 if (oldValue is not null)
                     oldValue.RemoveMeshRenderer(meshRenderer);
-                if (newValue != null)
-                    newValue.AddMeshRenderer(meshRenderer);
+                RemoveVisualObjectMeshRenderer();
                 return true;
             }
             return false;
+        }
+
+        private void RemoveVisualObjectMeshRenderer()
+        {
+            visualObject?.AddMeshRenderer(meshRenderer);
         }
 
         public Bounds bounds
@@ -180,25 +184,25 @@ namespace DepictionEngine
 
         public Material material
         {
-            get { return meshRenderer.material; }
-            set { meshRenderer.material = value; }
+            get => meshRenderer.material; 
+            set => meshRenderer.material = value; 
         }
 
         public Material sharedMaterial
         {
-            get { return meshRenderer.sharedMaterial; }
-            set { meshRenderer.sharedMaterial = value; }
+            get => meshRenderer.sharedMaterial; 
+            set => meshRenderer.sharedMaterial = value; 
         }
 
         public UnityEngine.Mesh mesh
         {
-            get { return meshFilter.mesh; }
-            set { meshFilter.mesh = value; }
+            get => meshFilter.mesh; 
+            set => meshFilter.mesh = value; 
         }
 
         public UnityEngine.Mesh sharedMesh
         {
-            get { return meshFilter.sharedMesh; }
+            get => meshFilter.sharedMesh;
             set 
             {
                 UnityEngine.Mesh oldValue = sharedMesh;
@@ -264,8 +268,8 @@ namespace DepictionEngine
 
         public ColliderType colliderType
         {
-            get { return _colliderType; }
-            private set { SetColliderType(value); }
+            get => _colliderType;
+            private set => SetColliderType(value);
         }
 
         public virtual bool SetColliderType(ColliderType value)
@@ -347,6 +351,23 @@ namespace DepictionEngine
         {
             if (visualObject != Disposable.NULL)
                 visualObject.OnMouseExitHit(hit);
+        }
+
+        public override bool OnDispose(DisposeContext disposeContext)
+        {
+            if (base.OnDispose(disposeContext))
+            {
+                RemoveVisualObjectMeshRenderer();
+
+#if UNITY_EDITOR
+                //When undoing an Add Component(such as Add GeoCoordinateController) on a VisualObject(tested on Markers) the children whose creation was not registered with the UndoManager are disposed automatically for some reason.
+                //If we detect that the visuals were disposed as a result of an Undo Redo we ask the AutoGenerateVisualObject to recreate them. If it was the AutoGenerateVisualObject that was destroyed, and not just its child visuals, then the visualObject will be null and nothing will happen.
+                if (disposeContext == DisposeContext.Editor_UndoRedo)
+                    (visualObject as AutoGenerateVisualObject)?.SetMeshRendererVisualsDirty();
+#endif
+                return true;
+            }
+            return false;
         }
     }
 

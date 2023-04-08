@@ -57,8 +57,6 @@ namespace DepictionEngine
         private class VisualObjectDictionary : SerializableDictionary<SerializableGuid, VisualObject> { };
         [Serializable]
         private class AstroObjectDictionary : SerializableDictionary<SerializableGuid, AstroObject> { };
-        [Serializable]
-        private class ManagerDictionary : SerializableDictionary<SerializableGuid, ManagerBase> { };
 
         [Serializable]
         private class AnimatorDictionary : SerializableDictionary<SerializableGuid, AnimatorBase> { };
@@ -74,6 +72,9 @@ namespace DepictionEngine
         private class FallbackValuesDictionary : SerializableDictionary<SerializableGuid, FallbackValues> { };
         [Serializable]
         private class DatasourceDictionary : SerializableDictionary<SerializableGuid, DatasourceBase> { };
+
+        [Serializable]
+        private class ManagerDictionary : SerializableDictionary<SerializableGuid, ManagerBase> { };
 
         public const string GLOBAL_LAYER = " Global";
 
@@ -104,18 +105,10 @@ namespace DepictionEngine
         //Manager
         private ManagerDictionary _managers;
 
+        private static Dictionary<SerializableGuid, SerializableGuid> _duplicatingIdMapping;
+
         [ThreadStatic]
-        private static InitializationContext _initializingContext = InitializationContext.Editor;
-        public static InitializationContext initializingContext
-        {
-            get { return _initializingContext; }
-            set
-            {
-                if (_initializingContext == value)
-                    return;
-                _initializingContext = value;
-            }
-        }
+        public static InitializationContext initializingContext = InitializationContext.Editor;
         [ThreadStatic]
         public static JSONNode initializeJSON;
         [ThreadStatic]
@@ -150,7 +143,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.TransformDouble"/>.
         /// </summary>
-        public int transformsCount { get { return transforms.Count; } }
+        public int transformsCount { get => transforms.Count; }
         private TransformDictionary transforms
         {
             get => _transforms ??= new TransformDictionary();
@@ -159,7 +152,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.PersistentMonoBehaviour"/>.
         /// </summary>
-        public int persistentMonoBehavioursCount { get { return persistentMonoBehaviours.Count; } }
+        public int persistentMonoBehavioursCount { get => persistentMonoBehaviours.Count; }
         private PersistentMonoBehaviourDictionary persistentMonoBehaviours
         {
             get => _persistentMonoBehaviours ??= new PersistentMonoBehaviourDictionary();
@@ -168,7 +161,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.PersistentScriptableObject"/>.
         /// </summary>
-        public int persistentScriptableObjectsCount { get { return persistentScriptableObjects.Count; } }
+        public int persistentScriptableObjectsCount { get => persistentScriptableObjects.Count; }
         private PersistentScriptableObjectDictionary persistentScriptableObjects
         {
             get => _persistentScriptableObjects ??= new PersistentScriptableObjectDictionary();
@@ -177,7 +170,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.TerrainGridMeshObject"/>.
         /// </summary>
-        public int terrainGridMeshObjectsCount { get { return terrainGridMeshObjects.Count; } }
+        public int terrainGridMeshObjectsCount { get => terrainGridMeshObjects.Count; }
         private TerrainGridMeshObjectDictionary terrainGridMeshObjects
         {
             get => _terrainGridMeshObjects ??= new TerrainGridMeshObjectDictionary();
@@ -186,7 +179,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.AstroObject"/>.
         /// </summary>
-        public int astroObjectsCount { get { return astroObjects.Count; } }
+        public int astroObjectsCount { get => astroObjects.Count; }
         private AstroObjectDictionary astroObjects
         {
             get => _astroObjects ??= new AstroObjectDictionary();
@@ -195,7 +188,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.StarSystem"/>.
         /// </summary>
-        public int starSystemsCount { get { return starSystems.Count; } }
+        public int starSystemsCount { get => starSystems.Count; }
         private List<StarSystem> starSystems
         {
             get => _starSystems ??= new List<StarSystem>();
@@ -204,7 +197,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.Star"/>.
         /// </summary>
-        public int starsCount { get { return stars.Count; } }
+        public int starsCount { get => stars.Count; }
         private List<Star> stars
         {
             get => _stars ??= new List<Star>();
@@ -213,7 +206,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.VisualObject"/>.
         /// </summary>
-        public int visualObjectsCount { get { return visualObjects.Count; } }
+        public int visualObjectsCount { get => visualObjects.Count; }
         private VisualObjectDictionary visualObjects
         {
             get => _visualObjects ??= new VisualObjectDictionary();
@@ -222,7 +215,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.AnimatorBase"/>.
         /// </summary>
-        public int animatorsCount { get { return animators.Count; } }
+        public int animatorsCount { get => animators.Count; }
         private AnimatorDictionary animators
         {
             get => _animators ??= new AnimatorDictionary();
@@ -231,7 +224,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.ControllerBase"/>.
         /// </summary>
-        public int controllersCount { get { return controllers.Count; } }
+        public int controllersCount { get => controllers.Count; }
         private ControllerDictionary controllers
         {
             get => _controllers ??= new ControllerDictionary();
@@ -240,7 +233,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.GeneratorBase"/>.
         /// </summary>
-        public int generatorsCount { get { return generators.Count; } }
+        public int generatorsCount { get => generators.Count; }
         private GeneratorDictionary generators
         {
             get => _generators ??= new GeneratorDictionary();
@@ -249,7 +242,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.ReferenceBase"/>.
         /// </summary>
-        public int referencesCount { get { return references.Count; } }
+        public int referencesCount { get => references.Count; }
         private ReferenceDictionary references
         {
             get => _references ??= new ReferenceDictionary();
@@ -258,7 +251,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.EffectBase"/>.
         /// </summary>
-        public int effectsCount { get { return effects.Count; } }
+        public int effectsCount { get => effects.Count; }
         private EffectDictionary effects
         {
             get => _effects ??= new EffectDictionary();
@@ -267,7 +260,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.FallbackValues"/>.
         /// </summary>
-        public int fallbackValuesCount { get { return fallbackValues.Count; } }
+        public int fallbackValuesCount { get => fallbackValues.Count; }
         private FallbackValuesDictionary fallbackValues
         {
             get => _fallbackValues ??= new FallbackValuesDictionary();
@@ -276,7 +269,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.DatasourceBase"/>.
         /// </summary>
-        public int datasourcesCount { get { return datasources.Count; } }
+        public int datasourcesCount { get => datasources.Count; }
         private DatasourceDictionary datasources
         {
             get => _datasources ??= new DatasourceDictionary();
@@ -293,7 +286,7 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.Camera"/>.
         /// </summary>
-        public int camerasCount { get { return cameras.Count; } }
+        public int camerasCount { get => cameras.Count; }
         private List<Camera> cameras
         {
             get => _cameras ??= new List<Camera>();
@@ -302,15 +295,40 @@ namespace DepictionEngine
         /// <summary>
         /// Returns the number of <see cref="DepictionEngine.ManagerBase"/>.
         /// </summary>
-        public int managersCount { get { return managers.Count; } }
+        public int managersCount { get => managers.Count; }
         private ManagerDictionary managers
         {
             get => _managers ??= new ManagerDictionary();
         }
 
+        private static Dictionary<SerializableGuid, SerializableGuid> duplicatingIdMapping
+        {
+            get => _duplicatingIdMapping ??= new();
+        }
+
+        public static bool RegisterDuplicating(SerializableGuid oldId, SerializableGuid newId)
+        {
+            return duplicatingIdMapping.TryAdd(oldId, newId);
+        }
+
+        public static List<SerializableGuid> GetDuplicatedObjectIds(List<SerializableGuid> ids)
+        {
+            List<SerializableGuid> duplicatedObjectIds = new List<SerializableGuid>();
+            foreach (SerializableGuid id in ids)
+                duplicatedObjectIds.Add(GetDuplicatedObjectId(id));
+            return duplicatedObjectIds;
+        }
+
+        public static SerializableGuid GetDuplicatedObjectId(SerializableGuid id)
+        {
+            if (!duplicatingIdMapping.TryGetValue(id, out SerializableGuid duplicatedObjectId))
+                duplicatedObjectId = id;
+            return duplicatedObjectId;
+        }
+
         public void IterateOverInstances<T>(Func<T, bool> callback) where T : IScriptableBehaviour
         {
-            IterateOverInstances(typeof(T), (property) => 
+            IterateOverInstances(typeof(T), (property) =>
             {
                 return callback((T)property);
             });
@@ -596,7 +614,7 @@ namespace DepictionEngine
         public ReferenceBase GetReference(SerializableGuid id)
         {
             if (id != SerializableGuid.Empty)
-            {            
+            {
                 if (references.TryGetValue(id, out ReferenceBase reference) && reference != Disposable.NULL)
                     return reference;
             }
@@ -1027,7 +1045,7 @@ namespace DepictionEngine
             {
                 if (isMonoBehaviourType)
                 {
-                    GameObject go = new ();
+                    GameObject go = new();
                     InitializeGameObject(go, parent, setParentAndAlign, moveToView);
 
 #if UNITY_EDITOR
@@ -1035,7 +1053,7 @@ namespace DepictionEngine
 #endif
 
                     disposable = go.AddSafeComponent(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
-                 }
+                }
                 else if (typeof(IDisposable).IsAssignableFrom(type))
                 {
                     InitializingContext(() =>
@@ -1158,11 +1176,18 @@ namespace DepictionEngine
             InstanceManager.initializeIsFallbackValues = isFallbackValues;
 
             callback();
-            
+
             InstanceManager.initializingContext = lastinitializingContext;
             InstanceManager.initializeJSON = lastInitializeJSON;
             InstanceManager.initializePropertyModifiers = lastInitializePropertyModifers;
             InstanceManager.initializeIsFallbackValues = lastIsFallbackValues;
+        }
+
+        protected override void LateUpdate()
+        {
+            base.LateUpdate();
+
+            _duplicatingIdMapping?.Clear();
         }
     }
 }

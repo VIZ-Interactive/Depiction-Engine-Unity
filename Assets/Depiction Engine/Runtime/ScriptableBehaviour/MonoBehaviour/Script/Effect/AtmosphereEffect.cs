@@ -65,7 +65,7 @@ namespace DepictionEngine
             if (atmosphereGlobalLoader != Disposable.NULL)
                 atmosphereGlobalLoader.objectBase.isHiddenInHierarchy = true;
 
-            if (atmosphereGlobalLoader.GetPersistenCount() == 0)
+            if (atmosphereGlobalLoader.transform.childCount == 0)
                 atmosphereGlobalLoader.LoadAll();
             atmosphereGlobalLoader.enabled = false;
         }

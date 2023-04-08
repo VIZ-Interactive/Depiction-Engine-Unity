@@ -161,7 +161,7 @@ namespace DepictionEngine
         [Json]
         public int sphericalSubdivision
         {
-            get { return _sphericalSubdivision; }
+            get => _sphericalSubdivision;
             set { SetValue(nameof(sphericalSubdivision), ValidateSubdivision(value), ref _sphericalSubdivision); }
         }
 
@@ -171,7 +171,7 @@ namespace DepictionEngine
         [Json]
         public int flatSubdivision
         {
-            get { return _flatSubdivision; }
+            get => _flatSubdivision;
             set { SetValue(nameof(flatSubdivision), ValidateSubdivision(value), ref _flatSubdivision); }
         }
 
@@ -187,7 +187,7 @@ namespace DepictionEngine
         [Json]
         public float subdivisionZoomFactor
         {
-            get { return _subdivisionZoomFactor; }
+            get => _subdivisionZoomFactor;
             set { SetValue(nameof(subdivisionZoomFactor), Mathf.Clamp(value, MIN_SUBDIVISION_ZOOM_FACTOR, MAX_SUBDIVISION_ZOOM_FACTOR), ref _subdivisionZoomFactor); }
         }
 
@@ -197,7 +197,7 @@ namespace DepictionEngine
         [Json]
         public float overlapFactor
         {
-            get { return _overlapFactor; }
+            get => _overlapFactor;
             set { SetValue(nameof(overlapFactor), Mathf.Clamp(value, 0.5f, 1.5f), ref _overlapFactor); }
         }
 
@@ -207,7 +207,7 @@ namespace DepictionEngine
         [Json]
         public float edgeDepth
         {
-            get { return _edgeDepth; }
+            get => _edgeDepth;
             set { SetValue(nameof(edgeDepth), value, ref _edgeDepth); }
         }
 
@@ -217,7 +217,7 @@ namespace DepictionEngine
         [Json]
         public NormalsType normalsType
         {
-            get { return _normalsType; }
+            get => _normalsType;
             set { SetValue(nameof(normalsType), value, ref _normalsType); }
         }
 
@@ -227,7 +227,7 @@ namespace DepictionEngine
         [Json]
         public string shaderPath
         {
-            get { return _shaderPath; }
+            get => _shaderPath;
             set { SetValue(nameof(shaderPath), value, ref _shaderPath); }
         }
 
@@ -237,7 +237,7 @@ namespace DepictionEngine
         [Json]
         public float edgeOverlapThickness
         {
-            get { return _edgeOverlapThickness; }
+            get => _edgeOverlapThickness;
             set
             {
                 SetValue(nameof(edgeOverlapThickness), Mathf.Clamp01(value), ref _edgeOverlapThickness, (newValue, oldValue) =>
@@ -253,7 +253,7 @@ namespace DepictionEngine
         [Json]
         public Color color
         {
-            get { return _color; }
+            get => _color;
             set { SetValue(nameof(color), value, ref _color); }
         }
 
@@ -264,7 +264,7 @@ namespace DepictionEngine
 
         private AssetReference colorMapAssetReference
         {
-            get { return GetFirstReferenceOfType(COLORMAP_REFERENCE_DATATYPE) as AssetReference; }
+            get => GetFirstReferenceOfType(COLORMAP_REFERENCE_DATATYPE) as AssetReference;
         }
 
         private void UpdateColorMap()
@@ -274,7 +274,7 @@ namespace DepictionEngine
 
         private Texture colorMap
         {
-            get { return _colorMap; }
+            get => _colorMap;
             set
             {
                 if (Object.ReferenceEquals(_colorMap, value))
@@ -291,7 +291,7 @@ namespace DepictionEngine
 
         private AssetReference additionalMapAssetReference
         {
-            get { return GetFirstReferenceOfType(ADDITIONALMAP_REFERENCE_DATATYPE) as AssetReference; }
+            get => GetFirstReferenceOfType(ADDITIONALMAP_REFERENCE_DATATYPE) as AssetReference;
         }
 
         private void UpdateAdditionalMap()
@@ -301,7 +301,7 @@ namespace DepictionEngine
 
         private Texture additionalMap
         {
-            get { return _additionalMap; }
+            get => _additionalMap;
             set
             {
                 if (Object.ReferenceEquals(_additionalMap, value))
@@ -318,7 +318,7 @@ namespace DepictionEngine
 
         private AssetReference surfaceTypeMapAssetReference
         {
-            get { return GetFirstReferenceOfType(SURFACETYPEMAP_REFERENCE_DATATYPE) as AssetReference; }
+            get => GetFirstReferenceOfType(SURFACETYPEMAP_REFERENCE_DATATYPE) as AssetReference;
         }
 
         private void UpdateSurfaceTypeMap()
@@ -328,7 +328,7 @@ namespace DepictionEngine
 
         private Texture surfaceTypeMap
         {
-            get { return _surfaceTypeMap; }
+            get => _surfaceTypeMap;
             set
             {
                 if (Object.ReferenceEquals(_surfaceTypeMap, value))
@@ -340,17 +340,13 @@ namespace DepictionEngine
 
         private TerrainGridCache terrainGridCache
         {
-            get
-            {
-                _terrainGridCache ??= new TerrainGridCache().Initialize();
-                return _terrainGridCache;
-            }
+            get => _terrainGridCache ??= new TerrainGridCache().Initialize();
         }
 
         private bool generateEdgeInSeperateMesh
         {
-            get { return _generateEdgeInSeperateMesh; }
-            set { _generateEdgeInSeperateMesh = value; }
+            get => _generateEdgeInSeperateMesh;
+            set => _generateEdgeInSeperateMesh = value;
         }
 
         /// <summary>
@@ -370,8 +366,8 @@ namespace DepictionEngine
 
         private int cameraCount
         {
-            get { return _cameraCount; }
-            set { SetCameraCount(value); }
+            get => _cameraCount;
+            set => SetCameraCount(value);
         }
 
         private int ValidateSubdivision(int value)

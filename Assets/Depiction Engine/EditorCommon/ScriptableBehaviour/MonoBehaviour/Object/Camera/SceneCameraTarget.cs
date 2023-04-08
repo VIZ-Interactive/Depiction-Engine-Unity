@@ -12,6 +12,14 @@ namespace DepictionEngine.Editor
             return false;
         }
 
+        protected override bool IsValidInitialization(InitializationContext initializingContext)
+        {
+            //When undoing a GeoAstroObject destroy, the target will also be recreated and we dont want to have two targets in the scene. 
+            if (base.IsValidInitialization(initializingContext))
+                return initializingContext != InitializationContext.Existing;
+            return false;
+        }
+
         protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);

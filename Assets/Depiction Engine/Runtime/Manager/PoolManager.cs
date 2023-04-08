@@ -45,12 +45,8 @@ namespace DepictionEngine
         private PoolStackDictionary _debug;
 
         private PoolStackDictionary debug
-        { 
-            get 
-            {
-                _debug ??= new PoolStackDictionary();
-                return _debug; 
-            }
+        {
+            get => _debug ??= new PoolStackDictionary();
         }
 
         private void ClearPoolBtn()
@@ -446,7 +442,7 @@ namespace DepictionEngine
         private void UpdateDebug(Type type, List<IDisposable> pool)
         {
             SceneManager sceneManager = SceneManager.Instance(false);
-            if (sceneManager != Disposable.NULL && sceneManager.debug && pool != null)
+            if (sceneManager != Disposable.NULL && pool != null)
             {
                 lock (debug)
                 {

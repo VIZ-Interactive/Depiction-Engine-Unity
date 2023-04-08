@@ -764,7 +764,7 @@ namespace DepictionEngine.Editor
                     if (sceneViewDouble.alignViewToGeoAstroObject != Disposable.NULL)
                         sceneViewDouble.alignViewToGeoAstroObject = null;
                     else
-                        Debug.LogWarning("No Selected "+typeof(GeoAstroObject).Name+"!");
+                        Debug.Log("No selected "+typeof(GeoAstroObject).Name+"!");
                 }
             }
         }

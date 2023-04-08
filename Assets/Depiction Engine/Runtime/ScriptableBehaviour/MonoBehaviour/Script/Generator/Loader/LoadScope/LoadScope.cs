@@ -47,6 +47,26 @@ namespace DepictionEngine
             _loader = default;
         }
 
+        protected override bool Initialize(InitializationContext initializingContext)
+        {
+            if (base.Initialize(initializingContext))
+            {
+                InitializeLastFields();
+
+                return true;
+            }
+            return false;
+        }
+
+        protected bool InitializeLastFields()
+        {
+#if UNITY_EDITOR
+            lastPersistentsDictionary.Clear();
+            lastPersistentsDictionary.CopyFrom(persistentsDictionary);
+#endif
+            return true;
+        }
+
         public LoadScope Init(LoaderBase loader)
         {
             this.loader = loader;
@@ -62,14 +82,6 @@ namespace DepictionEngine
                 lastPersistentsDictionary = this.lastPersistentsDictionary;
 #endif
             return LoaderBase.PerformAddRemovePersistentsChange(this, persistentsDictionary, lastPersistentsDictionary);
-        }
-
-        public void InitializeLastFields()
-        {
-#if UNITY_EDITOR
-            lastPersistentsDictionary.Clear();
-            lastPersistentsDictionary.CopyFrom(persistentsDictionary);
-#endif
         }
 
 #if UNITY_EDITOR
@@ -112,7 +124,6 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                 lastPersistentsDictionary.Add(persistent.id, serializableIPersistent);
 #endif
-
                 PersistentAddedEvent?.Invoke(this);
 
                 return true;
@@ -157,6 +168,8 @@ namespace DepictionEngine
                 }
             }
         }
+
+        public int persistentCount { get => persistentsDictionary.Count; }
 
         public bool ContainsPersistent(SerializableGuid persistentId)
         {
@@ -207,19 +220,13 @@ namespace DepictionEngine
 
         public LoaderBase loader
         {
-            get { return _loader; }
-            private set
-            {
-                if (Object.ReferenceEquals(value, _loader))
-                    return;
-
-                _loader = value;
-            }
+            get => _loader;
+            private set => _loader = value;
         }
 
         private Tween loadIntervalTween
         {
-            get { return _loadIntervalTween; }
+            get => _loadIntervalTween;
             set
             {
                 if (Object.ReferenceEquals(_loadIntervalTween, value))
@@ -233,8 +240,8 @@ namespace DepictionEngine
 
         private DatasourceOperationBase datasourceOperation
         {
-            get { return _datasourceOperation; }
-            set { SetDatasourceOperation(value); }
+            get =>_datasourceOperation;
+            set => SetDatasourceOperation(value);
         }
 
         private bool SetDatasourceOperation(DatasourceOperationBase value, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
@@ -251,7 +258,7 @@ namespace DepictionEngine
 
         public DatasourceOperationBase.LoadingState loadingState
         {
-            get{ return _loadingState; }
+            get => _loadingState;
             private set
             {
                 if (_loadingState == value)
@@ -439,25 +446,6 @@ namespace DepictionEngine
 
             if (datasourceOperation != Disposable.NULL)
                 datasourceOperation.MarkAsNotPoolable();
-        }
-
-        private bool _registeredCompleteObjectUndo;
-        private void RegisterCompleteObjectUndo(DisposeContext disposeContext = DisposeContext.Editor_Destroy)
-        {
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                MarkAsNotPoolable();
-                if (!_registeredCompleteObjectUndo)
-                {
-                    _registeredCompleteObjectUndo = true;
-                    Editor.UndoManager.RegisterCompleteObjectUndo(this);
-                }
-            }
-        }
-
-        public void ResetRegisterCompleteUndo()
-        {
-            _registeredCompleteObjectUndo = false;
         }
 #endif
     }

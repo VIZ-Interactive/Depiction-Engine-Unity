@@ -20,8 +20,6 @@ namespace DepictionEngine
         private bool _notPoolable;
 #endif
 
-        private bool _wasFirstUpdated;
-
         private bool _initializing;
         private bool _initialized;
         private bool _instanceAdded;
@@ -54,7 +52,8 @@ namespace DepictionEngine
 
             _instanceID = default;
             _isFallbackValues = default;
-            _wasFirstUpdated = _initializing = _initialized = _instanceAdded = _disposing = _disposingContextUpdated = _disposed = _poolComplete = default;
+            _initializing = _initialized = _instanceAdded = _disposing = _disposingContextUpdated = _disposed = _poolComplete = default;
+            _requiresLateUpdate = default;
             _disposingContext = default;
             _initializingContext = default;
 
@@ -139,13 +138,6 @@ namespace DepictionEngine
             DisposeManager.Destroy(this);
         }
 
-#if UNITY_EDITOR
-        private void RegisterInitializeObjectUndo(InitializationContext initializingContext)
-        {
-            Editor.UndoManager.RegisterCompleteObjectUndo(this, initializingContext);
-        }
-#endif
-
         /// <summary>
         /// The first step of the initialization process.
         /// </summary>
@@ -153,15 +145,10 @@ namespace DepictionEngine
         {
             _initializing = true;
 
-            SceneManager.LateUpdateEvent += LateUpdateHandler;
+            _requiresLateUpdate = true;
 
             if (!_isFallbackValues)
                 _isFallbackValues = InstanceManager.initializeIsFallbackValues;
-        }
-
-        private void LateUpdateHandler()
-        {
-            _wasFirstUpdated = true;
         }
 
         /// <summary>
@@ -277,15 +264,24 @@ namespace DepictionEngine
         /// <returns></returns>
         protected virtual bool UpdateAllDelegates()
         {
+            SceneManager.LateUpdateEvent -= LateUpdateHandler;
+            if (!IsDisposing())
+            {
+                if (_requiresLateUpdate)
+                    SceneManager.LateUpdateEvent += LateUpdateHandler;
+            }
+
 #if UNITY_EDITOR
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= Saving;
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaved -= Saved;
-            Editor.UndoManager.UndoRedoPerformedEvent -= UndoRedoPerformedHandler;
+            Editor.UndoManager.UndoRedoPerformedEvent -= UndoRedoPerformedHandler; 
+            SceneManager.ResetRegisterCompleteUndoEvent -= ResetRegisterCompleteUndo;
             if (!IsDisposing())
             {
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaving += Saving;
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaved += Saved;
                 Editor.UndoManager.UndoRedoPerformedEvent += UndoRedoPerformedHandler;
+                SceneManager.ResetRegisterCompleteUndoEvent += ResetRegisterCompleteUndo;
             }
 
             SceneManager sceneManager = SceneManager.Instance(false);
@@ -294,6 +290,7 @@ namespace DepictionEngine
             if (!IsDisposing() && !SceneManager.IsSceneBeingDestroyed())
                 this.sceneManager.PropertyAssignedEvent += SceneManagerPropertyAssignedHandler;
 #endif
+
             return !isFallbackValues;
         }
 
@@ -319,8 +316,8 @@ namespace DepictionEngine
         private string _inspectorComponentNameOverride;
         public string inspectorComponentNameOverride
         {
-            get { return _inspectorComponentNameOverride; }
-            set { _inspectorComponentNameOverride = value; }
+            get => _inspectorComponentNameOverride;
+            set => _inspectorComponentNameOverride = value;
         }
 
         private void SceneManagerPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
@@ -345,20 +342,16 @@ namespace DepictionEngine
             UpdateHideFlags();
         }
 
-        private void RemoveDisposedDelegate(IDisposable disposable, DisposeContext _)
+        private bool _requiresLateUpdate;
+        private void LateUpdateHandler()
         {
-            disposable.DisposedEvent -= ObjectDisposedHandler;
-        }
-
-        private void ObjectDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
-        {
-            RemoveDisposedDelegate(disposable, disposeContext);
+            _requiresLateUpdate = false;
         }
 
         private int instanceID
         {
-            get { return _instanceID; }
-            set { _instanceID = value; }
+            get => _instanceID;
+            set => _instanceID = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -391,7 +384,7 @@ namespace DepictionEngine
             return (!isFallbackValues && forceChangeDuringInitializing && !initialized) || !Object.Equals(newValue, oldValue);
         }
 
-        public bool wasFirstUpdated { get => _wasFirstUpdated; }
+        public bool wasFirstUpdated { get => _initialized && !_requiresLateUpdate; }
 
         public bool initialized { get => _initialized; }
 
@@ -442,8 +435,8 @@ namespace DepictionEngine
 
         public bool poolComplete
         {
-            get { return _poolComplete; }
-            set { _poolComplete = value; }
+            get => _poolComplete;
+            set => _poolComplete = value;
         }
 
         /// <summary>
@@ -457,13 +450,13 @@ namespace DepictionEngine
 
         public DisposeContext disposingContext
         {
-            get { return _disposingContext; }
+            get => _disposingContext;
         }
 
 #if UNITY_EDITOR
         public bool notPoolable
         {
-            get { return _notPoolable; }
+            get => _notPoolable;
         }
 
         public virtual void MarkAsNotPoolable()
@@ -474,20 +467,20 @@ namespace DepictionEngine
 
         public Action<IDisposable> InitializedEvent
         {
-            get { return _initializedEvent; }
-            set { _initializedEvent = value; }
+            get => _initializedEvent;
+            set => _initializedEvent = value;
         }
 
         public Action<IDisposable> DisposingEvent
         {
-            get { return _disposingEvent; }
-            set { _disposingEvent = value; }
+            get => _disposingEvent;
+            set => _disposingEvent = value;
         }
 
         public Action<IDisposable, DisposeContext> DisposedEvent
         {
-            get { return _disposedEvent; }
-            set { _disposedEvent = value; }
+            get => _disposedEvent;
+            set => _disposedEvent = value;
         }
 
         protected SceneManager sceneManager { get => SceneManager.Instance(); }
@@ -571,7 +564,6 @@ namespace DepictionEngine
 
                 DisposedEvent?.Invoke(this, disposeContext);
 
-                SceneManager.LateUpdateEvent -= LateUpdateHandler;
                 UpdateAllDelegates();
 
                 InitializedEvent = null;
@@ -600,13 +592,14 @@ namespace DepictionEngine
             if (GetDisposingContext() == DisposeContext.Editor_Unknown)
             {
                 //Give us more time to identify whether this is an Editor Undo/Redo dispose
+                SceneManager.DelayedOnDestroyEvent -= OnDestroyInternal;
                 SceneManager.DelayedOnDestroyEvent += OnDestroyInternal;
                 Editor.UndoManager.UndoRedoPerformedEvent -= TriggerOnDestroyIfNullHandler;
                 Editor.UndoManager.UndoRedoPerformedEvent += TriggerOnDestroyIfNullHandler;
             }
             else
 #endif
-            OnDestroyInternal();
+                OnDestroyInternal();
         }
 
 #if UNITY_EDITOR
@@ -633,13 +626,13 @@ namespace DepictionEngine
         private bool _inhibitExplicitOnEnableDisable;
         protected virtual void OnEnable()
         {
-            if (!IsDisposing() && _wasFirstUpdated && !_inhibitExplicitOnEnableDisable && SceneManager.IsValidActiveStateChange())
+            if (!IsDisposing() && wasFirstUpdated && !_inhibitExplicitOnEnableDisable && SceneManager.IsValidActiveStateChange())
                 ExplicitOnEnable();
         }
 
         protected virtual void OnDisable()
         {
-            if (!IsDisposing() && _wasFirstUpdated && !_inhibitExplicitOnEnableDisable && SceneManager.IsValidActiveStateChange())
+            if (!IsDisposing() && wasFirstUpdated && !_inhibitExplicitOnEnableDisable && SceneManager.IsValidActiveStateChange())
                 ExplicitOnDisable();
         }
 
@@ -661,10 +654,37 @@ namespace DepictionEngine
         public virtual void OnValidate()
         {
 #if UNITY_EDITOR
-            if (_wasFirstUpdated)
+            if (wasFirstUpdated)
                 Editor.UndoManager.Validating(this);
 #endif
         }
+
+#if UNITY_EDITOR
+        protected virtual void RegisterInitializeObjectUndo(InitializationContext initializingContext)
+        {
+            _registeredCompleteObjectUndo = true;
+            Editor.UndoManager.RegisterCompleteObjectUndo(this, initializingContext);
+        }
+
+        private bool _registeredCompleteObjectUndo;
+        protected void RegisterCompleteObjectUndo(DisposeContext disposeContext = DisposeContext.Editor_Destroy)
+        {
+            if (disposeContext == DisposeContext.Editor_Destroy)
+            {
+                MarkAsNotPoolable();
+                if (!_registeredCompleteObjectUndo)
+                {
+                    _registeredCompleteObjectUndo = true;
+                    Editor.UndoManager.RegisterCompleteObjectUndo(this);
+                }
+            }
+        }
+
+        private void ResetRegisterCompleteUndo()
+        {
+            _registeredCompleteObjectUndo = false;
+        }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(ScriptableObjectDisposable lhs, Disposable.Null rhs) { return !(lhs == rhs); }

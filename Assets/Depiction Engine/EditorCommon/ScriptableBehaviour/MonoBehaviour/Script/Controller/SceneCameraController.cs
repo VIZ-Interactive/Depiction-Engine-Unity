@@ -21,12 +21,10 @@ namespace DepictionEngine.Editor
         {
             if (!IsDisposing() && base.target == Disposable.NULL)
             {
-                string targetName = typeof(SceneCameraTarget).Name;
-
                 SceneView sceneView = SceneViewDouble.GetSceneView(objectBase as Camera);
                 if (sceneView != null)
                 {
-                    targetName += " (SceneViewId: " + sceneView.GetInstanceID() + ")";
+                    string targetName = GetTargetName(sceneView);
 
                     GameObject sceneCameraTargetGO = GameObject.Find(targetName);
                     if (sceneCameraTargetGO == null)
@@ -46,6 +44,11 @@ namespace DepictionEngine.Editor
                 return true;
             }
             return false;
+        }
+
+        private string GetTargetName(SceneView sceneView)
+        {
+            return typeof(SceneCameraTarget).Name + " (SceneViewId: " + sceneView.GetInstanceID() + ")";
         }
 
         public override Object target

@@ -204,23 +204,11 @@ namespace DepictionEngine
                         properties = new Tuple<List<JsonAttribute>, List<PropertyInfo>>(jsonAttributes, propertyInfos);
                         _typeProperties.Add(typeName, properties);
 
-                        JsonAttribute jsonAttribute;
-                        while (type != null)
+                        IterateOverJsonProperty(type, (jsonAttribute, propertyInfo) => 
                         {
-                            foreach (PropertyInfo propertyInfo in type.GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-                            {
-                                jsonAttribute = propertyInfo.GetCustomAttribute<JsonAttribute>();
-                                if (jsonAttribute != null)
-                                {
-                                    jsonAttributes.Add(jsonAttribute);
-                                    propertyInfos.Add(propertyInfo);
-                                }
-                            }
-
-                            type = type.BaseType;
-                            if (type == typeof(MonoBehaviour) || type == typeof(ScriptableObject))
-                                type = null;
-                        }
+                            jsonAttributes.Add(jsonAttribute);
+                            propertyInfos.Add(propertyInfo);
+                        });
                     }
 
                     for (int i = 0; i < properties.Item1.Count; i++)
@@ -243,6 +231,28 @@ namespace DepictionEngine
                         }
                     }
                 }
+            }
+        }
+
+        public static void IterateOverJsonProperty<T>(Action<JsonAttribute, PropertyInfo> callback)
+        {
+            IterateOverJsonProperty(typeof(T), callback);
+        }
+
+        public static void IterateOverJsonProperty(Type type, Action<JsonAttribute, PropertyInfo> callback)
+        {
+            while (type != null)
+            {
+                foreach (PropertyInfo propertyInfo in type.GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                {
+                    JsonAttribute jsonAttribute = propertyInfo.GetCustomAttribute<JsonAttribute>();
+                    if (jsonAttribute != null)
+                        callback(jsonAttribute, propertyInfo);
+                }
+
+                type = type.BaseType;
+                if (type == typeof(MonoBehaviour) || type == typeof(ScriptableObject))
+                    type = null;
             }
         }
 

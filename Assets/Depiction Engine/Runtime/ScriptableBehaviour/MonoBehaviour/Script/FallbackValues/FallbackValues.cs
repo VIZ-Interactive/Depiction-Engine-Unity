@@ -13,7 +13,7 @@ namespace DepictionEngine
         [BeginFoldout("Type")]
         [SerializeField, EndFoldout]
         private string _instanceType;
-        public string instanceType { get { return _instanceType; } set { } }
+        public string instanceType { get => _instanceType; set { } }
 #endif
         [SerializeField, HideInInspector]
         private string _fallbackValuesJsonStr;
@@ -55,6 +55,32 @@ namespace DepictionEngine
             if (initializingContext == InitializationContext.Reset)
                 fallbackValuesJson = null;
 #endif
+        }
+
+        protected override bool LateInitialize(InitializationContext initializingContext)
+        {
+            if (base.LateInitialize(initializingContext))
+            {
+                if (initializingContext == InitializationContext.Programmatically_Duplicate || initializingContext == InitializationContext.Editor_Duplicate)
+                {
+                    if (fallbackValuesJson != null)
+                    {
+                        Type type = GetFallbackValuesType();
+                        MemberUtility.IterateOverJsonProperty(type, (jsonAttribute, propertyInfo) => 
+                        {
+                            Type propertyType = propertyInfo.PropertyType;
+                            string propertyName = propertyInfo.Name;
+                            if (propertyType == typeof(SerializableGuid) && GetProperty(out SerializableGuid id, propertyName))
+                                SetProperty(propertyName, InstanceManager.GetDuplicatedObjectId(id));
+                            if (propertyType == typeof(List<SerializableGuid>) && GetProperty(out List<SerializableGuid> ids, propertyName))
+                                SetProperty(propertyName, InstanceManager.GetDuplicatedObjectIds(ids));
+                        });
+                    }
+                }
+
+                return true;
+            }
+            return false;
         }
 
 #if UNITY_EDITOR
@@ -139,7 +165,7 @@ namespace DepictionEngine
 
         private UnityEngine.Object fallbackValuesObject
         {
-            get { return _fallbackValuesObject; }
+            get => _fallbackValuesObject;
             set
             {
                 if (!HasChanged(value, _fallbackValuesObject))
@@ -158,7 +184,7 @@ namespace DepictionEngine
         [Json]
         public JSONObject fallbackValuesJson
         {
-            get { return _fallbackValuesJson; }
+            get => _fallbackValuesJson;
             set 
             {
                 value = ValidateFallbackValuesJson(value);
@@ -249,7 +275,7 @@ namespace DepictionEngine
             return false;
         }
 
-        public UnityEngine.Object GetFallbackValuesObject(Type type, JSONNode json = null)
+        public UnityEngine.Object GetFallbackValuesObject(Type type, JSONNode json = null, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             if (Disposable.IsDisposed(fallbackValuesObject) || fallbackValuesObject.GetType() != type)
             {
@@ -258,7 +284,7 @@ namespace DepictionEngine
 
                 InstanceManager instanceManager = InstanceManager.Instance(false);
                 if (instanceManager != Disposable.NULL)
-                    fallbackValuesObject = instanceManager.CreateInstance(type, null, json, isFallbackValues: true) as UnityEngine.Object;
+                    fallbackValuesObject = instanceManager.CreateInstance(type, null, json, isFallbackValues: true, initializingContext: initializingContext) as UnityEngine.Object;
             }
 
             if (!Disposable.IsDisposed(fallbackValuesObject))
@@ -269,7 +295,7 @@ namespace DepictionEngine
 
         public void ReleaseFallbackValuesObject(UnityEngine.Object fallbackValuesObject)
         {
-            if (Object.ReferenceEquals(fallbackValuesObject, this.fallbackValuesObject))
+            if (fallbackValuesObject is not null && Object.ReferenceEquals(fallbackValuesObject, this.fallbackValuesObject))
             {
                 _fallbackValuesObjectReferences--;
                 if (_fallbackValuesObjectReferences == 0)
