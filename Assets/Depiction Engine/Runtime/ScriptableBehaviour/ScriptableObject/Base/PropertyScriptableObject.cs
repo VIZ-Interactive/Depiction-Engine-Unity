@@ -130,16 +130,24 @@ namespace DepictionEngine
 #endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override bool SetValue<T>(string name, T value, ref T valueField, Action<T, T> assignedCallback = null)
+        protected virtual bool SetValue<T>(string name, T value, ref T valueField, Action<T, T> assignedCallback = null, bool allowAutoDisposeOnOutOfSynchProperty = false)
         {
             T oldValue = valueField;
 
-            if (base.SetValue(name, value, ref valueField, assignedCallback))
+            if (HasChanged(value, oldValue))
             {
-                PropertyAssigned(this, name, value, oldValue);
+                valueField = value;
+
+                Datasource.AllowAutoDisposeOnOutOfSynchProperty(() =>
+                {
+                    assignedCallback?.Invoke(value, oldValue);
+
+                    PropertyAssigned(this, name, value, oldValue);
+                }, Datasource.allowAutoDispose || allowAutoDisposeOnOutOfSynchProperty);
 
                 return true;
             }
+
             return false;
         }
 
@@ -224,7 +232,7 @@ namespace DepictionEngine
 
         public void InspectorReset()
         {
-            Editor.UndoManager.RegisterCompleteObjectUndo(this);
+            RegisterCompleteObjectUndo();
 
             SceneManager.UserContext(() =>
             {

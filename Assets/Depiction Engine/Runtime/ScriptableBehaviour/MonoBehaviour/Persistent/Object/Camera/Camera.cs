@@ -143,9 +143,9 @@ namespace DepictionEngine
             if (gameObject.transform.Find(stackName) == null)
             {
                 GameObject stackGO = new(stackName);
+                stackGO.transform.SetParent(gameObject.transform);
 #if UNITY_EDITOR
-                Editor.UndoManager.RegisterCreatedObjectUndo(stackGO, initializingContext);
-                Editor.UndoManager.SetTransformParent(stackGO.transform, gameObject.transform, false, initializingContext);
+                Editor.UndoManager.QueueRegisterCreatedObjectUndo(stackGO, initializingContext);
 #endif
 
                 Stack stack = stackGO.AddSafeComponent<Stack>(initializingContext);
@@ -162,17 +162,17 @@ namespace DepictionEngine
                 int distancePass = GetDefaultDistancePass();
                 for (int i = distancePass - 1; i >= 0; i--)
                 {
-                    GameObject cameraGO = new("DistancePass_" + (i + 1));
+                    GameObject distancePassCameraGO = new("DistancePass_" + (i + 1));
+                    distancePassCameraGO.transform.SetParent(stackGO.transform);
 #if UNITY_EDITOR
-                    Editor.UndoManager.RegisterCreatedObjectUndo(cameraGO, initializingContext);
-                    Editor.UndoManager.SetTransformParent(cameraGO.transform, stackGO.transform, false, initializingContext);
+                    Editor.UndoManager.QueueRegisterCreatedObjectUndo(distancePassCameraGO, initializingContext);
 #endif
-                    UnityEngine.Camera unityCamera = cameraGO.AddSafeComponent<UnityEngine.Camera>(initializingContext);
+                    UnityEngine.Camera unityCamera = distancePassCameraGO.AddSafeComponent<UnityEngine.Camera>(initializingContext);
                     RemoveIgnoreRenderFromUnityCameraCullingMask(unityCamera);
 
                     UniversalAdditionalCameraData distancePassCameraUniversalAdditionalCameraData = unityCamera.GetUniversalAdditionalCameraData();
 #if UNITY_EDITOR
-                    Editor.UndoManager.RegisterCreatedObjectUndo(distancePassCameraUniversalAdditionalCameraData, initializingContext);
+                    Editor.UndoManager.QueueRegisterCreatedObjectUndo(distancePassCameraUniversalAdditionalCameraData, initializingContext);
 #endif
                     if (distancePassCameraUniversalAdditionalCameraData != null)
                     {

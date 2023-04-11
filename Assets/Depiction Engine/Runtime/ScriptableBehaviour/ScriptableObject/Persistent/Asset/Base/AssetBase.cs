@@ -77,7 +77,7 @@ namespace DepictionEngine
                     SceneManager.UserContext(() => 
                     {
                         Editor.UndoManager.CreateNewGroup("Changed Asset Data in " + name);
-                        Editor.UndoManager.RegisterCompleteObjectUndo(this);
+                        RegisterCompleteObjectUndo();
 
                         LoaderBase.DataType dataType = GetDataTypeFromExtension(Path.GetExtension(assetPath));
                         SetData(ProcessDataBytes(File.ReadAllBytes(assetPath), dataType), dataType, InitializationContext.Editor);
@@ -275,7 +275,7 @@ namespace DepictionEngine
                 DisposeManager.Dispose(oldData, disposeContext);
 
 #if UNITY_EDITOR
-                Editor.UndoManager.RegisterCreatedObjectUndo(newData, initializingContext);
+                Editor.UndoManager.QueueRegisterCreatedObjectUndo(newData, initializingContext);
 #endif
             }
         }

@@ -251,16 +251,12 @@ namespace DepictionEngine
             {
                 datasourcesGo = new GameObject(name);
 #if UNITY_EDITOR
-                Editor.UndoManager.RegisterCreatedObjectUndo(datasourcesGo, initializingContext);
+                Editor.UndoManager.QueueRegisterCreatedObjectUndo(datasourcesGo, initializingContext);
 #endif
                 datasourcesGo.AddSafeComponent<Object>(initializingContext);
             }
 
             datasource = datasourcesGo.AddSafeComponent<T>(initializingContext);
-
-#if UNITY_EDITOR
-            Editor.UndoManager.RegisterCompleteObjectUndo(datasource, initializingContext);
-#endif
 
             return datasource;
         }

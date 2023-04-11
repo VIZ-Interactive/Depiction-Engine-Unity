@@ -1486,7 +1486,7 @@ namespace DepictionEngine.Editor
                             if (lastActiveSceneViewDouble != Disposable.NULL)
                             {
                                 _lastActiveSceneCameraTransforms.Add(lastActiveSceneViewDouble.camera.transform);
-                                _lastActiveSceneCameraTransforms.Add(lastActiveSceneViewDouble.camera.sceneCameraController.targetTransform);
+                                _lastActiveSceneCameraTransforms.Add(lastActiveSceneViewDouble.camera.sceneCameraController.target.transform);
                             }
 
                             TransformDouble.ApplyOriginShifting(_lastActiveSceneCameraTransforms, origin);

@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using UnityEngine.UIElements;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Microsoft.Design", "IDE1006",
@@ -32,16 +33,8 @@ namespace DepictionEngine
         /// All other object have been created and initialized at this point, even during a duplicate operation involving multiple objects. <br/><br/>
         /// <b><see cref="PostLateInitialize"/>:</b> <br/>
         /// All other object have been created and initialized at this point, even during a duplicate operation involving multiple objects. <br/><br/>
-        /// <b><see cref="PreHierarchicalUpdate"/>:</b> <br/>
+        /// <b><see cref="Update"/>:</b> <br/>
         /// The hierarchy is traversed and values are prepared for the update. <br/><br/>
-        /// <b><see cref="HierarchicalUpdate"/>:</b> <br/>
-        /// The hierarchy is traversed and the update code is executed. <br/><br/>
-        /// <b><see cref="PostHierarchicalUpdate"/>:</b> <br/>
-        /// The hierarchy is traversed and code that required updated values is executed. <br/><br/>
-        /// <b><see cref="HierarchicalClearDirtyFlags"/>:</b> <br/>
-        /// The hierarchy is traversed and dirty flags are cleared. <br/><br/>
-        /// <b><see cref="HierarchicalActivate"/>:</b> <br/>
-        /// The hierarchy is traversed and gameObjects that have never been active are temporarly activated and deactivated to allow for their Awake to be called. <br/><br/>
         /// <b><see cref="PastingComponentValues"/>:</b> <br/>
         /// Pasting component values from the inspector(Editor only). <br/><br/>
         /// <b><see cref="LateUpdate"/>:</b> <br/>
@@ -54,11 +47,7 @@ namespace DepictionEngine
             None,
             LateInitialize,
             PostLateInitialize,
-            PreHierarchicalUpdate,
-            HierarchicalUpdate,
-            PostHierarchicalUpdate,
-            HierarchicalClearDirtyFlags,
-            HierarchicalActivate,
+            Update,
             PastingComponentValues,
             LateUpdate,
             DelayedOnDestroy
@@ -122,20 +111,9 @@ namespace DepictionEngine
 
         private static bool _isUserChange;
 
-        private static bool _activateAll;
-
         private static ExecutionState _sceneExecutionState;
 
         private static bool _sceneClosing;
-
-        /// <summary>
-        /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
-        /// </summary>
-        public static Action LateInitializeEvent;
-        /// <summary>
-        /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
-        /// </summary>
-        public static Action PostLateInitializeEvent;
 
         /// <summary>
         /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
@@ -147,11 +125,6 @@ namespace DepictionEngine
         public static Action DelayedOnDestroyEvent;
 
 #if UNITY_EDITOR
-        /// <summary>
-        /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
-        /// </summary>
-        public static Action ResetRegisterCompleteUndoEvent;
-
         /// <summary>
         /// Dispatched when the parent Scene of the <see cref="DepictionEngine.SceneManager"/> gameObject is closing.
         /// </summary>
@@ -262,6 +235,8 @@ namespace DepictionEngine
                 }
 
 #if UNITY_EDITOR
+                UnityEditor.ClipboardUtility.copyingGameObjects -= CopyingGameObjectsHandler;
+                UnityEditor.ClipboardUtility.pastedGameObjects -= PastedGameObjectsHandler;
                 Application.logMessageReceived -= LogMessageReceivedHandler;
                 UnityEditor.EditorApplication.pauseStateChanged -= EditorPauseStateChangedHandler;
                 UnityEditor.EditorApplication.playModeStateChanged -= PlayModeStateChangedHandler;
@@ -272,6 +247,8 @@ namespace DepictionEngine
                 UnityEditor.Selection.selectionChanged -= SelectionChangedHandler;
                 if (!IsDisposing())
                 {
+                    UnityEditor.ClipboardUtility.copyingGameObjects += CopyingGameObjectsHandler;
+                    UnityEditor.ClipboardUtility.pastedGameObjects += PastedGameObjectsHandler;
                     Application.logMessageReceived += LogMessageReceivedHandler;
                     UnityEditor.EditorApplication.pauseStateChanged += EditorPauseStateChangedHandler;
                     UnityEditor.EditorApplication.playModeStateChanged += PlayModeStateChangedHandler;
@@ -364,7 +341,6 @@ namespace DepictionEngine
             BeforeAssemblyReloadEvent?.Invoke();
         }
 
-#if UNITY_EDITOR
         private static List<MonoBehaviourDisposable> _monoBehaviourDisposables;
         [UnityEditor.InitializeOnLoadMethod]
         private static void AfterAssemblyReloadHandler()
@@ -398,7 +374,6 @@ namespace DepictionEngine
             //Necessary?
             Resources.UnloadUnusedAssets();
         }
-#endif
 
         private void SelectionChangedHandler()
         {
@@ -547,6 +522,38 @@ namespace DepictionEngine
         {
             RemoveFilteredLogEntries();
             return true;
+        }
+
+        private GameObject[] _copyingGameObjects;
+        private bool[] _copyingGameObjectsActive;
+        private void CopyingGameObjectsHandler(GameObject[] gameObjects)
+        {
+            _copyingGameObjects = gameObjects;
+            _copyingGameObjectsActive = new bool[_copyingGameObjects.Length];
+
+            for (int i = gameObjects.Length - 1; i >= 0; i--)
+            {
+                GameObject go = gameObjects[i];
+                _copyingGameObjects[i] = go;
+                _copyingGameObjectsActive[i] = go.activeSelf;
+                go.SetActive(true);
+            }
+        }
+
+        private void PastedGameObjectsHandler(GameObject[] gameObjects)
+        {
+            for (int i = gameObjects.Length - 1; i >= 0; i--)
+                gameObjects[i].SetActive(_copyingGameObjects[i].activeSelf);
+        }
+
+        private void ResetCopyingGameObjectsActiveState()
+        {
+            if (_copyingGameObjectsActive != null)
+            {
+                for (int i = _copyingGameObjectsActive.Length - 1; i >= 0; i--)
+                    _copyingGameObjects[i].SetActive(_copyingGameObjectsActive[i]);
+                _copyingGameObjectsActive = null;
+            }
         }
 
         private static HashSet<int> _removeEntryRows = new();
@@ -1026,11 +1033,6 @@ namespace DepictionEngine
             return false;
         }
 
-        public static void ActivateAll()
-        {
-            _activateAll = true;
-        }
-
         public override void ExplicitOnEnable()
         {
             base.ExplicitOnEnable();
@@ -1038,139 +1040,100 @@ namespace DepictionEngine
             _updated = false;
         }
 
-#if UNITY_EDITOR
-        //Inspector Methods
-        private static List<Tuple<UnityEngine.Object[], string>> _queuedRecordObjects;
-        public static void RecordObjects(UnityEngine.Object[] targetObjects, string undoGroupName = null)
-        {
-            _queuedRecordObjects ??= new List<Tuple<UnityEngine.Object[], string>>();
-
-            _queuedRecordObjects.Add(Tuple.Create(targetObjects, undoGroupName));
-        }
-
-        private static List<Tuple<UnityEngine.Object, string>> _queuedRecordObject;
-        public static void RecordObject(UnityEngine.Object targetObject, string undoGroupName = null)
-        {
-            _queuedRecordObject ??= new List<Tuple<UnityEngine.Object, string>>();
-
-            _queuedRecordObject.Add(Tuple.Create(targetObject, undoGroupName));
-        }
-
-        private static List<Tuple<IScriptableBehaviour, PropertyInfo, object>> _queuedPropertyValueChanges;
-        public static void QueuePropertyValueChange(IScriptableBehaviour scriptableBehaviour, PropertyInfo propertyInfo, object value)
-        {
-            _queuedPropertyValueChanges ??= new List<Tuple<IScriptableBehaviour, PropertyInfo, object>>();
-
-            _queuedPropertyValueChanges.Add(Tuple.Create(scriptableBehaviour, propertyInfo, value));
-        }
-
-        public static void SetInspectorPropertyValue(IScriptableBehaviour targetObject, PropertyInfo propertyInfo, object value)
-        {
-            propertyInfo.SetValue(targetObject, value);
-        }
-#endif
-
         public void Update()
         {
             if (this != Disposable.NULL)
             {
+#if UNITY_EDITOR
+                //Make sure GameObjects are always active when copy/pasted in the Editor so that Awake is always called.
+                ResetCopyingGameObjectsActiveState();
+
+                //Detect GameObjects/Components created in the Editor.
+                HierarchicalInitializeEditorCreatedObjects();
+                Editor.UndoManager.ProcessQueuedOperations();
+#endif
+
                 if (!_updated)
                 {
                     _updated = true;
 
-                    if (!wasFirstUpdated)
-                    {
-                        List<GameObject> rootGameObjects = GetRootGameObjects();
-                        if (rootGameObjects != null)
-                        {
-                            foreach (GameObject go in rootGameObjects)
-                            {
-                                TransformBase childTransform = go.GetComponent<TransformBase>();
-                                if (childTransform != Disposable.NULL)
-                                    InitializeComponent(childTransform);
-                            }
-                        }
-                    }
-
-                    InvokeAction(ref LateInitializeEvent, "LateInitialize", ExecutionState.LateInitialize);
-                    InvokeAction(ref PostLateInitializeEvent, "PostLateInitialize", ExecutionState.PostLateInitialize);
-#if UNITY_EDITOR
-                    Editor.UndoManager.Update();
-
-                    if (_queuedRecordObjects != null)
-                    {
-                        foreach (Tuple<UnityEngine.Object[], string> queuedRecordObjects in _queuedRecordObjects)
-                        {
-                            UnityEngine.Object[] targetObjects = queuedRecordObjects.Item1;
-                            string undoGroupName = queuedRecordObjects.Item2;
-                            Editor.UndoManager.SetCurrentGroupName(string.IsNullOrEmpty(undoGroupName) ? "Modified Property in " + (targetObjects.Length == 1 ? targetObjects[0].name : "Multiple Objects") : undoGroupName);
-                            Editor.UndoManager.RecordObjects(targetObjects);
-                        }
-
-                        _queuedRecordObjects.Clear();
-                    }
-
-                    if (_queuedRecordObject != null)
-                    {
-                        foreach (Tuple<UnityEngine.Object, string> queuedRecordObject in _queuedRecordObject)
-                        {
-                            UnityEngine.Object targetObject = queuedRecordObject.Item1;
-                            string undoGroupName = queuedRecordObject.Item2;
-                            Editor.UndoManager.SetCurrentGroupName(string.IsNullOrEmpty(undoGroupName) ? "Modified Property in " + targetObject.name : undoGroupName);
-                            Editor.UndoManager.RecordObject(targetObject);
-                        }
-
-                        _queuedRecordObject.Clear();
-                    }
-
-                    if (_queuedPropertyValueChanges != null)
-                    {
-                        foreach (var queuedPropertyValue in _queuedPropertyValueChanges)
-                        {
-                            IScriptableBehaviour targetObject = queuedPropertyValue.Item1;
-                            if (!Disposable.IsDisposed(targetObject))
-                            {
-                                try 
-                                {
-#pragma warning disable UNT0018 // System.Reflection features in performance critical messages
-                                    Editor.UndoManager.RecordObject(targetObject as UnityEngine.Object);
-                                    UserContext(() => { SetInspectorPropertyValue(targetObject, queuedPropertyValue.Item2, queuedPropertyValue.Item3); });
-                                    Editor.UndoManager.FlushUndoRecordObjects();
-#pragma warning restore UNT0018 // System.Reflection features in performance critical messages
-                                }
-                                catch(Exception)
-                                {
-
-                                }
-                            }
-                        }
-
-                        _queuedPropertyValueChanges.Clear();
-                    }
-#endif
-
-                    sceneExecutionState = ExecutionState.PreHierarchicalUpdate;
+                    sceneExecutionState = ExecutionState.Update;
                     PreHierarchicalUpdate();
-                    sceneExecutionState = ExecutionState.HierarchicalUpdate;
                     HierarchicalUpdate();
-                    sceneExecutionState = ExecutionState.PostHierarchicalUpdate;
                     PostHierarchicalUpdate();
-                    sceneExecutionState = ExecutionState.HierarchicalClearDirtyFlags;
-                    HierarchicalClearDirtyFlags();
-
-                    if (_activateAll)
-                    {
-                        sceneExecutionState = ExecutionState.HierarchicalActivate;
-                        HierarchicalActivate();
-                        _activateAll = false;
-                    }
+                    sceneExecutionState = ExecutionState.None;
                 }
-#if UNITY_EDITOR
-                // Ensure continuous Update calls.
-                if (!Application.isPlaying || UnityEditor.EditorApplication.isPaused)
-                    UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
-#endif
             }
+        }
+
+        public void HierarchicalInitializeEditorCreatedObjects()
+        {
+#if UNITY_EDITOR
+            if (Editor.UndoManager.DetectEditorUndoRedoRegistered())
+            {
+                InstanceManager.InitializingContext(() =>
+                {
+                    UserContext(() =>
+                    {
+                        HierarchicalInitialize();
+                    });
+                }, InitializationContext.Editor);
+            }
+#endif
+        }
+
+#if UNITY_EDITOR
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override bool HierarchicalInitialize()
+        {
+            if (base.HierarchicalInitialize())
+            {
+                InstanceManager.LateInitializeObjects();
+                return true;
+            }
+            return false;
+        }
+#endif
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override bool PreHierarchicalUpdate()
+        {
+            if (base.PreHierarchicalUpdate())
+            {
+                FinishInitializingObjects();
+                return true;
+            }
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override bool HierarchicalUpdate()
+        {
+            if (base.HierarchicalUpdate())
+            {
+                FinishInitializingObjects();
+                return true;
+            }
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override bool PostHierarchicalUpdate()
+        {
+            if (base.PostHierarchicalUpdate())
+            {
+                FinishInitializingObjects();
+                return true;
+            }
+            return false;
+        }
+
+        private void FinishInitializingObjects()
+        {
+            InstanceManager.LateInitializeObjects();
+#if UNITY_EDITOR
+            Editor.UndoManager.ProcessQueuedOperations();
+#endif
         }
 
         public void FixedUpdate()
@@ -1250,7 +1213,6 @@ namespace DepictionEngine
                 string groupName = "Reset " + (_resetingObjects.Count == 1 ? firstUnityObject.name : "Object") + " " + firstUnityObject.GetType().Name;
 
                 Editor.UndoManager.SetCurrentGroupName(groupName);
-                
                 Editor.UndoManager.RecordObjects(_resetingObjects.ToArray());
 
                 foreach (UnityEngine.Object unityObject in _resetingObjects)
@@ -1288,9 +1250,7 @@ namespace DepictionEngine
                 }
                 _pastingComponentValuesToObjects.Clear();
             }
-            sceneExecutionState = ExecutionState.None;
 #endif
-
             InvokeAction(ref LateUpdateEvent, "LateUpdate", ExecutionState.LateUpdate);
 
             DisposeManager.DisposingContext(() => 
@@ -1298,9 +1258,9 @@ namespace DepictionEngine
                 InvokeAction(ref DelayedOnDestroyEvent, "DelayedOnDestroy", ExecutionState.DelayedOnDestroy);
             }, DisposeContext.Editor_Destroy);
 
-#if UNITY_EDITOR
-            ResetRegisterCompleteUndoEvent?.Invoke();
+            sceneExecutionState = ExecutionState.None;
 
+#if UNITY_EDITOR
             //Unsubscribe and Subscribe again to stay at the bottom of the invocation list. 
             //Could be replaced with [DefaultExecutionOrder(-3)] potentialy?
             UpdateUpdateDelegate();
@@ -1309,7 +1269,7 @@ namespace DepictionEngine
             _updated = false;
         }
 
-        private void InvokeAction(ref Action action, string actionName, ExecutionState sceneExecutionState, bool clear = true)
+        public static void InvokeAction(ref Action action, string actionName, ExecutionState sceneExecutionState, bool clear = true)
         {
             if (action != null)
             {

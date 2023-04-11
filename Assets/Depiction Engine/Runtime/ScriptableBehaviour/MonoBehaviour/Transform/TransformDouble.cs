@@ -350,7 +350,7 @@ namespace DepictionEngine
             set
             {
                 if (!localPositionParam.isGeoCoordinate)
-                    SetComponents(localPositionParam.SetValue(value), UpdateLocalRotationParam(), UpdateLocalScaleParam());
+                    SetTransformComponents(localPositionParam.SetValue(value), UpdateLocalRotationParam(), UpdateLocalScaleParam());
                 else
                     geoCoordinate = GetGeoCoordinateFromLocalPoint(value);
             }
@@ -400,7 +400,7 @@ namespace DepictionEngine
             set
             {
                 if (localPositionParam.isGeoCoordinate)
-                    SetComponents(localPositionParam.SetValue(value), UpdateLocalRotationParam(), UpdateLocalScaleParam());
+                    SetTransformComponents(localPositionParam.SetValue(value), UpdateLocalRotationParam(), UpdateLocalScaleParam());
                 else
                     localPosition = GetLocalPointFromGeoCoordinate(value);
             }
@@ -521,7 +521,7 @@ namespace DepictionEngine
         public QuaternionDouble localRotation
         {
             get { return _localRotation; }
-            set { SetComponents(UpdateLocalPositionParam(), localRotationParam.SetValue(value), UpdateLocalScaleParam()); }
+            set { SetTransformComponents(UpdateLocalPositionParam(), localRotationParam.SetValue(value), UpdateLocalScaleParam()); }
         }
 
         private bool SetLocalRotation(QuaternionDouble value)
@@ -582,7 +582,7 @@ namespace DepictionEngine
         public Vector3Double localScale
         {
             get { return _localScale; }
-            set { SetComponents(UpdateLocalPositionParam(), UpdateLocalRotationParam(), localScaleParam.SetValue(value)); }
+            set { SetTransformComponents(UpdateLocalPositionParam(), UpdateLocalRotationParam(), localScaleParam.SetValue(value)); }
         }
 
         private bool SetLocalScale(Vector3Double value)
@@ -654,7 +654,7 @@ namespace DepictionEngine
                 if (SceneManager.IsUserChangeContext())
                     RegisterCompleteObjectUndo();
 #endif
-                SetComponents(CaptureLocalPosition(), CaptureLocalRotation(), CaptureLocalScale());
+                SetTransformComponents(CaptureLocalPosition(), CaptureLocalRotation(), CaptureLocalScale());
 
                 InitLastTransformFields();
             }
@@ -727,7 +727,7 @@ namespace DepictionEngine
                 if (localScaleChanged)
                     localScaleParam.Changed();
 
-                changedComponents = SetComponents(localPositionParam, localRotationParam, localScaleParam, camera, forceDeriveLocalPosition, triggerTransformChanged);
+                changedComponents = SetTransformComponents(localPositionParam, localRotationParam, localScaleParam, camera, forceDeriveLocalPosition, triggerTransformChanged);
 
                 return true;
             }
@@ -736,7 +736,7 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private Component SetComponents(LocalPositionParam localPosition, LocalRotationParam localRotation, LocalScaleParam localScale, Camera camera = null, bool forceDeriveLocalPosition = false, bool triggerTransformChanged = true)
+        private Component SetTransformComponents(LocalPositionParam localPosition, LocalRotationParam localRotation, LocalScaleParam localScale, Camera camera = null, bool forceDeriveLocalPosition = false, bool triggerTransformChanged = true)
         {
             ObjectCallback?.Invoke(localPosition, localRotation, localScale, camera);
 

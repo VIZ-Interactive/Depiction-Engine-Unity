@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Security.AccessControl;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -101,6 +100,14 @@ namespace DepictionEngine
                     AddLoader(loader);
             }
 
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+            {
+                persistentsDictionary.Clear();
+                persistentsComponentsOutOfSyncDictionary.Clear();
+                persistentsIsOutOfSync.Clear();
+                persistentsCanBeAutoDisposed.Clear();
+            }
+
             if (initializingContext == InitializationContext.Existing)
             {
                 PerformAddRemovePersistentsChange(persistentsDictionary, persistentsDictionary);
@@ -182,12 +189,6 @@ namespace DepictionEngine
 
         public bool UpdateAllDelegates(bool isDisposing)
         {
-#if UNITY_EDITOR
-            SceneManager.ResetRegisterCompleteUndoEvent -= ResetRegisterCompleteUndo;
-            if (!isDisposing)
-                SceneManager.ResetRegisterCompleteUndoEvent += ResetRegisterCompleteUndo;
-#endif
-
             DatasourceManager.DatasourceLoadersChangedEvent -= DatasourceLoadersChangedHandler;
             if (!isDisposing)
                 DatasourceManager.DatasourceLoadersChangedEvent += DatasourceLoadersChangedHandler;
@@ -487,8 +488,8 @@ namespace DepictionEngine
         }
 
         private static bool _allowAutoDispose;
-        private static bool allowAutoDispose { get => _allowAutoDispose; }
-        public static void AllowAutoDisposeOnOutOfSynchProperty(Action callback, bool allowAutoDispose)
+        public static bool allowAutoDispose { get => _allowAutoDispose; }
+        public static void AllowAutoDisposeOnOutOfSynchProperty(Action callback, bool allowAutoDispose = true)
         {
             if (callback != null)
             {
@@ -774,6 +775,9 @@ namespace DepictionEngine
                     }
                 }
             }
+
+            if (changed)
+                Debug.Log(key+", "+ allowAutoDispose);
 
             return changed;
         }
@@ -1232,26 +1236,10 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        private bool _registeredCompleteObjectUndo;
         private void RegisterCompleteObjectUndo(DisposeContext disposeContext = DisposeContext.Editor_Destroy)
         {
-            if (datasourceWrapper == Disposable.NULL)
-                return;
-
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                datasourceWrapper.MarkAsNotPoolable();
-                if (!_registeredCompleteObjectUndo)
-                {
-                    _registeredCompleteObjectUndo = true;
-                    Editor.UndoManager.RegisterCompleteObjectUndo(datasourceWrapper);
-                }
-            }
-        }
-
-        public void ResetRegisterCompleteUndo()
-        {
-            _registeredCompleteObjectUndo = false;
+            if (datasourceWrapper != Disposable.NULL)
+                datasourceWrapper.RegisterCompleteObjectUndo(disposeContext);
         }
 #endif
 

@@ -34,9 +34,6 @@ namespace DepictionEngine
 
                 CameraController cameraController = camera.CreateScript<CameraController>(initializingContext);
                 cameraController.targetId = target.id;
-#if UNITY_EDITOR
-                Editor.UndoManager.RegisterCompleteObjectUndo(cameraController, initializingContext);
-#endif
 
                 camera.CreateScript<TargetControllerAnimator>(initializingContext);
             }
@@ -109,16 +106,8 @@ namespace DepictionEngine
             if (spherical)
                 planet.transform.localRotation = QuaternionDouble.Euler(-90.0d, 0.0d, 0.0d);
 
-#if UNITY_EDITOR
-            Editor.UndoManager.RegisterCompleteObjectUndo(planet.transform, initializingContext);
-#endif
-
             planet.size = size;
             planet.mass = mass;
-
-#if UNITY_EDITOR
-            Editor.UndoManager.RegisterCompleteObjectUndo(planet, initializingContext);
-#endif
 
             return planet;
         }

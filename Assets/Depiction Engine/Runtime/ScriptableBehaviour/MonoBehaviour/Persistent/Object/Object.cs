@@ -207,7 +207,7 @@ namespace DepictionEngine
             optionalProperties.parent = this;
 
 #if UNITY_EDITOR
-            Editor.UndoManager.RegisterCreatedObjectUndo(optionalProperties, initializingContext);
+            Editor.UndoManager.QueueRegisterCreatedObjectUndo(optionalProperties, initializingContext);
 #endif
 
             return optionalProperties as T;
@@ -247,7 +247,10 @@ namespace DepictionEngine
                         //We do not register a create Undo here because when the Undo is executed it breaks the dispose process because the id is no longer set.
                         //The problem was found when manually adding TerrainGridMeshObject to a GameObject in the Editor and undoing the Add Component.
                         //Three of the four AssetReference could not be removed from the instanceManager because their id were missing when OnDispose was triggered.
-                         gameObject.AddComponent(requiredComponentType);
+                        component = gameObject.AddComponent(requiredComponentType);
+#if UNITY_EDITOR
+                        //Editor.UndoManager.QueueRegisterCreatedObjectUndo(component, initializingContext);
+#endif
                     }
                 }
             }
@@ -430,7 +433,7 @@ namespace DepictionEngine
             base.RegisterInitializeObjectUndo(initializingContext);
 
             //Register GameObject name/layer/enabled etc...
-            Editor.UndoManager.RegisterCompleteObjectUndo(gameObject, initializingContext);
+            Editor.UndoManager.QueueRegisterCompleteObjectUndo(gameObject, initializingContext);
         }
 #endif
 
@@ -986,13 +989,7 @@ namespace DepictionEngine
         public ObjectAdditionalFallbackValues objectAdditionalFallbackValues
         {
             get => _objectAdditionalFallbackValues;
-            set 
-            {
-                if (_objectAdditionalFallbackValues == value)
-                    return;
-
-                _objectAdditionalFallbackValues = value;
-            }
+            set => _objectAdditionalFallbackValues = value;
         }
 
         private bool _lastGameObjectActiveSelf;

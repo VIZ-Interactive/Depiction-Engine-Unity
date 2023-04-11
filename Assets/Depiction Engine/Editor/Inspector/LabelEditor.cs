@@ -47,8 +47,6 @@ namespace DepictionEngine.Editor
 
                         if (endCoordinatePropertyInfo != null || textCurvePropertyInfo != null)
                         {
-                            RecordObject(label);
-
                             if (endCoordinatePropertyInfo != null)
                                 SetPropertyValue(label, endCoordinatePropertyInfo, endCoordinate);
 

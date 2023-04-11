@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -20,13 +19,13 @@ namespace DepictionEngine
         [Flags]
         public enum Component : byte
         {
-            None = 0,
-            Position = 1 << 0,
-            Rotation = 1 << 1,
-            LossyScale = 1 << 2,
-            LocalPosition = 1 << 3,
-            LocalRotation = 1 << 4,
-            LocalScale = 1 << 5
+            None = 1 << 0,
+            Position = 1 << 1,
+            Rotation = 1 << 2,
+            LossyScale = 1 << 3,
+            LocalPosition = 1 << 4,
+            LocalRotation = 1 << 5,
+            LocalScale = 1 << 6
         };
 
         [Serializable]
@@ -63,7 +62,7 @@ namespace DepictionEngine
         /// Dispatched when some transform component(s) such as localPosition, localRotation or localScale have changed.
         /// </summary>
         public Action<Component, Component> ChangedEvent;
- 
+
         public override void Recycle()
         {
             base.Recycle();
@@ -79,24 +78,9 @@ namespace DepictionEngine
             _objectBase = default;
         }
 
-        protected override void Awake()
-        {
-            base.Awake();
-
-#if UNITY_EDITOR
-            //We initialize right away if the gameObject is being duplicated to make sure the Undo operations are recorded together as one.
-            if (IsDuplicateInitializing())
-                Initialize();
-#endif
-        }
-
         protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
-
-            //Make sure the gameObject is activated at least once so when we Destroy, the OnDestroy will be triggered even during Undo/Redo
-            if (!isActiveAndEnabled)
-                SceneManager.ActivateAll();
 
             UpdateIsGeoCoordinateTransform();
 
@@ -700,9 +684,6 @@ namespace DepictionEngine
             {
                 try
                 {
-                    if (transform == null)
-                        Debug.Log("fffff");
-
                     parentObject = transform.parent?.GetComponent<Object>();
                 }
                 catch(MissingReferenceException)
@@ -796,7 +777,8 @@ namespace DepictionEngine
                         if (SceneManager.IsUserChangeContext())
                         {
                             parentChanged = true;
-                            Editor.UndoManager.SetTransformParent(transform, newTransform);
+                            RegisterCompleteObjectUndo();
+                            Editor.UndoManager.SetTransformParent(this, value);
                         }
 #endif
                         if (!parentChanged)
@@ -806,11 +788,6 @@ namespace DepictionEngine
                     InitLastTransformFields();
 
                     UpdateParentObject();
-
-#if UNITY_EDITOR
-                    if (SceneManager.IsUserChangeContext())
-                        RegisterCompleteObjectUndo();
-#endif
 
                     return true;
                 }
@@ -1070,17 +1047,6 @@ namespace DepictionEngine
                 if (recursive)
                     IterateOverChildrenGameObject(child, callback, recursive);
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override void HierarchicalActivate()
-        {
-            InhibitEnableDisableAll();
-            bool lastActiveSelf = gameObject.activeSelf;
-            gameObject.SetActive(true);
-            base.HierarchicalActivate();
-            gameObject.SetActive(lastActiveSelf);
-            UninhibitEnableDisableAll();
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

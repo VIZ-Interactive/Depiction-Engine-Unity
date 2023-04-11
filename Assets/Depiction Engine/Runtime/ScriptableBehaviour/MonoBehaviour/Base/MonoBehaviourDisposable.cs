@@ -63,9 +63,16 @@ namespace DepictionEngine
 #endif
         }
 
-        protected virtual void Awake()
+        protected void Awake()
         {
-
+#if UNITY_EDITOR
+            //We initialize right away if the gameObjects are being duplicated to make sure the Undo operations are recorded together as one.
+            if (!initialized && IsDuplicateInitializing())
+            {
+                //Even if multiple objects are being duplicated at once we only need to call this once when we detect the first Awake the other transforms will be initialized hierarchically.
+                sceneManager?.HierarchicalInitializeEditorCreatedObjects();
+            }
+#endif
         }
 
         public bool Initialize()
@@ -119,6 +126,10 @@ namespace DepictionEngine
 
                 Initialized(_initializingContext);
                 InitializedEvent?.Invoke(this);
+
+#if UNITY_EDITOR
+                RegisterInitializeObjectUndo(_initializingContext);
+#endif
 
                 _instanceAdded = AddToInstanceManager();
                 return _instanceAdded;
@@ -297,15 +308,15 @@ namespace DepictionEngine
         /// <returns></returns>
         protected virtual bool UpdateAllDelegates()
         {
-            SceneManager.LateInitializeEvent -= LateInitializeHandler;
-            SceneManager.PostLateInitializeEvent -= PostLateInitializeHandler;
+            InstanceManager.LateInitializeEvent -= LateInitializeHandler;
+            InstanceManager.PostLateInitializeEvent -= PostLateInitializeHandler;
             //SceneManager.LateUpdateEvent -= LateUpdateHandler;
             if (!IsDisposing())
             {
                 if (_requiresLateInitialize)
-                    SceneManager.LateInitializeEvent += LateInitializeHandler;
+                    InstanceManager.LateInitializeEvent += LateInitializeHandler;
                 if (_requiresPostLateInitialize)
-                    SceneManager.PostLateInitializeEvent += PostLateInitializeHandler;
+                    InstanceManager.PostLateInitializeEvent += PostLateInitializeHandler;
                 if (_requiresLateUpdate)
                     SceneManager.LateUpdateEvent += LateUpdateHandler;
             }
@@ -314,13 +325,11 @@ namespace DepictionEngine
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= Saving;
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaved -= Saved;
             Editor.UndoManager.UndoRedoPerformedEvent -= UndoRedoPerformedHandler;
-            SceneManager.ResetRegisterCompleteUndoEvent -= ResetRegisterCompleteUndo;
             if (!IsDisposing())
             {
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaving += Saving;
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaved += Saved;
                 Editor.UndoManager.UndoRedoPerformedEvent += UndoRedoPerformedHandler;
-                SceneManager.ResetRegisterCompleteUndoEvent += ResetRegisterCompleteUndo; 
             }
 
             SceneManager sceneManager = SceneManager.Instance(false);
@@ -385,6 +394,7 @@ namespace DepictionEngine
         private void LateInitializeHandler()
         {
             _requiresLateInitialize = false;
+
             LateInitialize(_initializingContext);
         }
 
@@ -393,13 +403,7 @@ namespace DepictionEngine
         {
             _requiresPostLateInitialize = false;
 
-            InitializationContext initializingContext = _initializingContext;
-
-            PostLateInitialize(initializingContext);
-
-#if UNITY_EDITOR
-            RegisterInitializeObjectUndo(initializingContext);
-#endif
+            PostLateInitialize(_initializingContext);
         }
 
         private bool _requiresLateUpdate;
@@ -415,7 +419,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual bool LateInitialize(InitializationContext initializingContext)
         {
-            return initialized;
+            return !IsDisposing() && initialized;
         }
 
         /// <summary>
@@ -425,7 +429,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual bool PostLateInitialize(InitializationContext initializingContext)
         {
-            return initialized;
+            return !IsDisposing() && initialized;
         }
 
         private int instanceID
@@ -577,6 +581,7 @@ namespace DepictionEngine
                 _disposing = true;
 
                 DisposingEvent?.Invoke(this);
+
                 DisposingEvent = null;
 
                 return true;
@@ -623,7 +628,7 @@ namespace DepictionEngine
                 DisposingEvent = null;
                 DisposedEvent = null;
 
-                return true;
+                return initialized;
             }
             return false;
         }
@@ -727,27 +732,22 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         protected virtual void RegisterInitializeObjectUndo(InitializationContext initializingContext)
         {
-            _registeredCompleteObjectUndo = true;
             Editor.UndoManager.RegisterCompleteObjectUndo(this, initializingContext);
         }
 
-        private bool _registeredCompleteObjectUndo;
-        protected void RegisterCompleteObjectUndo(DisposeContext disposeContext = DisposeContext.Editor_Destroy)
+        public void RegisterCompleteObjectUndo()
         {
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                MarkAsNotPoolable();
-                if (!_registeredCompleteObjectUndo)
-                {
-                    _registeredCompleteObjectUndo = true;
-                    Editor.UndoManager.RegisterCompleteObjectUndo(this);
-                }
-            }
+            Editor.UndoManager.RegisterCompleteObjectUndo(this);
         }
 
-        private void ResetRegisterCompleteUndo()
+        public void RegisterCompleteObjectUndo(DisposeContext disposeContext)
         {
-            _registeredCompleteObjectUndo = false;
+            Editor.UndoManager.RegisterCompleteObjectUndo(this, disposeContext);
+        }
+
+        public void RegisterCompleteObjectUndo(InitializationContext initializingContext)
+        {
+            Editor.UndoManager.RegisterCompleteObjectUndo(this, initializingContext);
         }
 #endif
 

@@ -2,6 +2,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace DepictionEngine
 {
@@ -27,25 +28,12 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private Object _target;
 
-        private TransformDouble _targetTransform;
-
         protected override void IterateOverComponentReference(Action<SerializableGuid, Action> callback)
         {
             base.IterateOverComponentReference(callback);
 
             if (_targetId != null)
                 callback(_targetId, UpdateTarget);
-        }
-
-        protected override bool Initialize(InitializationContext initializingContext)
-        {
-            if (base.Initialize(initializingContext))
-            {
-                UpdateTargetTransform();
-
-                return true;
-            }
-            return false;
         }
 
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
@@ -68,10 +56,6 @@ namespace DepictionEngine
                 if (!IsDisposing())
                     AddTargetDelegate(target);
 
-                RemoveTargetTransformDelegate(targetTransform);
-                if (!IsDisposing())
-                    AddTargetTranformsDelegate(targetTransform);
-
                 return true;
             }
             return false;
@@ -80,31 +64,18 @@ namespace DepictionEngine
         private void RemoveTargetDelegate(Object target)
         {
             if (target is not null)
-                target.PropertyAssignedEvent -= TargetPropertyAssignedHandler;
+                target.TransformChangedEvent -= TargetTransformChangedHandler;
         }
 
         private void AddTargetDelegate(Object target)
         {
             if (target != Disposable.NULL)
-                target.PropertyAssignedEvent += TargetPropertyAssignedHandler;
+                target.TransformChangedEvent += TargetTransformChangedHandler;
         }
 
-        private void TargetPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
+        protected void TargetTransformChangedHandler(TransformBase.Component changedComponent, TransformBase.Component capturedComponent)
         {
-            if (name == nameof(Object.transform))
-                UpdateTargetTransform();
-        }
-
-        private void RemoveTargetTransformDelegate(TransformDouble targetTransform)
-        {
-            if (targetTransform is not null)
-                targetTransform.ChangedEvent -= TargetTransformChanged;
-        }
-
-        private void AddTargetTranformsDelegate(TransformDouble targetTransform)
-        {
-            if (targetTransform != Disposable.NULL)
-                targetTransform.ChangedEvent += TargetTransformChanged;
+            TargetTransformChanged(changedComponent, capturedComponent);
         }
 
         protected virtual void TargetTransformChanged(TransformBase.Component changedComponent, TransformBase.Component capturedComponent)
@@ -112,7 +83,7 @@ namespace DepictionEngine
             bool rotationChanged = changedComponent.HasFlag(TransformBase.Component.Rotation);
             bool positionChanged = changedComponent.HasFlag(TransformBase.Component.Position);
 
-            if (!_forcingTargetTransformUpdate && (rotationChanged || positionChanged))
+            if ((rotationChanged || positionChanged) && !_forcingTargetTransformUpdate)
                 ForceUpdateTransform(true, true);
         }
 
@@ -209,7 +180,7 @@ namespace DepictionEngine
                 if (newValue != Disposable.NULL)
                     newValue.targetController = this;
 
-                UpdateTargetTransform();
+                ForceUpdateTransform();
 
                 TargetChanged(newValue, oldValue);
             });
@@ -220,40 +191,9 @@ namespace DepictionEngine
 
         }
 
-        private void UpdateTargetTransform()
-        {
-            targetTransform = target != Disposable.NULL ? target.transform : null;
-        }
-
         public GeoAstroObject GetTargetParentGeoAstroObject()
         {
-            return targetTransform != Disposable.NULL ? targetTransform.parentGeoAstroObject : null;
-        }
-
-        public TransformDouble targetTransform
-        {
-            get { return _targetTransform; }
-            private set 
-            { 
-                if (SetTargetTransform(value))
-                    ForceUpdateTransform();
-            }
-        }
-
-        protected virtual bool SetTargetTransform(TransformDouble value)
-        {
-            if (Object.ReferenceEquals(_targetTransform, value))
-                return false;
-
-            TransformDouble oldValue = _targetTransform;
-            TransformDouble newValue = value;
-
-            _targetTransform = newValue;
-
-            RemoveTargetTransformDelegate(oldValue);
-            AddTargetTranformsDelegate(newValue);
-
-            return true;
+            return target.transform != Disposable.NULL ? target.transform.parentGeoAstroObject : null;
         }
 
         public bool SetTargetPosition(Vector3Double value, bool forceUpdate = true)
@@ -262,11 +202,11 @@ namespace DepictionEngine
                 _forcingTargetTransformUpdate = true;
 
             bool targetPositionChanged = false;
-            if (targetTransform != Disposable.NULL)
+            if (target.transform != Disposable.NULL)
             {
-                if (targetTransform.position != value)
+                if (target.transform.position != value)
                 {
-                    targetTransform.position = value;
+                    target.transform.position = value;
                     targetPositionChanged = true;
                 }
             }
@@ -366,7 +306,7 @@ namespace DepictionEngine
         {
             base.UpdateControllerTransform(camera);
 
-            if (camera != Disposable.NULL && camera == objectBase && targetTransform != Disposable.NULL)
+            if (camera != Disposable.NULL && camera == objectBase && target.transform != Disposable.NULL)
             {
                 UpdateTargetControllerTransform(camera);
 
@@ -389,7 +329,7 @@ namespace DepictionEngine
         {
             if (base.TransformControllerCallback(localPositionParam, localRotationParam, localScaleParam, camera))
             {
-                if (targetTransform != Disposable.NULL && targetTransform != transform)
+                if (target != Disposable.NULL && target.transform != Disposable.NULL && target.transform != transform)
                 {
                     if (target.controller != Disposable.NULL)
                     {
@@ -422,7 +362,7 @@ namespace DepictionEngine
 
                     localRotationParam.SetValue(transform.parent != Disposable.NULL ? QuaternionDouble.Inverse(transform.parent.rotation) * rotation : rotation);
 
-                    Vector3Double position = GetCameraPosition(targetTransform.position, rotation, distance);
+                    Vector3Double position = GetCameraPosition(target.transform.position, rotation, distance);
 
                     if (localPositionParam.isGeoCoordinate)
                     {

@@ -31,8 +31,6 @@ namespace DepictionEngine.Editor
                     if (serializedProperty.NextVisible(true))
                         AddPropertyFields(serializedProperty);
                 }
-
-                UndoManager.FlushUndoRecordObjects();
             }
             else
                 base.OnInspectorGUI();
@@ -41,7 +39,7 @@ namespace DepictionEngine.Editor
         protected virtual void AddPropertyFields(SerializedProperty serializedProperty)
         {
             //Top Menu Button Bar
-            if (!IsFallbackValues(serializedProperty.serializedObject) && (serializedObject.targetObject is IProperty || serializedObject.targetObject is TransformBase || serializedObject.targetObject is Script))
+            if (!IsFallbackValues(serializedProperty.serializedObject.targetObject) && (serializedObject.targetObject is IProperty || serializedObject.targetObject is TransformBase || serializedObject.targetObject is Script))
             {
                 IProperty property = serializedObject.targetObject as IProperty;
 
@@ -247,7 +245,7 @@ namespace DepictionEngine.Editor
                                         {
                                             object value = GetValue(serializedProperty);
 
-                                            string undoGroupName = null;
+                                            string undoGroupName = "Modified Property in " + (targetObjects.Length == 1 ? targetObjects[0].name : "Multiple Objects");
 
                                             if (propertyInfo.Name == TransformDouble.GetLocalEditorEulerAnglesHintName())
                                                 undoGroupName = "Set Rotation";
@@ -264,35 +262,10 @@ namespace DepictionEngine.Editor
                                                 undoGroupName += serializedProperty.serializedObject.targetObjects.Length == 1 ? firstTargetObject.name : "Selected Objects";
                                             }
 
-                                            RecordAdditionalObjectsAttribute recordAdditionalObjectsAttribute = propertyInfo.GetCustomAttribute<RecordAdditionalObjectsAttribute>();
-                                            if (recordAdditionalObjectsAttribute != null)
-                                            {
-                                                MethodInfo methodInfo = MemberUtility.GetMethodInfoFromMethodName(targetObjects[0], recordAdditionalObjectsAttribute.methodName);
-                                                if (methodInfo != null)
-                                                {
-                                                    foreach (UnityEngine.Object targetObject in targetObjects)
-                                                    {
-                                                        UnityEngine.Object[] additionalObjects = methodInfo.Invoke(targetObject, null) as UnityEngine.Object[];
-                                                        if (additionalObjects != null && additionalObjects.Length > 0)
-                                                            RecordObjects(additionalObjects, undoGroupName);
-                                                    }
-                                                }
-                                                else
-                                                    Debug.LogError("RecordAdditionalObjectsAttribute method '" + recordAdditionalObjectsAttribute.methodName + "' not found!");
-                                            }
-
-                                            RecordObjects(targetObjects, undoGroupName);
+                                            UndoManager.QueueSetCurrentGroupName(undoGroupName);
 
                                             foreach (UnityEngine.Object targetObject in targetObjects)
-                                            {
-                                                if (targetObject is IScriptableBehaviour)
-                                                {
-                                                    if (!IsFallbackValues(serializedProperty.serializedObject))
-                                                        SetPropertyValue(targetObject as IScriptableBehaviour, propertyInfo, value);
-                                                    else
-                                                        propertyInfo.SetValue(targetObject, value);
-                                                }
-                                            }
+                                                SetPropertyValue(targetObject, propertyInfo, value);
                                         }
                                     }
                                     else
@@ -353,7 +326,7 @@ namespace DepictionEngine.Editor
 
             AddAdditionalEditor(serializedProperty);
         
-            if (!IsFallbackValues(serializedProperty.serializedObject))
+            if (!IsFallbackValues(serializedProperty.serializedObject.targetObject))
                 AddHelpBox();
         }
 
@@ -362,22 +335,37 @@ namespace DepictionEngine.Editor
 
         }
 
-        protected void RecordObjects(UnityEngine.Object[] targetObjects, string undoGroupName = null)
+        protected void SetPropertyValue(UnityEngine.Object targetObject, PropertyInfo propertyInfo, object value)
         {
-            SceneManager.RecordObjects(targetObjects, undoGroupName);
-        }
-
-        protected void RecordObject(UnityEngine.Object targetObject, string undoGroupName = null)
-        {
-            SceneManager.RecordObject(targetObject, undoGroupName);
-        }
-
-        protected void SetPropertyValue(IScriptableBehaviour targetObject, PropertyInfo propertyInfo, object value)
-        {
-            if (targetObject.isFallbackValues)
-                SceneManager.SetInspectorPropertyValue(targetObject, propertyInfo, value);
+            if (IsFallbackValues(targetObject))
+            {
+                UndoManager.RecordObject(targetObject);
+                if (targetObject is Object)
+                    UndoManager.RecordObject((targetObject as Object).objectAdditionalFallbackValues);
+                propertyInfo.SetValue(targetObject, value);
+            }
             else
-                SceneManager.QueuePropertyValueChange(targetObject, propertyInfo, value);
+            {
+                UndoManager.QueueRecordObjectWrapper(targetObject, () =>
+                {
+                    UnityEngine.Object[] additionalTargetObjects = null;
+
+                    RecordAdditionalObjectsAttribute recordAdditionalObjectsAttribute = propertyInfo.GetCustomAttribute<RecordAdditionalObjectsAttribute>();
+                    if (recordAdditionalObjectsAttribute != null)
+                    {
+                        MethodInfo methodInfo = MemberUtility.GetMethodInfoFromMethodName(targetObject, recordAdditionalObjectsAttribute.methodName);
+                        if (methodInfo != null)
+                            additionalTargetObjects = methodInfo.Invoke(targetObject, null) as UnityEngine.Object[];
+                        else
+                            Debug.LogError("RecordAdditionalObjectsAttribute method '" + recordAdditionalObjectsAttribute.methodName + "' not found!");
+                    }
+
+                    if (additionalTargetObjects != null && additionalTargetObjects.Length > 0)
+                        UndoManager.RecordObjects(additionalTargetObjects);
+
+                    SceneManager.UserContext(() => { propertyInfo.SetValue(targetObject, value); });
+                });
+            }
         }
 
         private static string GetName(string name)
@@ -618,9 +606,9 @@ namespace DepictionEngine.Editor
             return GetConditionalShowAttributeMethodValue(customAttributes, serializedProperty);
         }
 
-        public static bool IsFallbackValues(SerializedObject serializedObject)
+        public static bool IsFallbackValues(UnityEngine.Object targetObject)
         {
-            return serializedObject.targetObject is IScriptableBehaviour ? (serializedObject.targetObject as IScriptableBehaviour).isFallbackValues : false;
+            return targetObject is IScriptableBehaviour ? (targetObject as IScriptableBehaviour).isFallbackValues : false;
         }
 
         [Serializable]

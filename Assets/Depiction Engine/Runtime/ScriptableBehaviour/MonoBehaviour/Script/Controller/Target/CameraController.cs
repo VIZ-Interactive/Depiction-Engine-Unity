@@ -123,7 +123,7 @@ namespace DepictionEngine
 
         protected override QuaternionDouble GetRotation()
         {
-            return targetTransform.rotation * QuaternionDouble.Euler(Math.Max(forwardVector.x, GetMinForwardVectorX()), forwardVector.y, forwardVector.z);
+            return target.transform.rotation * QuaternionDouble.Euler(Math.Max(forwardVector.x, GetMinForwardVectorX()), forwardVector.y, forwardVector.z);
         }
 
         protected override double GetMinForwardVectorX()
@@ -323,9 +323,9 @@ namespace DepictionEngine
         /// <param name="toDistance"></param>
         public void MoveTo(GeoCoordinate3Double geoCoordinate, float duration = 3.0f, double toDistance = 200.0d)
         {
-            if (targetTransform != Disposable.NULL)
+            if (target.transform != Disposable.NULL)
             { 
-                GeoAstroObject targetParentGeoAstroObject = targetTransform.parentGeoAstroObject;
+                GeoAstroObject targetParentGeoAstroObject = target.transform.parentGeoAstroObject;
                 if (targetParentGeoAstroObject != Disposable.NULL)
                     MoveTo(targetParentGeoAstroObject.GetPointFromGeoCoordinate(geoCoordinate), toDistance, duration);
             }
@@ -338,7 +338,7 @@ namespace DepictionEngine
         /// <param name="toDistance"></param>
         public void MoveTo(Vector3Double position, double toDistance = 200.0d)
         {
-            if (targetTransform != Disposable.NULL)
+            if (target.transform != Disposable.NULL)
             {
                 Vector3Double moveToCameraPosition = CameraController.GetTargetPosition(position, transform.rotation, -toDistance);
                 float duration = (float)(Math.Log(Vector3Double.Distance(transform.position, moveToCameraPosition)) / 2.0d);
@@ -355,17 +355,17 @@ namespace DepictionEngine
         /// <param name="duration"></param>
         public void MoveTo(Vector3Double position, double toDistance = 200.0d, float duration = 3.0f)
         {
-            if (targetTransform != Disposable.NULL)
+            if (target.transform != Disposable.NULL)
             {
                 Camera camera = objectBase as Camera;
-                bool isGeoCoordinateTransform = targetTransform.isGeoCoordinateTransform;
+                bool isGeoCoordinateTransform = target.transform.isGeoCoordinateTransform;
 
                 if (target.animator != Disposable.NULL && target.animator is TransformAnimator)
                 {
                     EasingType easing = EasingType.QuintEaseOut;
                     TransformAnimator transformAnimator = target.animator as TransformAnimator;
                     if (isGeoCoordinateTransform)
-                        transformAnimator.SetGeoCoordinate(targetTransform.parentGeoAstroObject.GetGeoCoordinateFromPoint(position), duration, easing);
+                        transformAnimator.SetGeoCoordinate(target.transform.parentGeoAstroObject.GetGeoCoordinateFromPoint(position), duration, easing);
                     else
                         transformAnimator.SetPosition(position, duration, easing);
                 }
@@ -381,7 +381,7 @@ namespace DepictionEngine
 
                         AnimationCurve animationCurve = new();
                         animationCurve.AddKey(new Keyframe(0.0f, (float)fromDistance));
-                        animationCurve.AddKey(new Keyframe(0.5f, (float)Math.Max(Vector3Double.Distance(targetTransform.position, position) * 0.5d, fromDistance + (toDistance - fromDistance) * 0.5d)));
+                        animationCurve.AddKey(new Keyframe(0.5f, (float)Math.Max(Vector3Double.Distance(target.transform.position, position) * 0.5d, fromDistance + (toDistance - fromDistance) * 0.5d)));
                         animationCurve.AddKey(new Keyframe(1.0f, (float)toDistance));
 
                         for (int i = 0; i < animationCurve.keys.Length; ++i)
@@ -404,9 +404,9 @@ namespace DepictionEngine
         {
             int zoom = -1;
 
-            if (targetTransform != Disposable.NULL)
+            if (target.transform != Disposable.NULL)
             {
-                GeoAstroObject targetParentGeoAstroObject = targetTransform.parentGeoAstroObject;
+                GeoAstroObject targetParentGeoAstroObject = target.transform.parentGeoAstroObject;
 
                 if (targetParentGeoAstroObject != Disposable.NULL)
                 {
@@ -422,9 +422,9 @@ namespace DepictionEngine
         {
             double distance = -1.0d;
 
-            if (targetTransform != Disposable.NULL)
+            if (target.transform != Disposable.NULL)
             {
-                GeoAstroObject targetParentGeoAstroObject = targetTransform.parentGeoAstroObject;
+                GeoAstroObject targetParentGeoAstroObject = target.transform.parentGeoAstroObject;
 
                 if (targetParentGeoAstroObject != Disposable.NULL)
                 {
@@ -445,7 +445,7 @@ namespace DepictionEngine
                 TransformAnimator targetAnimator = target.animator as TransformAnimator;
                             
                 TargetControllerAnimator objectAnimator = objectBase.animator as TargetControllerAnimator;
-                GeoAstroObject targetParentGeoAstroObject = targetTransform.parentGeoAstroObject;
+                GeoAstroObject targetParentGeoAstroObject = target.transform.parentGeoAstroObject;
 
                 Vector2 screenPoint = inputManager.GetScreenCenter();
                 int fingerMouseCount = inputManager.GetFingerMouseCount();
@@ -514,11 +514,11 @@ namespace DepictionEngine
                         if (hits.Length > 0)
                         {
                             RaycastHitDouble hit = hits[0];
-                            if (hit.transform.parentGeoAstroObject == targetTransform.parentGeoAstroObject)
+                            if (hit.transform.parentGeoAstroObject == target.transform.parentGeoAstroObject)
                             {
                                 animate = true;
-                                Vector3Double relativePosition = hits[0].point - targetTransform.position;
-                                newPosition = targetTransform.position + (relativePosition.normalized * (relativePosition.magnitude * (-distanceDelta / distance)));
+                                Vector3Double relativePosition = hits[0].point - target.transform.position;
+                                newPosition = target.transform.position + (relativePosition.normalized * (relativePosition.magnitude * (-distanceDelta / distance)));
                             }
                         }
 
@@ -540,7 +540,7 @@ namespace DepictionEngine
                                     GeoCoordinate3Double hitGeoCoordinate = targetParentGeoAstroObject.GetGeoCoordinateFromPoint(hit.point);
                                     GeoCoordinate3Double cameraGeoCoordinate = targetParentGeoAstroObject.GetGeoCoordinateFromPoint(camera.transform.position);
                                     if (hitGeoCoordinate.altitude < cameraGeoCoordinate.altitude - 10.0d)
-                                        _collisionSnapshot.TakeSnapshot(camera, targetParentGeoAstroObject.transform, targetParentGeoAstroObject.transform.InverseTransformPoint(targetTransform.position), targetParentGeoAstroObject.transform.InverseTransformPoint(hit.point), !targetParentGeoAstroObject.IsFlat());
+                                        _collisionSnapshot.TakeSnapshot(camera, targetParentGeoAstroObject.transform, targetParentGeoAstroObject.transform.InverseTransformPoint(target.transform.position), targetParentGeoAstroObject.transform.InverseTransformPoint(hit.point), !targetParentGeoAstroObject.IsFlat());
                                 }
                             }
                         }
@@ -548,7 +548,7 @@ namespace DepictionEngine
                         if (_collisionSnapshot.ready && _collisionSnapshot.GetNewLocalPosition(out Vector3Double newCollisionPosition, screenPoint))
                         {
                             newPosition = targetParentGeoAstroObject.transform.TransformPoint(newCollisionPosition);
-                            SetInertia(newPosition.Value - targetTransform.position);
+                            SetInertia(newPosition.Value - target.transform.position);
                         }
                         else
                             AddInertia(targetParentGeoAstroObject);
@@ -556,21 +556,21 @@ namespace DepictionEngine
 
                     if (newPosition.HasValue)
                     {
-                        if (targetTransform.isGeoCoordinateTransform)
+                        if (target.transform.isGeoCoordinateTransform)
                         {
                             GeoCoordinate3Double geoCoordinate = targetParentGeoAstroObject.GetGeoCoordinateFromPoint(newPosition.Value);
                             if (animate && targetAnimator != Disposable.NULL)
                                 targetAnimator.SetGeoCoordinate(geoCoordinate, animationDuration);
                             else
-                                targetTransform.geoCoordinate = geoCoordinate;
+                                target.transform.geoCoordinate = geoCoordinate;
                         }
                         else
                         {
-                            Vector3Double newLocalPosition = targetTransform.parent.InverseTransformPoint(newPosition.Value);
+                            Vector3Double newLocalPosition = target.transform.parent.InverseTransformPoint(newPosition.Value);
                             if (animate && targetAnimator != Disposable.NULL)
                                 targetAnimator.SetLocalPosition(newLocalPosition, animationDuration);
                             else
-                                targetTransform.localPosition = newLocalPosition;
+                                target.transform.localPosition = newLocalPosition;
                         }
                     }
                 }
@@ -584,7 +584,7 @@ namespace DepictionEngine
 
             if (dynamicClippingPlanes)
             {
-                camera.farClipPlane = Mathf.Clamp((float)(Vector3Double.Distance(transform.position, targetTransform.position) * clippingDistanceMultiplier), minMaxFarClippingDistance.x, minMaxFarClippingDistance.y);
+                camera.farClipPlane = Mathf.Clamp((float)(Vector3Double.Distance(transform.position, target.transform.position) * clippingDistanceMultiplier), minMaxFarClippingDistance.x, minMaxFarClippingDistance.y);
                 camera.nearClipPlane = camera.farClipPlane / 3333.333f;
             }
         }
@@ -625,11 +625,11 @@ namespace DepictionEngine
         {
             if (inertia.magnitude > 0.0f)
             {
-                Vector3Double newPosition = targetTransform.position + inertia;
-                if (targetTransform.isGeoCoordinateTransform)
-                    targetTransform.geoCoordinate = targetParentGeoAstroObject.GetGeoCoordinateFromPoint(newPosition);
+                Vector3Double newPosition = target.transform.position + inertia;
+                if (target.transform.isGeoCoordinateTransform)
+                    target.transform.geoCoordinate = targetParentGeoAstroObject.GetGeoCoordinateFromPoint(newPosition);
                 else
-                    targetTransform.localPosition = targetTransform.parent.InverseTransformPoint(newPosition);
+                    target.transform.localPosition = target.transform.parent.InverseTransformPoint(newPosition);
             }
         }
 

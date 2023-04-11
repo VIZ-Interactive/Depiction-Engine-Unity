@@ -40,22 +40,13 @@ namespace DepictionEngine.Editor
 
         public static TransformDouble activeTransform
         {
-            get 
-            {
-                TransformDouble activeTransformDouble = null;
-
-                if (UnityEditor.Selection.activeTransform != null)
-                    activeTransformDouble = UnityEditor.Selection.activeTransform.GetComponent<TransformDouble>();
-                
-                return activeTransformDouble;
-            }
-            set { UnityEditor.Selection.activeTransform = value != Disposable.NULL ? value.transform : null; }
+            get => UnityEditor.Selection.activeTransform != null ? UnityEditor.Selection.activeTransform.GetComponent<TransformDouble>() : null;
+            set => UnityEditor.Selection.activeTransform = value != Disposable.NULL ? value.transform : null;
         }
 
         public static List<TransformDouble> GetTransforms()
         {
-            if (_transformDoublesList == null)
-                _transformDoublesList = new List<TransformDouble>();
+            _transformDoublesList ??= new();
             _transformDoublesList.Clear();
 
             foreach (Transform transform in UnityEditor.Selection.transforms)

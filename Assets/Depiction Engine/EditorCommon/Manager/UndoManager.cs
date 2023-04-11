@@ -7,15 +7,24 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using static UnityEngine.Rendering.DebugUI;
+using System.Runtime.InteropServices;
 
 namespace DepictionEngine.Editor
 {
     public class UndoManager
     {
+        [Flags]
         private enum UndoOperationType
         {
-            Created,
-            Complete
+            Created = 1 << 0,
+            FullObjectHierarchy = 1 << 1,
+            Complete = 1 << 2,
+            RecordObject = 1 << 3,
+            RecordObjectWrapper = 1 << 4,
+            CreateNewGroup = 1 << 5,
+            SetCurrentGroupName = 1 << 6,
+            SetActiveTransform = 1 << 7
         };
 
         private static List<UnityEngine.Object> _validatedObjects;
@@ -25,8 +34,7 @@ namespace DepictionEngine.Editor
         private static int _currentGroupIndex;
         private static string _currentGroupName;
 
-        private static bool _processingEditorCopyPasteOrDuplicateOrDragDropComponent;
-        private static List<Tuple<UnityEngine.Object, UndoOperationType>> _undoOperationsQueue;
+        private static Dictionary<int, Tuple<UndoOperationType, UnityEngine.Object, object, Action>> _undoOperationsQueue;
 
         /// <summary>
         /// Dispatched at the same time as <see cref="UnityEditor.Undo.undoRedoPerformed"/>.
@@ -43,13 +51,6 @@ namespace DepictionEngine.Editor
         private static void UndoRedoPerformed()
         {
             UndoRedoPerformedEvent?.Invoke();
-        }
-
-        private static void QueueUndoOperation(UnityEngine.Object objectToUndo, UndoOperationType undoType)
-        {
-            _undoOperationsQueue ??= new List<Tuple<UnityEngine.Object, UndoOperationType>>();
-
-            _undoOperationsQueue.Add(Tuple.Create(objectToUndo, undoType));
         }
 
         private static MethodInfo _getRecordsMethodInfo;
@@ -69,15 +70,17 @@ namespace DepictionEngine.Editor
             return Undo.GetCurrentGroup();
         }
 
-        private static bool CaptureEditorCurrentGroupChange()
+        private static bool DetectEditorCurrentGroupChange()
         {
-            bool currentGroupNameChanged = SetCurrentGroupName(Undo.GetCurrentGroupName());
+            bool currentGroupChanged = SetCurrentGroupName(Undo.GetCurrentGroupName());
 
             int index = Undo.GetCurrentGroup();
             if (_currentGroupIndex != index)
+            {
                 _currentGroupIndex = index;
-
-            return currentGroupNameChanged;
+                currentGroupChanged = true;
+            }
+            return currentGroupChanged;
         }
 
         public static string GetCurrentGroupName()
@@ -90,43 +93,70 @@ namespace DepictionEngine.Editor
         /// </summary>
         /// <param name="name"></param>
         /// <param name="initializingContext"></param>
-        public static void CreateNewGroup(string name, InitializationContext initializingContext = InitializationContext.Editor)
+        public static void QueueCreateNewGroup(string name)
         {
-            if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate)
-            {
-                IncrementCurrentGroup();
-                currentGroupName = name;
-            }
+            QueueUndoOperation(UndoOperationType.CreateNewGroup, null, name);
         }
 
-        private static string currentGroupName
+        /// <summary>
+        /// Increment current group index and change its name.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="initializingContext"></param>
+        public static void CreateNewGroup(string name)
         {
-            get { return _currentGroupName; }
-            set { SetCurrentGroupName(value); }
+            IncrementCurrentGroup();
+            currentGroupName = name;
         }
 
         /// <summary>
         /// Set the name of the current undo group.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="name"></param>
         /// <returns></returns>
-        public static bool SetCurrentGroupName(string value)
+        public static void QueueSetCurrentGroupName(string name)
         {
-            if (_currentGroupName == value)
+            QueueUndoOperation(UndoOperationType.SetCurrentGroupName, null, name);
+        }
+
+        /// <summary>
+        /// Set the name of the current undo group.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public static bool SetCurrentGroupName(string name)
+        {
+            if (_currentGroupName == name)
                 return false;
 
-            _currentGroupName = value;
+            _currentGroupName = name;
 
-            SetUnityCurrentGroupName(value);
+            SetUnityCurrentGroupName(name);
 
             return true;
         }
 
-        private static string SetUnityCurrentGroupName(string name)
+        private static string currentGroupName
+        {
+            get => _currentGroupName;
+            set => SetCurrentGroupName(value);
+        }
+
+        public static int currentGroupIndex
+        {
+            get => _currentGroupIndex;
+        }
+
+        private static bool SetUnityCurrentGroupName(string name)
         {
             if (Undo.GetCurrentGroupName() != name)
+            {
                 Undo.SetCurrentGroupName(name);
-            return name;
+                DetectEditorCurrentGroupChange();
+
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -135,181 +165,7 @@ namespace DepictionEngine.Editor
         public static void IncrementCurrentGroup()
         {
             Undo.IncrementCurrentGroup();
-        }
-
-        /// <summary>
-        /// Registers an undo operation to undo the creation of an object.
-        /// </summary>
-        /// <param name="objectToUndo"></param>
-        /// <param name="initializingContext"></param>
-        public static void RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext = InitializationContext.Editor)
-        {
-            if (!IsValidUnityObject(objectToUndo))
-                return;
-
-            //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the wrong Group
-            //Fix: We Queue the operation to perform it later(at the Beginning of the next Update) when the Undo Group name as been updated
-            if (initializingContext == InitializationContext.Editor_Duplicate)
-            {
-                QueueUndoOperation(objectToUndo, UndoOperationType.Created);
-                _processingEditorCopyPasteOrDuplicateOrDragDropComponent = true;
-            }
-            else if (initializingContext == InitializationContext.Editor)
-                RegisterCreatedObjectUndo(objectToUndo);
-        }
-
-        private static void RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo)
-        {
-            Undo.RegisterCreatedObjectUndo(objectToUndo, Undo.GetCurrentGroupName());
-        }
-
-        /// <summary>
-        /// Stores a copy of the object states on the undo stack.
-        /// </summary>
-        /// <param name="objectToUndo"></param>
-        /// <param name="initializingContext"></param>
-        public static void RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext = InitializationContext.Editor)
-        {
-            if (!IsValidUnityObject(objectToUndo))
-                return;
-
-            //Problem : When a CopyPaste or Duplicate or DragDrop_Component operation is performed in the Editor an Undo operation is recorded but the Undo.GetCurrentGroupName will not be updated until after the Awake() is called. Generating a new Undo operation at this time will associate it with the previous Group
-            //Fix: We Queue the operation to perform it later(at the Beginning of the next Update) when the Undo Group name as been updated
-            if (initializingContext == InitializationContext.Editor_Duplicate)
-            {
-                QueueUndoOperation(objectToUndo, UndoOperationType.Complete);
-                _processingEditorCopyPasteOrDuplicateOrDragDropComponent = true;
-            }
-            else if (initializingContext == InitializationContext.Editor)
-                RegisterCompleteObjectUndo(objectToUndo);
-        }
-
-        private static void RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo)
-        {
-            Undo.RegisterCompleteObjectUndo(objectToUndo, Undo.GetCurrentGroupName());
-        }
-
-        /// <summary>
-        /// Copy the states of a hierarchy of objects onto the undo stack.
-        /// </summary>
-        /// <param name="objectToUndo"></param>
-        public static void RegisterFullObjectHierarchyUndo(UnityEngine.Object objectToUndo)
-        {
-            if (!IsValidUnityObject(objectToUndo))
-                return;
-
-            Undo.RegisterFullObjectHierarchyUndo(objectToUndo, Undo.GetCurrentGroupName());
-        }
-
-        /// <summary>
-        /// Records any changes done on the object after the RecordObject function.
-        /// </summary>
-        /// <param name="objectToUndo"></param>
-        public static void RecordObject(UnityEngine.Object objectToUndo, InitializationContext initializingContext = InitializationContext.Editor)
-        {
-            if (!IsValidUnityObject(objectToUndo))
-                return;
-
-            if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate)
-                Undo.RecordObject(objectToUndo, Undo.GetCurrentGroupName());
-        }
-
-        /// <summary>
-        /// Records multiple undoable objects in a single call. This is the same as calling Undo.RecordObject multiple times.
-        /// </summary>
-        /// <param name="objectToUndos"></param>
-        public static void RecordObjects(UnityEngine.Object[] objectToUndos)
-        {
-            int objectToUndosCount = 0;
-
-            foreach (UnityEngine.Object objectToUndo in objectToUndos)
-            {
-                if (IsValidUnityObject(objectToUndo))
-                    objectToUndosCount++;
-            }
-
-            if (objectToUndosCount != 0)
-            {
-                UnityEngine.Object[] filteredObjetToUndos = objectToUndos;
-
-                if (objectToUndos.Length != objectToUndosCount)
-                {
-                    filteredObjetToUndos = new UnityEngine.Object[objectToUndosCount];
-                    for (int i = 0; i < objectToUndos.Length; i++)
-                    {
-                        UnityEngine.Object objectToUndo = objectToUndos[i];
-                        if (IsValidUnityObject(objectToUndo))
-                            filteredObjetToUndos[i] = objectToUndo;
-                    }
-                }
-
-                Undo.RecordObjects(filteredObjetToUndos, Undo.GetCurrentGroupName());
-            }
-        }
-
-        /// <summary>
-        /// Sets the parent of transform to the new parent and records an undo operation.
-        /// </summary>
-        /// <param name="transform"></param>
-        /// <param name="newParent"></param>
-        /// <param name="wordlPositionStays"></param>
-        public static void SetTransformParent(Transform transform, Transform newParent, bool wordlPositionStays, InitializationContext initializingContext = InitializationContext.Editor)
-        {
-            if (!IsValidUnityObject(transform))
-                return;
-
-            if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate)
-                Undo.SetTransformParent(transform, newParent, wordlPositionStays, Undo.GetCurrentGroupName());
-            else
-                transform.transform.SetParent(newParent, wordlPositionStays);
-        }
-
-        /// <summary>
-        /// Sets the parent of transform to the new parent and records an undo operation.
-        /// </summary>
-        /// <param name="transform"></param>
-        /// <param name="newParent"></param>
-        public static void SetTransformParent(Transform transform, Transform newParent, InitializationContext initializingContext = InitializationContext.Editor)
-        {
-            if (!IsValidUnityObject(transform))
-                return;
-
-            if (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate)
-                Undo.SetTransformParent(transform, newParent, Undo.GetCurrentGroupName());
-            else
-                transform.transform.SetParent(newParent);
-        }
-
-        /// <summary>
-        /// Destroys the object and records an undo operation so that it can be recreated.
-        /// </summary>
-        /// <param name="objectToUndo"></param>
-        /// <returns></returns>
-        public static bool DestroyObjectImmediate(UnityEngine.Object objectToUndo)
-        {
-            if (!IsValidUnityObject(objectToUndo))
-                return false;
-
-            Undo.DestroyObjectImmediate(objectToUndo);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Adds a component to the game object and registers an undo operation for this action.
-        /// </summary>
-        /// <param name="gameObject"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public static Component AddComponent(GameObject gameObject, Type type, InitializationContext initializingContext = InitializationContext.Editor)
-        {
-            Component component;
-            if (!SceneManager.IsEditorNamespace(type) && (initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate))
-                component = Undo.AddComponent(gameObject, type);
-            else
-                component = gameObject.AddComponent(type);
-
-            return component;
+            DetectEditorCurrentGroupChange();
         }
 
         /// <summary>
@@ -318,8 +174,7 @@ namespace DepictionEngine.Editor
         public static void RevertAllInCurrentGroup()
         {
             Undo.RevertAllInCurrentGroup();
-            SetCurrentGroupName(Undo.GetCurrentGroupName());
-            _currentGroupIndex = Undo.GetCurrentGroup();
+            DetectEditorCurrentGroupChange();
         }
 
         /// <summary>
@@ -328,6 +183,7 @@ namespace DepictionEngine.Editor
         public static void FlushUndoRecordObjects()
         {
             Undo.FlushUndoRecordObjects();
+            DetectEditorCurrentGroupChange();
         }
 
         /// <summary>
@@ -337,11 +193,574 @@ namespace DepictionEngine.Editor
         public static void CollapseUndoOperations(int groupIndex)
         {
             Undo.CollapseUndoOperations(groupIndex);
+            DetectEditorCurrentGroupChange();
+        }
+
+        /// <summary>
+        /// Registers an undo operation to undo the creation of an object.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="disposeContext "></param>
+        public static bool QueueRegisterCreatedObjectUndo(UnityEngine.Object objectToUndo, DisposeContext disposeContext)
+        {
+            if (IsValidContext(disposeContext))
+            {
+                QueueRegisterCreatedObjectUndo(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Registers an undo operation to undo the creation of an object.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="initializingContext"></param>
+        public static bool QueueRegisterCreatedObjectUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext)
+        {
+            if (IsValidContext(initializingContext))
+            {
+                QueueRegisterCreatedObjectUndo(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Registers an undo operation to undo the creation of an object.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="initializingContext"></param>
+        public static void QueueRegisterCreatedObjectUndo(UnityEngine.Object objectToUndo)
+        {
+            QueueUndoOperation(UndoOperationType.Created, objectToUndo);
+        }
+
+        /// <summary>
+        /// Registers an undo operation to undo the creation of an object.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="disposeContext "></param>
+        public static bool RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo, DisposeContext disposeContext)
+        {
+            if (IsValidContext(disposeContext))
+            {
+                RegisterCreatedObjectUndo(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Registers an undo operation to undo the creation of an object.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="initializingContext"></param>
+        public static bool RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext)
+        {
+            if (IsValidContext(initializingContext))
+            {
+                RegisterCreatedObjectUndo(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Registers an undo operation to undo the creation of an object.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        public static bool RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo)
+        {
+            if (IsValidUnityObject(objectToUndo))
+            {
+                if (IsInitialized(objectToUndo))
+                {
+                    Undo.RegisterCreatedObjectUndo(objectToUndo, Undo.GetCurrentGroupName());
+                    UndoRedoPerformed(objectToUndo, UndoOperationType.Created);
+                }
+                else
+                    QueueUndoOperation(UndoOperationType.Created, objectToUndo);
+
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Stores a copy of the object states on the undo stack.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="disposeContext"></param>
+        public static bool QueueRegisterCompleteObjectUndo(UnityEngine.Object objectToUndo, DisposeContext disposeContext)
+        {
+            if (IsValidContext(disposeContext))
+            {
+                QueueRegisterCreatedObjectUndo(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Stores a copy of the object states on the undo stack.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="initializingContext"></param>
+        public static bool QueueRegisterCompleteObjectUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext)
+        {
+            if (IsValidContext(initializingContext))
+            {
+                QueueRegisterCompleteObjectUndo(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Stores a copy of the object states on the undo stack.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        public static void QueueRegisterCompleteObjectUndo(UnityEngine.Object objectToUndo)
+        {
+            QueueUndoOperation(UndoOperationType.Complete, objectToUndo);
+        }
+
+        /// <summary>
+        /// Stores a copy of the object states on the undo stack.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="disposeContext"></param>
+        public static bool RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo, DisposeContext disposeContext)
+        {
+            if (IsValidContext(disposeContext))
+            {
+                RegisterCompleteObjectUndo(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Stores a copy of the object states on the undo stack.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="initializingContext"></param>
+        public static bool RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext = InitializationContext.Editor)
+        {
+            if (IsValidContext(initializingContext))
+            {
+                RegisterCompleteObjectUndo(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Stores a copy of the object states on the undo stack.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        public static bool RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo)
+        {
+            if (IsValidUnityObject(objectToUndo))
+            {
+                if (IsInitialized(objectToUndo))
+                {
+                    Undo.RegisterCompleteObjectUndo(objectToUndo, Undo.GetCurrentGroupName());
+                    UndoRedoPerformed(objectToUndo, UndoOperationType.Complete);
+                }
+                else
+                    QueueUndoOperation(UndoOperationType.Complete, objectToUndo);
+
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Copy the states of a hierarchy of objects onto the undo stack.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="disposeContext"></param>
+        public static bool RegisterFullObjectHierarchyUndo(UnityEngine.Object objectToUndo, DisposeContext disposeContext)
+        {
+            if (IsValidContext(disposeContext))
+            {
+                RegisterFullObjectHierarchyUndo(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Copy the states of a hierarchy of objects onto the undo stack.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="initializingContext"></param>
+        public static bool RegisterFullObjectHierarchyUndo(UnityEngine.Object objectToUndo, InitializationContext initializingContext)
+        {
+            if (IsValidContext(initializingContext))
+            {
+                RegisterFullObjectHierarchyUndo(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Copy the states of a hierarchy of objects onto the undo stack.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        public static bool RegisterFullObjectHierarchyUndo(UnityEngine.Object objectToUndo)
+        {
+            if (IsValidUnityObject(objectToUndo))
+            {
+                if (IsInitialized(objectToUndo))
+                {
+                    Undo.RegisterFullObjectHierarchyUndo(objectToUndo, Undo.GetCurrentGroupName());
+                    UndoRedoPerformed(objectToUndo, UndoOperationType.FullObjectHierarchy);
+                }
+                else
+                    QueueUndoOperation(UndoOperationType.FullObjectHierarchy, objectToUndo);
+
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Sets the parent of transform to the new parent and records an undo operation.
+        /// </summary>
+        /// <param name="transform"></param>
+        /// <param name="newParent"></param>
+        /// <param name="disposeContext"></param>
+        public static bool SetTransformParent(TransformBase transform, TransformBase newParent, DisposeContext disposeContext)
+        {
+            return SetTransformParent(transform, newParent, false, disposeContext);
+        }
+
+        /// <summary>
+        /// Sets the parent of transform to the new parent and records an undo operation.
+        /// </summary>
+        /// <param name="transform"></param>
+        /// <param name="newParent"></param>
+        /// <param name="worldPositionStays"></param>
+        public static bool SetTransformParent(TransformBase transform, TransformBase newParent, bool worldPositionStays, DisposeContext disposeContext)
+        {
+            if (IsValidContext(disposeContext))
+            {
+                SetTransformParent(transform, newParent, worldPositionStays);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Sets the parent of transform to the new parent and records an undo operation.
+        /// </summary>
+        /// <param name="transform"></param>
+        /// <param name="newParent"></param>
+        public static bool SetTransformParent(TransformBase transform, TransformBase newParent, InitializationContext initializingContext)
+        {
+            return SetTransformParent(transform, newParent, false, initializingContext);
+        }
+
+        /// <summary>
+        /// Sets the parent of transform to the new parent and records an undo operation.
+        /// </summary>
+        /// <param name="transform"></param>
+        /// <param name="newParent"></param>
+        /// <param name="worldPositionStays"></param>
+        public static bool SetTransformParent(TransformBase transform, TransformBase newParent, bool worldPositionStays, InitializationContext initializingContext)
+        {
+            if (IsValidContext(initializingContext))
+            {
+                SetTransformParent(transform, newParent, worldPositionStays);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Sets the parent of transform to the new parent and records an undo operation.
+        /// </summary>
+        /// <param name="transform"></param>
+        /// <param name="newParent"></param>
+        /// <param name="worldPositionStays"></param>
+        public static void SetTransformParent(TransformBase transform, TransformBase newParent, bool worldPositionStays = false)
+        {
+            if (IsValidUnityObject(transform) && IsValidUnityObject(newParent))
+            {
+                if (IsInitialized(transform))
+                {
+                    Undo.SetTransformParent(transform?.transform, newParent?.transform, worldPositionStays, Undo.GetCurrentGroupName());
+                    UndoRedoPerformed(transform);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sets the parent of transform to the new parent and records an undo operation.
+        /// </summary>
+        /// <param name="transform"></param>
+        /// <param name="newParent"></param>
+        /// <param name="disposeContext"></param>
+        public static bool SetTransformParent(Transform transform, Transform newParent, DisposeContext disposeContext)
+        {
+            return SetTransformParent(transform, newParent, false, disposeContext);
+        }
+
+        /// <summary>
+        /// Sets the parent of transform to the new parent and records an undo operation.
+        /// </summary>
+        /// <param name="transform"></param>
+        /// <param name="newParent"></param>
+        /// <param name="worldPositionStays"></param>
+        /// <param name="disposeContext"></param>
+        public static bool SetTransformParent(Transform transform, Transform newParent, bool worldPositionStays, DisposeContext disposeContext)
+        {
+            if (IsValidContext(disposeContext))
+            {
+                SetTransformParent(transform, newParent, worldPositionStays);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Sets the parent of transform to the new parent and records an undo operation.
+        /// </summary>
+        /// <param name="transform"></param>
+        /// <param name="newParent"></param>
+        /// <param name="initializingContext"></param>
+        public static bool SetTransformParent(Transform transform, Transform newParent, InitializationContext initializingContext)
+        {
+            return SetTransformParent(transform, newParent, false, initializingContext);
+        }
+
+        /// <summary>
+        /// Sets the parent of transform to the new parent and records an undo operation.
+        /// </summary>
+        /// <param name="transform"></param>
+        /// <param name="newParent"></param>
+        /// <param name="worldPositionStays"></param>
+        /// <param name="initializingContext"></param>
+        public static bool SetTransformParent(Transform transform, Transform newParent, bool worldPositionStays, InitializationContext initializingContext)
+        {
+            if (IsValidContext(initializingContext))
+            {
+                SetTransformParent(transform, newParent, worldPositionStays);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Sets the parent of transform to the new parent and records an undo operation.
+        /// </summary>
+        /// <param name="transform"></param>
+        /// <param name="newParent"></param>
+        /// <param name="worldPositionStays"></param>
+        public static void SetTransformParent(Transform transform, Transform newParent, bool worldPositionStays = false)
+        {
+            if (IsValidUnityObject(transform) && IsValidUnityObject(newParent))
+            {
+                Undo.SetTransformParent(transform, newParent, worldPositionStays, Undo.GetCurrentGroupName());
+                UndoRedoPerformed(transform);
+            }
+        }
+
+        /// <summary>
+        /// Records multiple undoable objects in a single call. This is the same as calling Undo.RecordObject multiple times.
+        /// </summary>
+        /// <param name="objectsToUndo"></param>
+        /// <param name="disposeContext"></param>
+        public static bool RecordObjects(UnityEngine.Object[] objectsToUndo, DisposeContext disposeContext)
+        {
+            if (IsValidContext(disposeContext))
+            {
+                RecordObjects(objectsToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Records multiple undoable objects in a single call. This is the same as calling Undo.RecordObject multiple times.
+        /// </summary>
+        /// <param name="objectsToUndo"></param>
+        /// <param name="initializingContext"></param>
+        public static bool RecordObjects(UnityEngine.Object[] objectsToUndo, InitializationContext initializingContext)
+        {
+            if (IsValidContext(initializingContext))
+            {
+                RecordObjects(objectsToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Records multiple undoable objects in a single call. This is the same as calling Undo.RecordObject multiple times.
+        /// </summary>
+        /// <param name="objectsToUndo"></param>
+        public static void RecordObjects(UnityEngine.Object[] objectsToUndo)
+        {
+            foreach (UnityEngine.Object objectToUndo in objectsToUndo)
+                RecordObject(objectToUndo);
+        }
+
+        /// <summary>
+        /// Records any changes done on the object after the RecordObject function.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="initializingContext"></param>
+        public static bool RecordObject(UnityEngine.Object objectToUndo, DisposeContext disposeContext)
+        {
+            if (IsValidContext(disposeContext))
+            {
+                RecordObject(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Records any changes done on the object after the RecordObject function.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <param name="initializingContext"></param>
+        public static bool RecordObject(UnityEngine.Object objectToUndo, InitializationContext initializingContext)
+        {
+            if (IsValidContext(initializingContext))
+            {
+                RecordObject(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Records any changes done on the object after the RecordObject function.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        public static bool RecordObject(UnityEngine.Object objectToUndo)
+        {
+            if (IsValidUnityObject(objectToUndo) && IsInitialized(objectToUndo))
+            {
+                Undo.RecordObject(objectToUndo, Undo.GetCurrentGroupName());
+                UndoRedoPerformed(objectToUndo, UndoOperationType.RecordObject);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Adds a component to the game object and registers an undo operation for this action.
+        /// </summary>
+        /// <param name="gameObject"></param>
+        /// <param name="type"></param>
+        /// <param name="component"></param>
+        /// <param name="initializingContext"></param>
+        /// <returns></returns>
+        public static bool AddComponent(GameObject gameObject, Type type, ref Component component, InitializationContext initializingContext)
+        {
+            if (IsValidContext(initializingContext))
+            {
+                AddComponent(gameObject, type, ref component);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Adds a component to the game object and registers an undo operation for this action.
+        /// </summary>
+        /// <param name="gameObject"></param>
+        /// <param name="type"></param>
+        /// <param name="component"></param>
+        /// <returns></returns>
+        public static bool AddComponent(GameObject gameObject, Type type, ref Component component)
+        {
+            if (IsValidUnityObject(gameObject) && !SceneManager.IsEditorNamespace(type))
+            {
+                component = Undo.AddComponent(gameObject, type);
+                UndoRedoPerformed(component);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Destroys the object and records an undo operation so that it can be recreated.
+        /// </summary>
+        /// <param name="objectToUndo"></param>
+        /// <returns></returns>
+        public static bool DestroyObjectImmediate(UnityEngine.Object objectToUndo)
+        {
+            if (IsValidUnityObject(objectToUndo))
+            {
+                Undo.DestroyObjectImmediate(objectToUndo);
+                UndoRedoPerformed(objectToUndo);
+                return true;
+            }
+            return false;
+        }
+
+        public static void QueueSetActiveTransform(TransformDouble transform)
+        {
+            QueueUndoOperation(UndoOperationType.SetActiveTransform, transform);
+        }
+
+        public static void QueueRecordObjectWrapper(UnityEngine.Object objectToUndo, Action callback)
+        {
+            QueueUndoOperation(UndoOperationType.RecordObjectWrapper, objectToUndo, null, callback);
+        }
+
+        public static void RecordObjectWrapper(UnityEngine.Object targetObject, Action callback)
+        {
+            try
+            {
+                if (callback != null)
+                {
+                    RecordObject(targetObject);
+
+                    callback();
+
+                    FlushUndoRecordObjects();
+                }
+            }
+            catch (Exception)
+            {
+
+            }
         }
 
         private static bool IsValidUnityObject(UnityEngine.Object unityObject)
         {
             return unityObject is not null && unityObject != null && !IsEditorObject(unityObject);
+        }
+
+        private static bool IsInitialized(UnityEngine.Object unityObject)
+        {
+            if (unityObject is IScriptableBehaviour)
+            {
+                IScriptableBehaviour scriptableBehaviour = (IScriptableBehaviour)unityObject;
+                return scriptableBehaviour.initialized || scriptableBehaviour.isFallbackValues;
+            }
+            return true;
+        }
+
+        private static bool IsValidContext(DisposeContext disposeContext)
+        {
+            return disposeContext == DisposeContext.Editor_Destroy;
+        }
+
+        private static bool IsValidContext(InitializationContext initializingContext)
+        {
+            return initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Editor_Duplicate;
         }
 
         //This should not be necessary since no Undo operations should be performed on Editor UnityObjects  
@@ -362,35 +781,86 @@ namespace DepictionEngine.Editor
             _validatedObjects.Add(value);
         }
 
-        public static void Update()
+        private static void QueueUndoOperation(UndoOperationType undoOperationType, UnityEngine.Object objectToUndo = null, object value = null, Action callback = null)
         {
-            if (CaptureEditorCurrentGroupChange() && _wasFirstUpdated)
+            if (objectToUndo != null || undoOperationType == UndoOperationType.CreateNewGroup || undoOperationType == UndoOperationType.SetCurrentGroupName)
+            {
+                _undoOperationsQueue ??= new();
+
+                int instanceId = 0;
+
+                if (objectToUndo != null)
+                    instanceId = objectToUndo.GetInstanceID();
+
+                _undoOperationsQueue.TryGetValue(instanceId, out Tuple<UndoOperationType, UnityEngine.Object, object, Action > existingUndoOperationParam);
+              
+                if (existingUndoOperationParam != null)
+                {
+                    _undoOperationsQueue.Remove(instanceId);
+                    undoOperationType |= existingUndoOperationParam.Item1;
+                }
+
+                _undoOperationsQueue.Add(instanceId, new(undoOperationType, objectToUndo, value, callback));
+            }
+        }
+
+        private static void UndoRedoPerformed(UnityEngine.Object objectToUndo, UndoOperationType undoOperationType)
+        {
+            int objectInstanceId = objectToUndo.GetInstanceID();
+            if (_undoOperationsQueue != null && _undoOperationsQueue.TryGetValue(objectInstanceId, out Tuple<UndoOperationType, UnityEngine.Object, object, Action> operationParam))
+            {
+                UndoOperationType existingUndoOperationType = operationParam.Item1;
+                if (existingUndoOperationType.HasFlag(undoOperationType))
+                {
+                    existingUndoOperationType &= ~undoOperationType;
+                    _undoOperationsQueue.Remove(objectInstanceId);
+                    _undoOperationsQueue.Add(objectInstanceId, new(existingUndoOperationType, operationParam.Item2, operationParam.Item3, operationParam.Item4));
+                }
+            }
+
+            UndoRedoPerformed(objectToUndo);
+        }
+
+        private static void UndoRedoPerformed(UnityEngine.Object objectToUndo)
+        {
+            if (objectToUndo is IDisposable)
+                (objectToUndo as IDisposable).MarkAsNotPoolable();
+        }
+     
+        public static bool DetectEditorUndoRedoRegistered()
+        {
+            bool changesDetected = false;
+
+            if (DetectEditorCurrentGroupChange() && _wasFirstUpdated)
             {
                 if (!string.IsNullOrEmpty(currentGroupName))
                 {
                     string[] splitCurrentGroupName = currentGroupName.Split();
 
-                    if (splitCurrentGroupName.Length > 2 && splitCurrentGroupName[0] == "Paste" && splitCurrentGroupName[^1] == "Values")
+                    if (splitCurrentGroupName[0] == "Paste")
                     {
-                        if (_validatedObjects != null)
+                        if (splitCurrentGroupName.Length > 2 && splitCurrentGroupName[^1] == "Values")
                         {
-                            bool pastingComponentValues = false;
-
-                            foreach (IJson validatedObject in _validatedObjects.Cast<IJson>())
+                            if (_validatedObjects != null)
                             {
-                                if (validatedObject.PasteComponentAllowed())
-                                {
-                                    pastingComponentValues = true;
-                                    SceneManager.PastingComponentValues(validatedObject, validatedObject.GetJson());
-                                }
-                            }
+                                bool pastingComponentValues = false;
 
-                            if (pastingComponentValues)
-                                RevertAllInCurrentGroup();
+                                foreach (IJson validatedObject in _validatedObjects.Cast<IJson>())
+                                {
+                                    if (validatedObject.PasteComponentAllowed())
+                                    {
+                                        pastingComponentValues = true;
+                                        SceneManager.PastingComponentValues(validatedObject, validatedObject.GetJson());
+                                    }
+                                }
+
+                                if (pastingComponentValues)
+                                    RevertAllInCurrentGroup();
+                            }
                         }
                     }
 
-                    //SiblingIndex is a typo in the UnityEngine i suppose.
+                    //SiblingIndex is a typo in the UnityEngine I suppose.
                     if (splitCurrentGroupName.Length >= 2 && (splitCurrentGroupName[0] == "SiblingIndex" || splitCurrentGroupName[1] == "Index" || splitCurrentGroupName[1] == "Order") && splitCurrentGroupName[^1] == "Change")
                     {
                         //The added "d" is used to distinguish Unity 'Root / Sibling Order Change' action from the one we create. If there is no distinction then if the undo/redo actions are played again this code will be executed again and a new action will be recorded in the history erasing any subsequent actions.
@@ -431,21 +901,41 @@ namespace DepictionEngine.Editor
                             affectedSibling.MarkAsNotPoolable();
                     }
                 }
+
+                changesDetected = true;
             }
 
-            if (_validatedObjects != null)
-                _validatedObjects.Clear();
+            _validatedObjects?.Clear();
 
+            return changesDetected;
+        }
+
+        public static void ProcessQueuedOperations()
+        {
             if (_undoOperationsQueue != null && _undoOperationsQueue.Count > 0)
             {
-                foreach (Tuple<UnityEngine.Object, UndoOperationType> operationParam in _undoOperationsQueue)
+                for (int i = 0 ; i < _undoOperationsQueue.Count; i++)
                 {
-                    if (operationParam.Item1 != null)
+                    Tuple<UndoOperationType, UnityEngine.Object, object, Action> operationParam = _undoOperationsQueue.ElementAt(i).Value;
+              
+                    if (operationParam.Item1.HasFlag(UndoOperationType.Created))
+                        RegisterCreatedObjectUndo(operationParam.Item2);
+                    if (operationParam.Item1.HasFlag(UndoOperationType.FullObjectHierarchy))
+                        RegisterFullObjectHierarchyUndo(operationParam.Item2);
+                    if (operationParam.Item1.HasFlag(UndoOperationType.Complete))
+                        RegisterCompleteObjectUndo(operationParam.Item2);
+                    if (operationParam.Item1.HasFlag(UndoOperationType.RecordObject))
+                        RecordObject(operationParam.Item2);
+                    if (operationParam.Item1.HasFlag(UndoOperationType.RecordObjectWrapper))
+                        RecordObjectWrapper(operationParam.Item2, operationParam.Item4);
+                    if (operationParam.Item1.HasFlag(UndoOperationType.CreateNewGroup))
+                        CreateNewGroup((string)operationParam.Item3);
+                    if (operationParam.Item1.HasFlag(UndoOperationType.SetCurrentGroupName))
+                        SetCurrentGroupName((string)operationParam.Item3);
+                    if (operationParam.Item1.HasFlag(UndoOperationType.SetActiveTransform))
                     {
-                        if (operationParam.Item2 == UndoOperationType.Created)
-                            RegisterCreatedObjectUndo(operationParam.Item1);
-                        if (operationParam.Item2 == UndoOperationType.Complete)
-                            RegisterCompleteObjectUndo(operationParam.Item1);
+                        Selection.activeTransform = (TransformDouble)operationParam.Item2;
+                        DetectEditorCurrentGroupChange();
                     }
                 }
 
@@ -453,13 +943,6 @@ namespace DepictionEngine.Editor
             }
 
             _wasFirstUpdated = true;
-
-            //Increment the Undo Operation Group to stop recording changes after a CopyPaste/Duplicate/DragDrop
-            if (_processingEditorCopyPasteOrDuplicateOrDragDropComponent)
-            {
-                _processingEditorCopyPasteOrDuplicateOrDragDropComponent = false;
-                IncrementCurrentGroup();
-            }
         }
     }
 }

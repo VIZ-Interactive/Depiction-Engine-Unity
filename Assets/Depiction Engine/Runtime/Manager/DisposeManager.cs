@@ -279,11 +279,13 @@ namespace DepictionEngine
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsUnityNull(object obj)
         {
             return obj is UnityEngine.Object && (obj as UnityEngine.Object) == null;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void DisposingContext(Action callback, DisposeContext disposingContext)
         {
             DisposeContext lastDestroyingType = DisposeManager.disposingContext;

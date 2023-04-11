@@ -88,7 +88,7 @@ namespace DepictionEngine
                     go.transform.SetParent(gameObject.transform, false);
 
 #if UNITY_EDITOR
-                    Editor.UndoManager.RegisterCreatedObjectUndo(go, initializingContext);
+                    Editor.UndoManager.QueueRegisterCreatedObjectUndo(go, initializingContext);
 #endif
 
                     _lightInternal = go.AddSafeComponent<Light>(initializingContext);

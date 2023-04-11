@@ -126,6 +126,15 @@ namespace DepictionEngine
         /// </summary>
         public static Action<IProperty> RemovedEvent;
 
+        /// <summary>
+        /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
+        /// </summary>
+        public static Action LateInitializeEvent;
+        /// <summary>
+        /// Dispatched at the end of the <see cref="DepictionEngine.SceneManager.LateUpdate"/> just before the DelayedOnDestroy.
+        /// </summary>
+        public static Action PostLateInitializeEvent;
+
         private static InstanceManager _instance;
         /// <summary>
         /// Get a singleton of the manager.
@@ -1049,7 +1058,7 @@ namespace DepictionEngine
                     InitializeGameObject(go, parent, setParentAndAlign, moveToView);
 
 #if UNITY_EDITOR
-                    Editor.UndoManager.RegisterCreatedObjectUndo(go, initializingContext);
+                    Editor.UndoManager.QueueRegisterCreatedObjectUndo(go, initializingContext);
 #endif
 
                     disposable = go.AddSafeComponent(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
@@ -1064,7 +1073,7 @@ namespace DepictionEngine
                             disposable = Activator.CreateInstance(type) as IDisposable;
 
 #if UNITY_EDITOR
-                        Editor.UndoManager.RegisterCreatedObjectUndo(disposable as UnityEngine.Object, initializingContext);
+                        Editor.UndoManager.QueueRegisterCreatedObjectUndo(disposable as UnityEngine.Object, initializingContext);
 #endif
 
                         disposable.Initialize();
@@ -1133,18 +1142,30 @@ namespace DepictionEngine
         {
             T duplicatedObject = null;
 
-            InitializingContext(() =>
+            if (!DisposeManager.IsNullOrDisposing(objectToDuplicate))
             {
-                duplicatedObject = !DisposeManager.IsNullOrDisposing(objectToDuplicate) ? Object.Instantiate(objectToDuplicate) : null;
+                InitializingContext(() =>
+                {
+                    duplicatedObject = Object.Instantiate(objectToDuplicate);
 
 #if UNITY_EDITOR
-                Editor.UndoManager.RegisterCreatedObjectUndo(duplicatedObject, initializingContext);
+                    Editor.UndoManager.QueueRegisterCreatedObjectUndo(duplicatedObject, initializingContext);
 #endif
-                if (duplicatedObject is IDisposable)
-                    (duplicatedObject as IDisposable).Initialize();
-            }, initializingContext);
+
+                    if (duplicatedObject is IDisposable)
+                        (duplicatedObject as IDisposable).Initialize();
+
+                    LateInitializeObjects();
+                }, initializingContext);
+            }
 
             return duplicatedObject;
+        }
+
+        public static void LateInitializeObjects()
+        {
+            SceneManager.InvokeAction(ref LateInitializeEvent, "LateInitialize", SceneManager.ExecutionState.LateInitialize);
+            SceneManager.InvokeAction(ref PostLateInitializeEvent, "PostLateInitialize", SceneManager.ExecutionState.PostLateInitialize);
         }
 
         /// <summary>
@@ -1163,6 +1184,7 @@ namespace DepictionEngine
             return disposable;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InitializingContext(Action callback, InitializationContext initializingContext, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
             InitializationContext lastinitializingContext = InstanceManager.initializingContext;

@@ -83,15 +83,11 @@ namespace DepictionEngine
             });
         }
 
-        protected override bool SetTargetTransform(TransformDouble value)
+        protected override void TargetChanged(Object newValue, Object oldValue)
         {
-            if (base.SetTargetTransform(value))
-            {
-                DeriveRotationFromForwardVector();
-
-                return true;
-            }
-            return false;
+            base.TargetChanged(newValue, oldValue);
+            
+            DeriveRotationFromForwardVector();
         }
 
         protected override void ValidateTargetControllerTransform(Camera camera)
@@ -100,23 +96,23 @@ namespace DepictionEngine
 
             if (preventMeshPenetration)
             {
-                if (targetTransform.parentGeoAstroObject != Disposable.NULL)
+                if (target.transform.parentGeoAstroObject != Disposable.NULL)
                 {
-                    GeoCoordinate3Double geoCoordinate = targetTransform.parentGeoAstroObject.GetGeoCoordinateFromPoint(transform.position);
+                    GeoCoordinate3Double geoCoordinate = target.transform.parentGeoAstroObject.GetGeoCoordinateFromPoint(transform.position);
 
                     double altitude = geoCoordinate.altitude + PENETRATION_TRESHOLD;
 
-                    geoCoordinate.altitude = targetTransform.parentGeoAstroObject.radius / 10.0d;
+                    geoCoordinate.altitude = target.transform.parentGeoAstroObject.radius / 10.0d;
 
-                    RayDouble ray = new RayDouble(targetTransform.parentGeoAstroObject.GetPointFromGeoCoordinate(geoCoordinate), targetTransform.parentGeoAstroObject.GetUpVectorFromGeoCoordinate(geoCoordinate) * Vector3Double.down);
+                    RayDouble ray = new RayDouble(target.transform.parentGeoAstroObject.GetPointFromGeoCoordinate(geoCoordinate), target.transform.parentGeoAstroObject.GetUpVectorFromGeoCoordinate(geoCoordinate) * Vector3Double.down);
                     RaycastHitDouble[] terrainFilteredHit = PhysicsDouble.TerrainFiltered(PhysicsDouble.RaycastAll(ray, (float)(geoCoordinate.altitude * 20.0d)));
                     if (terrainFilteredHit.Length > 0)
                     {
                         RaycastHitDouble hit = PhysicsDouble.GetClosestHit(ray.origin, terrainFilteredHit);
-                        GeoCoordinate3Double collisionGeoCoordinate = targetTransform.parentGeoAstroObject.GetGeoCoordinateFromPoint(hit.point);
+                        GeoCoordinate3Double collisionGeoCoordinate = target.transform.parentGeoAstroObject.GetGeoCoordinateFromPoint(hit.point);
                         if (altitude < collisionGeoCoordinate.altitude)
                         {
-                            Vector3Double targetLocalCollision = QuaternionDouble.Inverse(targetTransform.rotation) * (hit.point - targetTransform.position);
+                            Vector3Double targetLocalCollision = QuaternionDouble.Inverse(target.transform.rotation) * (hit.point - target.transform.position);
                             targetLocalCollision.y += PENETRATION_TRESHOLD;
 
                             Vector3Double newForwardVector = forwardVector;
@@ -142,8 +138,8 @@ namespace DepictionEngine
 
         private bool DeriveRotationFromForwardVector()
         {
-            if (targetTransform != Disposable.NULL)
-                return SetRotation(targetTransform.rotation * QuaternionDouble.Euler(_forwardVector));
+            if (target != Disposable.NULL && target.transform != Disposable.NULL)
+                return SetRotation(target.transform.rotation * QuaternionDouble.Euler(_forwardVector));
             return false;
         }
     }

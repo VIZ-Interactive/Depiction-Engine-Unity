@@ -468,7 +468,7 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual bool SetValue<T>(string name, T value, ref T valueField, Action<T, T> assignedCallback = null)
+        protected virtual bool SetValue<T>(string name, T value, ref T valueField, Action<T, T> assignedCallback = null, bool allowAutoDisposeOnOutOfSynchProperty = false)
         {
             T oldValue = valueField;
 
@@ -476,9 +476,12 @@ namespace DepictionEngine
             {
                 valueField = value;
 
-                assignedCallback?.Invoke(value, oldValue);
+                Datasource.AllowAutoDisposeOnOutOfSynchProperty(() => 
+                {
+                    assignedCallback?.Invoke(value, oldValue);
 
-                PropertyAssigned(this, name, value, oldValue);
+                    PropertyAssigned(this, name, value, oldValue); 
+                }, Datasource.allowAutoDispose || allowAutoDisposeOnOutOfSynchProperty);
 
                 return true;
             }
@@ -597,7 +600,7 @@ namespace DepictionEngine
         public Action<IProperty, string, object, object> PropertyAssignedEvent
         {
             get => _propertyAssignedEvent;
-            set { _propertyAssignedEvent = value; }
+            set => _propertyAssignedEvent = value;
         }
 
         public void ResetId()
@@ -612,7 +615,7 @@ namespace DepictionEngine
         public SerializableGuid id
         {
             get => _id;
-            set { _id = value; }
+            set => _id = value;
         }
 
         public override void ExplicitOnDisable()
@@ -817,6 +820,24 @@ namespace DepictionEngine
             }
             return false;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void HierarchicalInitializeChild(PropertyMonoBehaviour child) { child.HierarchicalInitialize(); }
+        /// <summary>
+        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the UnityEngine Update. It is called before the <see cref="DepictionEngine.PropertyMonoBehaviour.HierarchicalUpdate"/>.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public virtual bool HierarchicalInitialize()
+        {
+            UpdateRelations();
+
+            IterateOverChildrenAndSiblings(HierarchicalInitializeChild);
+
+            if (IsDisposing())
+                return false;
+
+            return initialized;
+        }
 #endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -827,14 +848,6 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool PreHierarchicalUpdate()
         {
-            bool updateRelationsFailed = true;
-            SceneManager.UserContext(() => 
-            {
-                updateRelationsFailed = UpdateRelations();
-            });
-            if (!updateRelationsFailed)
-                return false;
-
             if (initialized)
             {
                 UpdateFields();
@@ -883,18 +896,9 @@ namespace DepictionEngine
             if (IsDisposing())
                 return false;
 
-            return true;
-        }
+            ClearDirtyFlags();
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void HierarchicalActivateChild(PropertyMonoBehaviour child) { child.HierarchicalActivate(); }
-        /// <summary>
-        /// The hierarchy is traversed and gameObjects that have never been active are temporarly activated and deactivated to allow for their Awake to be called.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual void HierarchicalActivate()
-        {
-            IterateOverChildrenAndSiblings(HierarchicalActivateChild);
+            return true;
         }
 
         protected virtual bool AddChild(PropertyMonoBehaviour child)
@@ -925,20 +929,14 @@ namespace DepictionEngine
 
         protected virtual void IterateOverChildrenAndSiblings(Action<PropertyMonoBehaviour> callback = null)
         {
-            if (SceneManager.sceneExecutionState != SceneManager.ExecutionState.HierarchicalActivate)
-            {
-                //Apply to Siblings before Children
-                ApplyBeforeChildren(callback);
-            }
+            //Apply to Siblings before Children
+            ApplyBeforeChildren(callback);
 
             //Apply to Children
-           IterateOverChildren(callback);
+            IterateOverChildren(callback);
 
-            if (SceneManager.sceneExecutionState != SceneManager.ExecutionState.HierarchicalActivate)
-            {
-                //Apply to Siblings after Children
-                ApplyAfterChildren(callback);
-            }
+            //Apply to Siblings after Children
+            ApplyAfterChildren(callback);
         }
 
         protected virtual void IterateOverChildren(Action<PropertyMonoBehaviour> callback = null)
@@ -1000,15 +998,6 @@ namespace DepictionEngine
         }
 #endif
 
-        /// <summary>
-        /// The hierarchy is traversed and dirty flags are cleared.
-        /// </summary>
-        public virtual void HierarchicalClearDirtyFlags()
-        {
-            ClearDirtyFlags();
-            IterateOverChildrenAndSiblings((child) => { child.HierarchicalClearDirtyFlags(); });
-        }
-
         protected virtual void ClearDirtyFlags()
         {
             if (_hasDirtyFlags)
@@ -1040,7 +1029,7 @@ namespace DepictionEngine
 
         public void InspectorReset()
         {
-            Editor.UndoManager.RegisterCompleteObjectUndo(this);
+            RegisterCompleteObjectUndo();
 
             SceneManager.UserContext(() =>
             {

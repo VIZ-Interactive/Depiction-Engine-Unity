@@ -201,11 +201,6 @@ namespace DepictionEngine
                             return true;
                         }
                     }
-
-#if UNITY_EDITOR
-                    if (disposeContext == DisposeContext.Editor_Destroy)
-                        Editor.UndoManager.FlushUndoRecordObjects();
-#endif
                 }
             }
             return false;

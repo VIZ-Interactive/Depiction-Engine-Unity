@@ -74,16 +74,8 @@ namespace DepictionEngine
                     meshRendererVisualDirtyFlags = InstanceManager.Duplicate(meshRendererVisualDirtyFlags);
                 else if (meshRendererVisualDirtyFlags == null)
                     meshRendererVisualDirtyFlags = ScriptableObject.CreateInstance(GetMeshRendererVisualDirtyFlagType()) as VisualObjectVisualDirtyFlags;
-#if UNITY_EDITOR
-                Editor.UndoManager.RegisterCreatedObjectUndo(meshRendererVisualDirtyFlags, initializingContext);
-#endif
-                SetMeshRendererVisualsDirty(duplicating);
 
-#if UNITY_EDITOR
-                Editor.UndoManager.RegisterCompleteObjectUndo(meshRendererVisualDirtyFlags, initializingContext);
-                //Prevent further changes to the VisualDirtyFlags to be recorded as part of this undo operation.
-                Editor.UndoManager.CollapseUndoOperations(Editor.UndoManager.GetCurrentGroup());
-#endif
+                SetMeshRendererVisualsDirty(duplicating);
             }
 
             //Dont Popup if the object was duplicated or already exists

@@ -904,13 +904,17 @@ namespace DepictionEngine
                         TweenManager tweenManager = this.tweenManager;
                         waitBetweenLoadTimer = tweenManager.DelayedCall(autoUpdateInterval, null, () =>
                         {
-                            waitBetweenLoadTimer = null;
-                            if (_autoUpdate && (loadDelayTimer == Disposable.NULL || !loadDelayTimer.playing))
+                            if (!IsDisposing())
                             {
-                                loadDelayTimer = tweenManager.DelayedCall(autoUpdateDelay, null, () =>
+                                waitBetweenLoadTimer = null;
+                                if (_autoUpdate && (loadDelayTimer == Disposable.NULL || !loadDelayTimer.playing))
                                 {
-                                    UpdateLoadScopes(true);
-                                }, () => loadDelayTimer = null);
+                                    loadDelayTimer = tweenManager.DelayedCall(autoUpdateDelay, null, () =>
+                                    {
+                                        if (!IsDisposing())
+                                            UpdateLoadScopes(true);
+                                    }, () => loadDelayTimer = null);
+                                }
                             }
                         }, () => waitBetweenLoadTimer = null);
                     }

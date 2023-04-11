@@ -492,7 +492,7 @@ namespace DepictionEngine
                     _lastSize = newValue;
 #endif
                     UpdateRadius();
-                }); 
+                }, true); 
             }
         }
 
@@ -772,17 +772,17 @@ namespace DepictionEngine
         {
             if (base.HierarchicalUpdateEnvironmentAndReflection(camera, context))
             {
-                transform.IterateOverChildrenObject<ReflectionProbe>((reflectionProbe) =>
+                transform.IterateOverChildrenObject<ReflectionProbe>((probe) =>
                 {
-                    if (reflectionProbe.name == GetReflectionProbeName())
+                    if (probe.name == GetReflectionProbeName())
                     {
-                        reflectionProbe.intensity = IsValidSphericalRatio() && this.reflectionProbe ? (float)GetAtmosphereAltitudeRatio(GetScaledAtmosphereThickness(), camera.transform.position) : 0.0f;
+                        probe.intensity = IsValidSphericalRatio() && reflectionProbe ? (float)GetAtmosphereAltitudeRatio(GetScaledAtmosphereThickness(), camera.transform.position) : 0.0f;
 
-                        if (reflectionProbe.boxSize.x != size)
-                            reflectionProbe.boxSize = Vector3.one * (float)size;
-                        reflectionProbe.boxOffset = transform.position - reflectionProbe.transform.position;
+                        if (probe.boxSize.x != size)
+                            probe.boxSize = Vector3.one * (float)size;
+                        probe.boxOffset = transform.position - probe.transform.position;
 
-                        reflectionProbe.reflectionProbe.customBakedTexture = context.HasValue && this.reflectionProbe ? camera.GetEnvironmentCubeMap() : null;
+                        probe.reflectionProbe.customBakedTexture = context.HasValue && reflectionProbe ? camera.GetEnvironmentCubeMap() : null;
                     }
                     return true;
                 });
@@ -793,12 +793,16 @@ namespace DepictionEngine
         }
 
         private int _updateCount;
-        public override void HierarchicalClearDirtyFlags()
+        public override bool PostHierarchicalUpdate()
         {
-            base.HierarchicalClearDirtyFlags();
+            if (base.PostHierarchicalUpdate())
+            {
+                if (!GetLoadingInitialized())
+                    _updateCount++;
 
-            if (!GetLoadingInitialized())
-                _updateCount++;
+                return true;
+            }
+            return false;
         }
 
         public bool GetLoadingInitialized()

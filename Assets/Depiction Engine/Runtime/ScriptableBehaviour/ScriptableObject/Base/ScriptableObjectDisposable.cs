@@ -63,7 +63,7 @@ namespace DepictionEngine
 #endif
         }
 
-        protected virtual void Awake()
+        protected void Awake()
         {
             Initialize();
         }
@@ -275,13 +275,11 @@ namespace DepictionEngine
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= Saving;
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaved -= Saved;
             Editor.UndoManager.UndoRedoPerformedEvent -= UndoRedoPerformedHandler; 
-            SceneManager.ResetRegisterCompleteUndoEvent -= ResetRegisterCompleteUndo;
             if (!IsDisposing())
             {
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaving += Saving;
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaved += Saved;
                 Editor.UndoManager.UndoRedoPerformedEvent += UndoRedoPerformedHandler;
-                SceneManager.ResetRegisterCompleteUndoEvent += ResetRegisterCompleteUndo;
             }
 
             SceneManager sceneManager = SceneManager.Instance(false);
@@ -352,23 +350,6 @@ namespace DepictionEngine
         {
             get => _instanceID;
             set => _instanceID = value;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual bool SetValue<T>(string name, T value, ref T valueField, Action<T, T> assignedCallback = null)
-        {
-            T oldValue = valueField;
-
-            if (HasChanged(value, oldValue))
-            { 
-                valueField = value;
-
-                assignedCallback?.Invoke(value, oldValue);
-
-                return true;
-            }
-
-            return false;
         }
 
         /// <summary>
@@ -528,6 +509,7 @@ namespace DepictionEngine
                 _disposing = true;
 
                 DisposingEvent?.Invoke(this);
+
                 DisposingEvent = null;
 
                 return true;
@@ -570,7 +552,7 @@ namespace DepictionEngine
                 DisposingEvent = null;
                 DisposedEvent = null;
 
-                return true;
+                return initialized;
             }
             return false;
         }
@@ -662,27 +644,22 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         protected virtual void RegisterInitializeObjectUndo(InitializationContext initializingContext)
         {
-            _registeredCompleteObjectUndo = true;
             Editor.UndoManager.RegisterCompleteObjectUndo(this, initializingContext);
         }
 
-        private bool _registeredCompleteObjectUndo;
-        protected void RegisterCompleteObjectUndo(DisposeContext disposeContext = DisposeContext.Editor_Destroy)
+        public void RegisterCompleteObjectUndo()
         {
-            if (disposeContext == DisposeContext.Editor_Destroy)
-            {
-                MarkAsNotPoolable();
-                if (!_registeredCompleteObjectUndo)
-                {
-                    _registeredCompleteObjectUndo = true;
-                    Editor.UndoManager.RegisterCompleteObjectUndo(this);
-                }
-            }
+            Editor.UndoManager.RegisterCompleteObjectUndo(this);
         }
 
-        private void ResetRegisterCompleteUndo()
+        public void RegisterCompleteObjectUndo(DisposeContext disposeContext)
         {
-            _registeredCompleteObjectUndo = false;
+            Editor.UndoManager.RegisterCompleteObjectUndo(this, disposeContext);
+        }
+
+        public void RegisterCompleteObjectUndo(InitializationContext initializingContext)
+        {
+            Editor.UndoManager.RegisterCompleteObjectUndo(this, initializingContext);
         }
 #endif
 
