@@ -29,6 +29,12 @@ namespace DepictionEngine
             _cameraInstanceIds = null;
         }
 
+#if UNITY_EDITOR
+        public virtual void UndoRedoPerformed()
+        {
+        }
+#endif
+
         public MeshRendererVisual.ColliderType colliderType
         {
             get { return _colliderType; }

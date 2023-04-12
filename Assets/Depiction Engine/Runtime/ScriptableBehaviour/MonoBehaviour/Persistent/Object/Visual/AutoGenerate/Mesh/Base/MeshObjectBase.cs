@@ -372,7 +372,7 @@ namespace DepictionEngine
             Type typeBoxCollider = meshRendererVisualModifier.typeBoxCollider ?? typeof(MeshRendererVisualBoxCollider);
             Type typeMeshCollider = meshRendererVisualModifier.typeMeshCollider ?? typeof(MeshRendererVisualMeshCollider);
             Type type = GetMeshRendererType(colliderType, typeNoCollider, typeBoxCollider, typeMeshCollider);
-
+  
             return CreateVisual(type, meshRendererVisualModifier.name, null, new List<PropertyModifier>() { meshRendererVisualModifier }) as MeshRendererVisual;
         }
 

@@ -67,11 +67,15 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
+            if (base.UndoRedoPerformed())
+            {
+                sceneDatasource?.UndoRedoPerformed();
 
-            sceneDatasource?.UndoRedoPerformed();
+                return true;
+            }
+            return false;
         }
 #endif
 

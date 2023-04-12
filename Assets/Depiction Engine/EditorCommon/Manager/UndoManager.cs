@@ -7,8 +7,6 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
-using static UnityEngine.Rendering.DebugUI;
-using System.Runtime.InteropServices;
 
 namespace DepictionEngine.Editor
 {
@@ -50,6 +48,13 @@ namespace DepictionEngine.Editor
 
         private static void UndoRedoPerformed()
         {
+            MonoBehaviourDisposable[] monoBehaviourDisposables = Object.FindObjectsOfType<MonoBehaviourDisposable>(true);
+            foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
+                monoBehaviourDisposable.UndoRedoPerformed();
+            ScriptableObjectDisposable[] scriptableObjectDisposables = Object.FindObjectsOfType<ScriptableObjectDisposable>(true);
+            foreach (ScriptableObjectDisposable scriptableObjectDisposable in scriptableObjectDisposables)
+                scriptableObjectDisposable.UndoRedoPerformed();
+
             UndoRedoPerformedEvent?.Invoke();
         }
 

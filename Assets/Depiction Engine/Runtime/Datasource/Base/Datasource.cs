@@ -1219,7 +1219,7 @@ namespace DepictionEngine
                 //Null check is required for when the scene destroys before Play and the persistent as already been destroyed.
                 if (!Disposable.IsDisposed(persistent))
                     DisposeManager.Dispose(persistent is PersistentMonoBehaviour ? (persistent as PersistentMonoBehaviour).gameObject : persistent, disposeContext);
-                
+             
                 return true;
             }
             return false;

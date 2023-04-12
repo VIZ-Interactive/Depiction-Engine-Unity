@@ -22,6 +22,15 @@ namespace DepictionEngine
             _processing = default;
         }
 
+#if UNITY_EDITOR
+        public override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            SerializationUtility.RecoverLostReferencedObject(ref _feature);
+        }
+#endif
+
         public Feature feature
         {
             get { return _feature; }

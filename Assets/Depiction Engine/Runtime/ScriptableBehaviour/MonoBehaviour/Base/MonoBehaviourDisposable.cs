@@ -324,12 +324,10 @@ namespace DepictionEngine
 #if UNITY_EDITOR
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= Saving;
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaved -= Saved;
-            Editor.UndoManager.UndoRedoPerformedEvent -= UndoRedoPerformedHandler;
             if (!IsDisposing())
             {
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaving += Saving;
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaved += Saved;
-                Editor.UndoManager.UndoRedoPerformedEvent += UndoRedoPerformedHandler;
             }
 
             SceneManager sceneManager = SceneManager.Instance(false);
@@ -342,22 +340,18 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        private void UndoRedoPerformedHandler()
+        /// <summary>
+        /// Trigered right after an undo or redo operation was performed (Editor Only).
+        /// </summary>
+        public virtual bool UndoRedoPerformed()
         {
             //Are the Destroy and Initialize check necessary?
             if (!DisposeManager.TriggerOnDestroyIfNull(this))
             {
                 InstanceManager.Initialize(this, InitializationContext.Existing);
-                UndoRedoPerformed();
+                return true;
             }
-        }
-
-        /// <summary>
-        /// Trigered right after an undo or redo operation was performed (Editor Only).
-        /// </summary>
-        protected virtual void UndoRedoPerformed()
-        {
-
+            return false;
         }
 
         [SerializeField, HideInInspector]

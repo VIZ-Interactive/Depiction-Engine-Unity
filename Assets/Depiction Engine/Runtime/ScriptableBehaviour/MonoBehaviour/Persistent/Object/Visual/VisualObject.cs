@@ -92,11 +92,15 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
         private float _lastAlpha;
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
-
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { alpha = value; }, ref _alpha, ref _lastAlpha);
+            if (base.UndoRedoPerformed())
+            {
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { alpha = value; }, ref _alpha, ref _lastAlpha);
+                
+                return true;
+            }
+            return false;
         }
 #endif
 

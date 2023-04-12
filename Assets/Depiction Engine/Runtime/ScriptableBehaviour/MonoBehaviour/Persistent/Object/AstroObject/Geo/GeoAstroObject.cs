@@ -189,12 +189,16 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         private double _lastSize;
         private bool _lastSpherical;
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
-
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { size = value; }, ref _size, ref _lastSize);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { spherical = value; }, ref _spherical, ref _lastSpherical);
+            if (base.UndoRedoPerformed())
+            {
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { size = value; }, ref _size, ref _lastSize);
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { spherical = value; }, ref _spherical, ref _lastSpherical);
+                
+                return true;
+            }
+            return false;
         }
 #endif
 

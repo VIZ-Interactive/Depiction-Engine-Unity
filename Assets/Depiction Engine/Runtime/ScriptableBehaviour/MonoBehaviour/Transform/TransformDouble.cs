@@ -145,16 +145,20 @@ namespace DepictionEngine
         private GeoCoordinate3Double _lastGeoCoordinate;
         private QuaternionDouble _lastLocalRotation;
         private Vector3Double _lastLocalScale;
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
+            if (base.UndoRedoPerformed())
+            {
+                if (isGeoCoordinateTransform)
+                    SerializationUtility.PerformUndoRedoPropertyChange((value) => { geoCoordinate = value; }, ref _geoCoordinate, ref _lastGeoCoordinate);
+                else
+                    SerializationUtility.PerformUndoRedoPropertyChange((value) => { localPosition = value; }, ref _localPosition, ref _lastLocalPosition);
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { localRotation = value; }, ref _localRotation, ref _lastLocalRotation);
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { localScale = value; }, ref _localScale, ref _lastLocalScale);
 
-            if (isGeoCoordinateTransform)
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { geoCoordinate = value; }, ref _geoCoordinate, ref _lastGeoCoordinate);
-            else
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { localPosition = value; }, ref _localPosition, ref _lastLocalPosition);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { localRotation = value; }, ref _localRotation, ref _lastLocalRotation);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { localScale = value; }, ref _localScale, ref _lastLocalScale);
+                return true;
+            }
+            return false;
         }
 #endif
 

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -81,11 +82,15 @@ namespace DepictionEngine
             get => _lastIndex2DLoadScopes ??= new ();
         }
 
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
+            if (base.UndoRedoPerformed())
+            {
+                PerformAddRemoveLoadScopesChange(index2DLoadScopes, lastIndex2DLoadScopes, true);
 
-            PerformAddRemoveLoadScopesChange(index2DLoadScopes, lastIndex2DLoadScopes, true);
+                return true;
+            }
+            return false;
         }
 
         public override bool AfterAssemblyReload()
@@ -350,8 +355,8 @@ namespace DepictionEngine
         }
 
         protected virtual Index2DLoadScope CreateIndex2DLoadScope(Vector2Int index, Vector2Int dimensions)
-        { 
-            return (CreateLoadScope(typeof(Index2DLoadScope)) as Index2DLoadScope).Init(this, index, dimensions, indexUrlParamType);
+        {
+            return (CreateLoadScope(typeof(Index2DLoadScope), "Zoom:"+MathPlus.GetZoomFromGrid2DDimensions(dimensions)+", XYTileRatio:"+xyTilesRatio+", X:"+index.x+", Y:"+index.y) as Index2DLoadScope).Init(this, index, dimensions, indexUrlParamType);
         }
     }
 }

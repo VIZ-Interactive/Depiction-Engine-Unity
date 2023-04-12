@@ -270,12 +270,16 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
+            if (base.UndoRedoPerformed())
+            {
+                //UndoManager.RecordObject does not work with UnityMesh so when we detect an Undo/Redo we push the UVs back onto the UnityMesh in case an icon change was part of the Undo/Redo
+                UpdateUILabelMeshUVs();
 
-            //UndoManager.RecordObject does not work with UnityMesh so when we detect an Undo/Redo we push the UVs back onto the UnityMesh in case an icon change was part of the Undo/Redo
-            UpdateUILabelMeshUVs();
+                return true;
+            }
+            return false;
         }
 #endif
 

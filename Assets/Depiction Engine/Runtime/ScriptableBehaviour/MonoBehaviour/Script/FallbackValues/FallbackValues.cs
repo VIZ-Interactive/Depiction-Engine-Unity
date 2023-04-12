@@ -85,12 +85,16 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
         private string _lastFallbackValuesJsonStr;
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
-
-            if (_lastFallbackValuesJsonStr != _fallbackValuesJsonStr)
-                SetFallbackValuesJson(string.IsNullOrEmpty(_fallbackValuesJsonStr) ? new JSONObject() : (JSONObject)JSONObject.Parse(_fallbackValuesJsonStr));
+            if (base.UndoRedoPerformed())
+            {
+                if (_lastFallbackValuesJsonStr != _fallbackValuesJsonStr)
+                    SetFallbackValuesJson(string.IsNullOrEmpty(_fallbackValuesJsonStr) ? new JSONObject() : (JSONObject)JSONObject.Parse(_fallbackValuesJsonStr));
+                
+                return true;
+            }
+            return false;
         }
 #endif
 

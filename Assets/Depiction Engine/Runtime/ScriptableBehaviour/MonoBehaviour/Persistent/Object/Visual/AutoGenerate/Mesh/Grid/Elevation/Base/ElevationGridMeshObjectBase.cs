@@ -1,6 +1,7 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -62,7 +63,7 @@ namespace DepictionEngine
 
         private AssetReference elevationAssetReference
         {
-            get { return GetFirstReferenceOfType(ELEVATION_REFERENCE_DATATYPE) as AssetReference; }
+            get => GetFirstReferenceOfType(ELEVATION_REFERENCE_DATATYPE) as AssetReference;
         }
 
         private void UpdateElevation()
@@ -150,6 +151,7 @@ namespace DepictionEngine
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float GetElevation(float x, float y)
         {
             float value = 0.0f;
@@ -169,6 +171,7 @@ namespace DepictionEngine
             return value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override double GetAltitude(bool addOffset = true)
         {
             return base.GetAltitude(addOffset) + GetElevation(0.5f, 0.5f);

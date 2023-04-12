@@ -71,11 +71,15 @@ namespace DepictionEngine
             get => _lastIndexReferences ??= new();
         }
 
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
+            if (base.UndoRedoPerformed())
+            {
+                PerformAddRemoveReferencesChange(index2DReferences, lastIndexReferences);
 
-            PerformAddRemoveReferencesChange(index2DReferences, lastIndexReferences);
+                return true;
+            }
+            return false;
         }
 #endif
 

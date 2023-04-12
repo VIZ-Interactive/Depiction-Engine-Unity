@@ -171,12 +171,16 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
         private PropertyMonoBehaviour _lastParent;
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
+            if (base.UndoRedoPerformed())
+            {
+                _parent = _lastParent;
+                UpdateRelations();
 
-            _parent = _lastParent;
-            UpdateRelations();
+                return true;
+            }
+            return false;
         }
 #endif
 

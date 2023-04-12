@@ -239,12 +239,6 @@ namespace DepictionEngine
         {
 #if UNITY_EDITOR
             SerializationUtility.RecoverLostReferencedObjectsInCollection(loadScopesDictionary);
-
-            IterateOverLoadScopes((loadScopeKey, loadScope) =>
-            {
-                loadScope.RecoverLostReferencedObjects();
-                return true;
-            });
 #endif
 
             List<LoadScope> loadQueue = null;
@@ -263,7 +257,7 @@ namespace DepictionEngine
                 }
                 else
                 {
-                    List<(bool, SerializableGuid, IPersistent)> changedPersistents = lastLoadScope.PerformAddRemovePersistents(performingUndoRedo);
+                    List<(bool, SerializableGuid, IPersistent)> changedPersistents = lastLoadScope.PerformAddRemovePersistentsChange(performingUndoRedo);
 
                     bool reload = lastLoadScope.LoadingWasCompromised() && (!loadScopesDictionary.TryGetValue(objectKeyPair.Key, out T1 loadScope) || loadScope.LoadingWasCompromised());
 
@@ -332,7 +326,7 @@ namespace DepictionEngine
                 }
             }
 
-            if (loadQueue != null && CanAutoLoad())
+            if (loadQueue != null)
             {
                 float loadInterval = 0.5f;
                 foreach (LoadScope loadScope in loadQueue)
@@ -429,6 +423,8 @@ namespace DepictionEngine
 
                 lastPersistentsDictionary.Clear();
                 lastPersistentsDictionary.CopyFrom(persistentsDictionary);
+
+                IterateOverLoadScopes((loadScopeKey, loadScope) => { loadScope.InitializeLastFields(); return true; });
 #endif
 
                 return true;
@@ -509,12 +505,18 @@ namespace DepictionEngine
 
         private void AddPersistentDelegates(IPersistent persistent)
         {
-            if (!IsDisposing() && !Disposable.IsDisposed(persistent))
+            if (IsDisposing())
+                return;
+
+            if (!Disposable.IsDisposed(persistent))
                 persistent.DisposedEvent += PersistentDisposedHandler;
         }
 
         private void PersistentDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
         {
+            if (IsDisposing())
+                return;
+
             IPersistent persistent = disposable as IPersistent;
             RemovePersistent(persistent, disposeContext);
             if (GetLoadScope(out LoadScope loadScope, persistent))
@@ -529,7 +531,10 @@ namespace DepictionEngine
 
         private void AddLoadScopeDelegates(LoadScope loadScope)
         {
-            if (!IsDisposing() && loadScope != Disposable.NULL)
+            if (IsDisposing())
+                return;
+
+            if (loadScope != Disposable.NULL)
                 loadScope.LoadingStateChangedEvent += LoadScopeLoadingStateChangedHandler;
         }
 
@@ -547,22 +552,26 @@ namespace DepictionEngine
             get => _lastPersistentsDictionary ??= new PersistentsDictionary();
         }
 
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
+            if (base.UndoRedoPerformed())
+            {
+                //Undos trigger OnEnable which queues an auto update.
+                _autoUpdate = false;
 
-            //Undos trigger OnEnable which queues an auto update.
-            _autoUpdate = false;
+                SerializationUtility.RecoverLostReferencedObject(ref _datasource);
 
-            UnityEngine.Object datasourceUnityObject = _datasource;
-            if (SerializationUtility.RecoverLostReferencedObject(ref datasourceUnityObject))
-                _datasource = (PropertyMonoBehaviour)datasourceUnityObject;
-           
-            PerformAddRemovePersistentsChange(persistentsDictionary, lastPersistentsDictionary);
+                PerformAddRemovePersistentsChange(persistentsDictionary, lastPersistentsDictionary);
+
+                IterateOverLoadScopes((loadScopeKey, loadScope) => { loadScope.LoaderUndoRedoPerformed(); return true; });
+
+                return true;
+            }
+            return false;
         }
 #endif
 
-        private PersistentsDictionary persistentsDictionary
+        protected PersistentsDictionary persistentsDictionary
         {
             get => _persistentsDictionary ??= new();
         }
@@ -1074,10 +1083,15 @@ namespace DepictionEngine
             }
         } 
 
-        protected LoadScope CreateLoadScope(Type type)
+        protected LoadScope CreateLoadScope(Type type, string name)
         {
             LoadScope loadScope = instanceManager.CreateInstance(type) as LoadScope;
-            return loadScope != Disposable.NULL ? loadScope : null;
+            if (loadScope != Disposable.NULL)
+            {
+                loadScope.name = name;
+                return loadScope;
+            }
+            return null;
         }
 
         protected bool AddLoadScope(LoadScope loadScope)

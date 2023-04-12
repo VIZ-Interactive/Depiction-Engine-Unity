@@ -16,6 +16,15 @@ namespace DepictionEngine
             _asset = default;
         }
 
+#if UNITY_EDITOR
+        public override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            SerializationUtility.RecoverLostReferencedObject(ref _asset);
+        }
+#endif
+
         public AssetBase asset
         {
             get { return _asset; }

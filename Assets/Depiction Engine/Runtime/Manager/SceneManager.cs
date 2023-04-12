@@ -275,12 +275,16 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         private bool _lastDebug;
         private bool _lastRunInBackground;
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
-
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { debug = value; }, ref _debug, ref _lastDebug);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { runInBackground = value; }, ref _runInBackground, ref _lastRunInBackground);
+            if (base.UndoRedoPerformed())
+            {
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { debug = value; }, ref _debug, ref _lastDebug);
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { runInBackground = value; }, ref _runInBackground, ref _lastRunInBackground);
+               
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -819,7 +823,7 @@ namespace DepictionEngine
         public static ExecutionState sceneExecutionState
         {
             get => _sceneExecutionState; 
-            set { _sceneExecutionState = value; }
+            set => _sceneExecutionState = value;
         }
 
         private List<TransformBase> sceneChildren
@@ -859,7 +863,7 @@ namespace DepictionEngine
         public bool logConsoleFiltering
         {
             get => _logConsoleFiltering;
-            set { SetValue(nameof(logConsoleFiltering), value, ref _logConsoleFiltering); }
+            set => SetValue(nameof(logConsoleFiltering), value, ref _logConsoleFiltering);
         }
 
         /// <summary>
@@ -893,26 +897,26 @@ namespace DepictionEngine
         public bool enableMultithreading
         {
             get => _enableMultithreading;
-            set { SetValue(nameof(enableMultithreading), value, ref _enableMultithreading); }
+            set => SetValue(nameof(enableMultithreading), value, ref _enableMultithreading);
         }
 
 #if UNITY_EDITOR
         public string buildOutputPath
         {
             get => _buildOutputPath;
-            set { SetValue(nameof(buildOutputPath), value, ref _buildOutputPath); }
+            set => SetValue(nameof(buildOutputPath), value, ref _buildOutputPath);
         }
 
         public UnityEditor.BuildAssetBundleOptions buildOptions
         {
             get => _buildOptions;
-            set { SetValue(nameof(buildOptions), value, ref _buildOptions); }
+            set => SetValue(nameof(buildOptions), value, ref _buildOptions);
         }
 
         public UnityEditor.BuildTarget buildTarget
         {
             get => _buildTarget;
-            set { SetValue(nameof(buildTarget), value, ref _buildTarget); }
+            set => SetValue(nameof(buildTarget), value, ref _buildTarget);
         }
 
         private bool AddSceneCameraTransform(TransformBase sceneCameraTransform)
@@ -1040,6 +1044,23 @@ namespace DepictionEngine
             _updated = false;
         }
 
+#if UNITY_EDITOR
+        private static List<UnityEngine.Object> _resetingObjects = new();
+        public static void Reseting(UnityEngine.Object scriptableBehaviour)
+        {
+            _resetingObjects.Add(scriptableBehaviour);
+        }
+
+        private static List<(IJson, JSONObject)> _pastingComponentValuesToObjects = new();
+        public static void PastingComponentValues(IJson iJson, JSONObject json)
+        {
+            if (json[nameof(IProperty.id)] != null)
+                json.Remove(nameof(IProperty.id));
+
+            _pastingComponentValuesToObjects.Add((iJson, json));
+        }
+#endif
+
         public void Update()
         {
             if (this != Disposable.NULL)
@@ -1047,6 +1068,10 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                 //Make sure GameObjects are always active when copy/pasted in the Editor so that Awake is always called.
                 ResetCopyingGameObjectsActiveState();
+
+                DetectInspectorReset();
+
+                DetectInspectorPasteComponentValues();
 
                 //Detect GameObjects/Components created in the Editor.
                 HierarchicalInitializeEditorCreatedObjects();
@@ -1066,19 +1091,67 @@ namespace DepictionEngine
             }
         }
 
+#if UNITY_EDITOR
+        private void DetectInspectorReset()
+        {
+            if (_resetingObjects != null && _resetingObjects.Count > 0)
+            {
+                //We assume that all the objects are of the same type
+                IScriptableBehaviour firstUnityObject = _resetingObjects[0] as IScriptableBehaviour;
+                string groupName = "Reset " + (_resetingObjects.Count == 1 ? firstUnityObject.name : "Object") + " " + firstUnityObject.GetType().Name;
+
+                Editor.UndoManager.SetCurrentGroupName(groupName);
+                Editor.UndoManager.RecordObjects(_resetingObjects.ToArray());
+
+                foreach (UnityEngine.Object unityObject in _resetingObjects)
+                {
+                    if (unityObject is IProperty)
+                        (unityObject as IProperty).InspectorReset();
+                }
+
+                _resetingObjects.Clear();
+            }
+        }
+
+        private void DetectInspectorPasteComponentValues()
+        {
+            if (_pastingComponentValuesToObjects != null && _pastingComponentValuesToObjects.Count > 0)
+            {
+                sceneExecutionState = ExecutionState.PastingComponentValues;
+
+                //We assume that all the objects are of the same type
+                IScriptableBehaviour firstUnityObject = _pastingComponentValuesToObjects[0].Item1;
+                //'Pasted' is not a typo it is used to distinguish Unity 'Paste Component Values' action from the one we create. If there is no distinction then if the undo/redo actions are played again this code will be executed again and a new action will be recorded in the history erasing any subsequent actions.
+                string groupName = "Pasted " + firstUnityObject.GetType().FullName + " Values";
+
+                Editor.UndoManager.SetCurrentGroupName(groupName);
+
+                UnityEngine.Object[] recordObjects = new UnityEngine.Object[_pastingComponentValuesToObjects.Count];
+                for (int i = 0; i < recordObjects.Length; i++)
+                    recordObjects[i] = _pastingComponentValuesToObjects[i].Item1 as UnityEngine.Object;
+                Editor.UndoManager.RecordObjects(recordObjects);
+
+                foreach ((IJson, JSONObject) pastingComponentValuesToObject in _pastingComponentValuesToObjects)
+                {
+                    IJson iJson = pastingComponentValuesToObject.Item1;
+                    JSONObject json = pastingComponentValuesToObject.Item2;
+                    UserContext(() =>
+                    {
+                        iJson.SetJson(json);
+                    });
+                }
+                _pastingComponentValuesToObjects.Clear();
+
+                sceneExecutionState = ExecutionState.None;
+            }
+        }
+#endif
+
         public void HierarchicalInitializeEditorCreatedObjects()
         {
 #if UNITY_EDITOR
             if (Editor.UndoManager.DetectEditorUndoRedoRegistered())
-            {
-                InstanceManager.InitializingContext(() =>
-                {
-                    UserContext(() =>
-                    {
-                        HierarchicalInitialize();
-                    });
-                }, InitializationContext.Editor);
-            }
+                InstanceManager.InitializingContext(() => { HierarchicalInitialize(); }, InitializationContext.Editor);
 #endif
         }
 
@@ -1184,73 +1257,10 @@ namespace DepictionEngine
             HierarchicalDetectChanges();
         }
 
-#if UNITY_EDITOR
-        private static List<UnityEngine.Object> _resetingObjects = new();
-        public static void Reseting(UnityEngine.Object scriptableBehaviour)
-        {
-            _resetingObjects.Add(scriptableBehaviour);
-        }
-
-        private static List<(IJson, JSONObject)> _pastingComponentValuesToObjects = new();
-        public static void PastingComponentValues(IJson iJson, JSONObject json)
-        {
-            if (json[nameof(IProperty.id)] != null)
-                json.Remove(nameof(IProperty.id));
-            
-            _pastingComponentValuesToObjects.Add((iJson, json));
-        }
-#endif
-
         protected override void LateUpdate()
         {
             base.LateUpdate();
 
-#if UNITY_EDITOR
-            if (_resetingObjects != null && _resetingObjects.Count > 0)
-            {
-                //We assume that all the objects are of the same type
-                IScriptableBehaviour firstUnityObject = _resetingObjects[0] as IScriptableBehaviour;
-                string groupName = "Reset " + (_resetingObjects.Count == 1 ? firstUnityObject.name : "Object") + " " + firstUnityObject.GetType().Name;
-
-                Editor.UndoManager.SetCurrentGroupName(groupName);
-                Editor.UndoManager.RecordObjects(_resetingObjects.ToArray());
-
-                foreach (UnityEngine.Object unityObject in _resetingObjects)
-                {
-                    if (unityObject is IProperty)
-                        (unityObject as IProperty).InspectorReset();
-                }
-
-                _resetingObjects.Clear();
-            }
-
-            sceneExecutionState = ExecutionState.PastingComponentValues;
-            if (_pastingComponentValuesToObjects != null && _pastingComponentValuesToObjects.Count > 0)
-            {
-                //We assume that all the objects are of the same type
-                IScriptableBehaviour firstUnityObject = _pastingComponentValuesToObjects[0].Item1;
-                //'Pasted' is not a typo it is used to distinguish Unity 'Paste Component Values' action from the one we create. If there is no distinction then if the undo/redo actions are played again this code will be executed again and a new action will be recorded in the history erasing any subsequent actions.
-                string groupName = "Pasted " + firstUnityObject.GetType().FullName + " Values";
-
-                Editor.UndoManager.SetCurrentGroupName(groupName);
-                
-                UnityEngine.Object[] recordObjects = new UnityEngine.Object[_pastingComponentValuesToObjects.Count];
-                for (int i = 0; i < recordObjects.Length; i++)
-                    recordObjects[i] = _pastingComponentValuesToObjects[i].Item1 as UnityEngine.Object;
-                Editor.UndoManager.RecordObjects(recordObjects);
-                
-                foreach ((IJson, JSONObject) pastingComponentValuesToObject in _pastingComponentValuesToObjects)
-                {
-                    IJson iJson = pastingComponentValuesToObject.Item1;
-                    JSONObject json = pastingComponentValuesToObject.Item2;
-                    UserContext(() => 
-                    {
-                        iJson.SetJson(json);
-                    });
-                }
-                _pastingComponentValuesToObjects.Clear();
-            }
-#endif
             InvokeAction(ref LateUpdateEvent, "LateUpdate", ExecutionState.LateUpdate);
 
             DisposeManager.DisposingContext(() => 

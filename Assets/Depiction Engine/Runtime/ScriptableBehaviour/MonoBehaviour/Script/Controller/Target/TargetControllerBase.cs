@@ -2,7 +2,6 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace DepictionEngine
 {
@@ -17,7 +16,7 @@ namespace DepictionEngine
         [BeginFoldout("Target")]
         [SerializeField, ComponentReference, Tooltip("The id of the target.")]
         private SerializableGuid _targetId;
-        [SerializeField, Tooltip("A min and max clamping values used on the "+nameof(distance)+".")]
+        [SerializeField, Tooltip("A min and max clamping values used on the " + nameof(distance) + ".")]
         private Vector2Double _minMaxDistance;
         [SerializeField, Tooltip("The distance between the object and the target, in world units.")]
         private double _distance;
@@ -94,7 +93,7 @@ namespace DepictionEngine
                 //Prevent user captured changes from taking effect
                 bool rotationChanged = capturedComponent.HasFlag(TransformBase.Component.LocalRotation);
                 bool positionChanged = capturedComponent.HasFlag(TransformBase.Component.LocalPosition);
-                
+
                 if (rotationChanged || positionChanged)
                     ForceUpdateTransformPending(true, true);
 
@@ -159,7 +158,7 @@ namespace DepictionEngine
         public SerializableGuid targetId
         {
             get { return _targetId; }
-            set 
+            set
             {
                 SetValue(nameof(targetId), value, ref _targetId, (newValue, oldValue) =>
                 {
@@ -210,9 +209,9 @@ namespace DepictionEngine
                     targetPositionChanged = true;
                 }
             }
-            
+
             _forcingTargetTransformUpdate = false;
-           
+
             return targetPositionChanged;
         }
 

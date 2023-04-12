@@ -108,6 +108,19 @@ namespace DepictionEngine
             InitValue(value => popupDuration = value, GetDefaultPopupDuration(), initializingContext);
         }
 
+#if UNITY_EDITOR
+        public override bool UndoRedoPerformed()
+        {
+            if (base.UndoRedoPerformed())
+            {
+                _meshRendererVisualDirtyFlags?.UndoRedoPerformed();
+
+                return true;
+            }
+            return false;
+        }
+#endif
+
         /// <summary>
         /// When enabled the visuals will be instantiated automatically when the object is created or when the dependencies change.
         /// </summary>
@@ -263,8 +276,7 @@ namespace DepictionEngine
                     childGO.hideFlags &= ~HideFlags.DontSave;
                 });
 
-                if (meshRendererVisualDirtyFlags != null)
-                    meshRendererVisualDirtyFlags.ResetDirty();
+                meshRendererVisualDirtyFlags?.ResetDirty();
             }
         }
 

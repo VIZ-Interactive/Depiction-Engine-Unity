@@ -19,6 +19,15 @@ namespace DepictionEngine
             _elevationMultiplier = default;
         }
 
+#if UNITY_EDITOR
+        public override void UndoRedoPerformed()
+        {
+            base.UndoRedoPerformed();
+
+            SerializationUtility.RecoverLostReferencedObject(ref _elevation);
+        }
+#endif
+
         public Elevation elevation
         {
             get { return _elevation; }

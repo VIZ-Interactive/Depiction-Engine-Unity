@@ -47,18 +47,7 @@ namespace DepictionEngine
             _loader = default;
         }
 
-        protected override bool Initialize(InitializationContext initializingContext)
-        {
-            if (base.Initialize(initializingContext))
-            {
-                InitializeLastFields();
-
-                return true;
-            }
-            return false;
-        }
-
-        protected bool InitializeLastFields()
+        public bool InitializeLastFields()
         {
 #if UNITY_EDITOR
             lastPersistentsDictionary.Clear();
@@ -74,12 +63,14 @@ namespace DepictionEngine
             return this;
         }
 
-        public List<(bool, SerializableGuid, IPersistent)> PerformAddRemovePersistents(bool compareWithLastDictionary = false)
+        public List<(bool, SerializableGuid, IPersistent)> PerformAddRemovePersistentsChange(bool compareWithLastDictionary = false)
         {
             PersistentsDictionary lastPersistentsDictionary = persistentsDictionary;
 #if UNITY_EDITOR
             if (compareWithLastDictionary)
                 lastPersistentsDictionary = this.lastPersistentsDictionary;
+
+            SerializationUtility.RecoverLostReferencedObjectsInCollection(persistentsDictionary);
 #endif
             return LoaderBase.PerformAddRemovePersistentsChange(this, persistentsDictionary, lastPersistentsDictionary);
         }
@@ -91,13 +82,9 @@ namespace DepictionEngine
             get => _lastPersistentsDictionary ??= new ();
         }
 
-        public void RecoverLostReferencedObjects()
+        public void LoaderUndoRedoPerformed()
         {
-            UnityEngine.Object loaderUnityObject = _loader;
-            if (SerializationUtility.RecoverLostReferencedObject(ref loaderUnityObject))
-                _loader = loaderUnityObject as LoaderBase;
-            
-            SerializationUtility.RecoverLostReferencedObjectsInCollection(persistentsDictionary);
+            SerializationUtility.RecoverLostReferencedObject(ref _loader);
         }
 #endif
 
@@ -108,12 +95,7 @@ namespace DepictionEngine
 
         public IPersistent GetFirstPersistent()
         {
-            IPersistent persistent = null;
-
-            if (persistentsDictionary.Count > 0)
-                persistent = persistentsDictionary.ElementAt(0).Value.persistent;
-
-            return persistent;
+            return persistentsDictionary.Count > 0 ? persistentsDictionary.ElementAt(0).Value.persistent : null;
         }
 
         public virtual bool AddPersistent(IPersistent persistent)
@@ -142,7 +124,8 @@ namespace DepictionEngine
 #if UNITY_EDITOR
             RegisterCompleteObjectUndo(disposeContext);
 #endif
-
+            if (loader is CameraGrid2DLoader)
+                Debug.Log(this);
             if (persistentsDictionary.Remove(persistentId))
             {
 #if UNITY_EDITOR
@@ -240,7 +223,7 @@ namespace DepictionEngine
 
         private DatasourceOperationBase datasourceOperation
         {
-            get =>_datasourceOperation;
+            get => _datasourceOperation;
             set => SetDatasourceOperation(value);
         }
 

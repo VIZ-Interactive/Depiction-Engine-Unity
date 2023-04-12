@@ -93,13 +93,17 @@ namespace DepictionEngine
             get => _lastIdReferences ??= new ();
         }
 
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
+            if (base.UndoRedoPerformed())
+            {
+                PerformAddRemoveLoadScopesChange(idLoadScopes, lastIdLoadScopes, true);
 
-            PerformAddRemoveLoadScopesChange(idLoadScopes, lastIdLoadScopes, true);
+                PerformAddRemoveReferencesChange(idReferences, lastIdReferences);
 
-            PerformAddRemoveReferencesChange(idReferences, lastIdReferences);
+                return true;
+            }
+            return false;
         }
 
         public override bool AfterAssemblyReload()
@@ -389,7 +393,7 @@ namespace DepictionEngine
 
         protected IdLoadScope CreateIdLoadScope(SerializableGuid id)
         {
-            return (CreateLoadScope(typeof(IdLoadScope)) as IdLoadScope).Init(this, id);
+            return (CreateLoadScope(typeof(IdLoadScope), id.ToString()) as IdLoadScope).Init(this, id);
         }
     }
 }

@@ -15,7 +15,7 @@ namespace DepictionEngine.Editor
         private static void CreateObject(MenuCommand menuCommand) 
         {
             string name = nameof(Object);
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateObject<Object>(GetContextTransform(menuCommand), name);
         }
@@ -24,7 +24,7 @@ namespace DepictionEngine.Editor
         private static void CreateVisualObject(MenuCommand menuCommand)
         {
             string name = nameof(VisualObject);
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateObject<VisualObject>(GetContextTransform(menuCommand), name);
         }
@@ -33,7 +33,7 @@ namespace DepictionEngine.Editor
         private static void CreateInstantiatorVisualObject(MenuCommand menuCommand)
         {
             string name = nameof(InstantiatorVisualObject);
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateObject<InstantiatorVisualObject>(GetContextTransform(menuCommand), name);
         }
@@ -42,7 +42,7 @@ namespace DepictionEngine.Editor
         private static void CreateReflectionProbe(MenuCommand menuCommand)
         {
             string name = nameof(ReflectionProbe);
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateObject<ReflectionProbe>(GetContextTransform(menuCommand), name);
         }
@@ -51,7 +51,7 @@ namespace DepictionEngine.Editor
         private static void CreateRectangularVolumeMask(MenuCommand menuCommand)
         {
             string name = nameof(RectangularVolumeMask);
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateObject<RectangularVolumeMask>(GetContextTransform(menuCommand), name);
         }
@@ -174,7 +174,7 @@ namespace DepictionEngine.Editor
             }
 
             string name = nameof(Star);
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateStar(GetContextTransform(menuCommand), name);
         }
@@ -183,7 +183,7 @@ namespace DepictionEngine.Editor
         private static void CreateStarSystem(MenuCommand menuCommand)
         {
             string name = nameof(StarSystem);
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             StarSystem starSystem = CreateObject<StarSystem>(GetContextTransform(menuCommand), name);
             CreateScript<StarSystemAnimator>(starSystem);
@@ -194,7 +194,7 @@ namespace DepictionEngine.Editor
         private static void CreateCamera(MenuCommand menuCommand)
         {
             string name = "Camera";
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             Camera camera = CreateObject<Camera>(GetContextTransform(menuCommand), name);
 
@@ -206,7 +206,7 @@ namespace DepictionEngine.Editor
         [MenuItem("GameObject/Depiction Engine/Camera/Target Camera", false, 48)]
         private static void CreateTargetCamera(MenuCommand menuCommand)
         {
-            UndoManager.QueueCreateNewGroup("Create Camera Target");
+            UndoManager.CreateNewGroup("Create Camera Target");
 
             Camera camera = InstanceUtility.CreateTargetCamera(GetContextTransform(menuCommand), InitializationContext.Editor, true, true);
 
@@ -228,7 +228,7 @@ namespace DepictionEngine.Editor
         private static void CreateLabel(MenuCommand menuCommand) 
         {
             string name = "Label";
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateObject<Label>(GetContextTransform(menuCommand), name);
         }
@@ -237,7 +237,7 @@ namespace DepictionEngine.Editor
         private static void CreateMarker(MenuCommand menuCommand) 
         {
             string name = "Marker";
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateObject<Marker>(GetContextTransform(menuCommand), name);
         }
@@ -247,7 +247,7 @@ namespace DepictionEngine.Editor
         private static void CreateDatasourceRoot(MenuCommand menuCommand)
         {
             string name = nameof(DatasourceRoot);
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateObject<DatasourceRoot>(GetContextTransform(menuCommand), name);
         }
@@ -256,7 +256,7 @@ namespace DepictionEngine.Editor
         private static void CreateFileSystemDatasource(MenuCommand menuCommand)
         {
             string name = "FileSystemDatasource";
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             Object datasourceObject = CreateObject<Object>(GetContextTransform(menuCommand), name);
             CreateScript<FileSystemDatasource>(datasourceObject);
@@ -266,7 +266,7 @@ namespace DepictionEngine.Editor
         private static void CreateRestDatasource(MenuCommand menuCommand)
         {
             string name = "RestDatasource";
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             Object datasourceObject = CreateObject<Object>(GetContextTransform(menuCommand), name);
             CreateScript<RestDatasource>(datasourceObject);
@@ -286,7 +286,7 @@ namespace DepictionEngine.Editor
 
         private static Planet CreatePlanetEmpty(Transform parent, string name, bool spherical)
         {
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateStarIfMissing(parent);
 
@@ -333,7 +333,7 @@ namespace DepictionEngine.Editor
 
         private static Planet CreateEarthBasic(Transform parent, string name, bool spherical)
         {
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateStarIfMissing(parent);
 
@@ -416,7 +416,7 @@ namespace DepictionEngine.Editor
 
         private static Planet CreateEarthRealistic(Transform parent, string name, bool spherical, string mapboxKey, string osmBuildingsKey)
         {
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateStarIfMissing(parent);
 
@@ -534,7 +534,7 @@ namespace DepictionEngine.Editor
 
         private static Planet CreateMoonRealistic(Transform parent, string name, bool spherical, string arcGISKey)
         {
-            UndoManager.QueueCreateNewGroup("Create " + name);
+            UndoManager.CreateNewGroup("Create " + name);
 
             CreateStarIfMissing(parent);
 

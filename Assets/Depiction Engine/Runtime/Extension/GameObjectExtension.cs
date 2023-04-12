@@ -19,9 +19,9 @@ namespace DepictionEngine
 
             InstanceManager.InitializingContext(() => 
             {
-#if UNITY_EDITOR
-                Editor.UndoManager.AddComponent(go, type, ref component, initializingContext);
-#endif
+//#if UNITY_EDITOR
+//                Editor.UndoManager.AddComponent(go, type, ref component, initializingContext);
+//#endif
                 component ??= go.AddComponent(type);
 
             }, initializingContext, json, propertyModifiers, isFallbackValues);

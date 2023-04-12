@@ -217,7 +217,7 @@ namespace DepictionEngine
 
         protected AssetReference featureAssetReference
         {
-            get { return GetFirstReferenceOfType(FEATURE_REFERENCE_DATATYPE) as AssetReference; }
+            get => GetFirstReferenceOfType(FEATURE_REFERENCE_DATATYPE) as AssetReference;
         }
 
         private void UpdateFeature()

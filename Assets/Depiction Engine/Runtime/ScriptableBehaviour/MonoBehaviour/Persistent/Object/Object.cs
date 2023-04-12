@@ -233,11 +233,13 @@ namespace DepictionEngine
         {
             base.CreateComponents(initializingContext);
 
+            Component[] components;
+
             GetRequiredComponentTypes(ref _requiredComponentTypes);
             List<Type> requiredComponentTypes = _requiredComponentTypes;
             if (requiredComponentTypes.Count > 0)
             {
-                Component[] components = GetComponents<Component>();
+                components = GetComponents<Component>();
 
                 foreach (Type requiredComponentType in requiredComponentTypes)
                 {
@@ -255,10 +257,10 @@ namespace DepictionEngine
                 }
             }
 
+            components = GetComponents<MonoBehaviourDisposable>();
+
             if (initializationJson != null)
             {
-                MonoBehaviourDisposable[] components = gameObject.GetComponents<MonoBehaviourDisposable>();
-
                 JSONObject animatorJson = initializationJson[nameof(animator)] as JSONObject;
                 if (animatorJson != null)
                 {
@@ -379,6 +381,9 @@ namespace DepictionEngine
                     }
                 }
             }
+
+            for (int i = components.Length - 1; i >= 0; i--)
+                InitializeComponent(components[i]);
 
             InitializeRigidbody(initializingContext);
         }
@@ -757,6 +762,10 @@ namespace DepictionEngine
 
         private void ReferencePropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
+            //If the object is Disposed we do not need to update the asset references as this will switch the meshRendererVisualDirtyFlags.isDirty flags to true which will force the AutoGenerateVisualObject to regenerate its mesh if the destroy whas triggered in the Editor(and the dirty state switch were recorded) and it is undone/created later.
+            if (IsDisposing())
+                return;
+
             if (name == nameof(ReferenceBase.data) || name == nameof(ReferenceBase.dataType))
                 UpdateReferences();
         }

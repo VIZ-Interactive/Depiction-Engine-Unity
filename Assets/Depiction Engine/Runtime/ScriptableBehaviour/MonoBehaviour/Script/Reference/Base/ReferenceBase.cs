@@ -116,8 +116,9 @@ namespace DepictionEngine
             if (base.PostLateInitialize(initializingContext))
             {
                 //Executed in PostLateInitialize because we have to wait for all potentially duplicating FallbackValues to update their loader id in the event of a bulk object duplicate.
-                UpdateLoadScope();
-           
+                if (!UpdateLoadScope())
+                    UpdateData();
+
                 return true;
             }
             return false;
@@ -152,21 +153,24 @@ namespace DepictionEngine
         private Grid2DIndex _lastDataIndex2D;
         private LoadScope _lastLoadScope;
         private PersistentScriptableObject _lastData;
-        protected override void UndoRedoPerformed()
+        public override bool UndoRedoPerformed()
         {
-            base.UndoRedoPerformed();
+            if (base.UndoRedoPerformed())
+            {
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataType = value; }, ref _dataType, ref _lastDataType);
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { loaderId = value; }, ref _loaderId, ref _lastLoaderId);
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataId = value; }, ref _dataId, ref _lastDataId);
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataIndex2D = value; }, ref _dataIndex2D, ref _lastDataIndex2D);
 
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataType = value; }, ref _dataType, ref _lastDataType);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { loaderId = value; }, ref _loaderId, ref _lastLoaderId);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataId = value; }, ref _dataId, ref _lastDataId);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataIndex2D = value; }, ref _dataIndex2D, ref _lastDataIndex2D);
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { loadScope = value; }, ref _loadScope, ref _lastLoadScope);
 
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { loadScope = value; }, ref _loadScope, ref _lastLoadScope);
-
-            UnityEngine.Object dataUnityObject = _data;
-            if (SerializationUtility.RecoverLostReferencedObject(ref dataUnityObject))
-                _data = (PersistentScriptableObject)dataUnityObject;
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { data = value; }, ref _data, ref _lastData);
+                SerializationUtility.RecoverLostReferencedObject(ref _data);
+                    
+                SerializationUtility.PerformUndoRedoPropertyChange((value) => { data = value; }, ref _data, ref _lastData);
+                
+                return true;
+            }
+            return false;
         }
 #endif
 
@@ -494,7 +498,7 @@ namespace DepictionEngine
         public PersistentScriptableObject data
         {
             get => _data;
-            private set { SetData(value); }
+            private set => SetData(value);
         }
 
         private bool SetData(PersistentScriptableObject value, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
