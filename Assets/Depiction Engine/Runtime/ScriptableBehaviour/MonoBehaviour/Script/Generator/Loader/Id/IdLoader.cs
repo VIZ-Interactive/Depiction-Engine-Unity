@@ -84,13 +84,13 @@ namespace DepictionEngine
         private IdLoadScopeDictionary _lastIdLoadScopes;
         private IdLoadScopeDictionary lastIdLoadScopes
         {
-            get => _lastIdLoadScopes ??= new();
+            get { _lastIdLoadScopes ??= new(); return _lastIdLoadScopes; }
         }
 
         private IdReferencesDictionary _lastIdReferences;
         private IdReferencesDictionary lastIdReferences
         {
-            get => _lastIdReferences ??= new ();
+            get { _lastIdReferences ??= new(); return _lastIdReferences; }
         }
 
         public override bool UndoRedoPerformed()
@@ -121,7 +121,7 @@ namespace DepictionEngine
 
         private IdLoadScopeDictionary idLoadScopes
         {
-            get => _idLoadScopes ??= new IdLoadScopeDictionary();
+            get { _idLoadScopes ??= new IdLoadScopeDictionary(); return _idLoadScopes; }
             set => _idLoadScopes = value;
         }
 
@@ -153,13 +153,13 @@ namespace DepictionEngine
         [Json]
         protected List<SerializableGuid> ids
         {
-            get => _ids ??= new List<SerializableGuid>();
+            get { _ids ??= new List<SerializableGuid>(); return _ids; }
             set { SetValue(nameof(ids), value, ref _ids); }
         }
 
         private IdReferencesDictionary idReferences
         {
-            get => _idReferences ??= new IdReferencesDictionary();
+            get { _idReferences ??= new IdReferencesDictionary(); return _idReferences; }
         }
 
         public bool AddId(SerializableGuid id)

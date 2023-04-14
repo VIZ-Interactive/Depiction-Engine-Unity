@@ -107,27 +107,33 @@ namespace DepictionEngine
         {
             if (base.SetVisualObject(oldValue, newValue))
             {
-                if (oldValue is not null)
-                    oldValue.RemoveMeshRenderer(meshRenderer);
-                RemoveVisualObjectMeshRenderer();
+                RemoveVisualObjectMeshRenderer(oldValue);
+                AddVisualObjectMeshRenderer(newValue);
                 return true;
             }
             return false;
         }
 
-        private void RemoveVisualObjectMeshRenderer()
+        private void RemoveVisualObjectMeshRenderer(VisualObject visualObject)
         {
-            visualObject?.AddMeshRenderer(meshRenderer);
+            if (visualObject is not null)
+                visualObject.RemoveMeshRenderer(meshRenderer);
+        }
+
+        private void AddVisualObjectMeshRenderer(VisualObject visualObject)
+        {
+            if (visualObject != Disposable.NULL)
+                visualObject.AddMeshRenderer(meshRenderer);
         }
 
         public Bounds bounds
         {
-            get { return meshFilter.sharedMesh != null ? meshFilter.sharedMesh.bounds : new Bounds(); }
+            get => meshFilter.sharedMesh != null ? meshFilter.sharedMesh.bounds : new Bounds();
         }
 
         public int vertexCount
         {
-            get { return meshFilter.sharedMesh != null ? meshFilter.sharedMesh.vertexCount : 0; }
+            get => meshFilter.sharedMesh != null ? meshFilter.sharedMesh.vertexCount : 0;
         }
 
         protected virtual ShadowCastingMode GetDefaultShadowCastingMode()
@@ -142,14 +148,14 @@ namespace DepictionEngine
 
         public ShadowCastingMode shadowCastingMode
         {
-            get { return _meshRenderer.shadowCastingMode; }
-            set { _meshRenderer.shadowCastingMode = value; }
+            get => _meshRenderer.shadowCastingMode;
+            set => _meshRenderer.shadowCastingMode = value;
         }
 
         public bool receiveShadows
         {
-            get { return _meshRenderer.receiveShadows; }
-            set { _meshRenderer.receiveShadows = value; }
+            get => _meshRenderer.receiveShadows;
+            set => _meshRenderer.receiveShadows = value;
         }
 
         public MeshRenderer meshRenderer
@@ -357,7 +363,7 @@ namespace DepictionEngine
         {
             if (base.OnDispose(disposeContext))
             {
-                RemoveVisualObjectMeshRenderer();
+                RemoveVisualObjectMeshRenderer(visualObject);
 
 #if UNITY_EDITOR
                 //When undoing an Add Component(such as Add GeoCoordinateController) on a VisualObject(tested on Markers) the children whose creation was not registered with the UndoManager are disposed automatically for some reason.
@@ -434,17 +440,17 @@ namespace DepictionEngine
 
         public Type typeNoCollider
         { 
-            get { return _typeNoCollider; }
+            get => _typeNoCollider;
         }
 
         public Type typeBoxCollider
         {
-            get { return _typeBoxCollider; }
+            get => _typeBoxCollider;
         }
 
         public Type typeMeshCollider
         {
-            get { return _typeMeshCollider; }
+            get => _typeMeshCollider;
         }
 
         public Type GetMeshType()
@@ -461,8 +467,8 @@ namespace DepictionEngine
 
         public string name
         {
-            get { return _name; }
-            set { _name = value; }
+            get => _name;
+            set => _name = value;
         }
 
         public MeshModifier CreateMeshModifier()
@@ -534,8 +540,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_meshModifierProcessor, value))
                     return;
 
-                if (_meshModifierProcessor != null)
-                    _meshModifierProcessor.Cancel();
+                _meshModifierProcessor?.Cancel();
 
                 _meshModifierProcessor = value;
             }
@@ -571,8 +576,7 @@ namespace DepictionEngine
         {
             if (base.OnDispose(disposeContext))
             {
-                if (_meshModifierProcessor != null)
-                    _meshModifierProcessor.Dispose();
+                _meshModifierProcessor?.Dispose();
 
                 DisposeMeshModifier();
 

@@ -185,17 +185,17 @@ namespace DepictionEngine
 
         private LocalPositionParam localPositionParam
         {
-            get => _localPositionParam ??= new LocalPositionParam();
+            get { _localPositionParam ??= new LocalPositionParam(); return _localPositionParam; }
         }
 
         private LocalRotationParam localRotationParam
         {
-            get => _localRotationParam ??= new LocalRotationParam();
+            get { _localRotationParam ??= new LocalRotationParam(); return _localRotationParam; }
         }
 
         private LocalScaleParam localScaleParam
         {
-            get => _localScaleParam ??= new LocalScaleParam();
+            get { _localScaleParam ??= new LocalScaleParam(); return _localScaleParam; }
         }
 
         /// <summary>
@@ -658,7 +658,11 @@ namespace DepictionEngine
                 if (SceneManager.IsUserChangeContext())
                     RegisterCompleteObjectUndo();
 #endif
-                SetTransformComponents(CaptureLocalPosition(), CaptureLocalRotation(), CaptureLocalScale());
+                //Changes made during the FixedUpdate are physics driven, we do not want them to prevent autoDispose.
+                Datasource.AllowAutoDisposeOnOutOfSynchProperty(() =>
+                {
+                    SetTransformComponents(CaptureLocalPosition(), CaptureLocalRotation(), CaptureLocalScale());
+                }, SceneManager.sceneExecutionState == SceneManager.ExecutionState.FixedUpdate);
 
                 InitLastTransformFields();
             }
@@ -667,7 +671,6 @@ namespace DepictionEngine
         protected LocalPositionParam CaptureLocalPosition()
         {
             Vector3 localPositionDelta = CaptureLocalPositionDelta();
-
             if (!Object.Equals(localPositionDelta, Vector3.zero))
             {
                 Vector3Double localPosition = _localPosition + localPositionDelta;
@@ -700,19 +703,6 @@ namespace DepictionEngine
             else
                 UpdateLocalScaleParam();
             return localScaleParam;
-        }
-
-        public override bool IsDynamicProperty(int key)
-        {
-            bool isDynamicProperty = base.IsDynamicProperty(key);
-
-            if (!isDynamicProperty && objectBase != Disposable.NULL && objectBase.IsPhysicsObject())
-            {
-                if (key == GetPropertyKey(nameof(localPosition)) || key == GetPropertyKey(nameof(localRotation)))
-                    isDynamicProperty = true;
-            }
-
-            return isDynamicProperty;
         }
 
         public override bool ForceUpdateTransform(out Component changedComponents, bool localPositionChanged = false, bool localRotationChanged = false, bool localScaleChanged = false, Camera camera = null, bool forceDeriveLocalPosition = false, bool triggerTransformChanged = true)

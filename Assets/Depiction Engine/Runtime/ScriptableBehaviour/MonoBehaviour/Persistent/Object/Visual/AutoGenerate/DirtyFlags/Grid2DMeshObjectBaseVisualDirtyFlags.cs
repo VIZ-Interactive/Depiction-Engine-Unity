@@ -49,8 +49,8 @@ namespace DepictionEngine
 
         public Vector3 meshRendererVisualLocalScale
         {
-            get { return _meshRendererVisualLocalScale; }
-            set { SetMeshRendererVisualLocalScale(value); }
+            get => _meshRendererVisualLocalScale;
+            set => SetMeshRendererVisualLocalScale(value);
         }
 
         protected virtual bool SetMeshRendererVisualLocalScale(Vector3 value)
@@ -65,8 +65,8 @@ namespace DepictionEngine
 
         public double size
         {
-            get { return _size; }
-            set { SetSize(value); }
+            get => _size;
+            set => SetSize(value);
         }
 
         protected virtual bool SetSize(double value)
@@ -81,8 +81,8 @@ namespace DepictionEngine
 
         public float sphericalRatio
         {
-            get { return _sphericalRatio; }
-            set { SetSphericalRatio(value); }
+            get => _sphericalRatio;
+            set => SetSphericalRatio(value);
         }
 
         protected virtual bool SetSphericalRatio(float value)
@@ -97,8 +97,8 @@ namespace DepictionEngine
 
         public Vector2Int grid2DIndex
         {
-            get { return _grid2DIndex; }
-            set { SetGrid2DIndex(value); }
+            get => _grid2DIndex;
+            set => SetGrid2DIndex(value);
         }
 
         protected virtual bool SetGrid2DIndex(Vector2Int value)
@@ -113,8 +113,8 @@ namespace DepictionEngine
 
         public Vector2Int grid2DDimensions
         {
-            get { return _grid2DDimensions; }
-            set { SetGrid2DDimensions(value); }
+            get => _grid2DDimensions;
+            set => SetGrid2DDimensions(value);
         }
 
         protected virtual bool SetGrid2DDimensions(Vector2Int value)

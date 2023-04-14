@@ -485,7 +485,7 @@ namespace DepictionEngine
                     assignedCallback?.Invoke(value, oldValue);
 
                     PropertyAssigned(this, name, value, oldValue); 
-                }, Datasource.allowAutoDispose || allowAutoDisposeOnOutOfSynchProperty);
+                }, allowAutoDisposeOnOutOfSynchProperty);
 
                 return true;
             }
@@ -501,7 +501,7 @@ namespace DepictionEngine
         /// <param name="forceChangeDuringInitializing">When true, the function will always return true if the object is not initialized.</param>
         /// <returns>True of the objects are the same.</returns>
         /// <remarks>List's will compare their items not the collection reference.</remarks>
-        protected bool HasChanged(object newValue, object oldValue, bool forceChangeDuringInitializing = true)
+        protected bool HasChanged<T>(T newValue, T oldValue, bool forceChangeDuringInitializing = true)
         {
             if (forceChangeDuringInitializing && !initialized && !isFallbackValues)
                 return true;
@@ -524,16 +524,6 @@ namespace DepictionEngine
             return !Object.Equals(newValue, oldValue);
         }
 
-        /// <summary>
-        /// Is this property subject to change from external factors such as physics engine.
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public virtual bool IsDynamicProperty(int key)
-        {
-            return false;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void PropertyAssigned<T>(IProperty property, string name, T newValue, T oldValue)
         {
@@ -545,7 +535,7 @@ namespace DepictionEngine
                 if (SceneManager.IsUserChangeContext() && property is IJson)
                 {
                     IJson iJson = property as IJson;
-                    if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo) && !iJson.IsDynamicProperty(GetPropertyKey(name)))
+                    if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
                         MarkAsNotPoolable();
                 }
 #endif
@@ -593,7 +583,7 @@ namespace DepictionEngine
 
         public List<PropertyMonoBehaviour> children
         {
-            get => _children ??= new List<PropertyMonoBehaviour>();
+            get { _children ??= new List<PropertyMonoBehaviour>(); return _children; }
         }
 
         protected virtual bool CanBeDisabled()
@@ -704,16 +694,23 @@ namespace DepictionEngine
         protected virtual bool SetParent(PropertyMonoBehaviour value)
         {
             return SetValue(nameof(parent), ValidatedParent(value), ref _parent, (newValue, oldValue) =>
-               {
-#if UNITY_EDITOR
-                   _lastParent = parent;
-#endif
-                   if (RemoveParentDelegates(oldValue))
-                        oldValue.RemoveChild(this);
+                {
+                    if (HasChanged(newValue, oldValue, false))
+                    {
+    #if UNITY_EDITOR
+                        _lastParent = parent;
+    #endif
+                        RemoveParentDelegates(oldValue);
+                        AddParentDelegates(newValue);
 
-                    if (AddParentDelegates(newValue))
+                        if (oldValue is not null)
+                            oldValue.RemoveChild(this);
+                    }
+
+                    //Children are not serialized so while the value might be the same in this class it does not mean the parent has a proper reference to it, so we always add it just in case.
+                    if (newValue != Disposable.NULL)
                         newValue.AddChild(this);
-               });
+                });
         }
 
         private Vector3Double _originParam;
@@ -969,7 +966,14 @@ namespace DepictionEngine
             if (list != null)
             {
                 for (int i = list.Count - 1; i >= 0; i--)
-                    TriggerCallback(list[i], callback);
+                {
+                    if (list.Count > 0)
+                    {
+                        if (i >= list.Count)
+                            i = list.Count - 1;
+                        TriggerCallback(list[i], callback);
+                    }
+                }
             }
         }
 
@@ -1018,7 +1022,7 @@ namespace DepictionEngine
             if (wasFirstUpdated)
             {
                 if (ResetAllowed())
-                    SceneManager.Reseting(this);
+                    Editor.InspectorManager.Reseting(this);
 
                 Editor.UndoManager.RevertAllInCurrentGroup();
 

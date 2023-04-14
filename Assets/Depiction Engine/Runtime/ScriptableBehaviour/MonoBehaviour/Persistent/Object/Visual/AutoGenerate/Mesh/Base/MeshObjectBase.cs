@@ -152,8 +152,11 @@ namespace DepictionEngine
 
         private void UpdateMeshesDontSaveToScene()
         {
-            foreach (Mesh mesh in meshes)
-                mesh.dontSaveToScene = dontSaveVisualsToScene;
+            for (int i = meshes.Count - 1; i >= 0; i--)
+            {
+                if (!isSharedMeshFlags[i])
+                    meshes[i].dontSaveToScene = dontSaveVisualsToScene;
+            }
         }
 
         /// <summary>
@@ -161,13 +164,13 @@ namespace DepictionEngine
         /// </summary>
         public Action ProcessingCompletedEvent
         {
-            get { return _processingCompletedEvent; }
-            set { _processingCompletedEvent = value; }
+            get => _processingCompletedEvent;
+            set => _processingCompletedEvent = value;
         }
 
         protected Processor meshDataProcessor
         {
-            get { return _meshDataProcessor; }
+            get => _meshDataProcessor;
             set
             {
                 if (Object.ReferenceEquals(_meshDataProcessor, value))
@@ -466,7 +469,7 @@ namespace DepictionEngine
                 if (visualsChanged || PropertyDirty(nameof(receiveShadows)))
                     meshRendererVisual.receiveShadows = receiveShadows;
 
-                UpdateMeshRendererVisualCollider(meshRendererVisual, meshRendererVisualDirtyFlags.colliderType, convexCollider, visualsChanged, meshRendererVisualDirtyFlags.colliderTypeDirty, PropertyDirty(nameof(convexCollider)));
+                UpdateMeshRendererVisualCollider(meshRendererVisual, meshRendererVisualDirtyFlags, convexCollider, visualsChanged, PropertyDirty(nameof(convexCollider)));
 
                 return true;
             });

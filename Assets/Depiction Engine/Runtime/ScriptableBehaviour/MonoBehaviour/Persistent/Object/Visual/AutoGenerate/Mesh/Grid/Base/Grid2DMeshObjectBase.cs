@@ -3,6 +3,8 @@
 using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.Rendering;
+using static UnityEngine.GraphicsBuffer;
 
 namespace DepictionEngine
 {
@@ -48,6 +50,62 @@ namespace DepictionEngine
             InitValue(value => grid2DDimensions = value, Vector2Int.one, initializingContext);
         }
 
+        protected override bool UpdateAllDelegates()
+        {
+            if (base.UpdateAllDelegates())
+            {
+#if UNITY_EDITOR
+                UpdateLeftMouseUpInSceneOrInspectorDelegate();
+#endif
+                return true;
+            }
+            return false;
+        }
+
+#if UNITY_EDITOR
+        private void UpdateLeftMouseUpInSceneOrInspectorDelegate()
+        {
+            SceneManager.LeftMouseUpInSceneOrInspectorEvent -= LeftMouseUpInSceneOrInspectorHandler;
+            if (isBeingMovedByUser && !IsDisposing())
+                SceneManager.LeftMouseUpInSceneOrInspectorEvent += LeftMouseUpInSceneOrInspectorHandler;
+        }
+
+        private void LeftMouseUpInSceneOrInspectorHandler()
+        {
+            snapToGridTimer = tweenManager.DelayedCall(0.1f, null, () => { ForceUpdateTransform(true, true); }, () => { snapToGridTimer = null; });
+        }
+
+        private Tween _snapToGridTimer;
+        private Tween snapToGridTimer
+        {
+            get { return _snapToGridTimer; }
+            set
+            {
+                if (Object.ReferenceEquals(_snapToGridTimer, value))
+                    return;
+
+                DisposeManager.Dispose(_snapToGridTimer);
+
+                _snapToGridTimer = value;
+            }
+        }
+
+        private bool _isBeingMovedByUser;
+        private bool isBeingMovedByUser
+        {
+            get => _isBeingMovedByUser;
+            set
+            {
+                if (_isBeingMovedByUser == value)
+                    return;
+
+                _isBeingMovedByUser = value;
+
+                UpdateLeftMouseUpInSceneOrInspectorDelegate();
+            }
+        }
+#endif
+
         public override bool IsPhysicsObject()
         {
             return false;
@@ -59,7 +117,7 @@ namespace DepictionEngine
             {
                 if (changedComponent.HasFlag(TransformBase.Component.Position))
                     UpdateGridIndex();
-          
+
                 return true;
             }
             return false;
@@ -122,7 +180,8 @@ namespace DepictionEngine
                     value.y = 1;
                 SetValue(nameof(grid2DDimensions), value, ref _grid2DDimensions, (newValue, oldValue) =>
                 {
-                    UpdateGridIndex();
+                    if (!UpdateGridIndex() && initialized)
+                        ForceUpdateTransform(true, true);
                 });
             }
         }
@@ -143,6 +202,8 @@ namespace DepictionEngine
             return SetValue(nameof(grid2DIndex), value, ref _grid2DIndex, (newValue, oldValue) =>
             {
                 UpdateReferenceDataIndex2D();
+                if (initialized)
+                    ForceUpdateTransform(true, true);
             });
         }
 
@@ -282,6 +343,33 @@ namespace DepictionEngine
             return null;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Color GetTexturePixel(Texture texture, float x, float y)
+        {
+            Color value = Color.clear;
+
+            if (texture != Disposable.NULL)
+            {
+                Vector2 pixel = GetProjectedPixel(texture, x, y);
+
+                value = texture.GetPixel(pixel.x, pixel.y);
+            }
+
+            return value;
+        }
+
+        protected Vector2 GetProjectedPixel(Texture texture, float x, float y)
+        {
+            if (grid2DDimensions != texture.grid2DDimensions)
+            {
+                Vector2 projectedGrid2DIndex = MathPlus.ProjectGrid2DIndex(x, y, grid2DIndex, grid2DDimensions, texture.grid2DIndex, texture.grid2DDimensions);
+                x = projectedGrid2DIndex.x;
+                y = projectedGrid2DIndex.y;
+            }
+
+            return new Vector2(x, y);
+        }
+
         public static bool operator <(Grid2DMeshObjectBase a, Grid2DMeshObjectBase b)
         {
             return a.grid2DDimensions.x < b.grid2DDimensions.x;
@@ -325,6 +413,13 @@ namespace DepictionEngine
                         bool geoCoordinateChanged = false;
 
                         GeoCoordinate3Double newGeoCoordinate = GetSnapToGridIndexGeoCoordinate(geoCoordinate);
+
+#if UNITY_EDITOR
+                        isBeingMovedByUser = SceneManager.IsUserChangeContext();
+                        if (isBeingMovedByUser)
+                            newGeoCoordinate = geoCoordinate;
+#endif
+
                         newGeoCoordinate.altitude = geoCoordinate.altitude;
                         if (geoCoordinate.latitude != newGeoCoordinate.latitude || geoCoordinate.longitude != newGeoCoordinate.longitude)
                             geoCoordinateChanged = true;
@@ -466,6 +561,18 @@ namespace DepictionEngine
             SetColorToMaterial("_Color", GetColor(), material, materialPropertyBlock);
             SetTextureToMaterial("_ColorMap", GetColorMap(), Texture2D.blackTexture, material, materialPropertyBlock);
             SetTextureToMaterial("_AdditionalMap", GetAdditionalMap(), Texture2D.whiteTexture, material, materialPropertyBlock);
+        }
+
+        public override bool OnDispose(DisposeContext disposeContext)
+        {
+            if (base.OnDispose(disposeContext))
+            {
+#if UNITY_EDITOR
+                snapToGridTimer = null;
+#endif
+                return true;
+            }
+            return false;
         }
 
         protected class Grid2DMeshObjectParameters : ProcessorParameters

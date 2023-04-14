@@ -155,7 +155,7 @@ namespace DepictionEngine
         public int transformsCount { get => transforms.Count; }
         private TransformDictionary transforms
         {
-            get => _transforms ??= new TransformDictionary();
+            get { _transforms ??= new TransformDictionary(); return _transforms; }
         }
 
         /// <summary>
@@ -164,7 +164,7 @@ namespace DepictionEngine
         public int persistentMonoBehavioursCount { get => persistentMonoBehaviours.Count; }
         private PersistentMonoBehaviourDictionary persistentMonoBehaviours
         {
-            get => _persistentMonoBehaviours ??= new PersistentMonoBehaviourDictionary();
+            get { _persistentMonoBehaviours ??= new PersistentMonoBehaviourDictionary(); return _persistentMonoBehaviours; }
         }
 
         /// <summary>
@@ -173,7 +173,7 @@ namespace DepictionEngine
         public int persistentScriptableObjectsCount { get => persistentScriptableObjects.Count; }
         private PersistentScriptableObjectDictionary persistentScriptableObjects
         {
-            get => _persistentScriptableObjects ??= new PersistentScriptableObjectDictionary();
+            get { _persistentScriptableObjects ??= new PersistentScriptableObjectDictionary(); return _persistentScriptableObjects; }
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace DepictionEngine
         public int terrainGridMeshObjectsCount { get => terrainGridMeshObjects.Count; }
         private TerrainGridMeshObjectDictionary terrainGridMeshObjects
         {
-            get => _terrainGridMeshObjects ??= new TerrainGridMeshObjectDictionary();
+            get { _terrainGridMeshObjects ??= new TerrainGridMeshObjectDictionary(); return _terrainGridMeshObjects; }
         }
 
         /// <summary>
@@ -191,7 +191,7 @@ namespace DepictionEngine
         public int astroObjectsCount { get => astroObjects.Count; }
         private AstroObjectDictionary astroObjects
         {
-            get => _astroObjects ??= new AstroObjectDictionary();
+            get { _astroObjects ??= new AstroObjectDictionary(); return _astroObjects; }
         }
 
         /// <summary>
@@ -200,7 +200,7 @@ namespace DepictionEngine
         public int starSystemsCount { get => starSystems.Count; }
         private List<StarSystem> starSystems
         {
-            get => _starSystems ??= new List<StarSystem>();
+            get { _starSystems ??= new List<StarSystem>(); return _starSystems; }
         }
 
         /// <summary>
@@ -209,7 +209,7 @@ namespace DepictionEngine
         public int starsCount { get => stars.Count; }
         private List<Star> stars
         {
-            get => _stars ??= new List<Star>();
+            get { _stars ??= new List<Star>(); return _stars; }
         }
 
         /// <summary>
@@ -218,7 +218,7 @@ namespace DepictionEngine
         public int visualObjectsCount { get => visualObjects.Count; }
         private VisualObjectDictionary visualObjects
         {
-            get => _visualObjects ??= new VisualObjectDictionary();
+            get { _visualObjects ??= new VisualObjectDictionary(); return _visualObjects; }
         }
 
         /// <summary>
@@ -227,7 +227,7 @@ namespace DepictionEngine
         public int animatorsCount { get => animators.Count; }
         private AnimatorDictionary animators
         {
-            get => _animators ??= new AnimatorDictionary();
+            get { _animators ??= new AnimatorDictionary(); return _animators; }
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace DepictionEngine
         public int controllersCount { get => controllers.Count; }
         private ControllerDictionary controllers
         {
-            get => _controllers ??= new ControllerDictionary();
+            get { _controllers ??= new ControllerDictionary(); return _controllers; }
         }
 
         /// <summary>
@@ -245,7 +245,7 @@ namespace DepictionEngine
         public int generatorsCount { get => generators.Count; }
         private GeneratorDictionary generators
         {
-            get => _generators ??= new GeneratorDictionary();
+            get { _generators ??= new GeneratorDictionary(); return _generators; }
         }
 
         /// <summary>
@@ -254,7 +254,7 @@ namespace DepictionEngine
         public int referencesCount { get => references.Count; }
         private ReferenceDictionary references
         {
-            get => _references ??= new ReferenceDictionary();
+            get { _references ??= new ReferenceDictionary(); return _references; }
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace DepictionEngine
         public int effectsCount { get => effects.Count; }
         private EffectDictionary effects
         {
-            get => _effects ??= new EffectDictionary();
+            get { _effects ??= new EffectDictionary(); return _effects; }
         }
 
         /// <summary>
@@ -272,7 +272,7 @@ namespace DepictionEngine
         public int fallbackValuesCount { get => fallbackValues.Count; }
         private FallbackValuesDictionary fallbackValues
         {
-            get => _fallbackValues ??= new FallbackValuesDictionary();
+            get { _fallbackValues ??= new FallbackValuesDictionary(); return _fallbackValues; }
         }
 
         /// <summary>
@@ -281,7 +281,7 @@ namespace DepictionEngine
         public int datasourcesCount { get => datasources.Count; }
         private DatasourceDictionary datasources
         {
-            get => _datasources ??= new DatasourceDictionary();
+            get { _datasources ??= new DatasourceDictionary(); return _datasources; }
         }
 
         /// <summary>
@@ -289,7 +289,7 @@ namespace DepictionEngine
         /// </summary>
         public List<int> camerasInstanceIds
         {
-            get => _camerasInstanceIds ??= new List<int>();
+            get { _camerasInstanceIds ??= new List<int>(); return _camerasInstanceIds; }
         }
 
         /// <summary>
@@ -298,7 +298,7 @@ namespace DepictionEngine
         public int camerasCount { get => cameras.Count; }
         private List<Camera> cameras
         {
-            get => _cameras ??= new List<Camera>();
+            get { _cameras ??= new List<Camera>(); return _cameras; }
         }
 
         /// <summary>
@@ -307,12 +307,12 @@ namespace DepictionEngine
         public int managersCount { get => managers.Count; }
         private ManagerDictionary managers
         {
-            get => _managers ??= new ManagerDictionary();
+            get { _managers ??= new ManagerDictionary(); return _managers; }
         }
 
         private static Dictionary<SerializableGuid, SerializableGuid> duplicatingIdMapping
         {
-            get => _duplicatingIdMapping ??= new();
+            get { _duplicatingIdMapping ??= new(); return _duplicatingIdMapping; }
         }
 
         public static bool RegisterDuplicating(SerializableGuid oldId, SerializableGuid newId)

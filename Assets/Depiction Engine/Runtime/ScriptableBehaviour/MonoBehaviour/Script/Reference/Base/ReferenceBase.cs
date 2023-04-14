@@ -2,6 +2,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace DepictionEngine
 {
@@ -165,7 +166,6 @@ namespace DepictionEngine
                 SerializationUtility.PerformUndoRedoPropertyChange((value) => { loadScope = value; }, ref _loadScope, ref _lastLoadScope);
 
                 SerializationUtility.RecoverLostReferencedObject(ref _data);
-                    
                 SerializationUtility.PerformUndoRedoPropertyChange((value) => { data = value; }, ref _data, ref _lastData);
                 
                 return true;
@@ -541,7 +541,7 @@ namespace DepictionEngine
 
         public bool IsLoaded()
         {
-            return loader == Disposable.NULL || loadingState == DatasourceOperationBase.LoadingState.Failed || loadingState == DatasourceOperationBase.LoadingState.Loaded;
+            return loader == Disposable.NULL || (loader is Index2DLoaderBase && dataIndex2D == Grid2DIndex.Empty) || (loader is IdLoader && dataId == SerializableGuid.Empty) || loadingState == DatasourceOperationBase.LoadingState.Failed || loadingState == DatasourceOperationBase.LoadingState.Loaded;
         }
 
         /// <summary>
@@ -550,7 +550,7 @@ namespace DepictionEngine
         public DatasourceOperationBase.LoadingState loadingState
         {
             get => _loadingState;
-            private set { SetLoadingState(value); }
+            private set => SetLoadingState(value);
         }
 
         private bool SetLoadingState(DatasourceOperationBase.LoadingState value)

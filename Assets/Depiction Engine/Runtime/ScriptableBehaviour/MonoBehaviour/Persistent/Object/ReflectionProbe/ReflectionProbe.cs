@@ -125,7 +125,7 @@ namespace DepictionEngine
             get 
             {
                 if (_reflectionProbe == null)
-                    _reflectionProbe = GetComponent<UnityEngine.ReflectionProbe>();
+                    _reflectionProbe = gameObject.GetComponent<UnityEngine.ReflectionProbe>();
                 return _reflectionProbe; 
             }
         }

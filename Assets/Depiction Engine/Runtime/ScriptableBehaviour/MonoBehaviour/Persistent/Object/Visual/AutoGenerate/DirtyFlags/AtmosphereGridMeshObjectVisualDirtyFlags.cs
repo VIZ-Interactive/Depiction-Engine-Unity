@@ -63,17 +63,17 @@ namespace DepictionEngine
 
         public bool trianglesDirty
         {
-            get { return _trianglesDirty; }
+            get => _trianglesDirty;
         }
 
         public bool uvsDirty
         {
-            get { return _uvsDirty; }
+            get => _uvsDirty;
         }
 
         public bool verticesNormalsDirty
         {
-            get { return _verticesNormalsDirty; }
+            get => _verticesNormalsDirty;
         }
 
         protected void TrianglesDirty()

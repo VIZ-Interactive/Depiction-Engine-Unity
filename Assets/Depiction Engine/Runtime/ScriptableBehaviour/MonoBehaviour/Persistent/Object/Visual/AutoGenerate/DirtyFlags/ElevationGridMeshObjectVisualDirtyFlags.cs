@@ -30,7 +30,7 @@ namespace DepictionEngine
 
         public Elevation elevation
         {
-            get { return _elevation; }
+            get => _elevation;
             set
             {
                 if (_elevation == value)
@@ -40,6 +40,11 @@ namespace DepictionEngine
 
                 ElevationChanged();
             }
+        }
+
+        public virtual void ElevationChanged()
+        {
+            isDirty = true;
         }
 
         public float elevationMultiplier
@@ -54,11 +59,6 @@ namespace DepictionEngine
 
                 ElevationChanged();
             }
-        }
-
-        public virtual void ElevationChanged()
-        {
-            isDirty = true;
         }
     }
 }

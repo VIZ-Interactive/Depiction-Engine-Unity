@@ -220,7 +220,7 @@ namespace DepictionEngine
                 JSONObject transformJson = initializationJson[nameof(transform)] as JSONObject;
                 if (transformJson != null)
                 {
-                    TransformDouble transform = GetComponent<TransformDouble>();
+                    TransformDouble transform = gameObject.GetComponent<TransformDouble>();
                     if (transform != Disposable.NULL)
                         InitializeComponent(transform, transformJson);
                 }
@@ -392,7 +392,7 @@ namespace DepictionEngine
         {
             if (rigidbodyInternal == null)
             {
-                rigidbodyInternal = GetComponent<Rigidbody>();
+                rigidbodyInternal = gameObject.GetComponent<Rigidbody>();
                 if (useGravity && rigidbodyInternal == null)
                 {
                     rigidbodyInternal = gameObject.AddSafeComponent<Rigidbody>(initializingContext);
@@ -775,19 +775,19 @@ namespace DepictionEngine
             return forceUpdate || initialized;
         }
 
+        protected T GetAssetFromAssetReference<T>(AssetReference assetReference) where T : AssetBase
+        {
+            return assetReference != Disposable.NULL ? (T)assetReference.data : null;
+        }
+
+        protected virtual bool IterateOverAssetReferences(Func<AssetBase, AssetReference, bool, bool> callback)
+        {
+            return callback != null;
+        }
+
         protected virtual void ReferenceLoaderPropertyAssignedChangedHandler(ReferenceBase reference, IProperty serializable, string name, object newValue, object oldValue)
         {
 
-        }
-
-        public override bool IsDynamicProperty(int key)
-        {
-            bool isDynamicProperty = base.IsDynamicProperty(key);
-
-            if (!isDynamicProperty && key == GetPropertyKey(nameof(transform)))
-                isDynamicProperty = true;
-
-            return isDynamicProperty;
         }
 
         protected virtual void TransformChildAddedHandler(TransformBase transform, PropertyMonoBehaviour child)
@@ -982,7 +982,7 @@ namespace DepictionEngine
 
         private VisibleCamerasDictionary visibleCameras
         {
-            get => _visibleCameras ??= new VisibleCamerasDictionary();
+            get { _visibleCameras ??= new VisibleCamerasDictionary(); return _visibleCameras; }
         }
 
         protected virtual bool GetDefaultIsHiddenInHierarchy()
@@ -1428,7 +1428,7 @@ namespace DepictionEngine
         [Json(propertyName: nameof(generatorsJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<GeneratorBase> generators
         {
-            get => _generators ??= new List<GeneratorBase>();
+            get { _generators ??= new List<GeneratorBase>(); return _generators; }
             private set { SetValue(nameof(generators), value, ref _generators); }
         }
 
@@ -1438,7 +1438,7 @@ namespace DepictionEngine
         [Json(propertyName: nameof(referencesJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<ReferenceBase> references
         {
-            get => _references ??= new List<ReferenceBase>();
+            get { _references ??= new List<ReferenceBase>(); return _references; }
             private set { SetValue(nameof(references), value, ref _references); }
         }
 
@@ -1448,7 +1448,7 @@ namespace DepictionEngine
         [Json(propertyName: nameof(effectsJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<EffectBase> effects
         {
-            get => _effects ??= new List<EffectBase>();
+            get { _effects ??= new List<EffectBase>(); return _effects; }
             private set { SetValue(nameof(effects), value, ref _effects); }
         }
 
@@ -1458,7 +1458,7 @@ namespace DepictionEngine
         [Json(propertyName: nameof(fallbackValuesJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<FallbackValues> fallbackValues
         {
-            get => _fallbackValues ??= new List<FallbackValues>();
+            get { _fallbackValues ??= new List<FallbackValues>(); return _fallbackValues; }
             private set { SetValue(nameof(fallbackValues), value, ref _fallbackValues); }
         }
 
@@ -1468,7 +1468,7 @@ namespace DepictionEngine
         [Json(propertyName: nameof(datasourcesJson), conditionalMethod: nameof(IsNotFallbackValues))]
         public List<DatasourceBase> datasources
         {
-            get => _datasources ??= new List<DatasourceBase>();
+            get { _datasources ??= new List<DatasourceBase>(); return _datasources; }
             private set { SetValue(nameof(datasources), value, ref _datasources); }
         }
 
@@ -2095,7 +2095,9 @@ namespace DepictionEngine
                         {
                             Vector3 forceVector = astroObject.GetGravitationalForce(this);
                             if (!forceVector.Equals(Vector3.zero))
+                            {
                                 rigidbodyInternal.AddForce(forceVector, ForceMode.Impulse);
+                            }
 
                             return true;
                         });
@@ -2128,11 +2130,7 @@ namespace DepictionEngine
         private ComponentChangedPending _forceUpdateTransformPending;
         public ComponentChangedPending forceUpdateTransformPending
         {
-            get
-            {
-                _forceUpdateTransformPending ??= new ComponentChangedPending();
-                return _forceUpdateTransformPending;
-            }
+            get { _forceUpdateTransformPending ??= new ComponentChangedPending(); return _forceUpdateTransformPending; }
         }
 
         public void ClearForceUpdateTransformPending(bool clearLocalPosition = false, bool clearLocalRotation = false, bool clearLocalScale = false)

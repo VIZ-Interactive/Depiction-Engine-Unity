@@ -63,7 +63,7 @@ namespace DepictionEngine
 #endif
         }
 
-        protected void Awake()
+        protected virtual void Awake()
         {
             Initialize();
         }

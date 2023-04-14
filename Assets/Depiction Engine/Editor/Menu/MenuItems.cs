@@ -306,7 +306,7 @@ namespace DepictionEngine.Editor
             JSONArray elevationLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Elevation));
             string elevationLoaderId = elevationLoaderJson[0][nameof(Index2DLoader.id)];
             elevationLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 19));
-            elevationLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw);
+            elevationLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.ElevationTerrainRGBPngRaw);
             elevationLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "my/elevation/tile/service/endpoint/{0}/{1}/{2}";
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(elevationLoaderJson, planetJson);
@@ -422,6 +422,8 @@ namespace DepictionEngine.Editor
 
             DatasourceBase mapboxDatasource = GetRestDatasource("https://api.mapbox.com/");
 
+            DatasourceBase arcgisDatasource = GetRestDatasource("https://services.arcgisonline.com/");
+
             DatasourceBase buildingFeatureDatasource = GetRestDatasource(
             "https://a-data.3dbuildings.com/",
             "https://b-data.3dbuildings.com/",
@@ -452,7 +454,7 @@ namespace DepictionEngine.Editor
             string elevationLoaderId = elevationLoaderJson[0][nameof(Index2DLoader.id)];
             elevationLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
             elevationLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 13));
-            elevationLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw);
+            elevationLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.ElevationTerrainRGBPngRaw);
             elevationLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "v4/mapbox.terrain-rgb/{0}/{1}/{2}.pngraw?access_token=" + mapboxKey;
             //Alternative Elevation
             //LoaderBase.DataType.ElevationMapboxTerrainRGBWebP
@@ -464,10 +466,10 @@ namespace DepictionEngine.Editor
             //Add Earth -> Surface Texture Index2DLoader
             JSONArray surfaceLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
             string surfaceLoaderId = surfaceLoaderJson[0][nameof(Index2DLoader.id)];
-            surfaceLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
+            surfaceLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(arcgisDatasource.id);
             surfaceLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 14));
             surfaceLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
-            surfaceLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=" + mapboxKey;
+            surfaceLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{0}/{2}/{1}";
             surfaceLoaderJson[0][nameof(LoaderBase.headers)] = JsonUtility.ToJson(headers);
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(surfaceLoaderJson, earthJson);

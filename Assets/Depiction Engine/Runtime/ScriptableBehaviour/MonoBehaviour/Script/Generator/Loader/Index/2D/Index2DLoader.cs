@@ -68,7 +68,7 @@ namespace DepictionEngine
         private Index2DReferencesDictionary _lastIndexReferences;
         private Index2DReferencesDictionary lastIndexReferences
         {
-            get => _lastIndexReferences ??= new();
+            get { _lastIndexReferences ??= new(); return _lastIndexReferences; }
         }
 
         public override bool UndoRedoPerformed()
@@ -106,13 +106,13 @@ namespace DepictionEngine
         [Json]
         protected List<Grid2DIndex> indices
         {
-            get => _indices ??= new List<Grid2DIndex>();
+            get { _indices ??= new List<Grid2DIndex>(); return _indices; }
             set { SetValue(nameof(indices), value, ref _indices); }
         }
 
         private Index2DReferencesDictionary index2DReferences
         {
-            get => _index2DReferences ??= new Index2DReferencesDictionary();
+            get { _index2DReferences ??= new Index2DReferencesDictionary(); return _index2DReferences; }
         }
 
         public bool AddIndex(Grid2DIndex index)

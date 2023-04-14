@@ -210,18 +210,17 @@ namespace DepictionEngine
         [Json]
         public bool dontSaveToScene
         {
-            get { return _dontSaveToScene; }
+            get => _dontSaveToScene;
             set
             {
                 SetValue(nameof(dontSaveToScene), value, ref _dontSaveToScene, (newValue, oldValue) =>
                 {
-                    DontSaveToSceneChanged(newValue, oldValue);
+#if UNITY_EDITOR
+                    if (initialized)
+                        SceneManager.MarkSceneDirty();
+#endif
                 });
             }
-        }
-
-        protected virtual void DontSaveToSceneChanged(bool newValue, bool oldValue)
-        {
         }
 
         /// <summary>

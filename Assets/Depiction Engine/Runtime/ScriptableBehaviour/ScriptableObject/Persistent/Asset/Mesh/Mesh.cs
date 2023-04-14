@@ -237,6 +237,11 @@ namespace DepictionEngine
             return Encoding.ASCII.GetBytes(bytes);
         }
 
+        protected override object GetData()
+        {
+            return unityMesh;
+        }
+
         public override void SetData(object value, LoaderBase.DataType dataType, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             if (JsonUtility.FromJson(out UnityEngine.Mesh newUnityMesh, value as JSONNode))

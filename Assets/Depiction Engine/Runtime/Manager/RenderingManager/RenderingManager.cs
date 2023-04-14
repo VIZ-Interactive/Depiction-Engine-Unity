@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UIElements;
-using static DepictionEngine.DisposeManager;
 
 namespace DepictionEngine
 {
@@ -756,16 +755,12 @@ namespace DepictionEngine
 
         public List<Font> fonts
         {
-            get { return _fonts; }
+            get => _fonts;
         }
 
         private MeshesDictionary meshCache
         {
-            get
-            {
-                _meshCache ??= new MeshesDictionary();
-                return _meshCache;
-            }
+            get { _meshCache ??= new MeshesDictionary(); return _meshCache; }
         }
 
         private void InitRendererFeatures()
@@ -1199,6 +1194,7 @@ namespace DepictionEngine
 
         public static Texture2D GetDefaultIcon(Type type)
         {
+            string basePath = "Assets/Depiction Engine/Editor/Texture/UI/";
             Texture2D icon = null;
 
             Type transformType = typeof(TransformBase);
@@ -1209,9 +1205,9 @@ namespace DepictionEngine
             if (type == transformType || type.IsSubclassOf(transformType))
                 icon = UnityEditor.EditorGUIUtility.IconContent("d_Transform Icon").image as Texture2D;
             else if (typeof(IPersistent).IsAssignableFrom(type))
-                icon = Resources.Load("Editor/UI/PersistentIcon") as Texture2D;
+                icon = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(basePath + "PersistentIcon.png");
             else if (type == scriptType || type.IsSubclassOf(scriptType))
-                icon = Resources.Load("Editor/UI/ScriptIcon") as Texture2D;
+                icon = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(basePath + "ScriptIcon.png");
             else if (type == visualType || type.IsSubclassOf(visualType) || type == meshType || type.IsSubclassOf(meshType))
                 icon = UnityEditor.EditorGUIUtility.IconContent("MeshRenderer Icon").image as Texture2D;
             else if (type == managerType || type.IsSubclassOf(managerType))
@@ -1432,16 +1428,19 @@ namespace DepictionEngine
                 {
                     visualObject.IterateOverManagedMeshRenderer((materialPropertyBlock, meshRenderer) =>
                     {
-                        if (COMPUTE_BUFFER_SUPPORTED)
+                        if (meshRenderer.sharedMaterial != null)
                         {
-                            ComputeBuffer layerCustomEffectComputeBuffer = layersCustomEffectComputeBuffer[visualObject.layer];
-                            meshRenderer.sharedMaterial.SetBuffer("_CustomEffectsBuffer", layerCustomEffectComputeBuffer);
-                            meshRenderer.sharedMaterial.SetInteger("_CustomEffectsBufferDimensions", layerCustomEffectComputeBuffer != null ? layerCustomEffectComputeBuffer.count : 0);
+                            if (COMPUTE_BUFFER_SUPPORTED)
+                            {
+                                ComputeBuffer layerCustomEffectComputeBuffer = layersCustomEffectComputeBuffer[visualObject.layer];
+                                meshRenderer.sharedMaterial.SetBuffer("_CustomEffectsBuffer", layerCustomEffectComputeBuffer);
+                                meshRenderer.sharedMaterial.SetInteger("_CustomEffectsBufferDimensions", layerCustomEffectComputeBuffer != null ? layerCustomEffectComputeBuffer.count : 0);
 
-                            meshRenderer.sharedMaterial.EnableKeyword("ENABLE_COMPUTE_BUFFER");
+                                meshRenderer.sharedMaterial.EnableKeyword("ENABLE_COMPUTE_BUFFER");
+                            }
+                            else
+                                meshRenderer.sharedMaterial.DisableKeyword("ENABLE_COMPUTE_BUFFER");
                         }
-                        else
-                            meshRenderer.sharedMaterial.DisableKeyword("ENABLE_COMPUTE_BUFFER");
                     });
 
                     return true;
@@ -1488,18 +1487,18 @@ namespace DepictionEngine
             float lastReflectionIntensity = RenderSettings.reflectionIntensity;
             RenderSettings.reflectionIntensity = 0.0f;
             
-            try
-            {
+            //try
+            //{
                 sceneManager.BeginCameraRendering(camera);
 
                 rttCamera.RenderToCubemap(camera, camera.GetEnvironmentCubeMap(), ApplyPropertiesToUnityCamera);
 
                 sceneManager.EndCameraRendering(camera);
 
-            }catch (Exception e)
-            {
-                Debug.LogError(e.Message);
-            }
+            //}catch (Exception e)
+            //{
+            //    Debug.LogError(e.Message);
+            //}
 
             RenderSettings.ambientIntensity = lastAmbientIntensity;
             RenderSettings.reflectionIntensity = lastReflectionIntensity;

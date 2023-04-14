@@ -46,7 +46,7 @@ namespace DepictionEngine
 
         private PoolStackDictionary debug
         {
-            get => _debug ??= new PoolStackDictionary();
+            get { _debug ??= new PoolStackDictionary(); return _debug; }
         }
 
         private void ClearPoolBtn()

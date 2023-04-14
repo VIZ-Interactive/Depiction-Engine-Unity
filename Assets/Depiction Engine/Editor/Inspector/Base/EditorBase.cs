@@ -13,13 +13,19 @@ namespace DepictionEngine.Editor
     [CanEditMultipleObjects]
     public class EditorBase : UnityEditor.Editor
     {
+        public static Action LeftMouseUpInSceneOrInspector;
+
         protected virtual void OnSceneGUI()
         {
-
+            if (Event.current.type == EventType.MouseUp && Event.current.button == 0)
+                SceneManager.LeftMouseUpInSceneOrInspectorEvent?.Invoke();
         }
 
         public override void OnInspectorGUI()
         {
+            if (Event.current.type == EventType.MouseUp && Event.current.button == 0)
+                SceneManager.LeftMouseUpInSceneOrInspectorEvent?.Invoke();
+
             if (SceneManager.Instance(false) != Disposable.NULL)
             {
                 if (serializedObject.targetObject != null)
@@ -237,7 +243,7 @@ namespace DepictionEngine.Editor
 
                                 PropertyInfo propertyInfo = MemberUtility.GetMemberInfoFromMemberName<PropertyInfo>(firstTargetObject.GetType(), GetName(serializedProperty.propertyPath));
 
-                                if (propertyInfo != null)
+                                if (propertyInfo != null && propertyInfo.PropertyType != typeof(Datasource))
                                 {
                                     if (propertyInfo.CanWrite)
                                     {
@@ -553,7 +559,7 @@ namespace DepictionEngine.Editor
                 Grid2DMeshObjectBase grid2DMeshObject = targetObject as Grid2DMeshObjectBase;
 
                 if (grid2DMeshObject.transform != Disposable.NULL && !grid2DMeshObject.transform.isGeoCoordinateTransform)
-                    helpBoxes.Add(("Requires GeoCoordinate Transform for proper positioning", MessageType.Warning));
+                    helpBoxes.Add((nameof(TerrainGridMeshObject)+" requires a parent "+nameof(GeoAstroObject)+" for proper positioning", MessageType.Warning));
             }
             else if (targetObject is GridGenerator)
             {

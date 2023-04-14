@@ -71,22 +71,22 @@ namespace DepictionEngine
 
         public int width
         {
-            get { return _width; }
+            get => _width;
         }
 
         public int height
         {
-            get { return _height; }
+            get => _height;
         }
 
         public int mipmapCount
         {
-            get { return unityTexture != null ? unityTexture.mipmapCount : 1; }
+            get => unityTexture != null ? unityTexture.mipmapCount : 1;
         }
 
         public TextureFormat format
         {
-            get { return unityTexture != null ? unityTexture.format : TextureFormat.RGBA32; }
+            get => unityTexture != null ? unityTexture.format : TextureFormat.RGBA32;
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace DepictionEngine
         [Json]
         public TextureWrapMode wrapMode
         {
-            get { return _wrapMode; }
+            get => _wrapMode;
             set
             {
                 SetValue(nameof(wrapMode), value, ref _wrapMode, (newValue, oldValue) =>
@@ -111,7 +111,7 @@ namespace DepictionEngine
         [Json]
         public FilterMode filterMode
         {
-            get { return _filterMode; }
+            get => _filterMode;
             set
             {
                 SetValue(nameof(filterMode), value, ref _filterMode, (newValue, oldValue) =>
@@ -131,6 +131,44 @@ namespace DepictionEngine
         {
             if (unityTexture != null)
                 unityTexture.filterMode = filterMode;
+        }
+
+        public Color GetPixel(float x, float y, bool clamp = false)
+        {
+            Color color = Color.clear;
+
+            if (_unityTexture != null)
+            {
+                Vector2Int pixel = GetPixelFromNormalized(x, y, clamp);
+
+                color = _unityTexture.GetPixel(pixel.x, pixel.y);
+            }
+
+            return color;
+        }
+
+        protected Vector2Int GetPixelFromNormalized(float x, float y, bool clamp = false, bool xFlip = false, bool yFlip = false)
+        {
+            if (clamp)
+            {
+                x = Mathf.Clamp01(x);
+                y = Mathf.Clamp01(y);
+            }
+
+            if (xFlip)
+                x = 1.0f - x;
+            if (!yFlip)
+                y = 1.0f - y;
+
+            int pixelX = (int)(x * width);
+            if (pixelX == width)
+                pixelX = width - 1;
+
+            int pixelY = (int)(y * height);
+            if (pixelY == height)
+                pixelY = height - 1;
+
+            return new Vector2Int(pixelX, pixelY);
         }
 
         protected virtual bool IsTextureDataType(LoaderBase.DataType dataType)
@@ -215,6 +253,11 @@ namespace DepictionEngine
             return "png";
         }
 
+        protected override object GetData()
+        {
+            return unityTexture;
+        }
+
         private void SetData(Texture2D texture, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             Texture2D oldUnityTexture = unityTexture;
@@ -226,7 +269,7 @@ namespace DepictionEngine
 
         public Texture2D unityTexture
         {
-            get { return _unityTexture; }
+            get => _unityTexture;
             private set
             {
                 if (_unityTexture == value)

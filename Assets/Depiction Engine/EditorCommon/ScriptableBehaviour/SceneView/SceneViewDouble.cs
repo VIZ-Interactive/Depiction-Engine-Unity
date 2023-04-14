@@ -435,19 +435,19 @@ namespace DepictionEngine.Editor
 
         private AnimBool m_Ortho
         {
-            get { return typeof(SceneView).GetField("m_Ortho", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(sceneView) as AnimBool; }
+            get => typeof(SceneView).GetField("m_Ortho", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(sceneView) as AnimBool;
         }
 
         private bool m_WasFocused
         {
-            get { return (bool)typeof(SceneView).GetField("m_WasFocused", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(sceneView); }
-            set { typeof(SceneView).GetField("m_WasFocused", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(sceneView, value); }
+            get => (bool)typeof(SceneView).GetField("m_WasFocused", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(sceneView);
+            set => typeof(SceneView).GetField("m_WasFocused", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(sceneView, value);
         }
 
         private SceneView _sceneView;
         public SceneView sceneView
         {
-            get => _sceneView ??= GetSceneView(this);
+            get { _sceneView ??= GetSceneView(this); return _sceneView; }
         }
 
         private SceneCamera _camera;

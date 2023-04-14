@@ -113,8 +113,22 @@ namespace DepictionEngine
         {
             if (base.UpdateReferences(forceUpdate))
             {
-                UpdateColorMap();
-                UpdateAdditionalMap();
+                colorMap = GetAssetFromAssetReference<Texture>(colorMapAssetReference);
+                additionalMap = GetAssetFromAssetReference<Texture>(additionalMapAssetReference);
+
+                return true;
+            }
+            return false;
+        }
+
+        protected override bool IterateOverAssetReferences(Func<AssetBase, AssetReference, bool, bool> callback)
+        {
+            if (base.IterateOverAssetReferences(callback))
+            {
+                if (!callback.Invoke(colorMap, colorMapAssetReference, false))
+                    return false;
+                if (!callback.Invoke(additionalMap, additionalMapAssetReference, false))
+                    return false;
 
                 return true;
             }
@@ -181,11 +195,6 @@ namespace DepictionEngine
             get { return GetFirstReferenceOfType(COLORMAP_REFERENCE_DATATYPE) as AssetReference; }
         }
 
-        private void UpdateColorMap()
-        {
-            colorMap = colorMapAssetReference != Disposable.NULL ? colorMapAssetReference.data as Texture : null;
-        }
-
         private Texture colorMap
         {
             get { return _colorMap; }
@@ -208,11 +217,6 @@ namespace DepictionEngine
             get { return GetFirstReferenceOfType(ADDITIONALMAP_REFERENCE_DATATYPE) as AssetReference; }
         }
 
-        private void UpdateAdditionalMap()
-        {
-            additionalMap = additionalMapAssetReference != Disposable.NULL ? additionalMapAssetReference.data as Texture : null;
-        }
-
         private Texture additionalMap
         {
             get { return _additionalMap; }
@@ -230,14 +234,9 @@ namespace DepictionEngine
             return additionalMap;
         }
 
-        protected override bool AssetLoaded()
-        {
-            return base.AssetLoaded() && (colorMapAssetReference == Disposable.NULL || colorMapAssetReference.IsLoaded()) && (additionalMapAssetReference == Disposable.NULL || additionalMapAssetReference.IsLoaded());
-        }
-
         public Processor meshRendererVisualModifiersProcessor
         {
-            get { return _meshRendererVisualModifiersProcessor; }
+            get => _meshRendererVisualModifiersProcessor;
             private set
             {
                 if (Object.ReferenceEquals(_meshRendererVisualModifiersProcessor, value))

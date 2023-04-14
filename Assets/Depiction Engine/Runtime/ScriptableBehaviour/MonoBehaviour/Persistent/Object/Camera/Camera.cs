@@ -143,7 +143,7 @@ namespace DepictionEngine
             if (gameObject.transform.Find(stackName) == null)
             {
                 GameObject stackGO = new(stackName);
-                stackGO.transform.SetParent(gameObject.transform);
+                stackGO.transform.SetParent(gameObject.transform, false);
 #if UNITY_EDITOR
                 Editor.UndoManager.QueueRegisterCreatedObjectUndo(stackGO, initializingContext);
 #endif
@@ -163,7 +163,7 @@ namespace DepictionEngine
                 for (int i = distancePass - 1; i >= 0; i--)
                 {
                     GameObject distancePassCameraGO = new("DistancePass_" + (i + 1));
-                    distancePassCameraGO.transform.SetParent(stackGO.transform);
+                    distancePassCameraGO.transform.SetParent(stackGO.transform, false);
 #if UNITY_EDITOR
                     Editor.UndoManager.QueueRegisterCreatedObjectUndo(distancePassCameraGO, initializingContext);
 #endif
@@ -286,7 +286,7 @@ namespace DepictionEngine
             get 
             { 
                 if (_unityCamera == null)
-                    _unityCamera = GetComponent<UnityEngine.Camera>();
+                    _unityCamera = gameObject.GetComponent<UnityEngine.Camera>();
                 return _unityCamera; 
             }
         }
@@ -316,7 +316,12 @@ namespace DepictionEngine
 
         public Skybox skybox
         {
-            get => _skybox ??= GetComponent<Skybox>();
+            get 
+            { 
+                if (_skybox == null)
+                    _skybox = gameObject.GetComponent<Skybox>();
+                return _skybox; 
+            }
         }
 
         private void UpdateSkybox()

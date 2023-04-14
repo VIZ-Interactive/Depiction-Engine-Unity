@@ -22,7 +22,7 @@ namespace DepictionEngine
 
         public virtual void Recycle()
         {
-            ResetDirty();
+            ResetAll();
 
             _colliderType = MeshRendererVisual.ColliderType.None;
 
@@ -37,7 +37,7 @@ namespace DepictionEngine
 
         public MeshRendererVisual.ColliderType colliderType
         {
-            get { return _colliderType; }
+            get => _colliderType;
             set
             {
                 if (_colliderType == value)
@@ -51,13 +51,7 @@ namespace DepictionEngine
 
         public bool colliderTypeDirty
         {
-            get { return _colliderTypeDirty; }
-        }
-
-        protected void ColliderTypeDirty()
-        {
-            _colliderTypeDirty = true;
-            Recreate();
+            get => _colliderTypeDirty;
         }
 
         public bool SetCameraInstanceIds(List<int> cameraInstanceIds)
@@ -96,23 +90,12 @@ namespace DepictionEngine
 
         public bool disableMultithreading
         {
-            get { return _disableMultithreading; }
-        }
-
-        public void DisableMultithreading()
-        {
-            _disableMultithreading = true;
-        }
-
-        public void Recreate()
-        {
-            DisposeAllVisuals();
-            AllDirty();
+            get => _disableMultithreading;
         }
 
         public bool isDirty
         {
-            get { return _isDirty; }
+            get => _isDirty;
             protected set
             {
                 if (_isDirty == value)
@@ -122,28 +105,59 @@ namespace DepictionEngine
             }
         }
 
+        public bool disposeAllVisuals
+        {
+            get => _disposeAllVisuals;
+        }
+
+        public void Recreate()
+        {
+            AllDirty();
+            DisposeAllVisuals();
+        }
+
         public virtual void AllDirty()
         {
             isDirty = true;
         }
 
-        public bool disposeAllVisuals
+        public void DisableMultithreading()
         {
-            get { return _disposeAllVisuals; }
+            _disableMultithreading = true;
         }
 
-        protected void DisposeAllVisuals()
+        public void DisposeAllVisuals()
         {
             _disposeAllVisuals = true;
         }
 
+        protected void ColliderTypeDirty()
+        {
+            _colliderTypeDirty = true;
+            Recreate();
+        }
+
+        public void ResetAll()
+        {
+            ResetDirty();
+            ResetDisposeAllVisuals();
+            ResetColliderDirty();
+        }
+
         public virtual void ResetDirty()
         {
-            _colliderTypeDirty = false;
-
             _isDirty = false;
-            _disposeAllVisuals = false;
             _disableMultithreading = false;
+        }
+
+        public void ResetDisposeAllVisuals()
+        {
+            _disposeAllVisuals = false;
+        }
+
+        public void ResetColliderDirty()
+        {
+            _colliderTypeDirty = false;
         }
     }
 }

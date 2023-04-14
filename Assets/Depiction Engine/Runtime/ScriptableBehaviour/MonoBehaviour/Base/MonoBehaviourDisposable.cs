@@ -63,7 +63,7 @@ namespace DepictionEngine
 #endif
         }
 
-        protected void Awake()
+        protected virtual void Awake()
         {
 #if UNITY_EDITOR
             //We initialize right away if the gameObjects are being duplicated to make sure the Undo operations are recorded together as one.
@@ -80,7 +80,7 @@ namespace DepictionEngine
             if (!IsDisposing() && !_initializing)
             {
                 Initializing();
-
+           
                 //Create the SceneManager if this is the first MonoBehaviour created
                 SceneManager.Instance();
 

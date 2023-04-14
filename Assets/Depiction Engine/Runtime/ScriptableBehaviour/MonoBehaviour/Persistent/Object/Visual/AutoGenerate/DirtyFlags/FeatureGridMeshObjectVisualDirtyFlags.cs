@@ -33,7 +33,7 @@ namespace DepictionEngine
 
         public Feature feature
         {
-            get { return _feature; }
+            get => _feature;
             set
             {
                 if (_feature == value)
@@ -45,6 +45,11 @@ namespace DepictionEngine
             }
         }
 
+        public void FeatureChanged()
+        {
+            Recreate();
+        }
+
         public void SetProcessing(bool processing, Processor processor = null)
         {
             _processing = processing;
@@ -54,11 +59,6 @@ namespace DepictionEngine
         public bool ProcessingWasCompromised()
         {
             return _processing && _processor == null;
-        }
-
-        public void FeatureChanged()
-        {
-            isDirty = true;
         }
     }
 }

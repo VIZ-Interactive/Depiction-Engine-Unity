@@ -623,16 +623,14 @@ namespace DepictionEngine
         private static Texture2D _shadowTexture;
         private Texture2D GetShadowTexture()
         {
-            if (_shadowTexture == null)
-                _shadowTexture = Resources.Load<Texture2D>("Texture/Marker/Shadow");
+            _shadowTexture ??= Resources.Load<Texture2D>("Texture/Marker/Shadow");
             return _shadowTexture;
         }
 
         private static Texture2D _badgeLuminosityTexture;
         private Texture2D GetBadgeLuminosityTextureShadowTexture()
         {
-            if (_badgeLuminosityTexture == null)
-                _badgeLuminosityTexture = Resources.Load<Texture2D>("Texture/Marker/Marker");
+            _badgeLuminosityTexture ??= Resources.Load<Texture2D>("Texture/Marker/Marker");
             return _badgeLuminosityTexture;
         }
 

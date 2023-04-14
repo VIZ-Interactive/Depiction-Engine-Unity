@@ -27,13 +27,6 @@ namespace DepictionEngine
 #endif
 
         /// <summary>
-        /// A dynamic property is a property which is expected to be modified by the engine directly. For example, physics driven <see cref="DepictionEngine.TransformDouble.localPosition"/> or <see cref="DepictionEngine.TransformDouble.localRotation"/> should be dynamic properties.
-        /// </summary>
-        /// <param name="key">The property key as returned by <see cref="DepictionEngine.PropertyMonoBehaviour.GetPropertyKey"/>.</param>
-        /// <returns>True if the property is dynamic otherwise False</returns>
-        bool IsDynamicProperty(int key);
-
-        /// <summary>
         /// Resets the Id to <see cref="DepictionEngine.SerializableGuid.Empty"/>.
         /// </summary>
         void ResetId();

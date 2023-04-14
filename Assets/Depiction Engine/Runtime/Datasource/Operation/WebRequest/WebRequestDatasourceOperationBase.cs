@@ -215,20 +215,20 @@ namespace DepictionEngine
 
         public string text
         {
-            get { return _text; }
-            private set { _text = value; }
+            get => _text;
+            private set => _text = value;
         }
 
         public byte[] data
         {
-            get { return _data; }
-            private set { _data = value; }
+            get => _data;
+            private set => _data = value;
         }
 
         public Texture2D texture
         {
-            get { return _texture; }
-            private set { SetTexture(value); }
+            get => _texture;
+            private set => SetTexture(value);
         }
 
         public bool SetTexture(Texture2D value, bool destroyLastTexture = true)

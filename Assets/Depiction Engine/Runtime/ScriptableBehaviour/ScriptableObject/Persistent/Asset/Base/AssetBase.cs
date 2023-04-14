@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace DepictionEngine
 {
@@ -192,7 +193,7 @@ namespace DepictionEngine
         [Json]
         public GridIndexType gridIndexType
         {
-            get { return _gridIndexType; }
+            get => _gridIndexType;
             set { SetValue(nameof(gridIndexType), value, ref _gridIndexType); }
         }
 
@@ -202,7 +203,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IncludeIndex2D))]
         public Vector2Int grid2DDimensions
         {
-            get { return _grid2DDimensions; }
+            get => _grid2DDimensions;
             set
             {
                 if (value.x < 1)
@@ -219,7 +220,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IncludeIndex2D))]
         public Vector2Int grid2DIndex
         {
-            get { return _grid2DIndex; }
+            get => _grid2DIndex;
             set { SetValue(nameof(grid2DIndex), value, ref _grid2DIndex); }
         }
 
@@ -229,7 +230,7 @@ namespace DepictionEngine
         [Json]
         public JSONNode data
         {
-            get { return id + "." + GetFileExtension(); }
+            get => id + "." + GetFileExtension();
             set { }
         }
 
@@ -241,6 +242,33 @@ namespace DepictionEngine
         public virtual void SetData(object value, LoaderBase.DataType dataType, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
 
+        }
+
+        protected virtual object GetData()
+        {
+            return null;
+        }
+
+        protected override void Saving(Scene scene, string path)
+        {
+            base.Saving(scene, path);
+
+            UnityEngine.Object unityAsset = GetData() as UnityEngine.Object;
+            if (unityAsset != null)
+                unityAsset.hideFlags = hideFlags;
+        }
+
+        protected override bool UpdateHideFlags()
+        {
+            if (base.UpdateHideFlags())
+            {
+                UnityEngine.Object unityAsset = GetData() as UnityEngine.Object;
+                if (unityAsset != null)
+                    unityAsset.hideFlags = hideFlags;
+
+                return true;
+            }
+            return false;
         }
 
         protected virtual object ProcessDataBytes(byte[] value, LoaderBase.DataType dataType)

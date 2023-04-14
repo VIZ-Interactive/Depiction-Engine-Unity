@@ -28,10 +28,7 @@ namespace DepictionEngine
             _geoCoordinates = geoCoordinates;
         }
 
-        public override int featureCount
-        {
-            get { return _geoCoordinates.Length; }
-        }
+        public override int featureCount { get => _geoCoordinates.Length; }
 
         public GeoCoordinate3Double GetGeoCoordinate(int index)
         {

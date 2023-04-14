@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using UnityEngine.UIElements;
 using System.Text.RegularExpressions;
-using System.Linq;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Microsoft.Design", "IDE1006",
@@ -34,7 +33,9 @@ namespace DepictionEngine
         /// <b><see cref="PostLateInitialize"/>:</b> <br/>
         /// All other object have been created and initialized at this point, even during a duplicate operation involving multiple objects. <br/><br/>
         /// <b><see cref="Update"/>:</b> <br/>
-        /// The hierarchy is traversed and values are prepared for the update. <br/><br/>
+        /// The hierarchy is traversed and values are updated. <br/><br/>
+        /// <b><see cref="FixedUpdate"/>:</b> <br/>
+        /// The hierarchy is traversed and values requiring fixed step are updated. <br/><br/>
         /// <b><see cref="PastingComponentValues"/>:</b> <br/>
         /// Pasting component values from the inspector(Editor only). <br/><br/>
         /// <b><see cref="LateUpdate"/>:</b> <br/>
@@ -48,12 +49,13 @@ namespace DepictionEngine
             LateInitialize,
             PostLateInitialize,
             Update,
+            FixedUpdate,
             PastingComponentValues,
             LateUpdate,
             DelayedOnDestroy
         };
 
-        public const string NAMESPACE = "DepictionEngine";
+        public const string NAMESPACE = "Depiction Engine";
         public const string SCENE_MANAGER_NAME = "Managers (Required)";
 
         [BeginFoldout("Editor")]
@@ -133,6 +135,10 @@ namespace DepictionEngine
         /// Dispatched at the same time as the <see cref="UnityEditor.AssemblyReloadEvents.beforeAssemblyReload"/>.
         /// </summary>
         public static Action BeforeAssemblyReloadEvent;
+        /// <summary>
+        /// Dispatched when a left mouse up event happens in the Scene or Inspector window. 
+        /// </summary>
+        public static Action LeftMouseUpInSceneOrInspectorEvent;
 #endif
 
         private static SceneManager _instance;
@@ -207,7 +213,7 @@ namespace DepictionEngine
             InitValue(value => runInBackground = value, true, initializingContext);
             InitValue(value => enableMultithreading = value, true, initializingContext);
 #if UNITY_EDITOR
-            InitValue(value => buildOutputPath = value, "Assets/DepictionEngine/Resources/AssetBundle", initializingContext);
+            InitValue(value => buildOutputPath = value, "Assets/Depiction Engine/Resources/AssetBundle", initializingContext);
             InitValue(value => buildOptions = value, UnityEditor.BuildAssetBundleOptions.None, initializingContext);
             InitValue(value => buildTarget = value, UnityEditor.BuildTarget.StandaloneWindows64, initializingContext);
 #endif
@@ -828,7 +834,7 @@ namespace DepictionEngine
 
         private List<TransformBase> sceneChildren
         {
-            get => _sceneChildren ??= new List<TransformBase>();
+            get { _sceneChildren ??= new List<TransformBase>(); return _sceneChildren; }
         }
 
         /// <summary>
@@ -917,6 +923,12 @@ namespace DepictionEngine
         {
             get => _buildTarget;
             set => SetValue(nameof(buildTarget), value, ref _buildTarget);
+        }
+
+        public static void MarkSceneDirty()
+        {
+            if (!Application.isPlaying)
+                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
         }
 
         private bool AddSceneCameraTransform(TransformBase sceneCameraTransform)
@@ -1044,23 +1056,6 @@ namespace DepictionEngine
             _updated = false;
         }
 
-#if UNITY_EDITOR
-        private static List<UnityEngine.Object> _resetingObjects = new();
-        public static void Reseting(UnityEngine.Object scriptableBehaviour)
-        {
-            _resetingObjects.Add(scriptableBehaviour);
-        }
-
-        private static List<(IJson, JSONObject)> _pastingComponentValuesToObjects = new();
-        public static void PastingComponentValues(IJson iJson, JSONObject json)
-        {
-            if (json[nameof(IProperty.id)] != null)
-                json.Remove(nameof(IProperty.id));
-
-            _pastingComponentValuesToObjects.Add((iJson, json));
-        }
-#endif
-
         public void Update()
         {
             if (this != Disposable.NULL)
@@ -1069,9 +1064,8 @@ namespace DepictionEngine
                 //Make sure GameObjects are always active when copy/pasted in the Editor so that Awake is always called.
                 ResetCopyingGameObjectsActiveState();
 
-                DetectInspectorReset();
-
-                DetectInspectorPasteComponentValues();
+                //Detect inspector actions such as Reset or Copy Component Values.
+                Editor.InspectorManager.DetectInspectorActions();
 
                 //Detect GameObjects/Components created in the Editor.
                 HierarchicalInitializeEditorCreatedObjects();
@@ -1090,62 +1084,6 @@ namespace DepictionEngine
                 }
             }
         }
-
-#if UNITY_EDITOR
-        private void DetectInspectorReset()
-        {
-            if (_resetingObjects != null && _resetingObjects.Count > 0)
-            {
-                //We assume that all the objects are of the same type
-                IScriptableBehaviour firstUnityObject = _resetingObjects[0] as IScriptableBehaviour;
-                string groupName = "Reset " + (_resetingObjects.Count == 1 ? firstUnityObject.name : "Object") + " " + firstUnityObject.GetType().Name;
-
-                Editor.UndoManager.SetCurrentGroupName(groupName);
-                Editor.UndoManager.RecordObjects(_resetingObjects.ToArray());
-
-                foreach (UnityEngine.Object unityObject in _resetingObjects)
-                {
-                    if (unityObject is IProperty)
-                        (unityObject as IProperty).InspectorReset();
-                }
-
-                _resetingObjects.Clear();
-            }
-        }
-
-        private void DetectInspectorPasteComponentValues()
-        {
-            if (_pastingComponentValuesToObjects != null && _pastingComponentValuesToObjects.Count > 0)
-            {
-                sceneExecutionState = ExecutionState.PastingComponentValues;
-
-                //We assume that all the objects are of the same type
-                IScriptableBehaviour firstUnityObject = _pastingComponentValuesToObjects[0].Item1;
-                //'Pasted' is not a typo it is used to distinguish Unity 'Paste Component Values' action from the one we create. If there is no distinction then if the undo/redo actions are played again this code will be executed again and a new action will be recorded in the history erasing any subsequent actions.
-                string groupName = "Pasted " + firstUnityObject.GetType().FullName + " Values";
-
-                Editor.UndoManager.SetCurrentGroupName(groupName);
-
-                UnityEngine.Object[] recordObjects = new UnityEngine.Object[_pastingComponentValuesToObjects.Count];
-                for (int i = 0; i < recordObjects.Length; i++)
-                    recordObjects[i] = _pastingComponentValuesToObjects[i].Item1 as UnityEngine.Object;
-                Editor.UndoManager.RecordObjects(recordObjects);
-
-                foreach ((IJson, JSONObject) pastingComponentValuesToObject in _pastingComponentValuesToObjects)
-                {
-                    IJson iJson = pastingComponentValuesToObject.Item1;
-                    JSONObject json = pastingComponentValuesToObject.Item2;
-                    UserContext(() =>
-                    {
-                        iJson.SetJson(json);
-                    });
-                }
-                _pastingComponentValuesToObjects.Clear();
-
-                sceneExecutionState = ExecutionState.None;
-            }
-        }
-#endif
 
         public void HierarchicalInitializeEditorCreatedObjects()
         {
@@ -1211,6 +1149,8 @@ namespace DepictionEngine
 
         public void FixedUpdate()
         {
+            sceneExecutionState = ExecutionState.FixedUpdate;
+
             Camera physicsCamera = Camera.main;
 
             if (physicsCamera == Disposable.NULL)
@@ -1252,9 +1192,12 @@ namespace DepictionEngine
             if (physicsCamera != Disposable.NULL && physicsCamera.transform != Disposable.NULL)
                 TransformDouble.ApplyOriginShifting(physicsCamera.GetOrigin());
 
+            //Update Physics Driven Objects
             HierarchicalFixedUpdate();
 
             HierarchicalDetectChanges();
+
+            sceneExecutionState = ExecutionState.None;
         }
 
         protected override void LateUpdate()
@@ -1263,12 +1206,7 @@ namespace DepictionEngine
 
             InvokeAction(ref LateUpdateEvent, "LateUpdate", ExecutionState.LateUpdate);
 
-            DisposeManager.DisposingContext(() => 
-            {
-                InvokeAction(ref DelayedOnDestroyEvent, "DelayedOnDestroy", ExecutionState.DelayedOnDestroy);
-            }, DisposeContext.Editor_Destroy);
-
-            sceneExecutionState = ExecutionState.None;
+            DisposeManager.DisposingContext(() => { InvokeAction(ref DelayedOnDestroyEvent, "DelayedOnDestroy", ExecutionState.DelayedOnDestroy); }, DisposeContext.Editor_Destroy);
 
 #if UNITY_EDITOR
             //Unsubscribe and Subscribe again to stay at the bottom of the invocation list. 

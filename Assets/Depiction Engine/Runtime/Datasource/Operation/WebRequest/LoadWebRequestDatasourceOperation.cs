@@ -24,7 +24,7 @@ namespace DepictionEngine
 
         protected override UnityWebRequest CreateUnityWebRequest(string uri = null, int timeout = 60, List<string> headers = null, byte[] bodyData = null, HTTPMethod httpMethod = HTTPMethod.Get)
         {
-            return base.CreateUnityWebRequest(uri, timeout, headers, bodyData, _dataType == LoaderBase.DataType.TexturePngJpg || _dataType == LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw ? HTTPMethod.GetTexure : HTTPMethod.Get);
+            return base.CreateUnityWebRequest(uri, timeout, headers, bodyData, _dataType == LoaderBase.DataType.TexturePngJpg || _dataType == LoaderBase.DataType.ElevationTerrainRGBPngRaw ? HTTPMethod.GetTexure : HTTPMethod.Get);
         }
 
         protected override IEnumerator WebRequestDataProcessorFunction(ProcessorOutput data, ProcessorParameters parameters)
@@ -63,20 +63,20 @@ namespace DepictionEngine
 
             public LoaderBase.DataType dataType
             {
-                get { return _dataType; }
-                private set { _dataType = value; }
+                get => _dataType;
+                private set => _dataType = value;
             }
 
             public JSONObject jsonFallback
             {
-                get { return _jsonFallback; }
-                private set { _jsonFallback = value; }
+                get => _jsonFallback;
+                private set => _jsonFallback = value;
             }
 
             public JSONArray persistentFallbackValues
             {
-                get { return _persistentFallbackValues; }
-                private set { _persistentFallbackValues = value; }
+                get => _persistentFallbackValues;
+                private set => _persistentFallbackValues = value;
             }
         }
 
@@ -145,8 +145,8 @@ namespace DepictionEngine
                             break;
 
                         case LoaderBase.DataType.TexturePngJpg:
-                        case LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw:
-                        case LoaderBase.DataType.ElevationMapboxTerrainRGBWebP:
+                        case LoaderBase.DataType.ElevationTerrainRGBPngRaw:
+                        case LoaderBase.DataType.ElevationTerrainRGBWebP:
                         case LoaderBase.DataType.ElevationEsriLimitedErrorRasterCompression:
 
                             AddResponseDataToOperationResult(GetLoadResultDataFromAsset(loadWebRequestProcessorParameters), operationResult);
@@ -268,7 +268,7 @@ namespace DepictionEngine
 
                                     switch (loadOperationResultParameters.dataType)
                                     {
-                                        case LoaderBase.DataType.ElevationMapboxTerrainRGBWebP:
+                                        case LoaderBase.DataType.ElevationTerrainRGBWebP:
 
                                             elevationData = LoadRGBAFromWebP(out width, out height, elevationData);
 

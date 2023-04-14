@@ -102,14 +102,26 @@ namespace DepictionEngine
         private void AssetBundlePropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             if (name == nameof(AssetBase.data))
-                AssetChanged();
+                (meshRendererVisualDirtyFlags as InstantiatorVisualObjectVisualDirtyFlags).AssetBundleChanged();
         }
 
         protected override bool UpdateReferences(bool forceUpdate = false)
         {
             if (base.UpdateReferences(forceUpdate))
             {
-                UpdateAssetBundle();
+                assetBundle = GetAssetFromAssetReference<AssetBundle>(assetBundleAssetReference);
+
+                return true;
+            }
+            return false;
+        }
+
+        protected override bool IterateOverAssetReferences(Func<AssetBase, AssetReference, bool, bool> callback)
+        {
+            if (base.IterateOverAssetReferences(callback))
+            {
+                if (!callback.Invoke(assetBundle, assetBundleAssetReference, true))
+                    return false;
 
                 return true;
             }
@@ -118,17 +130,12 @@ namespace DepictionEngine
 
         private AssetReference assetBundleAssetReference
         {
-            get { return GetFirstReferenceOfType(ASSETBUNDLE_REFERENCE_DATATYPE) as AssetReference; }
-        }
-
-        private void UpdateAssetBundle()
-        {
-            assetBundle = assetBundleAssetReference != Disposable.NULL ? assetBundleAssetReference.data as AssetBundle : null;
+            get => GetFirstReferenceOfType(ASSETBUNDLE_REFERENCE_DATATYPE) as AssetReference;
         }
 
         private AssetBundle assetBundle
         {
-            get { return _assetBundle; }
+            get => _assetBundle;
             set
             {
                 if (Object.ReferenceEquals(_assetBundle, value))
@@ -139,17 +146,23 @@ namespace DepictionEngine
                 _assetBundle = value;
 
                 AddAssetBundleDelegates();
-
-                AssetChanged();
             }
         }
 
-        private void AssetChanged()
+        protected override Type GetMeshRendererVisualDirtyFlagType()
         {
-            if (initialized)
+            return typeof(InstantiatorVisualObjectVisualDirtyFlags);
+        }
+
+        protected override void UpdateMeshRendererDirtyFlags(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
+        {
+            base.UpdateMeshRendererDirtyFlags(meshRendererVisualDirtyFlags);
+
+            if (meshRendererVisualDirtyFlags is InstantiatorVisualObjectVisualDirtyFlags)
             {
-                if (meshRendererVisualDirtyFlags is not null)
-                    meshRendererVisualDirtyFlags.Recreate();
+                InstantiatorVisualObjectVisualDirtyFlags instantiatorVisualObjectVisualDirtyFlags = meshRendererVisualDirtyFlags as InstantiatorVisualObjectVisualDirtyFlags;
+
+                instantiatorVisualObjectVisualDirtyFlags.assetBundle = assetBundle;
             }
         }
 
@@ -185,7 +198,7 @@ namespace DepictionEngine
 
         protected override bool DisposeAllChildren(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            if (!IsDisposing() && base.DisposeAllChildren(disposeContext))
+            if (base.DisposeAllChildren(disposeContext))
             {
                 _gameObjects = null;
 
@@ -254,7 +267,12 @@ namespace DepictionEngine
             }
 
             if (newGameObject == null)
+            {
                 newGameObject = MonoBehaviourDisposable.Instantiate(gameObject, parent.transform, false);
+                MeshRenderer meshRenderer = newGameObject.GetComponent<MeshRenderer>();
+                if (meshRenderer != null)
+                    AddMeshRenderer(meshRenderer);
+            }
 
             newGameObject.name = gameObject.name;
 

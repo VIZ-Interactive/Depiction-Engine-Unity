@@ -11,7 +11,7 @@ namespace DepictionEngine
     /// </summary>
     public class Elevation : Texture
     {
-        private const float MAPBOX_MIN_ELEVATION = -10000.0f;
+        private const float RGB_TERRAIN_MIN_ELEVATION = -10000.0f;
 
         public const float MIN_ELEVATION = -500000.0f;
 
@@ -39,7 +39,7 @@ namespace DepictionEngine
             {
                 case ".pngraw":
 
-                    dataType = LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw;
+                    dataType = LoaderBase.DataType.ElevationTerrainRGBPngRaw;
                     break;
 
                 default:
@@ -175,17 +175,17 @@ namespace DepictionEngine
 
         public static float GetMinElevationFromDataType(LoaderBase.DataType dataType)
         {
-            return dataType == LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw || dataType == LoaderBase.DataType.ElevationMapboxTerrainRGBWebP ? MAPBOX_MIN_ELEVATION : MIN_ELEVATION;
+            return dataType == LoaderBase.DataType.ElevationTerrainRGBPngRaw || dataType == LoaderBase.DataType.ElevationTerrainRGBWebP ? RGB_TERRAIN_MIN_ELEVATION : MIN_ELEVATION;
         }
 
         public static int GetRGBComponentOffsetFromDataType(LoaderBase.DataType dataType)
         {
-            return dataType == LoaderBase.DataType.ElevationEsriLimitedErrorRasterCompression || dataType == LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw ? 1 : 0;
+            return dataType == LoaderBase.DataType.ElevationEsriLimitedErrorRasterCompression || dataType == LoaderBase.DataType.ElevationTerrainRGBPngRaw ? 1 : 0;
         }
 
         protected override bool IsTextureDataType(LoaderBase.DataType dataType)
         {
-            return dataType == LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw || dataType == LoaderBase.DataType.ElevationMapboxTerrainRGBPngRaw;
+            return dataType == LoaderBase.DataType.ElevationTerrainRGBPngRaw || dataType == LoaderBase.DataType.ElevationTerrainRGBPngRaw;
         }
 
         public override void SetData(object value, LoaderBase.DataType dataType, InitializationContext initializingContext = InitializationContext.Programmatically)
@@ -228,26 +228,9 @@ namespace DepictionEngine
             {
                 if (_elevation != null && _elevation.Length > 0)
                 {
-                    if (clamp)
-                    {
-                        x = Mathf.Clamp01(x);
-                        y = Mathf.Clamp01(y);
-                    }
+                    Vector2Int pixel = GetPixelFromNormalized(x, y, clamp, xFlip, yFlip);
 
-                    if (xFlip)
-                        x = 1.0f - x;
-                    if (!yFlip)
-                        y = 1.0f - y;
-
-                    int pixelX = (int)(x * width);
-                    if (pixelX == width)
-                        pixelX = width - 1;
-
-                    int pixelY = (int)(y * height);
-                    if (pixelY == height)
-                        pixelY = height - 1;
-
-                    int startIndex = (pixelY * width + pixelX) * 4;
+                    int startIndex = (pixel.y * width + pixel.x) * 4;
 
                     startIndex += rgbComponentOffset;
 

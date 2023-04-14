@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.Mathematics;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -79,7 +78,7 @@ namespace DepictionEngine
         protected IndexLoadScopeDictionary _lastIndex2DLoadScopes;
         protected IndexLoadScopeDictionary lastIndex2DLoadScopes
         {
-            get => _lastIndex2DLoadScopes ??= new ();
+            get { _lastIndex2DLoadScopes ??= new(); return _lastIndex2DLoadScopes; }
         }
 
         public override bool UndoRedoPerformed()
@@ -108,7 +107,7 @@ namespace DepictionEngine
 
         protected IndexLoadScopeDictionary index2DLoadScopes
         {
-            get => _index2DLoadScopes ??= new IndexLoadScopeDictionary();
+            get { _index2DLoadScopes ??= new IndexLoadScopeDictionary(); return _index2DLoadScopes; }
             private set => _index2DLoadScopes = value;
         }
 

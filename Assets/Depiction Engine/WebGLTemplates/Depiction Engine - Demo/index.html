@@ -224,6 +224,8 @@
                         //Create Earth----------------------------------------------------------
 
                         var mapboxDatasource = instance.getRestDatasource("https://api.mapbox.com/");
+						
+						var arcgisDatasource = instance.getRestDatasource("https://services.arcgisonline.com/");
 
                         var buildingFeatureDatasource = instance.getRestDatasource(
                             "https://a-data.3dbuildings.com/",
@@ -257,10 +259,10 @@
                         //Add Earth -> Surface Texture Index2DLoader
                         var surfaceLoaderJson = getLoaderJson(instance, $NAMESPACE + ".Index2DLoader", $NAMESPACE + ".Texture");
                         var surfaceLoaderId = surfaceLoaderJson[0]["id"];
-                        surfaceLoaderJson[0]["datasourceId"] = mapboxDatasource.id;
+                        surfaceLoaderJson[0]["datasourceId"] = arcgisDatasource.id;
                         surfaceLoaderJson[0]["minMaxZoom"] = { x: 0, y: 14 };
                         surfaceLoaderJson[0]["dataType"] = "TexturePngJpg";
-                        surfaceLoaderJson[0]["loadEndpoint"] = "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=" + $MAPBOX_KEY;
+                        surfaceLoaderJson[0]["loadEndpoint"] = "arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{0}/{2}/{1}";
 
                         earthJson = mergeComponentsToObjectInitializationJson(instance, surfaceLoaderJson, earthJson);
 
@@ -432,7 +434,7 @@
                 </script>
 
                 <div class="attribution">
-                    <a href="https://mapbox.com">© Mapbox</a> | <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> | <a href="https://3dbuildings.com">© 3dBuildings</a> | <a href="https://vizinteractive.io">© VIZ Interactive</a>
+                    <a href="https://mapbox.com">© Mapbox</a> | <a href="https://www.esri.com/">© Esri</a> | <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> | <a href="https://3dbuildings.com">© 3dBuildings</a> | <a href="https://vizinteractive.io">© VIZ Interactive</a>
                 </div>
 
                 <div id="containerLoader" class="loaderGrp">

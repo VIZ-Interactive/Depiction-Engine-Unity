@@ -7,13 +7,13 @@ namespace DepictionEngine
     public class MeshGridMeshObjectVisualDirtyFlags : FeatureGridMeshObjectVisualDirtyFlags
     {
         [SerializeField]
-        private AssetBase _asset;
+        private AssetBase _meshAsset;
 
         public override void Recycle()
         {
             base.Recycle();
 
-            _asset = default;
+            _meshAsset = default;
         }
 
 #if UNITY_EDITOR
@@ -21,25 +21,25 @@ namespace DepictionEngine
         {
             base.UndoRedoPerformed();
 
-            SerializationUtility.RecoverLostReferencedObject(ref _asset);
+            SerializationUtility.RecoverLostReferencedObject(ref _meshAsset);
         }
 #endif
 
         public AssetBase asset
         {
-            get { return _asset; }
+            get => _meshAsset;
             set
             {
-                if (_asset == value)
+                if (_meshAsset == value)
                     return;
 
-                _asset = value;
+                _meshAsset = value;
              
-                AssetChanged();
+                MeshAssetChanged();
             }
         }
 
-        public void AssetChanged()
+        public void MeshAssetChanged()
         {
             isDirty = true;
         }

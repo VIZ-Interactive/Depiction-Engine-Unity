@@ -1,6 +1,7 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. <contact@vizinteractive.io> | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -71,9 +72,14 @@ namespace DepictionEngine
             if (duplicating || meshRendererVisualDirtyFlags == null)
             {
                 if (duplicating)
-                    meshRendererVisualDirtyFlags = InstanceManager.Duplicate(meshRendererVisualDirtyFlags);
+                    meshRendererVisualDirtyFlags = InstanceManager.Duplicate(meshRendererVisualDirtyFlags, initializingContext);
                 else if (meshRendererVisualDirtyFlags == null)
+                {
                     meshRendererVisualDirtyFlags = ScriptableObject.CreateInstance(GetMeshRendererVisualDirtyFlagType()) as VisualObjectVisualDirtyFlags;
+#if UNITY_EDITOR
+                    Editor.UndoManager.QueueRegisterCreatedObjectUndo(meshRendererVisualDirtyFlags, initializingContext);
+#endif
+                }
 
                 SetMeshRendererVisualsDirty(duplicating);
             }
@@ -94,7 +100,7 @@ namespace DepictionEngine
 
         private void DetectCompromisedPopup()
         {
-            if (!(popupT == 0.0f || popupT == 1.0f))
+            if (popupT != 0.0f && popupT != 1.0f)
                 popup = true;
         }
 
@@ -108,11 +114,40 @@ namespace DepictionEngine
             InitValue(value => popupDuration = value, GetDefaultPopupDuration(), initializingContext);
         }
 
+        protected override bool Initialize(InitializationContext initializingContext)
+        {
+            if (base.Initialize(initializingContext))
+            {
+                if (GetMeshRenderersInitialized() && meshRendererVisualDirtyFlags != null)
+                {
+                    bool requiredAssetMissing = false;
+
+                    IterateOverAssetReferences((asset, assetReference, required) =>
+                    {
+                        if (required && asset == Disposable.NULL)
+                        {
+                            requiredAssetMissing = true;
+                            return false;
+                        }
+                        return true;
+                    });
+
+                    if (requiredAssetMissing)
+                        meshRendererVisualDirtyFlags.DisposeAllVisuals();
+                }
+
+                return true;
+            }
+            return false;
+        }
+
 #if UNITY_EDITOR
         public override bool UndoRedoPerformed()
         {
             if (base.UndoRedoPerformed())
             {
+                SerializationUtility.RecoverLostReferencedObject(ref _meshRendererVisualDirtyFlags);
+                
                 _meshRendererVisualDirtyFlags?.UndoRedoPerformed();
 
                 return true;
@@ -149,6 +184,10 @@ namespace DepictionEngine
             {
                 SetValue(nameof(dontSaveVisualsToScene), value, ref _dontSaveVisualsToScene, (newValue, oldValue) =>
                 {
+#if UNITY_EDITOR
+                    if (initialized)
+                        SceneManager.MarkSceneDirty();
+#endif
                     DontSaveVisualsToSceneChanged(newValue, oldValue);
                 });
             }
@@ -254,30 +293,35 @@ namespace DepictionEngine
         {
             base.Saving(scene, path);
 
-            if (dontSaveVisualsToScene)
-            {
-                transform.IterateOverChildrenGameObject(gameObject, (childGO) =>
-                {
-                    childGO.hideFlags |= HideFlags.DontSave;
-                });
-
-                SetMeshRendererVisualsDirty();
-            }
+            UpdateVisualsForSaving(true);
         }
 
         protected override void Saved(Scene scene)
         {
             base.Saved(scene);
 
+            UpdateVisualsForSaving();
+        }
+
+        private List<MeshRenderer> _lastManagedMeshRenderers;
+        private void UpdateVisualsForSaving(bool before = false)
+        {
             if (dontSaveVisualsToScene)
-            {
+            { 
                 transform.IterateOverChildrenGameObject(gameObject, (childGO) =>
                 {
-                    childGO.hideFlags &= ~HideFlags.DontSave;
-                });
-
-                meshRendererVisualDirtyFlags?.ResetDirty();
+                    if(before)
+                        childGO.hideFlags |= HideFlags.DontSave;
+                    else
+                        childGO.hideFlags &= ~HideFlags.DontSave;
+                }, true);
             }
+        }
+
+        protected void UpdateMeshRendererVisualCollider(MeshRendererVisual meshRendererVisual, VisualObjectVisualDirtyFlags visualObjectVisualDirtyFlags, bool convexCollider, bool visualsChanged, bool convexColliderChanged = true)
+        {
+            UpdateMeshRendererVisualCollider(meshRendererVisual, visualObjectVisualDirtyFlags.colliderType, convexCollider, visualsChanged, visualObjectVisualDirtyFlags.colliderTypeDirty, convexColliderChanged);
+            visualObjectVisualDirtyFlags.ResetColliderDirty();
         }
 
         protected void UpdateMeshRendererVisualCollider(MeshRendererVisual meshRendererVisual, MeshRendererVisual.ColliderType colliderType, bool convexCollider, bool visualsChanged, bool colliderTypeChanged = true, bool convexColliderChanged = true)
@@ -316,55 +360,80 @@ namespace DepictionEngine
         protected override void PreHierarchicalUpdateBeforeChildrenAndSiblings()
         {
             base.PreHierarchicalUpdateBeforeChildrenAndSiblings();
-
+            
             UpdateVisualProperties();
 
-            if (AssetLoaded())
+            UpdateMeshRendererDirtyFlags(meshRendererVisualDirtyFlags);
+
+            if (meshRendererVisualDirtyFlags.disposeAllVisuals)
+                DisposeAllChildren();
+
+            if (autoInstantiate && AssetsLoaded())
             {
-                UpdateMeshRendererDirtyFlags(meshRendererVisualDirtyFlags);
+                UpdateMeshRendererVisuals(meshRendererVisualDirtyFlags);
+                meshRendererVisualDirtyFlags.ResetDirty();
+            }
 
-                if (autoInstantiate)
-                    UpdateMeshRendererVisuals(meshRendererVisualDirtyFlags);
+            if (GetMeshRenderersInitialized())
+            {
+                if (popup && !IsFullyInitialized())
+                    popup = false;
 
-                if (GetMeshRenderersInitialized())
+                if (popup)
                 {
-                    if (popup && !IsFullyInitialized())
-                        popup = false;
-
-                    if (popup)
+                    popup = false;
+                    if (_popupDuration != 0.0f)
                     {
-                        popup = false;
-                        if (_popupDuration != 0.0f)
+                        switch (_popupType)
                         {
-                            switch (_popupType)
-                            {
-                                case PopupType.Alpha:
-                                    popupTween = tweenManager.To(0.0f, alpha, popupDuration, (value) => { popupT = value; }, null, () =>
-                                    {
-                                        popupTween = null;
-                                    });
-                                    break;
-                                case PopupType.Scale:
-                                    popupTween = tweenManager.To(0.0f, 1.0f, popupDuration, (value) => { popupT = value; }, null, () =>
-                                    {
-                                        popupTween = null;
-                                    }, EasingType.ElasticEaseOut);
-                                    break;
-                            }
+                            case PopupType.Alpha:
+                                popupTween = tweenManager.To(0.0f, alpha, popupDuration, (value) => { popupT = value; }, null, () =>
+                                {
+                                    popupTween = null;
+                                });
+                                break;
+                            case PopupType.Scale:
+                                popupTween = tweenManager.To(0.0f, 1.0f, popupDuration, (value) => { popupT = value; }, null, () =>
+                                {
+                                    popupTween = null;
+                                }, EasingType.ElasticEaseOut);
+                                break;
                         }
                     }
-
-                    ApplyPropertiesToVisual(_visualsChanged, meshRendererVisualDirtyFlags);
-                    _visualsChanged = false;
                 }
 
-                meshRendererVisualDirtyFlags.ResetDirty();
+                ApplyPropertiesToVisual(_visualsChanged, meshRendererVisualDirtyFlags);
+                _visualsChanged = false;
             }
         }
 
-        protected virtual bool AssetLoaded()
+        protected bool AssetsLoaded()
         {
-            return true;
+            bool assetsLoaded = true;
+
+            IterateOverAssetReferences((asset, assetReference, required) =>
+            {
+                if (required)
+                {
+                    if (asset == Disposable.NULL)
+                    {
+                        assetsLoaded = false;
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (assetReference != Disposable.NULL && !assetReference.IsLoaded())
+                    {
+                        assetsLoaded = false;
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            return assetsLoaded;
         }
 
         protected virtual void UpdateMeshRendererDirtyFlags(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
@@ -372,10 +441,20 @@ namespace DepictionEngine
 
         }
 
+        protected override bool DisposeAllChildren(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
+        {
+            if (base.DisposeAllChildren())
+            {
+                meshRendererVisualDirtyFlags.ResetDisposeAllVisuals();
+
+                return true;
+            }
+            return false;
+        }
+
         protected virtual void UpdateMeshRendererVisuals(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
         {
-            if (meshRendererVisualDirtyFlags.disposeAllVisuals)
-                DisposeAllChildren();
+            
         }
 
         public bool GetMeshRenderersInitialized()

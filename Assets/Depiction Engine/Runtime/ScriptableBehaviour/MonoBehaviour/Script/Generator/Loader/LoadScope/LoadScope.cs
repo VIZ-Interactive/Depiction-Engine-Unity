@@ -60,6 +60,8 @@ namespace DepictionEngine
         {
             this.loader = loader;
 
+            InitializeLastFields();
+
             return this;
         }
 
@@ -79,7 +81,7 @@ namespace DepictionEngine
         protected PersistentsDictionary _lastPersistentsDictionary;
         private PersistentsDictionary lastPersistentsDictionary
         {
-            get => _lastPersistentsDictionary ??= new ();
+            get { _lastPersistentsDictionary ??= new(); return _lastPersistentsDictionary; }
         }
 
         public void LoaderUndoRedoPerformed()
@@ -90,7 +92,7 @@ namespace DepictionEngine
 
         private PersistentsDictionary persistentsDictionary
         {
-            get => _persistentsDictionary ??= new ();
+            get { _persistentsDictionary ??= new(); return _persistentsDictionary; }
         }
 
         public IPersistent GetFirstPersistent()
@@ -124,8 +126,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
             RegisterCompleteObjectUndo(disposeContext);
 #endif
-            if (loader is CameraGrid2DLoader)
-                Debug.Log(this);
+
             if (persistentsDictionary.Remove(persistentId))
             {
 #if UNITY_EDITOR
@@ -333,38 +334,45 @@ namespace DepictionEngine
         {
             datasourceOperation = null;
 
-            loadingState = DatasourceOperationBase.LoadingState.Interval;
-
-            loadIntervalTween = tweenManager.DelayedCall(loadInterval, null, () =>
+            TweenManager tweenManager = this.tweenManager;
+            if (tweenManager != Disposable.NULL)
             {
-                loadingState = DatasourceOperationBase.LoadingState.None;
-
-                ILoadDatasource datasource = loader.datasource as ILoadDatasource;
-                if (!Disposable.IsDisposed(datasource))
+                loadingState = DatasourceOperationBase.LoadingState.Interval;
+                loadIntervalTween = tweenManager.DelayedCall(loadInterval, null, () =>
                 {
-                    loadingState = DatasourceOperationBase.LoadingState.Loading;
-                    datasourceOperation = datasource.Load((persistents, loadingResult) =>
+                    loadingState = DatasourceOperationBase.LoadingState.None;
+
+                    ILoadDatasource datasource = loader.datasource as ILoadDatasource;
+                    if (!Disposable.IsDisposed(datasource))
                     {
-                        IterateOverPersistents((persistentId, persistent) =>
+                        loadingState = DatasourceOperationBase.LoadingState.Loading;
+                        datasourceOperation = datasource.Load((persistents, loadingResult) =>
                         {
-                            if (persistents == null || !persistents.Contains(persistent))
-                                RemovePersistent(persistent);
-                            return true;
-                        });
-
-                        if (persistents != null)
-                        {
-                            foreach (IPersistent persistent in persistents)
+                            IterateOverPersistents((persistentId, persistent) =>
                             {
-                                if (loader.AddPersistent(persistent))
-                                    AddPersistent(persistent);
-                            }
-                        }
+                                if (persistents == null || !persistents.Contains(persistent))
+                                    RemovePersistent(persistent);
+                                return true;
+                            });
 
-                        loadingState = loadingResult;
-                    }, this);
-                }
-            }, () => loadIntervalTween = null);
+                            if (persistents != null)
+                            {
+                                foreach (IPersistent persistent in persistents)
+                                {
+                                    if (loader.AddPersistent(persistent))
+                                        AddPersistent(persistent);
+                                }
+                            }
+
+                            loadingState = loadingResult;
+                        }, this);
+
+                        if (datasourceOperation == Disposable.NULL)
+                            loadingState = DatasourceOperationBase.LoadingState.Failed;
+
+                    }
+                }, () => loadIntervalTween = null);
+            }
         }
 
         public virtual bool IsInScope(IPersistent persistent)

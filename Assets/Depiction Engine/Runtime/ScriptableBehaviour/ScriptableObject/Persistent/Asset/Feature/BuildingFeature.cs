@@ -147,7 +147,7 @@ namespace DepictionEngine
 
         public override int featureCount
         {
-            get { return _geoCoordinateGeometries.Length; }
+            get => _geoCoordinateGeometries.Length;
         }
 
         public GeoCoordinateGeometries GetGeoCoordinateGeometries(int index)
@@ -155,33 +155,33 @@ namespace DepictionEngine
             return _geoCoordinateGeometries[index];
         }
 
-        public bool GetMaterialIsGlass(int index) { return _materialIsGlass[index]; }
+        public bool GetMaterialIsGlass(int index) => _materialIsGlass[index];
 
-        public Shape GetShape(int index) { return _shape[index]; }
+        public Shape GetShape(int index) => _shape[index];
 
-        public RoofShape GetRoofShape(int index) { return _roofShape[index]; }
+        public RoofShape GetRoofShape(int index) => _roofShape[index];
 
-        public bool GetHasRoofDirection(int index) { return _hasRoofDirection[index]; }
-        public float GetRoofDirection(int index) { return _roofDirection[index]; }
+        public bool GetHasRoofDirection(int index) => _hasRoofDirection[index];
+        public float GetRoofDirection(int index) => _roofDirection[index];
 
-        public float GetRoofHeight(int index) { return _roofHeight[index]; }
+        public float GetRoofHeight(int index) => _roofHeight[index];
 
-        public int GetRoofLevels(int index) { return _roofLevels[index]; }
+        public int GetRoofLevels(int index) => _roofLevels[index];
 
-        public bool GetHasHeight(int index) { return _hasHeight[index]; }
-        public float GetHeight(int index) { return _height[index]; }
+        public bool GetHasHeight(int index) => _hasHeight[index];
+        public float GetHeight(int index) => _height[index];
 
-        public float GetMinHeight(int index) { return _minHeight[index]; }
+        public float GetMinHeight(int index) => _minHeight[index];
 
-        public bool GetHasLevels(int index) { return _hasLevels[index]; }
-        public int GetLevels(int index) { return _levels[index]; }
+        public bool GetHasLevels(int index) => _hasLevels[index];
+        public int GetLevels(int index) => _levels[index];
 
-        public bool GetHasMinLevel(int index) { return _hasMinLevel[index]; }
-        public int GetMinLevel(int index) { return _minLevel[index]; }
+        public bool GetHasMinLevel(int index) => _hasMinLevel[index];
+        public int GetMinLevel(int index) => _minLevel[index];
 
-        public Color GetWallColor(int index, Color defaultColor) { return _hasWallColor[index] ? _wallColor[index] : defaultColor; }
+        public Color GetWallColor(int index, Color defaultColor) => _hasWallColor[index] ? _wallColor[index] : defaultColor;
 
-        public Color GetRoofColor(int index, Color defaultColor) { return _hasRoofColor[index] ? _roofColor[index] : defaultColor; }
+        public Color GetRoofColor(int index, Color defaultColor) => _hasRoofColor[index] ? _roofColor[index] : defaultColor;
 
         protected override JSONObject GetDataJson()
         {

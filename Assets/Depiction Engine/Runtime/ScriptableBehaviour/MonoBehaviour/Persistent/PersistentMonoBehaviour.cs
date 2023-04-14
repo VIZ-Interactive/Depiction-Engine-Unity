@@ -165,20 +165,20 @@ namespace DepictionEngine
 
         public Action<IPersistent, Action> PersistenceSaveOperationEvent
         {
-            get { return _persistenceSaveOperationEvent; }
-            set { _persistenceSaveOperationEvent = value; }
+            get => _persistenceSaveOperationEvent; 
+            set => _persistenceSaveOperationEvent = value; 
         }
 
         public Action<IPersistent, Action> PersistenceSynchronizeOperationEvent
         {
-            get { return _persistenceSynchronizeOperationEvent; }
-            set { _persistenceSynchronizeOperationEvent = value; }
+            get => _persistenceSynchronizeOperationEvent;
+            set => _persistenceSynchronizeOperationEvent = value;
         }
 
         public Action<IPersistent, Action> PersistenceDeleteOperationEvent
         {
-            get { return _persistenceDeleteOperationEvent; }
-            set { _persistenceDeleteOperationEvent = value; }
+            get => _persistenceDeleteOperationEvent;
+            set => _persistenceDeleteOperationEvent = value;
         }
 
         protected virtual bool GetDefaultDontSaveToScene()
@@ -237,8 +237,17 @@ namespace DepictionEngine
         [Json]
         public bool dontSaveToScene
         {
-            get { return _dontSaveToScene; }
-            set { SetValue(nameof(dontSaveToScene), value, ref _dontSaveToScene); }
+            get => _dontSaveToScene;
+            set
+            {
+                SetValue(nameof(dontSaveToScene), value, ref _dontSaveToScene, (newValue, oldValue) =>
+                {
+#if UNITY_EDITOR
+                    if (initialized)
+                        SceneManager.MarkSceneDirty();
+#endif
+                });
+            }
         }
 
         protected virtual bool GetDontSaveToScene()

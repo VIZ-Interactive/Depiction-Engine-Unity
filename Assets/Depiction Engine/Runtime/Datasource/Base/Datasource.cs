@@ -455,25 +455,25 @@ namespace DepictionEngine
         private PersistentsDictionary _lastPersistentsDictionary;
         private PersistentsDictionary lastPersistentsDictionary
         {
-            get => _lastPersistentsDictionary ??= new ();
+            get { _lastPersistentsDictionary ??= new(); return _lastPersistentsDictionary; }
         }
 
         private PersistentsComponentsOutOfSyncDictionary _lastPersistentsComponentsOutOfSyncDictionary;
         private PersistentsComponentsOutOfSyncDictionary lastPersistentsComponentsOutOfSyncDictionary
         {
-            get => _lastPersistentsComponentsOutOfSyncDictionary ??= new ();
+            get { _lastPersistentsComponentsOutOfSyncDictionary ??= new(); return _lastPersistentsComponentsOutOfSyncDictionary; }
         }
 
         private SerializableGuidHashSet _lastPersistentsIsOutOfSync;
         private SerializableGuidHashSet lastPersistentsIsOutOfSync
         {
-            get => _lastPersistentsIsOutOfSync ??= new();
+            get { _lastPersistentsIsOutOfSync ??= new(); return _lastPersistentsIsOutOfSync; }
         }
 
         private SerializableGuidHashSet _lastPersistentsCanBeAutoDisposed;
         private SerializableGuidHashSet lastPersistentsCanBeAutoDisposed
         {
-            get => _lastPersistentsCanBeAutoDisposed ??= new();
+            get { _lastPersistentsCanBeAutoDisposed ??= new(); return _lastPersistentsCanBeAutoDisposed; }
         }
 
         public void UndoRedoPerformed()
@@ -484,7 +484,7 @@ namespace DepictionEngine
 
         private PersistentsDictionary persistentsDictionary
         {
-            get => _persistentsDictionary ??= new ();
+            get { _persistentsDictionary ??= new(); return _persistentsDictionary; }
         }
 
         private static bool _allowAutoDispose;
@@ -494,7 +494,7 @@ namespace DepictionEngine
             if (callback != null)
             {
                 bool lastAllowAutoDispose = _allowAutoDispose;
-                _allowAutoDispose = allowAutoDispose;
+                _allowAutoDispose = lastAllowAutoDispose || allowAutoDispose;
                 callback();
                 _allowAutoDispose = lastAllowAutoDispose;
             }
@@ -582,7 +582,7 @@ namespace DepictionEngine
 
         private PersistentsComponentsOutOfSyncDictionary persistentsComponentsOutOfSyncDictionary
         {
-            get => _persistentsComponentsOutOfSyncDictionary ??= new PersistentsComponentsOutOfSyncDictionary();
+            get { _persistentsComponentsOutOfSyncDictionary ??= new PersistentsComponentsOutOfSyncDictionary(); return _persistentsComponentsOutOfSyncDictionary; }
         }
 
         private bool GetPersistentComponentOutOfSyncDictionary(IPersistent persistent, out ComponentsOutOfSyncDictionary componentOutOfSynchDictionary)
@@ -592,7 +592,7 @@ namespace DepictionEngine
 
         private SerializableGuidHashSet persistentsIsOutOfSync
         {
-            get => _persistentsIsOutOfSync ??= new SerializableGuidHashSet();
+            get { _persistentsIsOutOfSync ??= new SerializableGuidHashSet(); return _persistentsIsOutOfSync; }
         }
 
         private bool SetPersistentIsOutOfSynch(IPersistent persistent, bool outOfSynch, bool autoDispose = true)
@@ -612,8 +612,8 @@ namespace DepictionEngine
         }
 
         private SerializableGuidHashSet persistentsCanBeAutoDisposed
-        {        
-            get => _persistentsCanBeAutoDisposed ??= new SerializableGuidHashSet();
+        {
+            get { _persistentsCanBeAutoDisposed ??= new SerializableGuidHashSet(); return _persistentsCanBeAutoDisposed; }
         }
 
         private bool GetPersistentCanBeAutoDisposed(IPersistent persistent)
@@ -748,7 +748,7 @@ namespace DepictionEngine
             bool changed = false;
 
             int key = PropertyMonoBehaviour.GetPropertyKey(propertyInfo.Name);
-            if (!component.IsDynamicProperty(key) && GetPersistentComponentOutOfSyncDictionary(persistent, out ComponentsOutOfSyncDictionary componentsOutOfSynchDictionary))
+            if (GetPersistentComponentOutOfSyncDictionary(persistent, out ComponentsOutOfSyncDictionary componentsOutOfSynchDictionary))
             {
 #if UNITY_EDITOR
                 if (SceneManager.IsUserChangeContext())
@@ -884,6 +884,7 @@ namespace DepictionEngine
                 lastPersistentsComponentsOutOfSyncDictionary.Remove(persistentId);
                 lastPersistentsIsOutOfSync.Remove(persistentId);
                 lastPersistentsCanBeAutoDisposed.Remove(persistentId);
+
                 if (datasourceWrapper != Disposable.NULL)
                     UnityEditor.EditorUtility.SetDirty(datasourceWrapper);
 #endif
@@ -895,7 +896,7 @@ namespace DepictionEngine
 
         private LoadersDictionary loaders
         {
-            get => _loaders ??= new LoadersDictionary();
+            get { _loaders ??= new LoadersDictionary(); return _loaders; }
         }
 
         private bool RemoveLoader(LoaderBase loader)
@@ -1069,7 +1070,7 @@ namespace DepictionEngine
         {
             if (datasourceOperation != Disposable.NULL)
             {
-                datasourceOperation.Execute((Action<bool, OperationResult>)((success, operationResult) =>
+                datasourceOperation.Execute((success, operationResult) =>
                     {
                         int successCount = 0;
 
@@ -1082,7 +1083,7 @@ namespace DepictionEngine
                             });
                         }
                         resultCallback?.Invoke(successCount);
-                    }));
+                    });
             }
         }
 

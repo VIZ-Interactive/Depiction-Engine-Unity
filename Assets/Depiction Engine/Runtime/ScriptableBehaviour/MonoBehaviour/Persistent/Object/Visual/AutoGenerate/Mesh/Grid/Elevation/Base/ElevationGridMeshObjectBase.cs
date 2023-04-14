@@ -47,14 +47,29 @@ namespace DepictionEngine
         private void ElevationPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             if (name == nameof(AssetBase.data))
+            {
                 ElevationChanged();
+                (meshRendererVisualDirtyFlags as ElevationGridMeshObjectVisualDirtyFlags).ElevationChanged();
+            }
         }
 
         protected override bool UpdateReferences(bool forceUpdate = false)
         {
             if (base.UpdateReferences(forceUpdate))
             {
-                UpdateElevation();
+                elevation = GetAssetFromAssetReference<Elevation>(elevationAssetReference);
+
+                return true;
+            }
+            return false;
+        }
+
+        protected override bool IterateOverAssetReferences(Func<AssetBase, AssetReference, bool, bool> callback)
+        {
+            if (base.IterateOverAssetReferences(callback))
+            {
+                if (!callback.Invoke(elevation, elevationAssetReference, false))
+                    return false;
 
                 return true;
             }
@@ -64,11 +79,6 @@ namespace DepictionEngine
         private AssetReference elevationAssetReference
         {
             get => GetFirstReferenceOfType(ELEVATION_REFERENCE_DATATYPE) as AssetReference;
-        }
-
-        private void UpdateElevation()
-        {
-            elevation = elevationAssetReference != Disposable.NULL ? elevationAssetReference.data as Elevation : null;
         }
 
         protected Elevation elevation
@@ -94,21 +104,7 @@ namespace DepictionEngine
         private void ElevationChanged()
         {
             if (initialized)
-            {
-                ForceUpdateTransform(true);
-
-                if (meshRendererVisualDirtyFlags is ElevationGridMeshObjectVisualDirtyFlags)
-                {
-                    ElevationGridMeshObjectVisualDirtyFlags elevationMeshRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as ElevationGridMeshObjectVisualDirtyFlags;
-
-                    elevationMeshRendererVisualDirtyFlags.ElevationChanged();
-                }
-            }
-        }
-
-        public bool GetIsElevationLoaded()
-        {
-            return elevationAssetReference == Disposable.NULL || elevationAssetReference.IsLoaded();
+                Datasource.AllowAutoDisposeOnOutOfSynchProperty(() => { ForceUpdateTransform(true); });
         }
 
         public bool GetGeoCoordinateElevation(out double altitude, GeoCoordinate3Double geoCoordinate, bool raycast = false)
@@ -158,14 +154,9 @@ namespace DepictionEngine
 
             if (elevation != Disposable.NULL)
             {
-                if (grid2DDimensions != elevation.grid2DDimensions)
-                {
-                    Vector2 projectedGrid2DIndex = MathPlus.ProjectGrid2DIndex(x, y, grid2DIndex, grid2DDimensions, elevation.grid2DIndex, elevation.grid2DDimensions);
-                    x = projectedGrid2DIndex.x;
-                    y = projectedGrid2DIndex.y;
-                }
+                Vector2 pixel = GetProjectedPixel(elevation, x, y);
 
-                value = elevation.GetElevation(x, y);
+                value = elevation.GetElevation(pixel.x, pixel.y);
             }
 
             return value;
@@ -205,11 +196,6 @@ namespace DepictionEngine
 
                 (parameters as ElevationGridMeshObjectParameters).Init(elevationMeshRendererVisualDirtyFlags.elevation);
             }
-        }
-
-        protected override bool AssetLoaded()
-        {
-            return base.AssetLoaded() && GetIsElevationLoaded();
         }
 
         protected override void ApplyPropertiesToMaterial(MeshRenderer meshRenderer, Material material, MaterialPropertyBlock materialPropertyBlock, double cameraAtmosphereAltitudeRatio, Camera camera, GeoAstroObject closestGeoAstroObject, Star star)

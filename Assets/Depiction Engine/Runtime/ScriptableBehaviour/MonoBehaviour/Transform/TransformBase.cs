@@ -381,7 +381,7 @@ namespace DepictionEngine
 
         private TransformComponents3 unityTransformComponents
         {
-            get => _unityTransformComponents ??= new TransformComponents3();
+            get { _unityTransformComponents ??= new TransformComponents3(); return _unityTransformComponents; }
         }
 
 #if UNITY_EDITOR
@@ -480,7 +480,7 @@ namespace DepictionEngine
         }
 
         private Vector3 _lastTransformLocalPosition;
-        public Vector3 transformLocalPosition
+        protected Vector3 transformLocalPosition
         {
             get => transform.localPosition;
             set

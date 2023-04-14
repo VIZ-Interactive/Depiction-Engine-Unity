@@ -138,15 +138,26 @@ namespace DepictionEngine
         private void FeaturePropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             if (name == nameof(AssetBase.data))
-                FeatureChanged();
+                (meshRendererVisualDirtyFlags as FeatureGridMeshObjectVisualDirtyFlags).FeatureChanged();
         }
 
         protected override bool UpdateReferences(bool forceUpdate = false)
         {
             if (base.UpdateReferences(forceUpdate))
             {
-                UpdateFeature();
+                feature = GetAssetFromAssetReference<Feature>(featureAssetReference);
 
+                return true;
+            }
+            return false;
+        }
+
+        protected override bool IterateOverAssetReferences(Func<AssetBase, AssetReference, bool, bool> callback)
+        {
+            if (base.IterateOverAssetReferences(callback))
+            {
+                if (!callback.Invoke(feature, featureAssetReference, true))
+                    return false;
                 return true;
             }
             return false;
@@ -220,11 +231,6 @@ namespace DepictionEngine
             get => GetFirstReferenceOfType(FEATURE_REFERENCE_DATATYPE) as AssetReference;
         }
 
-        private void UpdateFeature()
-        {
-            feature = featureAssetReference != Disposable.NULL ? featureAssetReference.data as Feature : null;
-        }
-
         protected Feature feature
         {
             get { return _feature; }
@@ -240,23 +246,7 @@ namespace DepictionEngine
                 AddFeatureDelegates(newValue);
 
                 _feature = newValue;
-
-                FeatureChanged();
             }
-        }
-
-        private void FeatureChanged()
-        {
-            if (initialized)
-            {
-                if (meshRendererVisualDirtyFlags is not null)
-                    meshRendererVisualDirtyFlags.Recreate();
-            }
-        }
-
-        protected override bool AssetLoaded()
-        {
-            return base.AssetLoaded() && feature != Disposable.NULL;
         }
 
         protected override void UpdateGridMeshRendererVisualModifier()

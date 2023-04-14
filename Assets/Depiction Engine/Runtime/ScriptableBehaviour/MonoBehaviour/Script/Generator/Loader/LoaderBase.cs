@@ -20,9 +20,9 @@ namespace DepictionEngine
         /// A .png or .jpg texture.<br/><br/>
         /// <b><see cref="TextureWebP"/>:</b> <br/>
         /// A .webp texture.<br/><br/>
-        /// <b><see cref="ElevationMapboxTerrainRGBPngRaw"/>:</b> <br/>
+        /// <b><see cref="ElevationTerrainRGBPngRaw"/>:</b> <br/>
         /// A .pngraw texture containing elevation in Mapbox TerrainRGB format.<br/><br/>
-        /// <b><see cref="ElevationMapboxTerrainRGBWebP"/>:</b> <br/>
+        /// <b><see cref="ElevationTerrainRGBWebP"/>:</b> <br/>
         /// A .webp texture containing elevation in Mapbox TerrainRGB format.<br/><br/>
         /// <b><see cref="ElevationEsriLimitedErrorRasterCompression"/>:</b> <br/>
         /// Elevation data in Esri LimitedErrorRasterCompression (LERC) format.
@@ -33,8 +33,8 @@ namespace DepictionEngine
             Json,
             TexturePngJpg,
             TextureWebP,
-            ElevationMapboxTerrainRGBPngRaw,
-            ElevationMapboxTerrainRGBWebP,
+            ElevationTerrainRGBPngRaw,
+            ElevationTerrainRGBWebP,
             ElevationEsriLimitedErrorRasterCompression
         }
 
@@ -549,7 +549,7 @@ namespace DepictionEngine
         private PersistentsDictionary _lastPersistentsDictionary;
         private PersistentsDictionary lastPersistentsDictionary
         {
-            get => _lastPersistentsDictionary ??= new PersistentsDictionary();
+            get { _lastPersistentsDictionary ??= new PersistentsDictionary(); return _lastPersistentsDictionary; }
         }
 
         public override bool UndoRedoPerformed()
@@ -573,7 +573,7 @@ namespace DepictionEngine
 
         protected PersistentsDictionary persistentsDictionary
         {
-            get => _persistentsDictionary ??= new();
+            get { _persistentsDictionary ??= new(); return _persistentsDictionary; }
         }
 
         protected override bool AddInstanceToManager()
@@ -669,20 +669,17 @@ namespace DepictionEngine
 
                     RemoveAllPersistents(disposeContext);
 
-                    Datasource.AllowAutoDisposeOnOutOfSynchProperty(() => 
+                    float loadInterval = 0.5f;
+                    IterateOverLoadScopes((loadScopeKey, loadScope) =>
                     {
-                        float loadInterval = 0.5f;
-                        IterateOverLoadScopes((loadScopeKey, loadScope) =>
-                        {
-                            loadScope.DatasourceChanged(disposeContext);
+                        loadScope.DatasourceChanged(disposeContext);
 
-                            Load(loadScope, loadInterval);
-                            loadInterval += 0.01f;
-                            return true;
-                        });
-                    }, true);
+                        Load(loadScope, loadInterval);
+                        loadInterval += 0.01f;
+                        return true;
+                    });
                 }
-            });
+            }, true);
         }
 
         /// <summary>
@@ -1024,8 +1021,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                 lastPersistentsDictionary.Add(persistent.id, serializableIPersistent);
 
-                if (!Application.isPlaying)
-                    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+                SceneManager.MarkSceneDirty();
 #endif
                 return true;
             }
@@ -1055,8 +1051,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                 lastPersistentsDictionary.Remove(persistentId);
 
-                if (!Application.isPlaying)
-                    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+                SceneManager.MarkSceneDirty();
 #endif
                 return true;
             }
@@ -1077,8 +1072,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                 lastPersistentsDictionary.Clear();
 
-                if (!Application.isPlaying)
-                    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+                SceneManager.MarkSceneDirty();
 #endif
             }
         } 
@@ -1119,6 +1113,13 @@ namespace DepictionEngine
             if (RemoveLoadScopeInternal(loadScopeKey, out LoadScope loadScope) && loadScope is not null)
             {
                 RemoveLoadScopeDelegates(loadScope);
+
+                loadScope.IterateOverPersistents((persistentId, persistent) => 
+                {
+                    if (!GetLoadScope(out LoadScope loadScope, persistent))
+                        RemovePersistent(persistent, disposeContext);
+                    return true;
+                });
 
                 return true;
             }

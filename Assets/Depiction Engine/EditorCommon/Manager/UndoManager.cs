@@ -855,7 +855,7 @@ namespace DepictionEngine.Editor
                                     if (validatedObject.PasteComponentAllowed())
                                     {
                                         pastingComponentValues = true;
-                                        SceneManager.PastingComponentValues(validatedObject, validatedObject.GetJson());
+                                        InspectorManager.PastingComponentValues(validatedObject, validatedObject.GetJson());
                                     }
                                 }
 

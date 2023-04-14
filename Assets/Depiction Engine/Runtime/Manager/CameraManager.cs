@@ -73,6 +73,11 @@ namespace DepictionEngine
             InitValue(value => distancePass = value, Camera.DEFAULT_DISTANCE_PASS, initializingContext);
             InitValue(value => environmentTextureSize = value, Camera.DEFAULT_ENVIRONMENT_TEXTURE_SIZE, initializingContext);
             InitValue(value => minMaxCameraDistance = value, new Vector2Double(0.01d, MAX_CAMERA_DISTANCE), initializingContext);
+
+#if !UNITY_EDITOR
+            if (Camera.main == null)
+                Debug.LogError("No MainCamera found in the Scene!");
+#endif
         }
 
         /// <summary>

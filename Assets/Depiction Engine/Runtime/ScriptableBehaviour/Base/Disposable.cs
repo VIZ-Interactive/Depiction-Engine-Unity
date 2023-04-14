@@ -9,6 +9,9 @@ namespace DepictionEngine
     [Serializable]
     public class Disposable : IDisposable, ISerializationCallbackReceiver
     {
+        /// <summary>
+        /// A value used for equality operators to establish whether an <see cref="DepictionEngine.IDisposable"/> is Destroyed OR Pooled.
+        /// </summary>
         public static readonly Null NULL = new();
 
         private bool _initializing;
@@ -132,6 +135,12 @@ namespace DepictionEngine
             set { _disposedEvent = value; }
         }
 
+        /// <summary>
+        /// Is the object Destroyed OR Pooled(if the object is an <see cref="DepictionEngine.IDisposable"/>).
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="disposable"></param>
+        /// <returns>True if it was Destroyed OR Pooled</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsDisposed<T>(T disposable)
         {
@@ -240,6 +249,9 @@ namespace DepictionEngine
             return base.GetHashCode();
         }
 
+        /// <summary>
+        /// A value used for equality operators to establish whether an <see cref="DepictionEngine.IDisposable"/> is Destroyed OR pooled.
+        /// </summary>
         public struct Null
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -20,7 +20,7 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private Material _material;
 
-        private AssetBase _asset;
+        private AssetBase _meshAsset;
 
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
@@ -43,8 +43,8 @@ namespace DepictionEngine
         {
             if (base.UpdateAllDelegates())
             {
-                RemoveAssetDelgates(asset);
-                AddAssetDelegates(asset);
+                RemoveAssetDelgates(meshAsset);
+                AddAssetDelegates(meshAsset);
 
                 return true;
             }
@@ -66,14 +66,26 @@ namespace DepictionEngine
         private void AssetPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             if (name == nameof(AssetBase.data))
-                AssetChanged();
+                (meshRendererVisualDirtyFlags as MeshGridMeshObjectVisualDirtyFlags).MeshAssetChanged();
         }
 
         protected override bool UpdateReferences(bool forceUpdate = false)
         {
             if (base.UpdateReferences(forceUpdate))
             {
-                UpdateAsset();
+                meshAsset = GetAssetFromAssetReference<AssetBase>(meshAssetReference);
+
+                return true;
+            }
+            return false;
+        }
+
+        protected override bool IterateOverAssetReferences(Func<AssetBase, AssetReference, bool, bool> callback)
+        {
+            if (base.IterateOverAssetReferences(callback))
+            {
+                if (!callback.Invoke(meshAsset, meshAssetReference, true))
+                    return false;
 
                 return true;
             }
@@ -86,13 +98,13 @@ namespace DepictionEngine
         [Json]
         public string shaderPath
         {
-            get { return _shaderPath; }
-            set { SetValue(nameof(shaderPath), value, ref _shaderPath); }
+            get => _shaderPath;
+            set => SetValue(nameof(shaderPath), value, ref _shaderPath);
         }
 
         public Processor meshRendererVisualModifiersProcessor
         {
-            get { return _meshRendererVisualModifiersProcessor; }
+            get => _meshRendererVisualModifiersProcessor;
             private set
             {
                 if (Object.ReferenceEquals(_meshRendererVisualModifiersProcessor, value))
@@ -101,11 +113,6 @@ namespace DepictionEngine
                     _meshRendererVisualModifiersProcessor.Cancel();
                 _meshRendererVisualModifiersProcessor = value;
             }
-        }
-
-        protected override bool AssetLoaded()
-        {
-            return base.AssetLoaded() && asset != Disposable.NULL;
         }
 
         protected override Type GetMeshRendererVisualDirtyFlagType()
@@ -121,7 +128,7 @@ namespace DepictionEngine
             {
                 MeshGridMeshObjectVisualDirtyFlags meshGridMeshObjectRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as MeshGridMeshObjectVisualDirtyFlags;
 
-                meshGridMeshObjectRendererVisualDirtyFlags.asset = asset;
+                meshGridMeshObjectRendererVisualDirtyFlags.asset = meshAsset;
             }
         }
 
@@ -144,20 +151,18 @@ namespace DepictionEngine
 
         private AssetReference meshAssetReference
         {
-            get { return GetFirstReferenceOfType(MESH_REFERENCE_DATATYPE) as AssetReference; }
+            get => GetFirstReferenceOfType(MESH_REFERENCE_DATATYPE) as AssetReference;
         }
 
-        private void UpdateAsset()
+        protected AssetBase meshAsset
         {
-            asset = meshAssetReference != Disposable.NULL && meshAssetReference.data is IUnityMeshAsset ? featureAssetReference.data as AssetBase: null;
-        }
-
-        protected AssetBase asset
-        {
-            get { return _asset; }
+            get => _meshAsset;
             private set
             {
-                AssetBase oldValue = _asset;
+                if (value is not IUnityMeshAsset)
+                    value = null;
+
+                AssetBase oldValue = _meshAsset;
                 AssetBase newValue = value;
 
                 if (oldValue == newValue)
@@ -166,22 +171,7 @@ namespace DepictionEngine
                 RemoveAssetDelgates(oldValue);
                 AddAssetDelegates(newValue);
 
-                _asset = newValue;
-
-                AssetChanged();
-            }
-        }
-
-        private void AssetChanged()
-        {
-            if (initialized)
-            {
-                if (meshRendererVisualDirtyFlags is MeshGridMeshObjectVisualDirtyFlags)
-                {
-                    MeshGridMeshObjectVisualDirtyFlags featureMeshRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as MeshGridMeshObjectVisualDirtyFlags;
-
-                    featureMeshRendererVisualDirtyFlags.AssetChanged();
-                }
+                _meshAsset = newValue;
             }
         }
 

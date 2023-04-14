@@ -143,7 +143,7 @@ namespace DepictionEngine
                     assignedCallback?.Invoke(value, oldValue);
 
                     PropertyAssigned(this, name, value, oldValue);
-                }, Datasource.allowAutoDispose || allowAutoDisposeOnOutOfSynchProperty);
+                }, allowAutoDisposeOnOutOfSynchProperty);
 
                 return true;
             }
@@ -172,11 +172,6 @@ namespace DepictionEngine
             set { _id = value; }
         }
 
-        public virtual bool IsDynamicProperty(int key)
-        {
-            return false;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void PropertyAssigned<T>(IProperty property, string name, T newValue, T oldValue)
         {
@@ -186,7 +181,7 @@ namespace DepictionEngine
                 if (SceneManager.IsUserChangeContext() && property is IJson)
                 {
                     IJson iJson = property as IJson;
-                    if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo) && !iJson.IsDynamicProperty(PropertyMonoBehaviour.GetPropertyKey(name)))
+                    if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
                         MarkAsNotPoolable();
                 }
 #endif
@@ -217,7 +212,7 @@ namespace DepictionEngine
             if (wasFirstUpdated)
             {
                 if (ResetAllowed())
-                    SceneManager.Reseting(this);
+                    Editor.InspectorManager.Reseting(this);
 
                 Editor.UndoManager.RevertAllInCurrentGroup();
 

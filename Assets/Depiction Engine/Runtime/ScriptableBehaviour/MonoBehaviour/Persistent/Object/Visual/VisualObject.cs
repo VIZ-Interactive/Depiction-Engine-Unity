@@ -34,12 +34,12 @@ namespace DepictionEngine
         [SerializeField, Range(0.0f, 1.0f), Tooltip("How transparent should the object be."), EndFoldout]
         private float _alpha;
 
-        [BeginFoldout("MeshRenderers")]
-        [SerializeField, Button("UpdateAllChildMeshRenderersBtn"), Tooltip("Automatically add all the child MeshRenderers so the VisualObject can manage their materials."), EndFoldout]
 #if UNITY_EDITOR
+        [BeginFoldout("MeshRenderers")]
+        [SerializeField, Button(nameof(UpdateAllChildMeshRenderersBtn)), Tooltip("Automatically add all the child MeshRenderers so the VisualObject can manage their materials."), EndFoldout]
         [ConditionalShow(nameof(GetShowUpdateAllChildMeshRenderers))]
-#endif
         private bool _updateAllChildMeshRenderers;
+#endif
 
         [SerializeField, HideInInspector]
         private List<MeshRenderer> _managedMeshRenderers;
@@ -87,7 +87,25 @@ namespace DepictionEngine
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
                 UpdateAllChildManagedMeshRenderers();
 
+            if (initializingContext == InitializationContext.Existing)
+                RemoveNullManagedMeshRenderers();
+
             InitValue(value => alpha = value, GetDefaultAlpha(), initializingContext);
+        }
+
+        private void RemoveNullManagedMeshRenderers()
+        {
+            if (_managedMeshRenderers != null)
+            {
+#if UNITY_EDITOR
+                SerializationUtility.RecoverLostReferencedObjectsInCollection(_managedMeshRenderers);
+#endif
+                for (int i = _managedMeshRenderers.Count - 1; i >= 0; i--)
+                {
+                    if (_managedMeshRenderers[i] == null)
+                        _managedMeshRenderers.RemoveAt(i);
+                }
+            }
         }
 
 #if UNITY_EDITOR
@@ -96,6 +114,8 @@ namespace DepictionEngine
         {
             if (base.UndoRedoPerformed())
             {
+                RemoveNullManagedMeshRenderers();
+
                 SerializationUtility.PerformUndoRedoPropertyChange((value) => { alpha = value; }, ref _alpha, ref _lastAlpha);
                 
                 return true;
@@ -170,14 +190,15 @@ namespace DepictionEngine
             return 0.2f;
         }
 
-        private List<MeshRenderer> managedMeshRenderers
+        protected List<MeshRenderer> managedMeshRenderers
         {
-            get => _managedMeshRenderers ??= new List<MeshRenderer>();
+            get { _managedMeshRenderers ??= new List<MeshRenderer>(); return _managedMeshRenderers; }
+            set => _managedMeshRenderers = value;
         }
 
         private MaterialPropertyBlock materialPropertyBlock
         {
-            get => _materialPropertyBlock ??= new MaterialPropertyBlock();
+            get { _materialPropertyBlock ??= new MaterialPropertyBlock(); return _materialPropertyBlock; }
         }
 
         protected virtual void DontSaveVisualsToSceneChanged(bool newValue, bool oldValue)
@@ -234,8 +255,11 @@ namespace DepictionEngine
         public void RemoveMeshRenderer(MeshRenderer meshRenderer)
         {
             managedMeshRenderers.Remove(meshRenderer);
-            if (meshRenderer != null)
-                meshRenderer.SetPropertyBlock(null);
+            try
+            {
+                meshRenderer?.SetPropertyBlock(null);
+            }catch(MissingReferenceException)
+            { }
         }
 
         public void IterateOverManagedMeshRenderer(Action<MaterialPropertyBlock, MeshRenderer> callback)
@@ -344,7 +368,7 @@ namespace DepictionEngine
 
         public int managedMeshRendererCount
         {
-            get { return managedMeshRenderers.Count; }
+            get => managedMeshRenderers.Count;
         }
 
         public virtual float GetCurrentAlpha()
@@ -409,6 +433,16 @@ namespace DepictionEngine
             return visual;
         }
 
+        protected override bool DisposeAllChildren(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
+        {
+            if (base.DisposeAllChildren(disposeContext))
+            {
+                managedMeshRenderers.Clear();
+                return true;
+            }
+            return false;
+        }
+
         protected virtual void InitializeMaterial(MeshRenderer meshRendererVisual, Material material = null)
         {
             meshRendererVisual.sharedMaterial = material;
@@ -433,16 +467,19 @@ namespace DepictionEngine
 
         protected virtual void ApplyPropertiesToMaterial(MeshRenderer meshRenderer, Material material, MaterialPropertyBlock materialPropertyBlock, double cameraAtmosphereAltitudeRatio, Camera camera, GeoAstroObject closestGeoAstroObject, Star star)
         {
-            ApplyAlphaToMaterial(material, materialPropertyBlock, closestGeoAstroObject, camera, GetCurrentAlpha());
+            if (material != null)
+            {
+                ApplyAlphaToMaterial(material, materialPropertyBlock, closestGeoAstroObject, camera, GetCurrentAlpha());
 
-            ApplyClosestGeoAstroObjectPropertiesToMaterial(material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, closestGeoAstroObject, star, camera);
+                ApplyClosestGeoAstroObjectPropertiesToMaterial(material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, closestGeoAstroObject, star, camera);
 
-            ApplyAtmospherePropertiesToMaterial(material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, closestGeoAstroObject, star, camera);
+                ApplyAtmospherePropertiesToMaterial(material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, closestGeoAstroObject, star, camera);
 
-            if (GetEnableAlphaClip())
-                material.EnableKeyword("ENABLE_ALPHA_CLIP");
-            else
-                material.DisableKeyword("ENABLE_ALPHA_CLIP");
+                if (GetEnableAlphaClip())
+                    material.EnableKeyword("ENABLE_ALPHA_CLIP");
+                else
+                    material.DisableKeyword("ENABLE_ALPHA_CLIP");
+            }
         }
 
         private RayDouble _shadowRay;

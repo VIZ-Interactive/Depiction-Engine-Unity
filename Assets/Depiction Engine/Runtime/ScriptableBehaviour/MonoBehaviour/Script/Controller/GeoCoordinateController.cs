@@ -145,7 +145,7 @@ namespace DepictionEngine
 
         private void InitElevation()
         {
-			elevation = GetComponent<TransformDouble>().GetGeoCoordinate().altitude;
+			elevation = gameObject.GetComponent<TransformDouble>().GetGeoCoordinate().altitude;
         }
 
         public double elevation

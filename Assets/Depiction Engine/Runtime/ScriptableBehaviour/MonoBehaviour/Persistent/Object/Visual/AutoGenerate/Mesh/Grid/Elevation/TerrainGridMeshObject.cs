@@ -120,9 +120,25 @@ namespace DepictionEngine
         {
             if (base.UpdateReferences(forceUpdate))
             {
-                UpdateColorMap();
-                UpdateAdditionalMap();
-                UpdateSurfaceTypeMap();
+                colorMap = GetAssetFromAssetReference<Texture>(colorMapAssetReference);
+                additionalMap = GetAssetFromAssetReference<Texture>(additionalMapAssetReference);
+                surfaceTypeMap = GetAssetFromAssetReference<Texture>(surfaceTypeMapAssetReference);
+
+                return true;
+            }
+            return false;
+        }
+
+        protected override bool IterateOverAssetReferences(Func<AssetBase, AssetReference, bool, bool> callback)
+        {
+            if (base.IterateOverAssetReferences(callback))
+            {
+                if (!callback.Invoke(colorMap, colorMapAssetReference, false))
+                    return false;
+                if (!callback.Invoke(additionalMap, additionalMapAssetReference, false))
+                    return false;
+                if (!callback.Invoke(surfaceTypeMap, surfaceTypeMapAssetReference, false))
+                    return false;
 
                 return true;
             }
@@ -267,11 +283,6 @@ namespace DepictionEngine
             get => GetFirstReferenceOfType(COLORMAP_REFERENCE_DATATYPE) as AssetReference;
         }
 
-        private void UpdateColorMap()
-        {
-            colorMap = colorMapAssetReference != Disposable.NULL ? colorMapAssetReference.data as Texture : null;
-        }
-
         private Texture colorMap
         {
             get => _colorMap;
@@ -340,7 +351,7 @@ namespace DepictionEngine
 
         private TerrainGridCache terrainGridCache
         {
-            get => _terrainGridCache ??= new TerrainGridCache().Initialize();
+            get { _terrainGridCache ??= new TerrainGridCache().Initialize(); return _terrainGridCache; }
         }
 
         private bool generateEdgeInSeperateMesh
@@ -381,11 +392,6 @@ namespace DepictionEngine
                 return false;
             _cameraCount = value;
             return true;
-        }
-
-        protected override bool AssetLoaded()
-        {
-            return base.AssetLoaded() && (colorMapAssetReference == Disposable.NULL || colorMapAssetReference.IsLoaded()) && (additionalMapAssetReference == Disposable.NULL || additionalMapAssetReference.IsLoaded()) && (surfaceTypeMapAssetReference == Disposable.NULL || surfaceTypeMapAssetReference.IsLoaded());
         }
 
         protected override MeshRendererVisual.ColliderType GetColliderType()

@@ -19,7 +19,7 @@ namespace DepictionEngine
 
         public virtual int featureCount
         {
-            get { return 0; }
+            get => 0;
         }
 
         public override void SetData(object value, LoaderBase.DataType dataType, InitializationContext initializingContext = InitializationContext.Programmatically)

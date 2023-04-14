@@ -338,23 +338,38 @@ namespace DepictionEngine.Editor
 
             position.height = EditorGUIUtility.singleLineHeight;
 
+            float height = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
             float totalHeight = 0.0f;
             datasource.IterateOverPersistents((persistentId, persistent) =>
             {
                 GUI.SetNextControlName(Selection.PERSISTENT_PREFIX + "" + persistent.id.ToString());
                 EditorGUI.ObjectField(position, persistent as UnityEngine.Object, persistent.GetType(), true);
-                float height = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
                 totalHeight += height;
                 position.y += height;
 
                 return true;
             });
 
-            if (AddButton(position, "Dispose Selected Item", label.tooltip))
+            bool enabled = datasource.persistentCount > 0;
+
+            if (AddButton(position, "Dispose Selected Item", null, enabled))
             {
                 IPersistent persistent = Selection.GetSelectedDatasourcePersistent();
                 if (!Disposable.IsDisposed(persistent))
                     DisposeManager.Dispose(persistent is MonoBehaviourDisposable ? (persistent as MonoBehaviourDisposable).gameObject : persistent, DisposeContext.Editor_Destroy);
+            }
+
+            position.y += height;
+
+            if (AddButton(position, "Dispose All Items", null, enabled))
+            {
+                datasource.IterateOverPersistents((persistentId, persistent) =>
+                {
+                    if (!Disposable.IsDisposed(persistent))
+                        DisposeManager.Dispose(persistent is MonoBehaviourDisposable ? (persistent as MonoBehaviourDisposable).gameObject : persistent, DisposeContext.Editor_Destroy);
+                    
+                    return true;
+                });
             }
 
             GUILayout.Space(20.0f);
@@ -446,7 +461,7 @@ namespace DepictionEngine.Editor
             position.y += position.height + EditorGUIUtility.standardVerticalSpacing;
         }
 
-        private bool AddButton(Rect position, string text, string tooltip)
+        private bool AddButton(Rect position, string text, string tooltip = null, bool enabled = true)
         {
             float indentedX = (EditorGUI.indentLevel + 1.0f) * INDENT_WIDTH;
             if (position.x < indentedX)
@@ -456,7 +471,11 @@ namespace DepictionEngine.Editor
                 position.width -= deltaX;
             }
 
-            return GUI.Button(position, new GUIContent(text, tooltip));
+            bool lastEnabled = GUI.enabled;
+            GUI.enabled = enabled;
+            bool created = GUI.Button(position, new GUIContent(text, tooltip));
+            GUI.enabled = lastEnabled;
+            return created;
         }
 
         private bool SetVectorValue(SerializedProperty serializedProperty, float min, float max)
@@ -501,19 +520,11 @@ namespace DepictionEngine.Editor
 
                 case nameof(Datasource):
 
-                    Datasource datasource = EditorBase.GetDatasourceFromSerializedProperty(serializedProperty.serializedObject.targetObject); ;
+                    Datasource datasource = EditorBase.GetDatasourceFromSerializedProperty(serializedProperty.serializedObject.targetObject);
 
-                    float totalHeight = 0.0f;
+                    float totalHeight = 15.0f;
 
-                    if (datasource is not null)
-                    {
-                        datasource.IterateOverPersistents((persistentId, persistent) =>
-                        {
-                            totalHeight += GetDefaultSingleLineHeight();
-
-                            return true;
-                        });
-                    }
+                    totalHeight += datasource.persistentCount * GetDefaultSingleLineHeight();
 
                     height = totalHeight;
 

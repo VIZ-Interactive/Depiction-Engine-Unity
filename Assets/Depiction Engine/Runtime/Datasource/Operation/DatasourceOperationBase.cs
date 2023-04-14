@@ -207,7 +207,6 @@ namespace DepictionEngine
         public void Add(ResultData responseData)
         {
             resultsData ??= new List<ResultData>();
-
             resultsData.Add(responseData);
         }
 
