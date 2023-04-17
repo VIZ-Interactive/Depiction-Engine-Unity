@@ -357,3 +357,5 @@ healthchecksdb
 /Assets/Settings
 /Assets/TextMesh Pro
 *.unitypackage
+/Assets/Smart Turret Template
+/Assets/test.unity
