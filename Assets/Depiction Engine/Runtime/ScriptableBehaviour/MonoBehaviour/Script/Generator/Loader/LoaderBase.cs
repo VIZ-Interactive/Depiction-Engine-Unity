@@ -1002,7 +1002,24 @@ namespace DepictionEngine
             }
         }
 
-        public bool Contains(IPersistent persistent)
+        public bool IsPersistentInScope(IPersistent persistent)
+        {
+            bool isInScope = false;
+
+            IterateOverLoadScopes((loadScopeKey, loadScope) => 
+            {
+                if (loadScope.ContainsPersistent(persistent.id))
+                {
+                    isInScope = true;
+                    return false;
+                }
+                return true;
+            });
+
+            return isInScope;
+        }
+
+        public bool ContainsPersistent(IPersistent persistent)
         {
             return persistentsDictionary.ContainsKey(persistent.id);
         }

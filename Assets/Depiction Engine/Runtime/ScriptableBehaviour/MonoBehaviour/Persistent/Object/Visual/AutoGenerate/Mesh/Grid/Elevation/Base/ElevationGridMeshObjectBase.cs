@@ -9,7 +9,7 @@ namespace DepictionEngine
     [CreateComponent(typeof(AssetReference))]
     public class ElevationGridMeshObjectBase : Grid2DMeshObjectBase
     {
-        private const string ELEVATION_REFERENCE_DATATYPE = nameof(Elevation);
+        public const string ELEVATION_REFERENCE_DATATYPE = nameof(Elevation);
 
         private Elevation _elevation;
 
@@ -107,65 +107,68 @@ namespace DepictionEngine
                 Datasource.AllowAutoDisposeOnOutOfSynchProperty(() => { ForceUpdateTransform(true); });
         }
 
-        public bool GetGeoCoordinateElevation(out double altitude, GeoCoordinate3Double geoCoordinate, bool raycast = false)
+        public bool GetGeoCoordinateElevation(out double elevation, GeoCoordinate3Double geoCoordinate, bool raycast = false)
         {
-            double newAltitude = Double.NaN;
-
             if (raycast)
             {
+                RaycastHitDouble hit = null;
+
                 transform.IterateOverChildren<MeshRendererVisual>((childMeshRendererVisual) =>
                 {
                     if (childMeshRendererVisual != Disposable.NULL)
                     {
-                        double maxDistance = parentGeoAstroObject.GetDefaultRaycastMaxDistance();
-                        RayDouble ray = parentGeoAstroObject.GetGeoCoordinateRay(geoCoordinate, maxDistance);
-
-                        RaycastHit hitSingle;
-                        if (childMeshRendererVisual.GetCollider().Raycast(ray, out hitSingle, (float)maxDistance * 2.0f))
+                        Collider collider = childMeshRendererVisual.GetCollider();
+                        if (collider != null)
                         {
-                            RaycastHitDouble hit = hitSingle;
-                            newAltitude = parentGeoAstroObject.GetGeoCoordinateFromPoint(hit.point).altitude;
-                            return false;
+                            double maxDistance = parentGeoAstroObject.GetDefaultRaycastMaxDistance();
+                            RayDouble ray = parentGeoAstroObject.GetGeoCoordinateRay(geoCoordinate, maxDistance);
+
+                            if (collider.Raycast(ray, out hit, (float)maxDistance * 2.0f))
+                                return false;
                         }
                     }
                     return true;
                 });
+
+                if (hit != null)
+                {
+                    elevation = parentGeoAstroObject.GetGeoCoordinateFromPoint(hit.point).altitude;
+                    return true;
+                }
             }
             else
             {
                 Vector2 normalizedGrid2DIndex = GetGrid2DIndexFromGeoCoordinate(geoCoordinate) - grid2DIndex;
-                newAltitude = GetElevation(normalizedGrid2DIndex.x, normalizedGrid2DIndex.y);
+                if (GetElevation(out elevation, normalizedGrid2DIndex.x, normalizedGrid2DIndex.y))
+                    return true;
             }
 
-            if (!Double.IsNaN(newAltitude))
-            {
-                altitude = newAltitude;
-                return true;
-            }
-
-            altitude = 0.0f;
+            elevation = 0.0f;
             return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float GetElevation(float x, float y)
+        public bool GetElevation(out double elevation, float x, float y)
         {
-            float value = 0.0f;
+            elevation = 0.0f;
 
-            if (elevation != Disposable.NULL)
+            if (this.elevation != Disposable.NULL)
             {
-                Vector2 pixel = GetProjectedPixel(elevation, x, y);
+                Vector2 pixel = GetProjectedPixel(this.elevation, x, y);
 
-                value = elevation.GetElevation(pixel.x, pixel.y);
+                elevation = this.elevation.GetElevation(pixel.x, pixel.y);
+
+                return true;
             }
 
-            return value;
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override double GetAltitude(bool addOffset = true)
         {
-            return base.GetAltitude(addOffset) + GetElevation(0.5f, 0.5f);
+            GetElevation(out double elevation, 0.5f, 0.5f);
+            return base.GetAltitude(addOffset) + elevation;
         }
 
         protected override Type GetMeshRendererVisualDirtyFlagType()

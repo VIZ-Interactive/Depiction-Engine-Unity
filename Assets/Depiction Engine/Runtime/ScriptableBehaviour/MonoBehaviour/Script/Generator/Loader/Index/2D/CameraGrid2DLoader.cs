@@ -29,6 +29,8 @@ namespace DepictionEngine
         private class CameraGridLoaderCenterOnLoadTriggerDictionary : SerializableDictionary<int, CameraGridLoaderCenterOnLoadTrigger> { };
 
         [BeginFoldout("Camera")]
+        [SerializeField, Tooltip("The minimum zoom level to display even at long distances. This value should be within the bounds of the 'minMaxZoom' property.")]
+        private uint _minZoom;
         [SerializeField, MinMaxRange(0.0f, MAX_ZOOM), Tooltip("Dictates the number of grids and their respective zoom values. For example, a cascade range of 2-6 means that 5 grids will be created with the first one having its zoom value offsetted by 2 then 3,4,5 and 6 for the fifth one.")]
         private Vector2Int _cascades;
         [SerializeField, MinMaxRange(0.0f, MAX_ZOOM), Tooltip("MeshObject whose scope zoom value falls outside of this range will have their "+nameof(MeshObjectBase.useCollider)+" value set to false.")]
@@ -37,9 +39,9 @@ namespace DepictionEngine
         private CameraCenterOnType _centerOn;
 
         [BeginFoldout("Size")]
-        [SerializeField, Tooltip("A factor by which the grid size will be multiplied.")]
+        [SerializeField, Tooltip("A factor by which the grid size will be multiplied. Use to increase or decrease the level of detail.")]
         private float _sizeMultiplier;
-        [SerializeField, Tooltip("When enabled the grid size will be automatically adjusted based on latitude to preserve a constant tile / pixel density. Only works in spherical mode.")]
+        [SerializeField, Tooltip("When enabled the grid size will be automatically adjusted based on latitude to preserve a constant tile / pixel density. Only relevant in spherical mode.")]
         private bool _sizeLatitudeCompensation;
         [SerializeField, Tooltip("A factor by which the grid size will be multiplied with camera delta movement to alter grid size. This helps dynamically lower the number of tiles loaded when the camera is moving fast to help with performance. Set to zero to deactivate.")]
         private float _sizeOffsettingMultiplier;
@@ -73,6 +75,7 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
+            InitValue(value => minZoom = value, (uint)3, initializingContext);
             InitValue(value => cascades = value, new Vector2Int(0, MAX_ZOOM), initializingContext);
             InitValue(value => collidersRange = value, new Vector2Int(0, MAX_ZOOM), initializingContext);
             InitValue(value => centerOn = value, CameraCenterOnType.Camera, initializingContext);
@@ -162,6 +165,22 @@ namespace DepictionEngine
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// The minimum zoom level to display even at long distances. This value should be within the bounds of the 'minMaxZoom' property.
+        /// </summary>
+        [Json]
+        public uint minZoom
+        {
+            get { return _minZoom; }
+            set
+            {
+                SetValue(nameof(minZoom), (uint)Mathf.Clamp(value, 0, MAX_ZOOM), ref _minZoom, (newValue, oldValue) =>
+                {
+                    QueueAutoUpdate();
+                });
+            }
         }
 
         /// <summary>
@@ -422,7 +441,7 @@ namespace DepictionEngine
 
                                 GeoCoordinate3Double geoCoordinate = parentGeoAstroObject.GetGeoCoordinateFromPoint(centerOnTransform.position);
 
-                                parentGeoAstroObject.GetGeoCoordinateElevation(out double elevation, geoCoordinate);
+                                parentGeoAstroObject.GetGeoCoordinateElevation(out double elevation, geoCoordinate, null, false);
                                 geoCoordinate.altitude = elevation;
 
                                 float sizeMultiplier = this.sizeMultiplier - cameraGridLoaderCenterOnLoadTrigger.dynamicSizeOffset;
@@ -430,7 +449,7 @@ namespace DepictionEngine
                                 if (IsSpherical() && sizeLatitudeCompensation)
                                     sizeMultiplier *= (float)(parentGeoAstroObject.GetCircumferenceAtLatitude(geoCoordinate.latitude) / parentGeoAstroObject.size);
 
-                                cameraGrid.UpdateCameraGridProperties(camera.isActiveAndEnabled, parentGeoAstroObject, parentGeoAstroObject.GetPointFromGeoCoordinate(geoCoordinate), camera, cascades, minMaxZoom, sizeMultiplier, xyTilesRatio);
+                                cameraGrid.UpdateCameraGridProperties(camera.isActiveAndEnabled, parentGeoAstroObject, parentGeoAstroObject.GetPointFromGeoCoordinate(geoCoordinate), camera, minZoom, cascades, minMaxZoom, sizeMultiplier, xyTilesRatio);
                             }
                         }
                     }

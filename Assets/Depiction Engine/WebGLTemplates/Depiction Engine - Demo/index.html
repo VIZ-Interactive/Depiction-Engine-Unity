@@ -260,7 +260,7 @@
                         var surfaceLoaderJson = getLoaderJson(instance, $NAMESPACE + ".Index2DLoader", $NAMESPACE + ".Texture");
                         var surfaceLoaderId = surfaceLoaderJson[0]["id"];
                         surfaceLoaderJson[0]["datasourceId"] = arcgisDatasource.id;
-                        surfaceLoaderJson[0]["minMaxZoom"] = { x: 0, y: 14 };
+                        surfaceLoaderJson[0]["minMaxZoom"] = { x: 0, y: 12 };
                         surfaceLoaderJson[0]["dataType"] = "TexturePngJpg";
                         surfaceLoaderJson[0]["loadEndpoint"] = "arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{0}/{2}/{1}";
 
@@ -290,7 +290,7 @@
 
                         var terrainGridMeshObjectCameraGrid2DLoaderJson = getLoaderJson(instance, $NAMESPACE + ".CameraGrid2DLoader", $NAMESPACE + ".TerrainGridMeshObject");
                         terrainGridMeshObjectCameraGrid2DLoaderJson[0]["sizeMultiplier"] = 2.0;
-                        terrainGridMeshObjectCameraGrid2DLoaderJson[0]["minMaxZoom"] = { x: 0, y: 19 };
+                        terrainGridMeshObjectCameraGrid2DLoaderJson[0]["minMaxZoom"] = { x: 0, y: 15 };
                         terrainGridMeshObjectCameraGrid2DLoaderJson[0]["loadInterval"] = 0.0;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["sphericalSubdivision"] = 2;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["flatSubdivision"] = 2;

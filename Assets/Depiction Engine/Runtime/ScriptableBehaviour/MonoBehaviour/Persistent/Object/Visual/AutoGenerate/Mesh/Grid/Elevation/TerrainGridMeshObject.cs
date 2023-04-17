@@ -12,9 +12,9 @@ namespace DepictionEngine
     [CreateComponent(typeof(AssetReference), typeof(AssetReference), typeof(AssetReference))]
     public class TerrainGridMeshObject : ElevationGridMeshObjectBase
     {
-        private const string COLORMAP_REFERENCE_DATATYPE = nameof(Texture) + " ColorMap";
-        private const string ADDITIONALMAP_REFERENCE_DATATYPE = nameof(Texture) + " AdditionalMap";
-        private const string SURFACETYPEMAP_REFERENCE_DATATYPE = nameof(Texture) + " SurfaceTypeMap";
+        public const string COLORMAP_REFERENCE_DATATYPE = nameof(Texture) + " ColorMap";
+        public const string ADDITIONALMAP_REFERENCE_DATATYPE = nameof(Texture) + " AdditionalMap";
+        public const string SURFACETYPEMAP_REFERENCE_DATATYPE = nameof(Texture) + " SurfaceTypeMap";
 
         /// <summary>
         /// The different types of normals that can be generated for terrains. <br/><br/>

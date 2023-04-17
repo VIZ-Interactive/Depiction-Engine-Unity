@@ -3,8 +3,6 @@
 using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.Rendering;
-using static UnityEngine.GraphicsBuffer;
 
 namespace DepictionEngine
 {
@@ -78,7 +76,7 @@ namespace DepictionEngine
         private Tween _snapToGridTimer;
         private Tween snapToGridTimer
         {
-            get { return _snapToGridTimer; }
+            get => _snapToGridTimer;
             set
             {
                 if (Object.ReferenceEquals(_snapToGridTimer, value))
@@ -127,7 +125,7 @@ namespace DepictionEngine
         {
             base.ReferenceLoaderPropertyAssignedChangedHandler(reference, serializable, name, newValue, oldValue);
 
-            if (name == nameof(Index2DLoaderBase.minMaxZoom))
+            if (name == nameof(Index2DLoaderBase.minMaxZoom) || name == nameof(Index2DLoaderBase.xyTilesRatio))
                 UpdateReferenceDataIndex2D();
         }
 
@@ -152,7 +150,7 @@ namespace DepictionEngine
 #endif
         public double altitudeOffset
         {
-            get { return _altitudeOffset; }
+            get => _altitudeOffset;
             set
             {
                 SetValue(nameof(altitudeOffset), value, ref _altitudeOffset, (newValue, oldValue) =>
@@ -171,7 +169,7 @@ namespace DepictionEngine
 #endif
         public Vector2Int grid2DDimensions
         {
-            get { return _grid2DDimensions; }
+            get => _grid2DDimensions;
             set
             {
                 if (value.x < 1)
@@ -193,7 +191,7 @@ namespace DepictionEngine
 
         public Vector2Int grid2DIndex
         {
-            get { return _grid2DIndex; }
+            get => _grid2DIndex;
             private set { SetGrid2DIndex(value); }
         }
 
@@ -277,7 +275,7 @@ namespace DepictionEngine
 
         protected double size
         {
-            get { return _size; }
+            get => _size;
             private set { SetValue(nameof(size), value, ref _size); }
         }
 
@@ -298,13 +296,13 @@ namespace DepictionEngine
 
         protected float sphericalRatio
         {
-            get { return _sphericalRatio; }
+            get => _sphericalRatio;
             private set { SetValue(nameof(sphericalRatio), value, ref _sphericalRatio); }
         }
 
         protected Vector3 meshRendererVisualLocalScale
         {
-            get { return _meshRendererVisualLocalScale; }
+            get => _meshRendererVisualLocalScale;
             private set { SetValue(nameof(meshRendererVisualLocalScale), value, ref _meshRendererVisualLocalScale); }
         }
 
@@ -415,7 +413,8 @@ namespace DepictionEngine
                         GeoCoordinate3Double newGeoCoordinate = GetSnapToGridIndexGeoCoordinate(geoCoordinate);
 
 #if UNITY_EDITOR
-                        isBeingMovedByUser = SceneManager.IsUserChangeContext();
+                        bool mouseDown = Event.current != null && Event.current.button == 0;
+                        isBeingMovedByUser = SceneManager.IsUserChangeContext() && mouseDown;
                         if (isBeingMovedByUser)
                             newGeoCoordinate = geoCoordinate;
 #endif
@@ -649,62 +648,62 @@ namespace DepictionEngine
 
             public double size
             {
-                get { return _size; }
+                get => _size;
             }
 
             public Vector2Int grid2DDimensions
             {
-                get { return _grid2DDimensions; }
+                get => _grid2DDimensions;
             }
 
             public Vector2Int grid2DIndex
             {
-                get { return _grid2DIndex; }
+                get => _grid2DIndex;
             }
 
             public float sphericalRatio
             {
-                get { return _sphericalRatio; }
+                get => _sphericalRatio;
             }
 
             public double scale
             {
-                get { return _scale; }
+                get => _scale;
             }
 
             public float inverseHeightScale
             {
-                get { return _inverseHeightScale; }
+                get => _inverseHeightScale;
             }
 
             public double inverseScale
             {
-                get { return _inverseScale; }
+                get => _inverseScale;
             }
 
             public double normalizedRadiusSize
             {
-                get { return _normalizedRadiusSize; }
+                get => _normalizedRadiusSize;
             }
 
             public double normalizedCircumferenceSize
             {
-                get { return _normalizedCircumferenceSize; }
+                get => _normalizedCircumferenceSize;
             }
 
             public Vector3Double centerPoint
             {
-                get { return _centerPoint; }
+                get => _centerPoint;
             }
 
             public QuaternionDouble centerRotation
             {
-                get { return _centerRotation; }
+                get => _centerRotation;
             }
 
             public bool flipTriangles
             {
-                get { return _flipTriangles; }
+                get => _flipTriangles;
             }
 
             public virtual bool GetElevation(out double value, float x, float y, bool clamp = false)

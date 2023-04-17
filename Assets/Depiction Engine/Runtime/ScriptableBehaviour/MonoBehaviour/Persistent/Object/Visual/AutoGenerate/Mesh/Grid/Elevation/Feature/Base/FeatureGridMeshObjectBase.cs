@@ -66,7 +66,7 @@ namespace DepictionEngine
     [CreateComponent(typeof(AssetReference))]
     public class FeatureGridMeshObjectBase : ElevationGridMeshObjectBase
     {
-        private const string FEATURE_REFERENCE_DATATYPE = nameof(Feature);
+        public const string FEATURE_REFERENCE_DATATYPE = nameof(Feature);
 
         [Serializable]
         private class MeshRendererMaterialDictionary : SerializableDictionary<int, Material> { };

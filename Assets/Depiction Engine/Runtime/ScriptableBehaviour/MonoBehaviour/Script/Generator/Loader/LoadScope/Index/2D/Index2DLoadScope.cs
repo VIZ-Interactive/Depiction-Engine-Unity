@@ -172,12 +172,6 @@ namespace DepictionEngine
             return scopeGrid2DIndex.GetHashCode();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override string PropertiesToString()
-        {
-            return "(Zoom:" + GetZoom() + ", XYTilesRatio: " + MathPlus.GetXYTileRatioFromGrid2DDimensions(scopeDimensions) + ", X: " + scopeIndex.x + ", Y: " + scopeIndex.y + ")";
-        }
-
         public VisibleCameras visibleCameras
         {
             get { return _visibleCameras; }

@@ -503,7 +503,16 @@ namespace DepictionEngine.Editor
 
             UnityEngine.Object targetObject = target;
 
-            if (targetObject is FallbackValues)
+            if (targetObject is Star)
+            {
+                Star star = targetObject as Star;
+                if (star != Disposable.NULL)
+                {
+                    if (star.useOcclusion)
+                        helpBoxes.Add(("LensFlare Occlusion only work against MeshRenderers equipped with a collider", MessageType.Warning));
+                }
+            }
+            else if (targetObject is FallbackValues)
             {
                 FallbackValues fallbackValues = targetObject as FallbackValues;
 

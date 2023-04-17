@@ -224,7 +224,7 @@ namespace DepictionEngine
 #endif
         public double distance
         {
-            get { return _distance; }
+            get => _distance;
             set
             {
                 if (SetDistance(value))
@@ -248,7 +248,7 @@ namespace DepictionEngine
         [Json]
         public Vector2Double minMaxDistance
         {
-            get { return GetMinMaxDistance(); }
+            get => GetMinMaxDistance();
             set { SetMinMaxDistance(value); }
         }
 

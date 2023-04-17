@@ -17,6 +17,11 @@ namespace DepictionEngine
         [SerializeField]
         protected PersistentsDictionary _persistentsDictionary;
 
+#if UNITY_EDITOR
+        [SerializeField, Button(nameof(LoadBtn))]
+        private bool _load;
+#endif
+
         [SerializeField, HideInInspector]
         private LoaderBase _loader;
 
@@ -34,6 +39,13 @@ namespace DepictionEngine
         /// Dispatched when an <see cref="DepictionEngine.IPersistent"/> loaded from a <see cref="DepictionEngine.ILoadDatasource"/> is removed from the <see cref="DepictionEngine.LoadScope"/>.
         /// </summary>
         public Action<LoadScope> PersistentRemovedEvent;
+
+#if UNITY_EDITOR
+        private void LoadBtn()
+        {
+            Load();
+        }
+#endif
 
         public override void Recycle()
         {
@@ -295,7 +307,7 @@ namespace DepictionEngine
         {
             JSONObject loadScopeFallbackValuesJson = new();
 
-            loadScopeFallbackValuesJson[nameof(Object.name)] += " " + ToString();
+            loadScopeFallbackValuesJson[nameof(Object.name)] = name;
 
             string transformName = nameof(Object.transform);
             loadScopeFallbackValuesJson[transformName][nameof(TransformDouble.type)] = JsonUtility.ToJson(typeof(TransformDouble));
@@ -351,7 +363,11 @@ namespace DepictionEngine
                             IterateOverPersistents((persistentId, persistent) =>
                             {
                                 if (persistents == null || !persistents.Contains(persistent))
+                                {
                                     RemovePersistent(persistent);
+                                    if (!loader.IsPersistentInScope(persistent))
+                                        loader.RemovePersistent(persistent);
+                                }
                                 return true;
                             });
 
@@ -400,16 +416,6 @@ namespace DepictionEngine
                 }
                 loadingState = DatasourceOperationBase.LoadingState.Loaded;
             }
-        }
-
-        public override string ToString()
-        {
-            return PropertiesToString() + " (" + GetType().FullName + ")";
-        }
-
-        protected virtual string PropertiesToString()
-        {
-            return "";
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

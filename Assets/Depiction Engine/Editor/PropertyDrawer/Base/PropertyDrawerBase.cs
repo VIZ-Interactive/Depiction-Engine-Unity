@@ -463,7 +463,18 @@ namespace DepictionEngine.Editor
 
         private bool AddButton(Rect position, string text, string tooltip = null, bool enabled = true)
         {
+            bool lastEnabled = GUI.enabled;
+            GUI.enabled = enabled;
+            bool created = AddButton(position, text, tooltip);
+            GUI.enabled = lastEnabled;
+
+            return created;
+        }
+
+        private bool AddButton(Rect position, string text, string tooltip = null)
+        {
             float indentedX = (EditorGUI.indentLevel + 1.0f) * INDENT_WIDTH;
+
             if (position.x < indentedX)
             {
                 float deltaX = indentedX - position.x;
@@ -471,11 +482,7 @@ namespace DepictionEngine.Editor
                 position.width -= deltaX;
             }
 
-            bool lastEnabled = GUI.enabled;
-            GUI.enabled = enabled;
-            bool created = GUI.Button(position, new GUIContent(text, tooltip));
-            GUI.enabled = lastEnabled;
-            return created;
+            return GUI.Button(position, new GUIContent(text, tooltip));
         }
 
         private bool SetVectorValue(SerializedProperty serializedProperty, float min, float max)

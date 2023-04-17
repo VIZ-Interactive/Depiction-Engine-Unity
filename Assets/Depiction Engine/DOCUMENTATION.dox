@@ -74,6 +74,8 @@
  * \n 
  *   + **Recycle**: \n 
  *     `DepictionEngine.IDisposable.Recycle`
+ *   + **Initialize**: \n 
+ *     `DepictionEngine.IDisposable.Initialize`
  *   + **Initialized**: \n 
  *     `DepictionEngine.IDisposable.Initialized`
  * .
@@ -82,14 +84,14 @@
  * \n 
  *   + **HierarchicalFixedUpdate**: . \n 
  *     `DepictionEngine.PropertyMonoBehaviour.HierarchicalFixedUpdate` \n 
- *    \n 
+ * \n 
  *   + **PreHierarchicalUpdate**: . \n 
  *     `DepictionEngine.PropertyMonoBehaviour.PreHierarchicalUpdate`
  *   + **HierarchicalUpdate**: . \n 
  *     `DepictionEngine.PropertyMonoBehaviour.HierarchicalUpdate`
  *   + **PostHierarchicalUpdate**: . \n 
  *     `DepictionEngine.PropertyMonoBehaviour.PostHierarchicalUpdate` \n 
- *    \n 
+ * \n 
  *   + **HierarchicalBeginCameraRendering**: . \n 
  *     `DepictionEngine.PropertyMonoBehaviour.HierarchicalBeginCameraRendering`
  *   + **HierarchicalEndCameraRendering**: . \n 
@@ -98,7 +100,7 @@
  *
  * - __Disposing / Destroying__ \n 
  * \n 
- *    Whether pooled or destroyed OnDisposing and OnDisposed will always be called. \n 
+ *    Whether pooled or destroyed OnDisposing and OnDispose will always be called. \n 
  * \n 
  *   + **OnDispose**: \n 
  *     `DepictionEngine.IDisposable.OnDispose` \n 
@@ -115,9 +117,9 @@
  *	 ~~~~~~~~~~~~~
  * - __Disposing__ \n 
  * \n 
- *   + Objects implementing `DepictionEngine.IDisposable` need to be disposed with the `DepictionEngine.DisposeManager`. If `DepictionEngine.PoolManager.enablePooling` is true when disposed, `DepictionEngine.IDisposable` objects will be automatically added back to the pool unless a destroyContext is provided in which case they will be destroyed. \n 
+ *   + Objects implementing `DepictionEngine.IDisposable` need to be disposed with the `DepictionEngine.DisposeManager`. If `DepictionEngine.PoolManager.enablePooling` is true when disposed, `DepictionEngine.IDisposable` objects will be automatically added back to the pool unless a disposeContext is provided in which case they may be destroyed or go to the pool depending on context. \n 
  *	 ~~~~~~~~~~~~~{.cs}
- *	 DisposeManager.Dispose(object, destroyContext, destroyDelay);
+ *	 DisposeManager.Dispose(object, disposeContext);
  *	 ~~~~~~~~~~~~~
  * \n 
  *   + Objects which do not implement `DepictionEngine.IDisposable` can also be disposed with the `DepictionEngine.DisposeManager`. Disposing using the `DepictionEngine.DisposeManager.Destroy` will automatically call `GameObject.Destroy` or `GameObject.DestroyImmediate` depending on whether we are in the Editor or not. \n 

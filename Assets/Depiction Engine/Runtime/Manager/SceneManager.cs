@@ -8,6 +8,8 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using UnityEngine.UIElements;
 using System.Text.RegularExpressions;
+using System.Linq;
+using UnityEngine.SceneManagement;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Microsoft.Design", "IDE1006",
@@ -232,10 +234,12 @@ namespace DepictionEngine
         {
             if (base.UpdateAllDelegates())
             {
+                UnityEngine.SceneManagement.SceneManager.sceneLoaded -= SceneLoadedHandler;
                 RenderPipelineManager.beginCameraRendering -= BeginCameraRendering;
                 RenderPipelineManager.endCameraRendering -= EndCameraRendering;
                 if (!IsDisposing())
                 {
+                    UnityEngine.SceneManagement.SceneManager.sceneLoaded += SceneLoadedHandler;
                     RenderPipelineManager.beginCameraRendering += BeginCameraRendering;
                     RenderPipelineManager.endCameraRendering += EndCameraRendering;
                 }
@@ -374,10 +378,10 @@ namespace DepictionEngine
                 }
             });
 
-            MonoBehaviourDisposable[] monoBehaviourDisposables = FindObjectsOfType<MonoBehaviourDisposable>(true);
+            MonoBehaviourDisposable[] monoBehaviourDisposables = Resources.FindObjectsOfTypeAll<MonoBehaviourDisposable>();
             foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
                 monoBehaviourDisposable.AfterAssemblyReload();
-            ScriptableObjectDisposable[] scriptableObjectDisposables = FindObjectsOfType<ScriptableObjectDisposable>(true);
+            ScriptableObjectDisposable[] scriptableObjectDisposables = Resources.FindObjectsOfTypeAll<ScriptableObjectDisposable>();
             foreach(ScriptableObjectDisposable scriptableObjectDisposable in scriptableObjectDisposables)
                 scriptableObjectDisposable.AfterAssemblyReload();
 
@@ -482,7 +486,13 @@ namespace DepictionEngine
                     MethodInfo preAppStatusBarOnGUI = typeof(SceneManager).GetMethod("PatchedPreAppStatusBarOnGUI", BindingFlags.NonPublic | BindingFlags.Static);
                     _harmony.Patch(unityAppStatusBarOnGUI, new HarmonyLib.HarmonyMethod(preAppStatusBarOnGUI));
 
-                    MethodInfo unityGetInspectorTitle = typeof(UnityEditor.ObjectNames).GetMethod("GetInspectorTitle", BindingFlags.Static | BindingFlags.Public);
+                    MethodInfo unityGetInspectorTitle = null;
+                    foreach (MethodInfo methodInfo in typeof(UnityEditor.ObjectNames).GetMethods())
+                    {
+                        if (methodInfo.Name == "GetInspectorTitle" && (unityGetInspectorTitle == null || unityGetInspectorTitle.GetParameters().Count() < methodInfo.GetParameters().Count()))
+                            unityGetInspectorTitle = methodInfo;
+                    }
+
                     MethodInfo postGetInspectorTitle = typeof(Editor.ObjectNames).GetMethod("PatchedPostGetInspectorTitle", BindingFlags.Static | BindingFlags.NonPublic);
                     _harmony.Patch(unityGetInspectorTitle, null, new HarmonyLib.HarmonyMethod(postGetInspectorTitle));
 
@@ -603,6 +613,13 @@ namespace DepictionEngine
             return type.Namespace == typeof(Editor.SceneCamera).Namespace;
         }
 #endif
+
+        private void SceneLoadedHandler(Scene scene, LoadSceneMode mode)
+        {
+            //Required in the Build as the scene is usually not completely loaded when the SceneManager is Initializing.
+            if (scene.isLoaded)
+                UpdateRelations();
+        }
 
         /// <summary>
         /// Makes available to the code executed in the callback, the user context under which it was triggered. If it was triggered by a user action, such as altering properties through the editor inspector or moving object using the manipulator, the value passed to isUserChange should be true. User context inside this callback can always be accessed by calling <see cref="DepictionEngine.IScriptableBehaviour.IsUserChangeContext"/>.
@@ -786,7 +803,7 @@ namespace DepictionEngine
         private List<GameObject> _rootGameObjects;
         public List<GameObject> GetRootGameObjects()
         {
-            UnityEngine.SceneManagement.Scene scene = gameObject.scene;
+            Scene scene = gameObject.scene;
             if (scene != null && scene.isLoaded)
             {
                 _rootGameObjects ??= new List<GameObject>();
@@ -1276,7 +1293,7 @@ namespace DepictionEngine
         public void BeginCameraRendering(Camera camera, ScriptableRenderContext? context = null)
         {
             HierarchicalDetectChanges();
-
+           
             //Preemptively apply origin shifting for proper camera relative raycasting
             TransformDouble.ApplyOriginShifting(camera.GetOrigin());
 

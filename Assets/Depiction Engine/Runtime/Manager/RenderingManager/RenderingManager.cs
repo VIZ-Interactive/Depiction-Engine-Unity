@@ -206,11 +206,19 @@ namespace DepictionEngine
 
                 lineChangeResult = AddBeforeLine(ref lightingContent,
                     "half3 LightingPhysicallyBased(BRDFData brdfData, BRDFData brdfDataClearCoat,",
-                    "float _MainLightRadiance;" + StringUtility.NewLine + "half _MainLightRadianceEnabled;", lineChangeResult);
+                    "float _MainLightRadiance;" + StringUtility.NewLine + "half _MainLightRadianceActive;" + StringUtility.NewLine + "half _MainLightRadianceEnabled;", lineChangeResult);
 
                 lineChangeResult = AddAfterLine(ref lightingContent,
                     "half3 radiance = lightColor * (lightAttenuation * NdotL);",
-                    "radiance *= _MainLightRadianceEnabled ? _MainLightRadiance : 1;", lineChangeResult);
+                    "radiance *= _MainLightRadianceActive && _MainLightRadianceEnabled ? _MainLightRadiance : 1;", lineChangeResult);
+
+                lineChangeResult = AddBeforeLine(ref lightingContent,
+                    "        lightingData.mainLightColor = LightingPhysicallyBased(brdfData, brdfDataClearCoat,",
+                    "        _MainLightRadianceActive = true;", lineChangeResult);
+
+                lineChangeResult = AddAfterLine(ref lightingContent,
+                    "surfaceData.clearCoatMask, specularHighlightsOff);",
+                    "    _MainLightRadianceActive = false;", lineChangeResult);
 
                 writer.Write(lightingContent);
                 writer.Close();
@@ -845,90 +853,50 @@ namespace DepictionEngine
 
         private DepthOfField depthOfField
         {
-            get { return _depthOfField; }
-            set
-            {
-                if (_depthOfField == value)
-                    return;
-                _depthOfField = value;
-            }
+            get => _depthOfField;
+            set => _depthOfField = value;
         }
 
         private Bloom bloom
         {
-            get { return _bloom; }
-            set
-            {
-                if (_bloom == value)
-                    return;
-                _bloom = value;
-            }
+            get => _bloom;
+            set => _bloom = value;
         }
 
         private ColorAdjustments colorAdjustments
         {
-            get { return _colorAdjustments; }
-            set
-            {
-                if (_colorAdjustments == value)
-                    return;
-                _colorAdjustments = value;
-            }
+            get => _colorAdjustments;
+            set => _colorAdjustments = value;
         }
 
         private ColorCurves colorCurves
         {
-            get { return _colorCurves; }
-            set
-            {
-                if (_colorCurves == value)
-                    return;
-                _colorCurves = value;
-            }
+            get => _colorCurves;
+            set => _colorCurves = value;
         }
 
         private ChromaticAberration chromaticAberration
         {
-            get { return _chromaticAberration; }
-            set
-            {
-                if (_chromaticAberration == value)
-                    return;
-                _chromaticAberration = value;
-            }
+            get => _chromaticAberration;
+            set => _chromaticAberration = value;
         }
 
         private Vignette vignette
         {
-            get { return _vignette; }
-            set
-            {
-                if (_vignette == value)
-                    return;
-                _vignette = value;
-            }
+            get => _vignette;
+            set => _vignette = value;
         }
 
         private Tonemapping toneMapping
         {
-            get { return _toneMapping; }
-            set
-            {
-                if (_toneMapping == value)
-                    return;
-                _toneMapping = value;
-            }
+            get => _toneMapping;
+            set => _toneMapping = value;
         }
 
         private MotionBlur motionBlur
         {
-            get { return _motionBlur; }
-            set
-            {
-                if (_motionBlur == value)
-                    return;
-                _motionBlur = value;
-            }
+            get => _motionBlur;
+            set => _motionBlur = value;
         }
 
         /// <summary>
@@ -937,8 +905,8 @@ namespace DepictionEngine
         [Json]
         public UnityEngine.ShadowQuality shadows
         {
-            get { return QualitySettings.shadows; }
-            set { QualitySettings.shadows = value; }
+            get => QualitySettings.shadows;
+            set => QualitySettings.shadows = value;
         }
 
         /// <summary>
@@ -947,8 +915,8 @@ namespace DepictionEngine
         [Json]
         public int antiAliasing
         {
-            get { return QualitySettings.antiAliasing; }
-            set { QualitySettings.antiAliasing = value; }
+            get => QualitySettings.antiAliasing;
+            set => QualitySettings.antiAliasing = value;
         }
 
         /// <summary>
@@ -957,8 +925,8 @@ namespace DepictionEngine
         [Json]
         public bool fogActive
         {
-            get { return RenderSettings.fog; }
-            set { RenderSettings.fog = value; }
+            get => RenderSettings.fog;
+            set => RenderSettings.fog = value;
         }
 
         /// <summary>
@@ -967,8 +935,8 @@ namespace DepictionEngine
         [Json]
         public Color fogColor
         {
-            get { return RenderSettings.fogColor; }
-            set { RenderSettings.fogColor = value; }
+            get => RenderSettings.fogColor;
+            set => RenderSettings.fogColor = value;
         }
 
         /// <summary>
@@ -1468,7 +1436,7 @@ namespace DepictionEngine
                     (camera) => 
                     {
                         if (_environmentDirty || camera.environmentCubemap == null)
-                            UpdateCameraEnvironmentCubemap(camera);
+                            camera.UpdateEnvironmentCubemap(rttCamera);
 
                         return true;
                     });
@@ -1478,42 +1446,6 @@ namespace DepictionEngine
                 return true;
             }
             return false;
-        }
-
-        private void UpdateCameraEnvironmentCubemap(Camera camera)
-        {
-            float lastAmbientIntensity = RenderSettings.ambientIntensity;
-            RenderSettings.ambientIntensity = 0.0f;
-            float lastReflectionIntensity = RenderSettings.reflectionIntensity;
-            RenderSettings.reflectionIntensity = 0.0f;
-            
-            //try
-            //{
-                sceneManager.BeginCameraRendering(camera);
-
-                rttCamera.RenderToCubemap(camera, camera.GetEnvironmentCubeMap(), ApplyPropertiesToUnityCamera);
-
-                sceneManager.EndCameraRendering(camera);
-
-            //}catch (Exception e)
-            //{
-            //    Debug.LogError(e.Message);
-            //}
-
-            RenderSettings.ambientIntensity = lastAmbientIntensity;
-            RenderSettings.reflectionIntensity = lastReflectionIntensity;
-        }
-
-        private void ApplyPropertiesToUnityCamera(UnityEngine.Camera unityCamera, Camera copyFromCamera)
-        {
-            unityCamera.cullingMask = 1 << LayerUtility.GetLayer(typeof(TerrainGridMeshObject).Name) | 1 << LayerUtility.GetLayer(typeof(AtmosphereGridMeshObject).Name);
-
-            float far = Camera.GetFarClipPlane(1, copyFromCamera.farClipPlane);
-
-            if (far > 155662040916.9f)
-                far = 155662040916.9f;
-
-            Camera.ApplyClipPlanePropertiesToUnityCamera(unityCamera, 0, copyFromCamera.nearClipPlane, far);
         }
 
         public static Material LoadMaterial(string path)

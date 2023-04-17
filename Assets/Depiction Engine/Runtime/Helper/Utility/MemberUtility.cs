@@ -184,8 +184,8 @@ namespace DepictionEngine
 
                     TypeAccessor accessor = null;
 
-#if UNITY_EDITOR || !UNITY_WEBGL
-                    //Emit is not supported in WebGL
+#if ENABLE_MONO
+                    //Emit is not supported in IL2CPP
                     accessor = TypeAccessor.Create(type, true);
 #endif
                     string typeName = type.FullName;

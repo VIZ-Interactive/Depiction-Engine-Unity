@@ -51,7 +51,7 @@ namespace DepictionEngine
             }
         }
     
-        public bool UpdateCameraGridProperties(bool enabled, GeoAstroObject parentGeoAstroObject, Vector3Double center, Camera camera, Vector2Int cascades, Vector2Int minMaxZoom, float sizeMultiplier, float xyTilesRatio)
+        public bool UpdateCameraGridProperties(bool enabled, GeoAstroObject parentGeoAstroObject, Vector3Double center, Camera camera, uint minPersistentZoom, Vector2Int cascades, Vector2Int minMaxZoom, float sizeMultiplier, float xyTilesRatio)
         {
             bool changed = false;
 
@@ -93,7 +93,7 @@ namespace DepictionEngine
 
                     if (zoom >= minCascadeZoom)
                     {
-                        if (zoom == 0)
+                        if (zoom <= minPersistentZoom)
                             gridRadius = double.PositiveInfinity;
                         else
                         {

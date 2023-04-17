@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -283,12 +285,7 @@ namespace DepictionEngine
 
         public virtual UnityEngine.Camera unityCamera
         {
-            get 
-            { 
-                if (_unityCamera == null)
-                    _unityCamera = gameObject.GetComponent<UnityEngine.Camera>();
-                return _unityCamera; 
-            }
+            get { _unityCamera ??= gameObject.GetComponent<UnityEngine.Camera>(); return _unityCamera; }
         }
 
         public UniversalAdditionalCameraData additionalData
@@ -316,12 +313,7 @@ namespace DepictionEngine
 
         public Skybox skybox
         {
-            get 
-            { 
-                if (_skybox == null)
-                    _skybox = gameObject.GetComponent<Skybox>();
-                return _skybox; 
-            }
+            get { _skybox ??= gameObject.GetComponent<Skybox>(); return _skybox; }
         }
 
         private void UpdateSkybox()
@@ -658,6 +650,11 @@ namespace DepictionEngine
             unityCamera.CalculateFrustumCornersSafe(viewport, z, eye, outCorners);
         }
 
+        public Vector3 ScreenToViewportPoint(Vector3 position)
+        {
+            return unityCamera != null ? unityCamera.ScreenToViewportPoint(position) : Vector3.negativeInfinity;
+        }
+
         public RayDouble[] ViewportPointToRays(Vector2[] pos)
         {
             RayDouble[] cornerRays = new RayDouble[pos.Length];
@@ -913,6 +910,51 @@ namespace DepictionEngine
                     }
                 }
             }
+        }
+
+        public Vector3Double environmentCubemapPosition { get => _environmentCubemapPosition.HasValue ? _environmentCubemapPosition.Value : Vector3Double.zero; }
+        private Vector3Double? _environmentCubemapPosition;
+        public void UpdateEnvironmentCubemap(RTTCamera rttCamera)
+        {
+            if (!_environmentCubemapPosition.HasValue || Vector3Double.Distance(_environmentCubemapPosition.Value, transform.position) > 100.0d)
+                _environmentCubemapPosition = transform.position;
+
+            float lastAmbientIntensity = RenderSettings.ambientIntensity;
+            RenderSettings.ambientIntensity = 0.0f;
+            float lastReflectionIntensity = RenderSettings.reflectionIntensity;
+            RenderSettings.reflectionIntensity = 0.0f;
+
+            try
+            {
+                sceneManager.BeginCameraRendering(this);
+
+                Vector3 lastPosition = gameObject.transform.position;
+                gameObject.transform.position += (Vector3)(_environmentCubemapPosition.Value - transform.position);
+                rttCamera.RenderToCubemap(this, GetEnvironmentCubeMap(), ApplyPropertiesToUnityCamera);
+                gameObject.transform.position = lastPosition;
+
+                sceneManager.EndCameraRendering(this);
+
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e.Message);
+            }
+
+            RenderSettings.ambientIntensity = lastAmbientIntensity;
+            RenderSettings.reflectionIntensity = lastReflectionIntensity;
+        }
+
+        private void ApplyPropertiesToUnityCamera(UnityEngine.Camera unityCamera, Camera copyFromCamera)
+        {
+            unityCamera.cullingMask = 1 << LayerUtility.GetLayer(typeof(TerrainGridMeshObject).Name) | 1 << LayerUtility.GetLayer(typeof(AtmosphereGridMeshObject).Name);
+
+            float far = Camera.GetFarClipPlane(1, copyFromCamera.farClipPlane);
+
+            if (far > 155662040916.9f)
+                far = 155662040916.9f;
+
+            Camera.ApplyClipPlanePropertiesToUnityCamera(unityCamera, 0, copyFromCamera.nearClipPlane, far);
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

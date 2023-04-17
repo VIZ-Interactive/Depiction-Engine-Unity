@@ -59,7 +59,7 @@ namespace DepictionEngine
         [Json]
         public float loadDelay
         {
-            get { return _loadDelay; }
+            get => _loadDelay;
             set { SetValue(nameof(loadDelay), Mathf.Max(value, 0.0f), ref _loadDelay); }
         }
 
@@ -69,7 +69,7 @@ namespace DepictionEngine
         [Json]
         public int zoom
         {
-            get { return _zoom; }
+            get => _zoom;
             set { SetValue(nameof(zoom), value, ref _zoom); }
         }
 

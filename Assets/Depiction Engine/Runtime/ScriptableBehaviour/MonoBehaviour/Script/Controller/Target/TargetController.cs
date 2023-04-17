@@ -46,7 +46,7 @@ namespace DepictionEngine
 #endif
         public bool preventMeshPenetration
         {
-            get { return _preventMeshPenetration; }
+            get => _preventMeshPenetration;
             set
             {
                 SetValue(nameof(preventMeshPenetration), value, ref _preventMeshPenetration, (newValue, oldValue) =>
@@ -65,7 +65,7 @@ namespace DepictionEngine
 #endif
         public Vector3Double forwardVector
         {
-            get { return _forwardVector; }
+            get => _forwardVector;
             set
             {
                 if (SetForwardVector(value))

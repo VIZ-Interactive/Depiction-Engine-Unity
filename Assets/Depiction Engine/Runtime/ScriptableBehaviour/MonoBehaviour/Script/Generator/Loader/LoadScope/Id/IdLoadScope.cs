@@ -61,11 +61,5 @@ namespace DepictionEngine
         {
             return scopeId.GetHashCode();
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override string PropertiesToString()
-        {
-            return "(Id:" + scopeId + ")";
-        }
     }
 }

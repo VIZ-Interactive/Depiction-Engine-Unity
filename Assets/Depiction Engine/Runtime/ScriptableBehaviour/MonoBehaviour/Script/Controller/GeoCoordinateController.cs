@@ -35,8 +35,8 @@ namespace DepictionEngine
 
 		[BeginFoldout("Rotation")]
 		[SerializeField, Tooltip("When enabled the '"+nameof(GeoCoordinateController)+"' will always rotate the object so that it is pointing upwards.")]
-		private bool _autoAlignToSurface;
-		[SerializeField, Tooltip("An offset vector represented in degrees which is added to the surface up vector used by the '"+nameof(autoAlignToSurface)+"'."), EndFoldout]
+		private bool _autoAlignUpwards;
+		[SerializeField, Tooltip("An offset vector represented in degrees which is added to the surface up vector used by the '"+nameof(autoAlignUpwards)+"'."), EndFoldout]
 #if UNITY_EDITOR
 		[ConditionalEnable(nameof(GetEnableUpVector))]
 #endif
@@ -51,7 +51,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
 		protected virtual bool GetEnableUpVector()
 		{
-			return autoAlignToSurface;
+			return autoAlignUpwards;
 		}
 #endif
 
@@ -62,7 +62,7 @@ namespace DepictionEngine
             InitValue(value => preventGroundPenetration = value, true, initializingContext);
 			InitValue(value => autoSnapToGround = value, SnapType.Terrain, initializingContext);
 			InitValue(value => groundSnapOffset = value, DEFAULT_GROUND_SNAP_OFFSET_VALUE, initializingContext);
-			InitValue(value => autoAlignToSurface = value, true, initializingContext);
+			InitValue(value => autoAlignUpwards = value, true, initializingContext);
 			InitValue(value => upVector = value, Vector3.zero, initializingContext);
 		}
 
@@ -77,7 +77,63 @@ namespace DepictionEngine
 			return false;
 		}
 
-		protected override bool RemoveParentGeoAstroObjectDelegates(GeoAstroObject parentGeoAstroObject)
+        protected override bool UpdateAllDelegates()
+        {
+            if (base.UpdateAllDelegates())
+            {
+#if UNITY_EDITOR
+                UpdateLeftMouseUpInSceneOrInspectorDelegate();
+#endif
+                return true;
+            }
+            return false;
+        }
+
+#if UNITY_EDITOR
+        private void UpdateLeftMouseUpInSceneOrInspectorDelegate()
+        {
+            SceneManager.LeftMouseUpInSceneOrInspectorEvent -= LeftMouseUpInSceneOrInspectorHandler;
+            if (isBeingMovedByUser && !IsDisposing())
+                SceneManager.LeftMouseUpInSceneOrInspectorEvent += LeftMouseUpInSceneOrInspectorHandler;
+        }
+
+        private void LeftMouseUpInSceneOrInspectorHandler()
+        {
+            snapToGridTimer = tweenManager.DelayedCall(0.1f, null, () => { ForceUpdateTransform(true, true); }, () => { snapToGridTimer = null; });
+        }
+
+        private Tween _snapToGridTimer;
+        private Tween snapToGridTimer
+        {
+            get => _snapToGridTimer;
+            set
+            {
+                if (Object.ReferenceEquals(_snapToGridTimer, value))
+                    return;
+
+                DisposeManager.Dispose(_snapToGridTimer);
+
+                _snapToGridTimer = value;
+            }
+        }
+
+        private bool _isBeingMovedByUser;
+        private bool isBeingMovedByUser
+        {
+            get => _isBeingMovedByUser;
+            set
+            {
+                if (_isBeingMovedByUser == value)
+                    return;
+
+                _isBeingMovedByUser = value;
+
+                UpdateLeftMouseUpInSceneOrInspectorDelegate();
+            }
+        }
+#endif
+
+        protected override bool RemoveParentGeoAstroObjectDelegates(GeoAstroObject parentGeoAstroObject)
 		{
 			if (base.RemoveParentGeoAstroObjectDelegates(parentGeoAstroObject))
 			{
@@ -150,8 +206,8 @@ namespace DepictionEngine
 
         public double elevation
         {
-            get { return _elevation; }
-            private set { SetElevation(value); }
+            get => _elevation;
+            private set => SetElevation(value);
         }
 
         private bool SetElevation(double value)
@@ -166,8 +222,8 @@ namespace DepictionEngine
 
         public Camera filterTerrainCamera
 		{
-			get { return _filterTerrainCamera; }
-			set { _filterTerrainCamera = value; }
+            get => _filterTerrainCamera;
+            set => _filterTerrainCamera = value;
 		}
 
         /// <summary>
@@ -179,7 +235,7 @@ namespace DepictionEngine
 #endif
 		public bool preventGroundPenetration
 		{
-			get { return _preventGroundPenetration; }
+            get => _preventGroundPenetration;
 			set
 			{
 				SetValue(nameof(preventGroundPenetration), value, ref _preventGroundPenetration, (newValue, oldValue) =>
@@ -203,7 +259,7 @@ namespace DepictionEngine
 #endif
 		public SnapType autoSnapToGround
 		{
-			get { return _autoSnapToGround; }
+            get => _autoSnapToGround;
 			set 
 			{
 				SetValue(nameof(autoSnapToGround), value, ref _autoSnapToGround, (newValue, oldValue) => 
@@ -227,7 +283,7 @@ namespace DepictionEngine
 #endif
 		public double groundSnapOffset
 		{
-			get { return _groundSnapOffset; }
+            get => _groundSnapOffset;
 			set
 			{
 				SetValue(nameof(groundSnapOffset), value, ref _groundSnapOffset, (newValue, oldValue) =>
@@ -245,12 +301,12 @@ namespace DepictionEngine
 #if UNITY_EDITOR
 		[RecordAdditionalObjects(nameof(GetTransformAdditionalRecordObjects))]
 #endif
-		public bool autoAlignToSurface
+		public bool autoAlignUpwards
 		{
-			get { return _autoAlignToSurface; }
+            get => _autoAlignUpwards;
 			set
 			{
-				SetValue(nameof(autoAlignToSurface), value, ref _autoAlignToSurface, (newValue, oldValue) =>
+				SetValue(nameof(autoAlignUpwards), value, ref _autoAlignUpwards, (newValue, oldValue) =>
 				{
                     if (initialized)
                         ForceUpdateTransform(true);
@@ -259,7 +315,7 @@ namespace DepictionEngine
 		}
 
         /// <summary>
-        /// An offset vector represented in degrees which is added to the surface up vector used by the <see cref="DepictionEngine.GeoCoordinateController.autoAlignToSurface"/>.
+        /// An offset vector represented in degrees which is added to the surface up vector used by the <see cref="DepictionEngine.GeoCoordinateController.autoAlignUpwards"/>.
         /// </summary>
         [Json]
 #if UNITY_EDITOR
@@ -267,7 +323,7 @@ namespace DepictionEngine
 #endif
 		public Vector3 upVector
 		{
-			get { return _upVector; }
+            get => _upVector;
 			set
 			{
 				SetValue(nameof(upVector), value, ref _upVector, (newValue, oldValue) =>
@@ -287,35 +343,44 @@ namespace DepictionEngine
         {
             if (base.TransformControllerCallback(localPositionParam, localRotationParam, localScaleParam, camera))
             {
-                if (localPositionParam.isGeoCoordinate && parentGeoAstroObject != Disposable.NULL)
+                if (enabled &&  localPositionParam.isGeoCoordinate && parentGeoAstroObject != Disposable.NULL)
                 {
                     if (localPositionParam.changed)
                     {
-                        GeoCoordinate3Double geoCoordinate = localPositionParam.geoCoordinateValue;
-                        if (!localPositionParam.isGeoCoordinate)
-                            geoCoordinate = parentGeoAstroObject.GetGeoCoordinateFromPoint(transform.parent != Disposable.NULL ? transform.parent.TransformPoint(localPositionParam.vector3DoubleValue) : localPositionParam.vector3DoubleValue);
-
-                        double altitude = autoSnapToGround == SnapType.SeaLevel ? groundSnapOffset : geoCoordinate.altitude;
-
-                        if (RequiresElevation())
+#if UNITY_EDITOR
+                        bool mouseDown = Event.current != null && Event.current.button == 0;
+                        isBeingMovedByUser = !SceneManager.IsEditorNamespace(GetType()) && SceneManager.IsUserChangeContext() && mouseDown;
+                        if (!isBeingMovedByUser)
                         {
-                            if (parentGeoAstroObject.GetGeoCoordinateElevation(out double elevation, geoCoordinate, filterTerrainCamera))
-                                SetElevation(elevation);
+#endif
+                            GeoCoordinate3Double geoCoordinate = localPositionParam.geoCoordinateValue;
+                            if (!localPositionParam.isGeoCoordinate)
+                                geoCoordinate = parentGeoAstroObject.GetGeoCoordinateFromPoint(transform.parent != Disposable.NULL ? transform.parent.TransformPoint(localPositionParam.vector3DoubleValue) : localPositionParam.vector3DoubleValue);
 
-							if (autoSnapToGround == SnapType.Terrain || (preventGroundPenetration && altitude < this.elevation))
-								altitude = this.elevation + groundSnapOffset;
-                        }
-						else
-                            SetElevation(0.0f);
+                            double altitude = autoSnapToGround == SnapType.SeaLevel ? groundSnapOffset : geoCoordinate.altitude;
 
-                        if (geoCoordinate.altitude != altitude)
-                        {
-                            geoCoordinate.altitude = altitude;
-                            localPositionParam.SetValue(geoCoordinate);
+                            if (RequiresElevation())
+                            {
+								    if (parentGeoAstroObject.GetGeoCoordinateElevation(out double elevation, geoCoordinate, filterTerrainCamera))
+									    SetElevation(elevation);
+
+								    if (autoSnapToGround == SnapType.Terrain || (preventGroundPenetration && altitude < this.elevation))
+									    altitude = this.elevation + groundSnapOffset;
+						    }
+                            else
+                                SetElevation(0.0f);
+
+                            if (geoCoordinate.altitude != altitude)
+                            {
+                                geoCoordinate.altitude = altitude;
+                                localPositionParam.SetValue(geoCoordinate);
+                            }
+#if UNITY_EDITOR
                         }
+#endif
                     }
 
-                    if (autoAlignToSurface)
+                    if (autoAlignUpwards)
                     {
                         objectBase.ApplyAutoAlignToSurface(localPositionParam, localRotationParam, parentGeoAstroObject, PropertyDirty(nameof(upVector)));
                         if (localRotationParam.changed)
@@ -323,6 +388,18 @@ namespace DepictionEngine
                     }
                 }
 
+                return true;
+            }
+            return false;
+        }
+
+        public override bool OnDispose(DisposeContext disposeContext)
+        {
+            if (base.OnDispose(disposeContext))
+            {
+#if UNITY_EDITOR
+                snapToGridTimer = null;
+#endif
                 return true;
             }
             return false;

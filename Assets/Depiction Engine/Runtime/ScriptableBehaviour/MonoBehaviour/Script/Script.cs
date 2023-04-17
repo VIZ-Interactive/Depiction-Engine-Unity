@@ -169,7 +169,7 @@ namespace DepictionEngine
 
         public Object objectBase
         {
-            get { return _objectBase; }
+            get => _objectBase;
             protected set { SetObjectBase(value); }
         }
 
@@ -198,7 +198,7 @@ namespace DepictionEngine
 
         public GeoAstroObject parentGeoAstroObject
         {
-            get { return _parentGeoAstroObject; }
+            get => _parentGeoAstroObject;
             protected set { SetParentGeoAstroObject(value, _parentGeoAstroObject); }
         }
 
@@ -217,7 +217,7 @@ namespace DepictionEngine
 
         public new TransformDouble transform
         {
-            get { return objectBase is not null ? objectBase.transform : null; }
+            get => objectBase is not null ? objectBase.transform : null;
         }
     }
 }

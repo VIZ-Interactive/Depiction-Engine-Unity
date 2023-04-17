@@ -2,7 +2,6 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace DepictionEngine
 {
@@ -31,9 +30,15 @@ namespace DepictionEngine
 
         [SerializeField, Tooltip("The referenced data current loading state (Read Only).")]
 #if UNITY_EDITOR
-        [ConditionalShow(nameof(GetShowLoadingState)), ConditionalEnable(nameof(GetEnableLoadingState)), EndFoldout]
+        [ConditionalShow(nameof(GetShowLoadingState)), ConditionalEnable(nameof(GetEnableLoadingState))]
 #endif
         private DatasourceOperationBase.LoadingState _loadingState;
+
+#if UNITY_EDITOR
+        [SerializeField, Tooltip("Ask the loader for a matching loadScope.")]
+        [Button(nameof(LoadBtn)), ConditionalEnable(nameof(GetEnableLoad)), EndFoldout]
+        private bool _load;
+#endif
 
         [SerializeField, HideInInspector]
         private SerializableGuid _loadedOrfailedIdLoadScope;
@@ -69,6 +74,16 @@ namespace DepictionEngine
         private bool GetEnableLoadingState()
         {
             return false;
+        }
+
+        private bool GetEnableLoad()
+        {
+            return loadScope == Disposable.NULL;
+        }
+
+        private void LoadBtn()
+        {
+            ForceUpdateLoadScope();
         }
 #endif
 
@@ -455,7 +470,7 @@ namespace DepictionEngine
 
         private void RemoveReferenceFromLoader(LoadScope loadScope, DisposeContext disposeContext)
         {
-            if (loadScope != Disposable.NULL && loadScope.loader != Disposable.NULL)
+            if (loadScope is not null && loadScope.loader != Disposable.NULL)
             {
 #if UNITY_EDITOR
                 if (SceneManager.IsUserChangeContext())
@@ -516,8 +531,6 @@ namespace DepictionEngine
 #endif
                     RemoveDataDelegates(oldValue);
                     AddDataDelegates(newValue);
-
-                    DataChanged(newValue, oldValue);
                 }
             });
 
@@ -560,6 +573,16 @@ namespace DepictionEngine
 
             _loadingState = value;
             return true;
+        }
+
+        public override string ToString()
+        {
+            string str = "";
+            if (loader is IdLoader)
+                str = "Id:" + dataId +" ";
+            if (loader is Index2DLoaderBase)
+                str = "Zoom:"+MathPlus.GetZoomFromGrid2DDimensions(dataIndex2D.dimensions)+", X:"+dataIndex2D.index.x+", Y:"+ dataIndex2D.index.y + " ";
+            return str + "(" + GetType() + ")";
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

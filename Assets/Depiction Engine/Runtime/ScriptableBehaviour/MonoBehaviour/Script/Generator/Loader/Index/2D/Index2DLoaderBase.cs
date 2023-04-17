@@ -128,7 +128,7 @@ namespace DepictionEngine
                 SetValue(nameof(minMaxZoom), value, ref _minMaxZoom, (newValue, oldValue) =>
                 {
                     QueueAutoUpdate();
-                });
+                }, true);
             }
         }
 
@@ -184,7 +184,7 @@ namespace DepictionEngine
                 SetValue(nameof(xyTilesRatio), value, ref _xyTilesRatio, (newValue, oldValue) =>
                 {
                     QueueAutoUpdate();
-                });
+                }, true);
             }
         }
 
@@ -355,7 +355,7 @@ namespace DepictionEngine
 
         protected virtual Index2DLoadScope CreateIndex2DLoadScope(Vector2Int index, Vector2Int dimensions)
         {
-            return (CreateLoadScope(typeof(Index2DLoadScope), "Zoom:"+MathPlus.GetZoomFromGrid2DDimensions(dimensions)+", XYTileRatio:"+xyTilesRatio+", X:"+index.x+", Y:"+index.y) as Index2DLoadScope).Init(this, index, dimensions, indexUrlParamType);
+            return (CreateLoadScope(typeof(Index2DLoadScope), "Zoom:"+ MathPlus.GetZoomFromGrid2DDimensions(dimensions)+",  X:"+index.x+",  Y:"+index.y + ",  XYTileRatio:" + xyTilesRatio) as Index2DLoadScope).Init(this, index, dimensions, indexUrlParamType);
         }
     }
 }

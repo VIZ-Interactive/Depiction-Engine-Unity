@@ -526,9 +526,11 @@ namespace DepictionEngine
             SendExternalMessage(json);
         }
 
+#if UNITY_WEBGL
         [DllImport("__Internal")]
         private static extern void SendExternalMessageInternal(string instanceId, string parameters);
-
+        
+#endif
         private void SendExternalMessage(JSONNode json)
         {
 #if UNITY_WEBGL

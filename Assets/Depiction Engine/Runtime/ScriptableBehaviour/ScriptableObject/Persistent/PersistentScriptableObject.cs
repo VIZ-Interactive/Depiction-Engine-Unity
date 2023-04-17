@@ -166,7 +166,7 @@ namespace DepictionEngine
         [Json]
         public new string name
         {
-            get { return base.name; }
+            get => base.name;
             set
             {
                 string oldValue = base.name;
@@ -184,7 +184,7 @@ namespace DepictionEngine
         [Json]
         public float autoSynchronizeInterval
         {
-            get { return _autoSynchronizeInterval; }
+            get => _autoSynchronizeInterval;
             set
             {
                 SetValue(nameof(autoSynchronizeInterval), value, ref _autoSynchronizeInterval, (newValue, oldValue) =>
@@ -200,7 +200,7 @@ namespace DepictionEngine
         [Json]
         public bool autoDispose
         {
-            get { return _autoDispose; }
+            get => _autoDispose;
             set { SetValue(nameof(autoDispose), value, ref _autoDispose); }
         }
 
@@ -229,7 +229,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsFallbackValues))]
         public bool createPersistentIfMissing
         {
-            get { return _createPersistentIfMissing; }
+            get => _createPersistentIfMissing;
             set { SetValue(nameof(_createPersistentIfMissing), value, ref _createPersistentIfMissing); }
         }
 
@@ -239,7 +239,7 @@ namespace DepictionEngine
         [Json(get:false)]
         public bool containsCopyrightedMaterial
         {
-            get { return _containsCopyrightedMaterial; }
+            get => _containsCopyrightedMaterial;
             private set
             {
                 if (!value || _containsCopyrightedMaterial == value)
@@ -260,7 +260,7 @@ namespace DepictionEngine
 
         private Tween autoSynchronizeIntervalTimer
         {
-            get { return _autoSynchronizeIntervalTimer; }
+            get => _autoSynchronizeIntervalTimer;
             set
             {
                 if (Object.ReferenceEquals(_autoSynchronizeIntervalTimer, value))

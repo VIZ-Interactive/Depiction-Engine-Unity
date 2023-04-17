@@ -68,8 +68,8 @@ namespace DepictionEngine
     [CreateComponent(typeof(AssetReference), typeof(AssetReference))]
     public class BuildingGridMeshObject : FeatureGridMeshObjectBase
     {
-        private const string COLORMAP_REFERENCE_DATATYPE = nameof(Texture) + " ColorMap";
-        private const string ADDITIONALMAP_REFERENCE_DATATYPE = nameof(Texture) + " AdditionalMap";
+        public const string COLORMAP_REFERENCE_DATATYPE = nameof(Texture) + " ColorMap";
+        public const string ADDITIONALMAP_REFERENCE_DATATYPE = nameof(Texture) + " AdditionalMap";
 
         [BeginFoldout("Building")]
         [SerializeField, Tooltip("A fallback color value used by the parser if no other value are present in the feature. ")]

@@ -318,10 +318,12 @@ namespace DepictionEngine.Editor
 
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
-            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 19));
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 15));
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 2;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 2;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = ElevationGridMeshObjectBase.ELEVATION_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = TerrainGridMeshObject.COLORMAP_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
@@ -382,7 +384,7 @@ namespace DepictionEngine.Editor
 
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
-            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 17));
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 15));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(new Vector2Int(0, 4));
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 1;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 1;
@@ -390,7 +392,9 @@ namespace DepictionEngine.Editor
                 terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.subdivisionZoomFactor)] = 1.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.edgeDepth)] = 0.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.normalsType)] = JsonUtility.ToJson(TerrainGridMeshObject.NormalsType.SurfaceUp);
+            terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = ElevationGridMeshObjectBase.ELEVATION_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = TerrainGridMeshObject.COLORMAP_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
@@ -405,6 +409,7 @@ namespace DepictionEngine.Editor
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(14, 14));
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(Vector2Int.zero);
             buildingMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(BuildingGridMeshObject.color)] = JsonUtility.ToJson(Color.white);
+            buildingMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = FeatureGridMeshObjectBase.FEATURE_REFERENCE_DATATYPE;
             buildingMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = buildingFeatureDataLoaderId;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(buildingMeshObjectCameraGrid2DLoaderJson, buildingsJson);
@@ -467,7 +472,7 @@ namespace DepictionEngine.Editor
             JSONArray surfaceLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
             string surfaceLoaderId = surfaceLoaderJson[0][nameof(Index2DLoader.id)];
             surfaceLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(arcgisDatasource.id);
-            surfaceLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 14));
+            surfaceLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 12));
             surfaceLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
             surfaceLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{0}/{2}/{1}";
             surfaceLoaderJson[0][nameof(LoaderBase.headers)] = JsonUtility.ToJson(headers);
@@ -499,14 +504,17 @@ namespace DepictionEngine.Editor
 
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
-            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 19));
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 15));
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 2;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 2;
             if (!spherical)
                 terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.subdivisionZoomFactor)] = 1.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.normalsType)] = JsonUtility.ToJson(TerrainGridMeshObject.NormalsType.SurfaceUp);
+            terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = ElevationGridMeshObjectBase.ELEVATION_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = TerrainGridMeshObject.COLORMAP_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[5][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = TerrainGridMeshObject.SURFACETYPEMAP_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[5][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = surfaceLoaderId;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
@@ -522,8 +530,11 @@ namespace DepictionEngine.Editor
                 buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 5.0f;
                 buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(14, 14));
                 buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(Vector2Int.zero);
+                buildingMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = ElevationGridMeshObjectBase.ELEVATION_REFERENCE_DATATYPE;
                 buildingMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
+                buildingMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = FeatureGridMeshObjectBase.FEATURE_REFERENCE_DATATYPE;
                 buildingMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = buildingFeatureDataLoaderId;
+                buildingMeshObjectCameraGrid2DLoaderJson[4][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = BuildingGridMeshObject.COLORMAP_REFERENCE_DATATYPE;
                 buildingMeshObjectCameraGrid2DLoaderJson[4][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
 
                 InstanceUtility.MergeComponentsToObjectInitializationJson(buildingMeshObjectCameraGrid2DLoaderJson, buildingsJson);
@@ -577,7 +588,9 @@ namespace DepictionEngine.Editor
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 7));
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 1;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 1;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = ElevationGridMeshObjectBase.ELEVATION_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = TerrainGridMeshObject.COLORMAP_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);

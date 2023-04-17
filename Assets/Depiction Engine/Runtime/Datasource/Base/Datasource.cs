@@ -359,7 +359,7 @@ namespace DepictionEngine
 
                     IterateOverLoaders((loader) =>
                     {
-                        if (loader is Index2DLoaderBase && loader.Contains(persistent))
+                        if (loader is Index2DLoaderBase && loader.ContainsPersistent(persistent))
                         {
                             Index2DLoaderBase index2DLoader = loader as Index2DLoaderBase;
 
@@ -1200,7 +1200,7 @@ namespace DepictionEngine
 
                 IterateOverLoaders((loader) =>
                 {
-                    if (loader != Disposable.NULL && (datasourceWrapper as IDatasource).IsIdMatching(loader.datasourceId) && loader.Contains(persistent) && loader.GetLoadScope(out LoadScope loadScope, persistent) && loadScope != Disposable.NULL)
+                    if (loader != Disposable.NULL && (datasourceWrapper as IDatasource).IsIdMatching(loader.datasourceId) && loader.ContainsPersistent(persistent) && loader.GetLoadScope(out LoadScope loadScope, persistent) && loadScope != Disposable.NULL)
                     {
                         dispose = false;
 

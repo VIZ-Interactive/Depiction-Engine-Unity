@@ -389,13 +389,24 @@ namespace DepictionEngine
             return grid2DIndexTerrainGridMeshObject;
         }
 
+        /// <summary>
+        /// The elevation value at a specific GeoCoordinate. The Elevation will be calculated from the elevation texture, if one is present, and will fallback to raycasting against the geometry of none is present.
+        /// </summary>
+        /// <param name="elevation"></param>
+        /// <param name="geoCoordinate"></param>
+        /// <param name="camera">Only calculate terrain loaded for this camera. If null all terrain are considered.</param>
+        /// <param name="fallbackToRaycast">When true, a second attempt at getting an elevation value will be made using raycast if an elevation texture is not present.</param>
+        /// <returns>True if a valid elevation value was calculated.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool GetGeoCoordinateElevation(out double elevation, GeoCoordinate3Double geoCoordinate, Camera camera = null)
+        public bool GetGeoCoordinateElevation(out double elevation, GeoCoordinate3Double geoCoordinate, Camera camera = null, bool fallbackToRaycast = true)
         {
             Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject = GetGrid2DIndexTerrainGridMeshObjectFromGeoCoordinate(geoCoordinate, camera);
 
-            if (grid2DIndexTerrainGridMeshObject != Disposable.NULL && grid2DIndexTerrainGridMeshObject.GetGeoCoordinateElevation(out elevation, geoCoordinate, camera))
-                return true;
+            if (grid2DIndexTerrainGridMeshObject != Disposable.NULL)
+            {
+                if (grid2DIndexTerrainGridMeshObject.GetGeoCoordinateElevation(out elevation, geoCoordinate, camera) || (fallbackToRaycast && grid2DIndexTerrainGridMeshObject.GetGeoCoordinateElevation(out elevation, geoCoordinate, camera, true)))
+                    return true;
+            }
 
             elevation = 0.0f;
             return false;
@@ -760,7 +771,7 @@ namespace DepictionEngine
             {
                 if (reflectionProbe.name == GetReflectionProbeName())
                 {
-                    GeoCoordinate3Double geoCoordinate = GetGeoCoordinateFromPoint(camera.transform.position);
+                    GeoCoordinate3Double geoCoordinate = GetGeoCoordinateFromPoint(camera.environmentCubemapPosition);
 
                     double maxAltitude = GetScaledAtmosphereThickness();
                     if (geoCoordinate.altitude > maxAltitude)
