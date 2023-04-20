@@ -1,7 +1,6 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. <contact@vizinteractive.io> | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -69,26 +68,32 @@ namespace DepictionEngine
 
             bool duplicating = initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate;
 
-            if (duplicating || meshRendererVisualDirtyFlags == null)
+            if (duplicating)
             {
-                if (duplicating)
-                    meshRendererVisualDirtyFlags = InstanceManager.Duplicate(meshRendererVisualDirtyFlags, initializingContext);
-                else if (meshRendererVisualDirtyFlags == null)
-                {
-                    meshRendererVisualDirtyFlags = ScriptableObject.CreateInstance(GetMeshRendererVisualDirtyFlagType()) as VisualObjectVisualDirtyFlags;
-#if UNITY_EDITOR
-                    Editor.UndoManager.QueueRegisterCreatedObjectUndo(meshRendererVisualDirtyFlags, initializingContext);
-#endif
-                }
-
-                SetMeshRendererVisualsDirty(duplicating);
+                meshRendererVisualDirtyFlags = InstanceManager.Duplicate(meshRendererVisualDirtyFlags, initializingContext);
+                meshRendererVisualDirtyFlags.Recreate();
             }
+            else if (meshRendererVisualDirtyFlags == null)
+            {
+                meshRendererVisualDirtyFlags = ScriptableObject.CreateInstance(GetMeshRendererVisualDirtyFlagType()) as VisualObjectVisualDirtyFlags;
+#if UNITY_EDITOR
+                Editor.UndoManager.QueueRegisterCreatedObjectUndo(meshRendererVisualDirtyFlags, initializingContext);
+#endif
+            }
+
+            if (!GetMeshRenderersInitialized())
+                SetMeshRendererVisualsAllDirty();
 
             //Dont Popup if the object was duplicated or already exists
             popup = initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Programmatically;
 
             if (!popup)
                 DetectCompromisedPopup();
+        }
+
+        public void SetMeshRendererVisualsAllDirty()
+        {
+            meshRendererVisualDirtyFlags?.AllDirty();
         }
 
         public override void ExplicitOnEnable()
@@ -114,45 +119,14 @@ namespace DepictionEngine
             InitValue(value => popupDuration = value, GetDefaultPopupDuration(), initializingContext);
         }
 
-        protected override bool Initialize(InitializationContext initializingContext)
-        {
-            if (base.Initialize(initializingContext))
-            {
-                if (GetMeshRenderersInitialized() && meshRendererVisualDirtyFlags != null)
-                {
-                    bool requiredAssetMissing = false;
-
-                    IterateOverAssetReferences((asset, assetReference, required) =>
-                    {
-                        if (required && asset == Disposable.NULL)
-                        {
-                            requiredAssetMissing = true;
-                            return false;
-                        }
-                        return true;
-                    });
-
-                    if (requiredAssetMissing)
-                        meshRendererVisualDirtyFlags.DisposeAllVisuals();
-                }
-
-                return true;
-            }
-            return false;
-        }
-
 #if UNITY_EDITOR
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                SerializationUtility.RecoverLostReferencedObject(ref _meshRendererVisualDirtyFlags);
-                
-                _meshRendererVisualDirtyFlags?.UndoRedoPerformed();
+            base.UpdateUndoRedoSerializedFields();
 
-                return true;
-            }
-            return false;
+            SerializationUtility.RecoverLostReferencedObject(ref _meshRendererVisualDirtyFlags);
+                
+            _meshRendererVisualDirtyFlags?.UndoRedoPerformed();
         }
 #endif
 
@@ -278,44 +252,50 @@ namespace DepictionEngine
             set => _meshRendererVisualDirtyFlags = value;
         }
 
-        public void SetMeshRendererVisualsDirty(bool recreate = false)
-        {
-            if (meshRendererVisualDirtyFlags != null)
-            {
-                if (recreate)
-                    meshRendererVisualDirtyFlags.Recreate();
-                else
-                    meshRendererVisualDirtyFlags.AllDirty();
-            }
-        }
-
         protected override void Saving(Scene scene, string path)
         {
             base.Saving(scene, path);
 
-            UpdateVisualsForSaving(true);
+            if (GetDontSaveVisualsToScene())
+            {
+                transform.IterateOverChildrenGameObject(gameObject, (childGO) =>
+                {
+                    childGO.hideFlags |= HideFlags.DontSave;
+                }, true);
+            }
         }
 
         protected override void Saved(Scene scene)
         {
             base.Saved(scene);
 
-            UpdateVisualsForSaving();
-        }
-
-        private List<MeshRenderer> _lastManagedMeshRenderers;
-        private void UpdateVisualsForSaving(bool before = false)
-        {
-            if (dontSaveVisualsToScene)
-            { 
+            if (GetDontSaveVisualsToScene())
+            {
                 transform.IterateOverChildrenGameObject(gameObject, (childGO) =>
                 {
-                    if(before)
-                        childGO.hideFlags |= HideFlags.DontSave;
-                    else
-                        childGO.hideFlags &= ~HideFlags.DontSave;
+                    childGO.hideFlags &= ~HideFlags.DontSave;
                 }, true);
             }
+        }
+
+        protected bool GetDontSaveVisualsToScene()
+        {
+            bool dontSaveVisualsToScene = this.dontSaveVisualsToScene;
+
+            if (!dontSaveVisualsToScene)
+            {
+                IterateOverAssetReferences((asset, assetReference, required) =>
+                {
+                    if (required && asset != Disposable.NULL && asset.dontSaveToScene)
+                    {
+                        dontSaveVisualsToScene = true;
+                        return false;
+                    }
+                    return true;
+                });
+            }
+
+            return dontSaveVisualsToScene;
         }
 
         protected void UpdateMeshRendererVisualCollider(MeshRendererVisual meshRendererVisual, VisualObjectVisualDirtyFlags visualObjectVisualDirtyFlags, bool convexCollider, bool visualsChanged, bool convexColliderChanged = true)
@@ -368,7 +348,7 @@ namespace DepictionEngine
             if (meshRendererVisualDirtyFlags.disposeAllVisuals)
                 DisposeAllChildren();
 
-            if (autoInstantiate && AssetsLoaded())
+            if (autoInstantiate && AssetsReady())
             {
                 UpdateMeshRendererVisuals(meshRendererVisualDirtyFlags);
                 meshRendererVisualDirtyFlags.ResetDirty();
@@ -407,7 +387,7 @@ namespace DepictionEngine
             }
         }
 
-        protected bool AssetsLoaded()
+        protected bool AssetsReady()
         {
             bool assetsLoaded = true;
 
@@ -473,7 +453,8 @@ namespace DepictionEngine
             {
                 popupTween = null;
 
-                DisposeManager.Dispose(_meshRendererVisualDirtyFlags, disposeContext);
+                if (disposeContext != DisposeContext.Programmatically_Pool)
+                    DisposeManager.Dispose(_meshRendererVisualDirtyFlags, disposeContext);
 
                 //We dispose the visuals manualy in case only the Component is disposed and not the entire GameObject and its children
                 //The delay is required during a Dispose of the Object since we do not know wether it is only the Component being disposed or the entire GameObject. 

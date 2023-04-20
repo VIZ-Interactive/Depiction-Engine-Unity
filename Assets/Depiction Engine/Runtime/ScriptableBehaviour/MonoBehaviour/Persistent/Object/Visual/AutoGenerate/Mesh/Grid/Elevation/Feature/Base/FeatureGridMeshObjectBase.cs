@@ -71,6 +71,9 @@ namespace DepictionEngine
         [Serializable]
         private class MeshRendererMaterialDictionary : SerializableDictionary<int, Material> { };
 
+        [SerializeField, HideInInspector]
+        private MeshRendererMaterialDictionary _materialsDictionary;
+
         private static readonly Vector2 ZERO_ONE = new(0.0f, 1.0f);
         private static readonly Vector2 ONE_ZERO = new(1.0f, 0.0f);
 
@@ -78,15 +81,11 @@ namespace DepictionEngine
 
         private Feature _feature;
 
-        [SerializeField, HideInInspector]
-        private MeshRendererMaterialDictionary _materialsDictionary;
-
         public override void Recycle()
         {
             base.Recycle();
 
             _meshRendererHighlightIndexRange?.Clear();
-
             _materialsDictionary?.Clear();
         }
 
@@ -96,11 +95,8 @@ namespace DepictionEngine
 
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
             {
-                if (_meshRendererHighlightIndexRange != null)
-                    _meshRendererHighlightIndexRange.Clear();
-
-                if (_materialsDictionary != null)
-                    _materialsDictionary.Clear();
+                _meshRendererHighlightIndexRange?.Clear();
+                _materialsDictionary?.Clear();
             }
         }
 
@@ -233,7 +229,7 @@ namespace DepictionEngine
 
         protected Feature feature
         {
-            get { return _feature; }
+            get => _feature;
             private set 
             {
                 Feature oldValue = _feature;
@@ -284,7 +280,7 @@ namespace DepictionEngine
 
                 //Processing was probably interrupted by Recompile or Play so we start it again
                 if (featureMeshRendererVisualDirtyFlags.ProcessingWasCompromised())
-                    featureMeshRendererVisualDirtyFlags.AllDirty();
+                    SetMeshRendererVisualsAllDirty();
             }
         }
 
@@ -362,7 +358,7 @@ namespace DepictionEngine
 
             public Feature feature
             {
-                get { return _feature; }
+                get => _feature;
             }
         }
 

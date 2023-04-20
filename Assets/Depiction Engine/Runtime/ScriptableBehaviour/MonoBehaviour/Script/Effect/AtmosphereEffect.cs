@@ -47,7 +47,7 @@ namespace DepictionEngine
                 
                 atmosphereGlobalLoader = datasourceRoot.gameObject.AddSafeComponent<GlobalLoader>(initializingContext);
                 atmosphereGlobalLoader.autoUpdateInterval = 0.0f;
-                atmosphereGlobalLoader.zoomRange = Vector2Int.zero;
+                atmosphereGlobalLoader.minMaxZoom = Vector2Int.zero;
                 atmosphereGlobalLoader.fallbackValuesId = new List<SerializableGuid> { atmosphereGridMeshObjectFallbackValuesId };
 
                 JSONObject json = new()

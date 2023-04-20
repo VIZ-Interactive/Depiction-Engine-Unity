@@ -171,6 +171,14 @@ namespace DepictionEngine
                 return false;
 
             persistent = (IPersistent)instanceManager.CreateInstance(type, null, json, propertyModifiers, InitializationContext.Programmatically);
+            try
+            {
+                if (persistent is Object && (persistent as Object).gameObject == null)
+                    Debug.Log("tttttt");
+            }catch(Exception)
+            { 
+                Debug.Log("tttttt"); 
+            }
             if (!Disposable.IsDisposed(persistent))
                 return true;
 

@@ -153,8 +153,8 @@ namespace DepictionEngine
         [Json]
         public bool snapDistanceToZoom
         {
-            get { return _snapDistanceToZoom; }
-            set { SetValue(nameof(snapDistanceToZoom), value, ref _snapDistanceToZoom); }
+            get => _snapDistanceToZoom;
+            set => SetValue(nameof(snapDistanceToZoom), value, ref _snapDistanceToZoom);
         }
 
         /// <summary>
@@ -163,8 +163,8 @@ namespace DepictionEngine
         [Json]
         public bool useInertia
         {
-            get { return _useInertia; }
-            set { SetValue(nameof(useInertia), value, ref _useInertia); }
+            get => _useInertia;
+            set => SetValue(nameof(useInertia), value, ref _useInertia);
         }
 
         /// <summary>
@@ -173,8 +173,8 @@ namespace DepictionEngine
         [Json]
         public bool dynamicClippingPlanes
         {
-            get { return _dynamicClippingPlanes; }
-            set { SetValue(nameof(dynamicClippingPlanes), value, ref _dynamicClippingPlanes); }
+            get => _dynamicClippingPlanes;
+            set => SetValue(nameof(dynamicClippingPlanes), value, ref _dynamicClippingPlanes);
         }
 
         /// <summary>
@@ -183,8 +183,8 @@ namespace DepictionEngine
         [Json]
         public float clippingDistanceMultiplier
         {
-            get { return _clippingDistanceMultiplier; }
-            set { SetValue(nameof(clippingDistanceMultiplier), value, ref _clippingDistanceMultiplier); }
+            get => _clippingDistanceMultiplier;
+            set => SetValue(nameof(clippingDistanceMultiplier), value, ref _clippingDistanceMultiplier);
         }
 
         /// <summary>
@@ -193,7 +193,7 @@ namespace DepictionEngine
         [Json]
         public Vector2 minMaxFarClippingDistance
         {
-            get { return _minMaxFarClippingDistance; }
+            get => _minMaxFarClippingDistance;
             set 
             {
                 value.x = Mathf.Clamp(value.x, MIN_FAR_CLIPPING_DISTANCE, MAX_FAR_CLIPPING_DISTANCE);
@@ -211,7 +211,7 @@ namespace DepictionEngine
 #endif
         public Vector2 tiltLimit
         {
-            get { return _tiltLimit; }
+            get => _tiltLimit;
             set 
             {
                 value.x = Mathf.Clamp(value.x, MIN_TILT_LIMIT, MAX_TILT_LIMIT);
@@ -229,8 +229,8 @@ namespace DepictionEngine
         [Json]
         public float scrollWheelMultiplier
         {
-            get { return _scrollWheelMultiplier; }
-            set { SetValue(nameof(scrollWheelMultiplier), value, ref _scrollWheelMultiplier); }
+            get => _scrollWheelMultiplier;
+            set => SetValue(nameof(scrollWheelMultiplier), value, ref _scrollWheelMultiplier);
         }
 
         /// <summary>
@@ -239,8 +239,8 @@ namespace DepictionEngine
         [Json]
         public float duration
         {
-            get { return _duration; }
-            set { SetValue(nameof(duration), value, ref _duration); }
+            get => _duration;
+            set => SetValue(nameof(duration), value, ref _duration);
         }
 
         /// <summary>
@@ -249,8 +249,8 @@ namespace DepictionEngine
         [Json]
         public double toDistance
         {
-            get { return _toDistance; }
-            set { SetValue(nameof(toDistance), value, ref _toDistance); }
+            get => _toDistance;
+            set => SetValue(nameof(toDistance), value, ref _toDistance);
         }
 
         /// <summary>
@@ -259,8 +259,8 @@ namespace DepictionEngine
         [Json]
         public GeoCoordinate3Double toGeoCoordinate
         {
-            get { return _toGeoCoordinate; }
-            set { SetValue(nameof(toGeoCoordinate), value, ref _toGeoCoordinate); }
+            get => _toGeoCoordinate;
+            set => SetValue(nameof(toGeoCoordinate), value, ref _toGeoCoordinate);
         }
 
         private float GetDefaultAnimationDuration()
@@ -270,7 +270,7 @@ namespace DepictionEngine
 
         private Tween distanceTween
         {
-            get { return _distanceTween; }
+            get => _distanceTween;
             set
             {
                 if (Object.ReferenceEquals(_distanceTween, value))
@@ -284,7 +284,7 @@ namespace DepictionEngine
 
         private Tween inertiaTween
         {
-            get { return _inertiaTween; }
+            get => _inertiaTween;
             set
             {
                 if (Object.ReferenceEquals(_inertiaTween, value))
@@ -298,8 +298,8 @@ namespace DepictionEngine
 
         private Vector3 inertia
         {
-            get { return _inertia; }
-            set { _inertia = value; }
+            get => _inertia;
+            set => _inertia = value;
         }
 
         protected override bool SetMinMaxDistance(Vector2Double value)
@@ -439,7 +439,7 @@ namespace DepictionEngine
         protected override void UpdateTargetControllerTransform(Camera camera)
         {
             base.UpdateTargetControllerTransform(camera);
-          
+
             if (isActiveAndEnabled && Application.isPlaying)
             {
                 TransformAnimator targetAnimator = target.animator as TransformAnimator;
@@ -465,8 +465,7 @@ namespace DepictionEngine
 
                     forwardVector += forwardVectorDelta;
                     ClearInertia();
-                    if (_collisionSnapshot != null)
-                        _collisionSnapshot.Reset();
+                    _collisionSnapshot?.Reset();
                 }
 
                 //Distance

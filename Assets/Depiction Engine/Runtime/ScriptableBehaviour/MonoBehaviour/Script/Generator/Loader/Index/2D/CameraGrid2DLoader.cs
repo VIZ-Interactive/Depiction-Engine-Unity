@@ -173,7 +173,7 @@ namespace DepictionEngine
         [Json]
         public uint minZoom
         {
-            get { return _minZoom; }
+            get => _minZoom;
             set
             {
                 SetValue(nameof(minZoom), (uint)Mathf.Clamp(value, 0, MAX_ZOOM), ref _minZoom, (newValue, oldValue) =>
@@ -192,7 +192,7 @@ namespace DepictionEngine
         [Json]
         public Vector2Int cascades
         {
-            get { return _cascades; }
+            get => _cascades;
             set
             {
                 SetValue(nameof(cascades), value, ref _cascades, (newValue, oldValue) =>
@@ -208,7 +208,7 @@ namespace DepictionEngine
         [Json]
         public Vector2Int collidersRange
         {
-            get { return _collidersRange; }
+            get => _collidersRange;
             set { SetValue(nameof(collidersRange), value, ref _collidersRange); }
         }
 
@@ -218,7 +218,7 @@ namespace DepictionEngine
         [Json]
         public CameraCenterOnType centerOn
         {
-            get { return _centerOn; }
+            get => _centerOn;
             set
             {
                 SetValue(nameof(centerOn), value, ref _centerOn, (newValue, oldValue) =>
@@ -234,7 +234,7 @@ namespace DepictionEngine
         [Json]
         public float sizeMultiplier
         {
-            get { return _sizeMultiplier; }
+            get => _sizeMultiplier;
             set
             {
                 SetValue(nameof(sizeMultiplier), value, ref _sizeMultiplier, (newValue, oldValue) =>
@@ -250,7 +250,7 @@ namespace DepictionEngine
         [Json]
         public bool sizeLatitudeCompensation
         {
-            get { return _sizeLatitudeCompensation; }
+            get => _sizeLatitudeCompensation;
             set
             {
                 SetValue(nameof(sizeLatitudeCompensation), value, ref _sizeLatitudeCompensation, (newValue, oldValue) =>
@@ -266,7 +266,7 @@ namespace DepictionEngine
         [Json]
         public float sizeOffsettingMultiplier
         {
-            get { return _sizeOffsettingMultiplier; }
+            get => _sizeOffsettingMultiplier;
             set { SetValue(nameof(sizeOffsettingMultiplier), value, ref _sizeOffsettingMultiplier); }
         }
 
@@ -276,7 +276,7 @@ namespace DepictionEngine
         [Json]
         public float sizeOffsettingMaximum
         {
-            get { return _sizeOffsettingMaximum; }
+            get => _sizeOffsettingMaximum;
             set { SetValue(nameof(sizeOffsettingMaximum), value, ref _sizeOffsettingMaximum); }
         }
 
@@ -286,26 +286,18 @@ namespace DepictionEngine
         [Json]
         public float sizeOffsettingDuration
         {
-            get { return _sizeOffsettingDuration; }
+            get => _sizeOffsettingDuration;
             set { SetValue(nameof(sizeOffsettingDuration), value, ref _sizeOffsettingDuration); }
         }
 
         private CameraGridLoaderCenterOnLoadTriggerDictionary cameraGridLoaderCenterOnLoadTriggers
         {
-            get
-            {
-                _cameraGridLoaderCenterOnLoadTriggers ??= new CameraGridLoaderCenterOnLoadTriggerDictionary();
-                return _cameraGridLoaderCenterOnLoadTriggers; 
-            }
+            get { _cameraGridLoaderCenterOnLoadTriggers ??= new CameraGridLoaderCenterOnLoadTriggerDictionary(); return _cameraGridLoaderCenterOnLoadTriggers; }
         }
 
         protected List<CameraGrid2D> cameraGrids
         {
-            get
-            {
-                _cameraGrids ??= new List<CameraGrid2D>();
-                return _cameraGrids;
-            }
+            get { _cameraGrids ??= new List<CameraGrid2D>(); return _cameraGrids; }
         }
 
         protected override IEnumerable<IGrid2D> GetGrids()
@@ -395,11 +387,11 @@ namespace DepictionEngine
             });
         }
 
-        private List<int> _visibleCameras;
+        private List<int> _visibleInCameras;
         public void UpdateLoadScopeCameras(Index2DLoadScope indexLoadScope, IEnumerable<IGrid2D> grids = null)
         {
-            _visibleCameras ??= new List<int>();
-            _visibleCameras.Clear();
+            _visibleInCameras ??= new List<int>();
+            _visibleInCameras.Clear();
 
             grids ??= GetGrids();
 
@@ -412,15 +404,15 @@ namespace DepictionEngine
                         Grid2D grid2D = grid.IsInGrid(indexLoadScope.scopeIndex, indexLoadScope.scopeDimensions);
                         if (grid2D != null && grid2D.cameraGrid2D != null)
                         {
-                            _visibleCameras.Add(grid2D.cameraGrid2D.camera.GetCameraInstanceID());
+                            _visibleInCameras.Add(grid2D.cameraGrid2D.camera.GetCameraInstanceID());
                             //_camerasCascade.Add(grid2D.cascade);
                         }
                     }
                 }
             }
 
-            if (indexLoadScope.visibleCameras == null || !indexLoadScope.visibleCameras.SequenceEqual(_visibleCameras))
-                indexLoadScope.visibleCameras = _visibleCameras.ToArray();
+            if (indexLoadScope.visibleInCameras == null || !indexLoadScope.visibleInCameras.SequenceEqual(_visibleInCameras))
+                indexLoadScope.visibleInCameras = _visibleInCameras.ToArray();
         }
 
         protected override bool UpdateGridsFields(IGrid2D grid, bool forceUpdate = false)
@@ -736,7 +728,7 @@ namespace DepictionEngine
 
             private CameraGrid2DLoader cameraGrid2DLoader
             {
-                get { return _cameraGrid2DLoader; }
+                get => _cameraGrid2DLoader;
                 set
                 {
                     if (Object.ReferenceEquals(_cameraGrid2DLoader, value))
@@ -748,7 +740,7 @@ namespace DepictionEngine
 
             public Camera camera
             {
-                get { return _camera; }
+                get => _camera;
                 set
                 {
                     if (Object.ReferenceEquals(_camera, value))
@@ -764,7 +756,7 @@ namespace DepictionEngine
 
             private GeoAstroObject parentGeoAstroObject
             {
-                get { return _parentGeoAstroObject; }
+                get => _parentGeoAstroObject;
                 set
                 {
                     if (Object.ReferenceEquals(_parentGeoAstroObject, value))
@@ -782,7 +774,7 @@ namespace DepictionEngine
 
             public TransformDouble centerOnTransform
             {
-                get { return _centerOnTransform; }
+                get => _centerOnTransform;
                 private set 
                 {
                     if (Object.ReferenceEquals(_centerOnTransform, value))
@@ -802,7 +794,7 @@ namespace DepictionEngine
 
             private float sizeOffsettingMultiplier
             {
-                get { return _sizeOffsettingMultiplier; }
+                get => _sizeOffsettingMultiplier;
                 set
                 {
                     if (_sizeOffsettingMultiplier == value)
@@ -814,7 +806,7 @@ namespace DepictionEngine
 
             private float sizeOffsettingMaximum
             {
-                get { return _sizeOffsettingMaximum; }
+                get => _sizeOffsettingMaximum;
                 set
                 {
                     if (_sizeOffsettingMaximum == value)
@@ -826,7 +818,7 @@ namespace DepictionEngine
 
             private float sizeOffsettingDuration
             {
-                get { return _sizeOffsettingDuration; }
+                get => _sizeOffsettingDuration;
                 set { SetSizeOffsettingDuration(value); }
             }
 
@@ -844,7 +836,7 @@ namespace DepictionEngine
 
             private Tween dynamicSizeOffsetTimer
             {
-                get { return _dynamicSizeOffsetTimer; }
+                get => _dynamicSizeOffsetTimer;
                 set
                 {
                     if (Object.ReferenceEquals(_dynamicSizeOffsetTimer, value))
@@ -859,8 +851,8 @@ namespace DepictionEngine
 
             public float dynamicSizeOffset
             {
-                get { return _dynamicSizeOffset; }
-                private set { SetDynamicSizeOffset(value); }
+                get => _dynamicSizeOffset;
+                private set => SetDynamicSizeOffset(value);
             }
 
             private bool SetDynamicSizeOffset(float value)

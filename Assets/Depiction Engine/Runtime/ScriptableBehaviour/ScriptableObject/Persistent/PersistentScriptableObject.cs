@@ -139,20 +139,20 @@ namespace DepictionEngine
 
         public Action<IPersistent, Action> PersistenceSaveOperationEvent
         {
-            get { return _persistenceSaveOperationEvent; }
-            set { _persistenceSaveOperationEvent = value; }
+            get => _persistenceSaveOperationEvent;
+            set => _persistenceSaveOperationEvent = value;
         }
 
         public Action<IPersistent, Action> PersistenceSynchronizeOperationEvent
         {
-            get { return _persistenceSynchronizeOperationEvent; }
-            set { _persistenceSynchronizeOperationEvent = value; }
+            get => _persistenceSynchronizeOperationEvent;
+            set => _persistenceSynchronizeOperationEvent = value;
         }
 
         public Action<IPersistent, Action> PersistenceDeleteOperationEvent
         {
-            get { return _persistenceDeleteOperationEvent; }
-            set { _persistenceDeleteOperationEvent = value; }
+            get => _persistenceDeleteOperationEvent;
+            set => _persistenceDeleteOperationEvent = value;
         }
 
         protected virtual bool GetDefaultDontSaveToScene()

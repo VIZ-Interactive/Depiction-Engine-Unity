@@ -2,7 +2,6 @@
 
 using System.Collections.Generic;
 using System;
-using Unity.Loading;
 
 namespace DepictionEngine
 {

@@ -53,17 +53,20 @@ namespace DepictionEngine
 
         public RenderTexture RenderToTexture(Camera camera, ScriptableRenderContext context, RenderTexture texture, Action<UnityEngine.Camera, Camera> applyPropertiesToUnityCamera = null, Action<UnityEngine.Camera> resetUnityCamera = null)
         {
-            unityCamera.targetTexture = texture;
+            if (camera.activeAndEnabled)
+            {
+                unityCamera.targetTexture = texture;
 
-            ApplyPropertiesToRTTUnityCamera(camera, applyPropertiesToUnityCamera);
+                ApplyPropertiesToRTTUnityCamera(camera, applyPropertiesToUnityCamera);
 
 #pragma warning disable CS0618 // Type or member is obsolete
-            UnityEngine.Rendering.Universal.UniversalRenderPipeline.RenderSingleCamera(context, unityCamera);
+                UnityEngine.Rendering.Universal.UniversalRenderPipeline.RenderSingleCamera(context, unityCamera);
 #pragma warning restore CS0618 // Type or member is obsolete
 
-            ResetUnityCamera(resetUnityCamera);
+                ResetUnityCamera(resetUnityCamera);
 
-            unityCamera.targetTexture = null;
+                unityCamera.targetTexture = null;
+            }
 
             return texture;
         }

@@ -385,7 +385,7 @@ namespace DepictionEngine
                     }
                 }
 
-                return Type.GetType(typeName);
+                return !string.IsNullOrEmpty(typeName) ? Type.GetType(typeName) : null;
             }
         }
     }

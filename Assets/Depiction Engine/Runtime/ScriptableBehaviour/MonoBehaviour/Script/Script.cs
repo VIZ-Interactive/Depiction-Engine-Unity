@@ -18,12 +18,17 @@ namespace DepictionEngine
                 RemoveObjectBaseDelegate(objectBase);
                 AddObjectBaseDelegate(objectBase);
 
-                RemoveParentGeoAstroObjectDelegates(parentGeoAstroObject);
-                AddParentGeoAstroObjectDelegates(parentGeoAstroObject);
+                UpdateParentGeoAstroObjectDelegates();
 
                 return true;
             }
             return false;
+        }
+
+        protected void UpdateParentGeoAstroObjectDelegates()
+        {
+            RemoveParentGeoAstroObjectDelegates(parentGeoAstroObject);
+            AddParentGeoAstroObjectDelegates(parentGeoAstroObject);
         }
 
         protected virtual bool RemoveObjectBaseDelegate(Object objectBase)

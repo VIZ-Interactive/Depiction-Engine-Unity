@@ -67,15 +67,11 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                sceneDatasource?.UndoRedoPerformed();
+            base.UpdateUndoRedoSerializedFields();
 
-                return true;
-            }
-            return false;
+            sceneDatasource?.UndoRedoPerformed();
         }
 #endif
 

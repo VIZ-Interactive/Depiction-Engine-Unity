@@ -133,11 +133,18 @@ namespace DepictionEngine
         protected virtual void InitializeFields(InitializationContext initializingContext)
         {
 #if UNITY_EDITOR
-            RenderingManager.UpdateIcon(this);
+            UpdateIcon();
 #endif
 
             UpdateActiveAndEnabled();
         }
+
+#if UNITY_EDITOR
+        private void UpdateIcon()
+        {
+            RenderingManager.UpdateIcon(this);
+        }
+#endif
 
         /// <summary>
         /// Initialize SerializedField's to their default values.
@@ -171,16 +178,13 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
         private PropertyMonoBehaviour _lastParent;
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                _parent = _lastParent;
-                UpdateRelations();
+            base.UpdateUndoRedoSerializedFields();
 
-                return true;
-            }
-            return false;
+            _parent = _lastParent;
+            if (!IsDisposing())
+                UpdateRelations();
         }
 #endif
 
@@ -260,7 +264,6 @@ namespace DepictionEngine
             }
             return false;
         }
-
 
         protected virtual void InstanceAddedHandler(IProperty property)
         {
@@ -817,7 +820,11 @@ namespace DepictionEngine
         {
             if (base.AfterAssemblyReload())
             {
-                return !IsDisposing();
+                if (!IsDisposing())
+                {
+                    UpdateIcon();
+                    return true;
+                }
             }
             return false;
         }

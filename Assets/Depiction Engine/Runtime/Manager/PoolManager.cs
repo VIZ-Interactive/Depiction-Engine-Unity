@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -123,10 +122,7 @@ namespace DepictionEngine
         {
             base.DebugChanged();
 
-            IterateOverDisposable((disposable) =>
-            {
-                UpdateHideFlags(disposable);
-            });
+            IterateOverDisposable((disposable) => { UpdateHideFlags(disposable); });
         }
 
         protected override void Saving(UnityEngine.SceneManagement.Scene scene, string path)
@@ -145,12 +141,16 @@ namespace DepictionEngine
         {
             base.Saved(scene);
 
-            IterateOverDisposable((disposable) =>
-            {
-                UpdateHideFlags(disposable);
-            });
+            IterateOverDisposable((disposable) => { UpdateHideFlags(disposable); });
         }
 #endif
+
+        private static void UpdateHideFlags(IDisposable disposable)
+        {
+            UnityEngine.Object unityObject = GetUnityObject(disposable);
+            if (unityObject != null)
+                unityObject.hideFlags = SceneManager.Debugging() ? HideFlags.None : HideFlags.HideInHierarchy;
+        }
 
         /// <summary>
         /// When enabled, pooling improves performance by reusing the instances to reduce the number of expensive operations such as object creation or garbage collection. The trade-off is an increased memory footprint.
@@ -284,20 +284,6 @@ namespace DepictionEngine
 #endif
                     }
                 }
-            }
-        }
-
-        private static void UpdateHideFlags(IDisposable disposable)
-        {
-            if (disposable is UnityEngine.Object)
-            {
-                HideFlags hideFlags = SceneManager.Debugging() ? HideFlags.None : HideFlags.HideInHierarchy;
-
-                UnityEngine.Object unityObject = disposable as UnityEngine.Object;
-
-                unityObject.hideFlags = hideFlags;
-                if (unityObject is Object || unityObject is Visual)
-                    (unityObject as MonoBehaviour).gameObject.hideFlags = hideFlags;
             }
         }
 
@@ -475,7 +461,7 @@ namespace DepictionEngine
 #endif
         }
 
-        private UnityEngine.Object GetUnityObject(IDisposable disposable)
+        private static UnityEngine.Object GetUnityObject(IDisposable disposable)
         {
             if (disposable is UnityEngine.Object)
             {

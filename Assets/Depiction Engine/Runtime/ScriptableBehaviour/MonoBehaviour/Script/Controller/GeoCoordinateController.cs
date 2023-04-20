@@ -4,34 +4,41 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-	[AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Controller/" + nameof(GeoCoordinateController))]
+    [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Controller/" + nameof(GeoCoordinateController))]
 	public class GeoCoordinateController : ControllerBase
 	{
         /// <summary>
         /// Different types of ground position snapping. <br/><br/>
 		/// <b><see cref="None"/>:</b> <br/>
-        /// Do not snap to the ground. <br/><br/>
-		/// <b><see cref="SeaLevel"/>:</b> <br/>
+        /// Do not snap. <br/><br/>
+		/// <b><see cref="Zero"/>:</b> <br/>
         /// Snap to altitude level zero. <br/><br/>
-		/// <b><see cref="Terrain"/>:</b> <br/>
-        /// Snap to the terrain elevation.
+        /// <b><see cref="Prevent_Surface_Penetration_Raycast"/>:</b> <br/>
+        /// Snap to the surface if the object penetrates below the surface level using Raycasting (Precise).
+        /// <b><see cref="Prevent_Surface_Penetration_Elevation"/>:</b> <br/>
+        /// Snap to the surface if the object penetrates below the surface level using Elevation (Faster).
+		/// <b><see cref="Highest_Surface_Raycast"/>:</b> <br/>
+        /// Snap to the surface using Raycasting (Precise).
+        /// <b><see cref="Highest_Surface_Elevation"/>:</b> <br/>
+        /// Snap to the surface using Elevation (Faster).
         /// </summary>
         public enum SnapType
         {
             None,
-            SeaLevel,
-            Terrain
+            Zero,
+            Prevent_Surface_Penetration_Raycast,
+            Prevent_Surface_Penetration_Elevation,
+            Highest_Surface_Raycast,
+            Highest_Surface_Elevation
         };
 
-        public const double DEFAULT_GROUND_SNAP_OFFSET_VALUE = 0.0d;
+        public const double DEFAULT_SURFACE_SNAP_OFFSET_VALUE = 0.0d;
 
-		[BeginFoldout("Position")]
-		[SerializeField, Tooltip("When enabled the '"+nameof(GeoCoordinateController)+"' will always position the object in a way so that it does not penetrate the ground.")]
-		private bool _preventGroundPenetration;
-		[SerializeField, Tooltip("When enabled the '"+nameof(GeoCoordinateController)+"' will always position the object above the ground.")]
-		private SnapType _autoSnapToGround;
-		[SerializeField, Tooltip("This value represents the distance from the ground at which the object will be positioned. Requires '"+nameof(autoSnapToGround)+"' enabled to take effect."), EndFoldout]
-		private double _groundSnapOffset;
+		[BeginFoldout("Altitude")]
+		[SerializeField, Tooltip("Controls the object altitude. Raycast is more Precise while Elevation will be Faster.")]
+		private SnapType _autoSnapToAltitude;
+		[SerializeField, Tooltip("This value represents the distance from the surface at which the object will be positioned. Requires '"+nameof(autoSnapToAltitude)+"' enabled to take effect."), EndFoldout]
+		private double _surfaceSnapOffset;
 
 		[BeginFoldout("Rotation")]
 		[SerializeField, Tooltip("When enabled the '"+nameof(GeoCoordinateController)+"' will always rotate the object so that it is pointing upwards.")]
@@ -42,6 +49,7 @@ namespace DepictionEngine
 #endif
 		private Vector3 _upVector;
 
+        [SerializeField, HideInInspector]
         private double _elevation;
 
         private double _radius;
@@ -55,27 +63,27 @@ namespace DepictionEngine
 		}
 #endif
 
+        public override void Recycle()
+        {
+            base.Recycle();
+
+            _elevation = 0.0d;
+        }
+
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
 			base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => preventGroundPenetration = value, true, initializingContext);
-			InitValue(value => autoSnapToGround = value, SnapType.Terrain, initializingContext);
-			InitValue(value => groundSnapOffset = value, DEFAULT_GROUND_SNAP_OFFSET_VALUE, initializingContext);
+            InitValue(value => autoSnapToAltitude = value, GetDefaultAutoSnapToAltitude(), initializingContext);
+			InitValue(value => surfaceSnapOffset = value, DEFAULT_SURFACE_SNAP_OFFSET_VALUE, initializingContext);
 			InitValue(value => autoAlignUpwards = value, true, initializingContext);
 			InitValue(value => upVector = value, Vector3.zero, initializingContext);
 		}
 
-		protected override bool Initialize(InitializationContext initializingContext)
-		{
-			if (base.Initialize(initializingContext))
-			{
-				InitElevation();
-
-				return true;
-			}
-			return false;
-		}
+        protected virtual SnapType GetDefaultAutoSnapToAltitude()
+        {
+            return SnapType.Highest_Surface_Elevation;
+        }
 
         protected override bool UpdateAllDelegates()
         {
@@ -99,21 +107,21 @@ namespace DepictionEngine
 
         private void LeftMouseUpInSceneOrInspectorHandler()
         {
-            snapToGridTimer = tweenManager.DelayedCall(0.1f, null, () => { ForceUpdateTransform(true, true); }, () => { snapToGridTimer = null; });
+            snapToAltitudeTimer = tweenManager.DelayedCall(0.1f, null, () => { ForceUpdateTransform(true, true); }, () => { snapToAltitudeTimer = null; });
         }
 
-        private Tween _snapToGridTimer;
-        private Tween snapToGridTimer
+        private Tween _snapToAltitudeTimer;
+        private Tween snapToAltitudeTimer
         {
-            get => _snapToGridTimer;
+            get => _snapToAltitudeTimer;
             set
             {
-                if (Object.ReferenceEquals(_snapToGridTimer, value))
+                if (Object.ReferenceEquals(_snapToAltitudeTimer, value))
                     return;
 
-                DisposeManager.Dispose(_snapToGridTimer);
+                DisposeManager.Dispose(_snapToAltitudeTimer);
 
-                _snapToGridTimer = value;
+                _snapToAltitudeTimer = value;
             }
         }
 
@@ -137,8 +145,9 @@ namespace DepictionEngine
 		{
 			if (base.RemoveParentGeoAstroObjectDelegates(parentGeoAstroObject))
 			{
-				parentGeoAstroObject.TerrainGridMeshObjectRemovedEvent -= ParentGeoAstroObjectTerrainGridMeshObjectChangedHandler;
-                parentGeoAstroObject.TerrainGridMeshObjectAddedEvent -= ParentGeoAstroObjectTerrainGridMeshObjectChangedHandler;
+				parentGeoAstroObject.TerrainGridMeshObjectAltitudeOffsetChangedEvent -= TerrainGridMeshObjectChanged;
+                parentGeoAstroObject.TerrainGridMeshObjectElevationChangedEvent -= TerrainGridMeshObjectChanged;
+                parentGeoAstroObject.TerrainGridMeshObjectMeshModifiedEvent -= TerrainGridMeshObjectChanged;
 
                 return true;
 			}
@@ -149,21 +158,24 @@ namespace DepictionEngine
 		{
 			if (base.AddParentGeoAstroObjectDelegates(parentGeoAstroObject))
 			{
-				parentGeoAstroObject.TerrainGridMeshObjectRemovedEvent += ParentGeoAstroObjectTerrainGridMeshObjectChangedHandler;
-                parentGeoAstroObject.TerrainGridMeshObjectAddedEvent += ParentGeoAstroObjectTerrainGridMeshObjectChangedHandler;
-
+                if (RequiresElevation())
+                    parentGeoAstroObject.TerrainGridMeshObjectAltitudeOffsetChangedEvent += TerrainGridMeshObjectChanged;
+                if (autoSnapToAltitude == SnapType.Highest_Surface_Elevation || autoSnapToAltitude == SnapType.Prevent_Surface_Penetration_Elevation)
+                    parentGeoAstroObject.TerrainGridMeshObjectElevationChangedEvent += TerrainGridMeshObjectChanged;
+                if (autoSnapToAltitude == SnapType.Highest_Surface_Raycast || autoSnapToAltitude == SnapType.Prevent_Surface_Penetration_Raycast)
+                    parentGeoAstroObject.TerrainGridMeshObjectMeshModifiedEvent += TerrainGridMeshObjectChanged;
                 return true;
 			}
 			return false;
 		}
 
-        private void ParentGeoAstroObjectTerrainGridMeshObjectChangedHandler(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject, Vector2Int grid2DDimensions, Vector2Int grid2DIndex)
+        private void TerrainGridMeshObjectChanged(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject)
         {
-			if (transform != Disposable.NULL && RequiresElevation() && !forceUpdateTransformPending.localPositionChanged && grid2DIndex == (Vector2Int)MathPlus.GetIndexFromGeoCoordinate(transform.GetGeoCoordinate(), grid2DDimensions))
-				ForceUpdateTransformPending(true);
+            if (transform != Disposable.NULL && !forceUpdateTransformPending.localPositionChanged && grid2DIndexTerrainGridMeshObject.grid2DIndex == (Vector2Int)MathPlus.GetIndexFromGeoCoordinate(transform.GetGeoCoordinate(), grid2DIndexTerrainGridMeshObject.grid2DDimensions))
+                ForceUpdateTransformPending(true);
         }
 
-		protected override bool TransformPropertyAssigned(IProperty property, string name, object newValue, object oldValue)
+        protected override bool TransformPropertyAssigned(IProperty property, string name, object newValue, object oldValue)
 		{
 			if (base.TransformPropertyAssigned(property, name, newValue, oldValue))
 			{
@@ -199,25 +211,10 @@ namespace DepictionEngine
 			return parentGeoAstroObject != Disposable.NULL ? parentGeoAstroObject.radius : 0.0d;
 		}
 
-        private void InitElevation()
-        {
-			elevation = gameObject.GetComponent<TransformDouble>().GetGeoCoordinate().altitude;
-        }
-
         public double elevation
         {
             get => _elevation;
-            private set => SetElevation(value);
-        }
-
-        private bool SetElevation(double value)
-        {
-            if (_elevation == value)
-                return false;
-
-            _elevation = value;
-
-            return true;
+            private set => _elevation = value;
         }
 
         public Camera filterTerrainCamera
@@ -227,69 +224,44 @@ namespace DepictionEngine
 		}
 
         /// <summary>
-        /// When enabled the <see cref="DepictionEngine.GeoCoordinateController"/> will always position the object in a way so that it does not penetrate the ground. 
-        /// </summary>
-        [Json]
-#if UNITY_EDITOR
-		[RecordAdditionalObjects(nameof(GetTransformAdditionalRecordObjects))]
-#endif
-		public bool preventGroundPenetration
-		{
-            get => _preventGroundPenetration;
-			set
-			{
-				SetValue(nameof(preventGroundPenetration), value, ref _preventGroundPenetration, (newValue, oldValue) =>
-				{
-					if (initialized)
-					{
-						InitElevation();
-
-						ForceUpdateTransform(true);
-					}
-				});
-			}
-		}
-
-        /// <summary>
         /// When enabled the <see cref="DepictionEngine.GeoCoordinateController"/> will always position the object above the ground. 
         /// </summary>
         [Json]
 #if UNITY_EDITOR
 		[RecordAdditionalObjects(nameof(GetTransformAdditionalRecordObjects))]
 #endif
-		public SnapType autoSnapToGround
+		public SnapType autoSnapToAltitude
 		{
-            get => _autoSnapToGround;
+            get => _autoSnapToAltitude;
 			set 
 			{
-				SetValue(nameof(autoSnapToGround), value, ref _autoSnapToGround, (newValue, oldValue) => 
+				SetValue(nameof(autoSnapToAltitude), value, ref _autoSnapToAltitude, (newValue, oldValue) => 
 				{
-					if (initialized)
-					{
-						InitElevation();
-
-						ForceUpdateTransform(true);
-					}
+                    if (initialized)
+                    {
+                        UpdateParentGeoAstroObjectDelegates();
+                        ForceUpdateTransform(true);
+                    }
 				});
 			}
 		}
 
         /// <summary>
-        /// This value represents the distance from the ground at which the object will be positioned. Requires <see cref="DepictionEngine.GeoCoordinateController.autoSnapToGround"/> enabled to take effect.
+        /// This value represents the distance from the ground at which the object will be positioned. Requires <see cref="DepictionEngine.GeoCoordinateController.autoSnapToAltitude"/> enabled to take effect.
         /// </summary>
         [Json]
 #if UNITY_EDITOR
 		[RecordAdditionalObjects(nameof(GetTransformAdditionalRecordObjects))]
 #endif
-		public double groundSnapOffset
+		public double surfaceSnapOffset
 		{
-            get => _groundSnapOffset;
+            get => _surfaceSnapOffset;
 			set
 			{
-				SetValue(nameof(groundSnapOffset), value, ref _groundSnapOffset, (newValue, oldValue) =>
+				SetValue(nameof(surfaceSnapOffset), value, ref _surfaceSnapOffset, (newValue, oldValue) =>
 				{
-					if (initialized)
-						ForceUpdateTransform(true);
+                    if (initialized)
+                        ForceUpdateTransform(true);
 				});
 			}
 		}
@@ -310,7 +282,7 @@ namespace DepictionEngine
 				{
                     if (initialized)
                         ForceUpdateTransform(true);
-				});
+                });
 			}
 		}
 
@@ -329,14 +301,14 @@ namespace DepictionEngine
 				SetValue(nameof(upVector), value, ref _upVector, (newValue, oldValue) =>
 				{
                     if (initialized)
-                        ForceUpdateTransform(false, true);
-				});
+                        ForceUpdateTransform(true);
+                });
 			}
 		}
 
 		private bool RequiresElevation()
 		{
-			return autoSnapToGround == SnapType.Terrain || preventGroundPenetration;
+			return autoSnapToAltitude == SnapType.Highest_Surface_Raycast || autoSnapToAltitude == SnapType.Highest_Surface_Elevation || autoSnapToAltitude == SnapType.Prevent_Surface_Penetration_Raycast || autoSnapToAltitude == SnapType.Prevent_Surface_Penetration_Elevation;
         }
 
         protected override bool TransformControllerCallback(LocalPositionParam localPositionParam, LocalRotationParam localRotationParam, LocalScaleParam localScaleParam, Camera camera = null)
@@ -347,37 +319,41 @@ namespace DepictionEngine
                 {
                     if (localPositionParam.changed)
                     {
+                        GeoCoordinate3Double geoCoordinate = localPositionParam.geoCoordinateValue;
+                        if (!localPositionParam.isGeoCoordinate)
+                            geoCoordinate = parentGeoAstroObject.GetGeoCoordinateFromPoint(transform.parent != Disposable.NULL ? transform.parent.TransformPoint(localPositionParam.vector3DoubleValue) : localPositionParam.vector3DoubleValue);
+
+                        double altitude = autoSnapToAltitude == SnapType.Zero ? surfaceSnapOffset : geoCoordinate.altitude;
+
+                        bool updateElevation = true;
+
 #if UNITY_EDITOR
-                        bool mouseDown = Event.current != null && Event.current.button == 0;
-                        isBeingMovedByUser = !SceneManager.IsEditorNamespace(GetType()) && SceneManager.IsUserChangeContext() && mouseDown;
-                        if (!isBeingMovedByUser)
-                        {
+                        bool mouseDown = Editor.SceneViewDouble.lastActiveSceneViewDouble != null && Editor.SceneViewDouble.lastActiveSceneViewDouble.mouseDown;
+                        isBeingMovedByUser = !SceneManager.IsEditorNamespace(GetType()) && (SceneManager.IsUserChangeContext() || mouseDown);
+                        if (isBeingMovedByUser)
+                            updateElevation = false;
 #endif
-                            GeoCoordinate3Double geoCoordinate = localPositionParam.geoCoordinateValue;
-                            if (!localPositionParam.isGeoCoordinate)
-                                geoCoordinate = parentGeoAstroObject.GetGeoCoordinateFromPoint(transform.parent != Disposable.NULL ? transform.parent.TransformPoint(localPositionParam.vector3DoubleValue) : localPositionParam.vector3DoubleValue);
 
-                            double altitude = autoSnapToGround == SnapType.SeaLevel ? groundSnapOffset : geoCoordinate.altitude;
-
+                        if (updateElevation)
+                        {
                             if (RequiresElevation())
                             {
-								    if (parentGeoAstroObject.GetGeoCoordinateElevation(out double elevation, geoCoordinate, filterTerrainCamera))
-									    SetElevation(elevation);
+                                if (parentGeoAstroObject.GetGeoCoordinateElevation(out double newElevation, geoCoordinate, filterTerrainCamera, autoSnapToAltitude == SnapType.Highest_Surface_Raycast || autoSnapToAltitude == SnapType.Prevent_Surface_Penetration_Raycast))
+                                    elevation = newElevation;
 
-								    if (autoSnapToGround == SnapType.Terrain || (preventGroundPenetration && altitude < this.elevation))
-									    altitude = this.elevation + groundSnapOffset;
-						    }
-                            else
-                                SetElevation(0.0f);
-
-                            if (geoCoordinate.altitude != altitude)
-                            {
-                                geoCoordinate.altitude = altitude;
-                                localPositionParam.SetValue(geoCoordinate);
+                                double newAltitude = elevation + surfaceSnapOffset;
+                                if (autoSnapToAltitude == SnapType.Highest_Surface_Raycast || autoSnapToAltitude == SnapType.Highest_Surface_Elevation || ((autoSnapToAltitude == SnapType.Prevent_Surface_Penetration_Raycast || autoSnapToAltitude == SnapType.Prevent_Surface_Penetration_Elevation) && altitude < newAltitude))
+                                    altitude = newAltitude;
                             }
-#if UNITY_EDITOR
+                            else
+                                elevation = 0.0f;
                         }
-#endif
+
+                        if (geoCoordinate.altitude != altitude)
+                        {
+                            geoCoordinate.altitude = altitude;
+                            localPositionParam.SetValue(geoCoordinate);
+                        }
                     }
 
                     if (autoAlignUpwards)
@@ -398,7 +374,7 @@ namespace DepictionEngine
             if (base.OnDispose(disposeContext))
             {
 #if UNITY_EDITOR
-                snapToGridTimer = null;
+                snapToAltitudeTimer = null;
 #endif
                 return true;
             }

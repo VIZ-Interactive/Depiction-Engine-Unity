@@ -68,7 +68,7 @@ namespace DepictionEngine
         {
             if (base.IterateOverAssetReferences(callback))
             {
-                if (!callback.Invoke(elevation, elevationAssetReference, false))
+                if (!callback.Invoke(elevation, elevationAssetReference, elevationAssetReference != Disposable.NULL && elevationAssetReference.dataIndex2D != Grid2DIndex.Empty))
                     return false;
 
                 return true;
@@ -81,23 +81,21 @@ namespace DepictionEngine
             get => GetFirstReferenceOfType(ELEVATION_REFERENCE_DATATYPE) as AssetReference;
         }
 
-        protected Elevation elevation
+        public Elevation elevation
         {
-            get { return _elevation; }
+            get => _elevation;
             private set 
             {
-                Elevation oldValue = _elevation;
-                Elevation newValue = value;
+                SetValue(nameof(elevation), value, ref _elevation, (newValue, oldValue) => 
+                {
+                    if (HasChanged(newValue, oldValue, false))
+                    {
+                        RemoveElevationDelgates(oldValue);
+                        AddElevationDelegates(newValue);
 
-                if (Object.ReferenceEquals(oldValue, newValue))
-                    return;
-
-                RemoveElevationDelgates(oldValue);
-                AddElevationDelegates(newValue);
-
-                _elevation = newValue;
-
-                ElevationChanged();
+                        ElevationChanged();
+                    }
+                });
             }
         }
 
@@ -156,7 +154,7 @@ namespace DepictionEngine
             {
                 Vector2 pixel = GetProjectedPixel(this.elevation, x, y);
 
-                elevation = this.elevation.GetElevation(pixel.x, pixel.y);
+                elevation = this.elevation.GetElevation(pixel.x, pixel.y) + altitudeOffset;
 
                 return true;
             }
@@ -185,7 +183,8 @@ namespace DepictionEngine
                 ElevationGridMeshObjectVisualDirtyFlags elevationMeshRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as ElevationGridMeshObjectVisualDirtyFlags;
 
                 elevationMeshRendererVisualDirtyFlags.elevation = elevation;
-                elevationMeshRendererVisualDirtyFlags.elevationMultiplier = elevation != Disposable.NULL ? elevation.elevationMultiplier : 0.0f;
+                if (elevation != Disposable.NULL)
+                    elevationMeshRendererVisualDirtyFlags.elevationMultiplier = elevation.elevationMultiplier;
             }
         }
 
@@ -239,12 +238,12 @@ namespace DepictionEngine
 
             public Elevation elevation
             {
-                get { return _elevation; }
+                get => _elevation;
             }
 
             public double centerElevation
             {
-                get { return _centerElevation; }
+                get => _centerElevation;
             }
 
             public override bool GetElevation(out double value, float x, float y, bool clamp = false)

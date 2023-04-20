@@ -9,6 +9,11 @@ namespace DepictionEngine.Editor
         {
             return false;
         }
+
+        protected override SnapType GetDefaultAutoSnapToAltitude()
+        {
+            return SnapType.Highest_Surface_Elevation;
+        }
     }
 }
 #endif

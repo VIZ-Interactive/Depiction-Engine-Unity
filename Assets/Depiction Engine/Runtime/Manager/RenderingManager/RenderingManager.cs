@@ -86,7 +86,7 @@ namespace DepictionEngine
         [SerializeField, Tooltip("A min and max clamping values for the '"+nameof(dynamicFocusDistance)+"' calculations. "), EndFoldout]
         private Vector2 _minMaxFocusDistance;
 
-        [SerializeField]
+        [SerializeField, HideInInspector]
         private MeshesDictionary _meshCache;
 
         private Material _dynamicSkyboxMaterial;

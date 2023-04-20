@@ -118,16 +118,12 @@ namespace DepictionEngine
 
         private List<MeshObjectBase> meshObjectModifying
         {
-            get
-            {
-                _meshObjectModifying ??= new List<MeshObjectBase>();
-                return _meshObjectModifying;
-            }
+            get { _meshObjectModifying ??= new List<MeshObjectBase>(); return _meshObjectModifying; }
         }
 
         public bool modificationPending
         {
-            get { return _modificationPending; }
+            get => _modificationPending;
             private set
             {
                 if (_modificationPending == value)
@@ -188,13 +184,15 @@ namespace DepictionEngine
             return _normalsType == NormalsType.None;
         }
 
-        public void PhysicsBakeMesh(PhysicsBakeMeshType physicsBakeMesh)
+        public bool PhysicsBakeMesh(PhysicsBakeMeshType physicsBakeMesh)
         {
             if (PhysicsBakedMeshDirty(physicsBakeMesh))
             {
                 Physics.BakeMesh(_unityMeshInstanceId, physicsBakeMesh == PhysicsBakeMeshType.Convex);
                 _physicsBakeMesh = physicsBakeMesh;
+                return true;
             }
+            return false;
         }
 
         public bool RecalculateBounds()

@@ -3736,7 +3736,7 @@
     "m_Hidden": false,
     "m_ShaderOutputName": "Fuzziness",
     "m_StageCapability": 3,
-    "m_Value": 0.0,
+    "m_Value": 0.03999999910593033,
     "m_DefaultValue": 0.0,
     "m_Labels": []
 }
@@ -17203,10 +17203,10 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 225.1428680419922,
-            "y": -488.0000305175781,
-            "width": 97.71427917480469,
-            "height": 102.28573608398438
+            "x": 168.57142639160157,
+            "y": -488.0,
+            "width": 154.2857208251953,
+            "height": 174.28570556640626
         }
     },
     "m_Slots": [
@@ -18725,10 +18725,10 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 190.28573608398438,
-            "y": -374.2857971191406,
-            "width": 126.85711669921875,
-            "height": 78.28573608398438
+            "x": 200.0,
+            "y": -301.7142639160156,
+            "width": 126.85714721679688,
+            "height": 78.28570556640625
         }
     },
     "m_Slots": [

@@ -39,7 +39,7 @@ namespace DepictionEngine
             base.CreateComponents(initializingContext);
 
             GeoCoordinateController controller = GetComponent<GeoCoordinateController>();
-            controller.groundSnapOffset = 1.0f;
+            controller.surfaceSnapOffset = 1.0f;
         }
 
         protected override bool AddInputManagerDelegates()

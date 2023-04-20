@@ -56,7 +56,7 @@ namespace DepictionEngine
             if (initializingContext == InitializationContext.Existing)
                 PerformAddRemoveLoadScopesChange(index2DLoadScopes, index2DLoadScopes);
 
-            InitValue(value => minMaxZoom = value, new Vector2Int(0, 20), initializingContext);
+            InitValue(value => minMaxZoom = value, GetDefaultMinMaxZoom(), initializingContext);
             InitValue(value => indexUrlParamType = value, Index2DLoadScope.URLParametersType.ZoomXY, initializingContext);
             InitValue(value => xyTilesRatio = value, 1.0f, initializingContext);
         }
@@ -74,6 +74,11 @@ namespace DepictionEngine
             return false;
         }
 
+        protected virtual Vector2Int GetDefaultMinMaxZoom()
+        {
+            return new Vector2Int(0, 20);
+        }
+
 #if UNITY_EDITOR
         protected IndexLoadScopeDictionary _lastIndex2DLoadScopes;
         protected IndexLoadScopeDictionary lastIndex2DLoadScopes
@@ -81,15 +86,11 @@ namespace DepictionEngine
             get { _lastIndex2DLoadScopes ??= new(); return _lastIndex2DLoadScopes; }
         }
 
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                PerformAddRemoveLoadScopesChange(index2DLoadScopes, lastIndex2DLoadScopes, true);
+            base.UpdateUndoRedoSerializedFields();
 
-                return true;
-            }
-            return false;
+            PerformAddRemoveLoadScopesChange(index2DLoadScopes, lastIndex2DLoadScopes, true);
         }
 
         public override bool AfterAssemblyReload()
@@ -122,14 +123,24 @@ namespace DepictionEngine
         [Json]
         public Vector2Int minMaxZoom
         {
-            get { return _minMaxZoom; }
+            get => _minMaxZoom;
             set
             {
+                if (value.x < 0)
+                    value.x = 0;
+                if (value.y > MAX_ZOOM)
+                    value.y = MAX_ZOOM;
                 SetValue(nameof(minMaxZoom), value, ref _minMaxZoom, (newValue, oldValue) =>
                 {
+                    MinMaxZoomChanged();
                     QueueAutoUpdate();
                 }, true);
             }
+        }
+
+        protected virtual void MinMaxZoomChanged()
+        {
+
         }
 
         /// <summary>
@@ -138,7 +149,7 @@ namespace DepictionEngine
         [Json]
         public Index2DLoadScope.URLParametersType indexUrlParamType
         {
-            get { return _indexUrlParamType; }
+            get => _indexUrlParamType;
             set { SetValue(nameof(indexUrlParamType), value, ref _indexUrlParamType); }
         }
 
@@ -150,7 +161,7 @@ namespace DepictionEngine
         [Json]
         public float xyTilesRatio
         {
-            get { return _xyTilesRatio; }
+            get => _xyTilesRatio;
             set
             {
                 if (value >= 1.0f)

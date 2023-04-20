@@ -18,8 +18,8 @@ namespace DepictionEngine
             base.Recycle();
 
             _feature = default;
-
             _processing = default;
+            _processor = default;
         }
 
 #if UNITY_EDITOR

@@ -109,6 +109,7 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
 
             LoaderBase lastLoader = null;
+
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
             {
                 _loaderId = default;
@@ -169,23 +170,19 @@ namespace DepictionEngine
         private Grid2DIndex _lastDataIndex2D;
         private LoadScope _lastLoadScope;
         private PersistentScriptableObject _lastData;
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataType = value; }, ref _dataType, ref _lastDataType);
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { loaderId = value; }, ref _loaderId, ref _lastLoaderId);
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataId = value; }, ref _dataId, ref _lastDataId);
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataIndex2D = value; }, ref _dataIndex2D, ref _lastDataIndex2D);
+            base.UpdateUndoRedoSerializedFields();
 
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { loadScope = value; }, ref _loadScope, ref _lastLoadScope);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataType = value; }, ref _dataType, ref _lastDataType);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { loaderId = value; }, ref _loaderId, ref _lastLoaderId);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataId = value; }, ref _dataId, ref _lastDataId);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataIndex2D = value; }, ref _dataIndex2D, ref _lastDataIndex2D);
 
-                SerializationUtility.RecoverLostReferencedObject(ref _data);
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { data = value; }, ref _data, ref _lastData);
-                
-                return true;
-            }
-            return false;
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { loadScope = value; }, ref _loadScope, ref _lastLoadScope);
+
+            SerializationUtility.RecoverLostReferencedObject(ref _data);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { data = value; }, ref _data, ref _lastData);
         }
 #endif
 
@@ -432,7 +429,7 @@ namespace DepictionEngine
             RegisterCompleteObjectUndo(disposeContext);
 #endif
 
-            bool changed = SetValue(nameof(loadScope), value, ref _loadScope, (newValue, oldValue) => 
+            return SetValue(nameof(loadScope), value, ref _loadScope, (newValue, oldValue) => 
             {
                 if (HasChanged(newValue, oldValue, false))
                 {
@@ -464,8 +461,6 @@ namespace DepictionEngine
                     UpdateData();
                 }
             });
-
-            return changed;
         }
 
         private void RemoveReferenceFromLoader(LoadScope loadScope, DisposeContext disposeContext)
@@ -522,7 +517,7 @@ namespace DepictionEngine
             RegisterCompleteObjectUndo(disposeContext);
 #endif
 
-            bool changed = SetValue(nameof(data), value, ref _data, (newValue, oldValue) =>
+            return SetValue(nameof(data), value, ref _data, (newValue, oldValue) =>
             {
                 if (HasChanged(newValue, oldValue, false))
                 {
@@ -533,8 +528,6 @@ namespace DepictionEngine
                     AddDataDelegates(newValue);
                 }
             });
-
-            return changed;
         }
 
         protected virtual void DataChanged(PersistentScriptableObject newValue, PersistentScriptableObject oldValue)

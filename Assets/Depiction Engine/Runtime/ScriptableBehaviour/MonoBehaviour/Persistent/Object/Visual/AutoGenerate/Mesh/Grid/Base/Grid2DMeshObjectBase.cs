@@ -413,8 +413,8 @@ namespace DepictionEngine
                         GeoCoordinate3Double newGeoCoordinate = GetSnapToGridIndexGeoCoordinate(geoCoordinate);
 
 #if UNITY_EDITOR
-                        bool mouseDown = Event.current != null && Event.current.button == 0;
-                        isBeingMovedByUser = SceneManager.IsUserChangeContext() && mouseDown;
+                        bool mouseDown = Editor.SceneViewDouble.lastActiveSceneViewDouble != null && Editor.SceneViewDouble.lastActiveSceneViewDouble.mouseDown;
+                        isBeingMovedByUser = !SceneManager.IsEditorNamespace(GetType()) && (SceneManager.IsUserChangeContext() || mouseDown);
                         if (isBeingMovedByUser)
                             newGeoCoordinate = geoCoordinate;
 #endif

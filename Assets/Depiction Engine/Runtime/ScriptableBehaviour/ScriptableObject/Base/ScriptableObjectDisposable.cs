@@ -291,18 +291,21 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        protected virtual void UpdateUndoRedoSerializedFields()
+        {
+
+        }
+
         /// <summary>
         /// Trigered right after an undo or redo operation was performed (Editor Only).
         /// </summary>
-        public virtual bool UndoRedoPerformed()
+        public void UndoRedoPerformed()
         {
+            UpdateUndoRedoSerializedFields();
+
             //Are the Destroy and Initialize check necessary?
             if (!DisposeManager.TriggerOnDestroyIfNull(this))
-            {
                 InstanceManager.Initialize(this, InitializationContext.Existing);
-                return true;
-            }
-            return false;
         }
 
         private string _inspectorComponentNameOverride;
@@ -554,7 +557,7 @@ namespace DepictionEngine
         private void OnDestroyInternal()
         {
 #if UNITY_EDITOR
-            Editor.UndoManager.UndoRedoPerformedEvent -= TriggerOnDestroyIfNullHandler;
+            Editor.UndoManager.UndoRedoPerformedEvent -= UndoRedoPerformed;
 #endif
             UpdateDisposingContext();
             OnDisposeInternal(_disposingContext);
@@ -570,20 +573,13 @@ namespace DepictionEngine
                 //Give us more time to identify whether this is an Editor Undo/Redo dispose
                 SceneManager.DelayedOnDestroyEvent -= OnDestroyInternal;
                 SceneManager.DelayedOnDestroyEvent += OnDestroyInternal;
-                Editor.UndoManager.UndoRedoPerformedEvent -= TriggerOnDestroyIfNullHandler;
-                Editor.UndoManager.UndoRedoPerformedEvent += TriggerOnDestroyIfNullHandler;
+                Editor.UndoManager.UndoRedoPerformedEvent -= UndoRedoPerformed;
+                Editor.UndoManager.UndoRedoPerformedEvent += UndoRedoPerformed;
             }
             else
 #endif
                 OnDestroyInternal();
         }
-
-#if UNITY_EDITOR
-        private void TriggerOnDestroyIfNullHandler()
-        {
-            DisposeManager.TriggerOnDestroyIfNull(this);
-        }
-#endif
 
         protected virtual DisposeContext GetDisposingContext()
         {
@@ -592,7 +588,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
             destroyingContext = DisposeManager.disposingContext;
 
-            if (SceneManager.IsSceneBeingDestroyed())
+            if (SceneManager.IsSceneBeingDestroyed() || SceneManager.Instance(false) == Disposable.NULL)
                 destroyingContext = DisposeContext.Programmatically_Destroy;
 #endif
 

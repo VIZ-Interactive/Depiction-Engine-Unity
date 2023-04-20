@@ -8,10 +8,6 @@ namespace DepictionEngine
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Generator/Loader/2D/Index/Grid/" + nameof(FillGrid2DLoader))]
     public class FillGrid2DLoader : Grid2DLoaderBase
     {
-        [BeginFoldout("Fill")]
-        [SerializeField, MinMaxRange(0.0f, MAX_ZOOM), Tooltip("The range of zoom values for which we want to load all the tiles."), EndFoldout]
-        private Vector2Int _zoomRange;
-
         [SerializeField, HideInInspector]
         private FillGrid2D[] _fillGrids;
 
@@ -26,23 +22,16 @@ namespace DepictionEngine
         {
             base.InitGrids();
 
-            _fillGrids = new FillGrid2D[_zoomRange.y + 1 - _zoomRange.x];
+            _fillGrids = new FillGrid2D[minMaxZoom.y + 1 - minMaxZoom.x];
             int gridCount = 0;
-            for (int i = _zoomRange.x; i <= _zoomRange.y; i++)
+            for (int i = minMaxZoom.x; i <= minMaxZoom.y; i++)
             {
                 _fillGrids[gridCount] = CreateGrid<FillGrid2D>().Init(i);
                 gridCount++;
             }
         }
 
-        protected override void InitializeSerializedFields(InitializationContext initializingContext)
-        {
-            base.InitializeSerializedFields(initializingContext);
-
-            InitValue(value => zoomRange = value, GetDefaultZoomRange(), initializingContext);
-        }
-
-        protected virtual Vector2Int GetDefaultZoomRange()
+        protected override Vector2Int GetDefaultMinMaxZoom()
         {
             return Vector2Int.zero;
         }
@@ -52,24 +41,11 @@ namespace DepictionEngine
             return 0.01f;
         }
 
-        /// <summary>
-        /// The range of zoom values for which we want to load all the tiles.
-        /// </summary>
-        [Json]
-        public Vector2Int zoomRange
+        protected override void MinMaxZoomChanged()
         {
-            get { return _zoomRange; }
-            set
-            {
-                if (value.x < 0)
-                    value.x = 0;
-                if (value.y > MAX_ZOOM)
-                    value.y = MAX_ZOOM;
-                SetValue(nameof(zoomRange), value, ref _zoomRange, (newValue, oldValue) =>
-                {
-                    InitGrids();
-                });
-            }
+            base.MinMaxZoomChanged();
+
+            InitGrids();
         }
 
         protected override IEnumerable<IGrid2D> GetGrids()

@@ -161,19 +161,15 @@ namespace DepictionEngine
         private bool _lastData;
         [SerializeField, HideInInspector]
         private bool _data;
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                if (_lastData != _data)
-                {
-                    _data = _lastData;
-                    DataPropertyAssigned();
-                }
+            base.UpdateUndoRedoSerializedFields();
 
-                return true;
+            if (_lastData != _data)
+            {
+                _data = _lastData;
+                DataPropertyAssigned();
             }
-            return false;
         }
 #endif
 

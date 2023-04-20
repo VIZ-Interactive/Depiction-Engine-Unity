@@ -29,8 +29,7 @@ namespace DepictionEngine.Editor
                 SceneCameraTargetGeoCoordinateController controller = gameObject.GetSafeComponent<SceneCameraTargetGeoCoordinateController>();
                 if (controller == Disposable.NULL)
                     controller = CreateScript<SceneCameraTargetGeoCoordinateController>();
-                controller.preventGroundPenetration = false;
-                controller.autoSnapToGround = GeoCoordinateController.SnapType.None;
+                controller.autoSnapToAltitude = GeoCoordinateController.SnapType.None;
             }
         }
 
@@ -65,15 +64,11 @@ namespace DepictionEngine.Editor
             }
         }
 
-        public void SetTargetAutoSnapToGround(bool value)
+        public void SetTargetAutoSnapToAltitude(bool value)
         {
             GeoCoordinateController geoCoordinateController = controller as GeoCoordinateController;
             if (geoCoordinateController != Disposable.NULL)
-            {
-                GeoCoordinateController.SnapType autoSnapToGround = value ? GeoCoordinateController.SnapType.Terrain : GeoCoordinateController.SnapType.None;
-                if (autoSnapToGround != geoCoordinateController.autoSnapToGround)
-                    geoCoordinateController.autoSnapToGround = autoSnapToGround;
-            }
+                geoCoordinateController.autoSnapToAltitude = value ? GeoCoordinateController.SnapType.Highest_Surface_Elevation : GeoCoordinateController.SnapType.None;
         }
 
         protected override DisposeContext GetDisposingContext()

@@ -24,7 +24,7 @@ namespace DepictionEngine
 
         public Color defaultColor
         {
-            get { return _defaultColor; }
+            get => _defaultColor;
             set
             {
                 if (_defaultColor == value)
@@ -37,7 +37,7 @@ namespace DepictionEngine
 
         public float defaultLevelHeight
         {
-            get { return _defaultLevelHeight; }
+            get => _defaultLevelHeight;
             set
             {
                 if (_defaultLevelHeight == value)
@@ -50,7 +50,7 @@ namespace DepictionEngine
 
         public float defaultHeight
         {
-            get { return _defaultHeight; }
+            get => _defaultHeight;
             set
             {
                 if (_defaultHeight == value)

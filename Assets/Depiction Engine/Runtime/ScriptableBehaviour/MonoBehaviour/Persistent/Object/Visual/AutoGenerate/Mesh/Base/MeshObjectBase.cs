@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 namespace DepictionEngine
 {
@@ -59,8 +60,8 @@ namespace DepictionEngine
 
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
             {
-                _meshes.Clear();
-                _isSharedMeshFlags.Clear();
+                _meshes?.Clear();
+                _isSharedMeshFlags?.Clear();
             }
 
             InitValue(value => useCollider = value, GetDefaultUseCollider(), initializingContext);
@@ -109,7 +110,7 @@ namespace DepictionEngine
         [Json]
         public bool useCollider
         {
-            get { return _useCollider; }
+            get => _useCollider;
             set { SetValue(nameof(useCollider), value, ref _useCollider); }
         }
 
@@ -119,7 +120,7 @@ namespace DepictionEngine
         [Json]
         public bool convexCollider
         {
-            get { return _convexCollider; }
+            get => _convexCollider;
             set { SetValue(nameof(convexCollider), value, ref _convexCollider); }
         }
 
@@ -129,7 +130,7 @@ namespace DepictionEngine
         [Json]
         public bool castShadow
         {
-            get { return _castShadow; }
+            get => _castShadow;
             set { SetValue(nameof(castShadow), value, ref _castShadow); }
         }
 
@@ -139,7 +140,7 @@ namespace DepictionEngine
         [Json]
         public bool receiveShadows
         {
-            get { return _receiveShadows; }
+            get => _receiveShadows;
             set { SetValue(nameof(receiveShadows), value, ref _receiveShadows); }
         }
 
@@ -198,29 +199,56 @@ namespace DepictionEngine
 
         private List<Mesh> meshes
         {
-            get 
-            {
-                _meshes ??= new List<Mesh>();
-                return _meshes; 
-            }
+            get { _meshes ??= new List<Mesh>(); return _meshes; }
         }
 
         private List<bool> isSharedMeshFlags
         {
-            get
+            get { _isSharedMeshFlags ??= new List<bool>(); return _isSharedMeshFlags; }
+        }
+
+        private List<Mesh> _lastMeshes;
+        private List<bool> _lastIsSharedMeshFlags;
+        protected override void Saving(Scene scene, string path)
+        {
+            base.Saving(scene, path);
+
+            if (GetDontSaveVisualsToScene())
             {
-                _isSharedMeshFlags ??= new List<bool>();
-                return _isSharedMeshFlags;
+                if (_meshes != null)
+                {
+                    for (int i = _meshes.Count - 1; i >= 0; i--)
+                    {
+                        if (!isSharedMeshFlags[i])
+                            _meshes[i].dontSaveToScene = true;
+                    }
+                }
+                _lastMeshes = _meshes;
+                _meshes = null;
+                _lastIsSharedMeshFlags = _isSharedMeshFlags;
+                _isSharedMeshFlags = null;
+            }
+        }
+
+        protected override void Saved(Scene scene)
+        {
+            base.Saved(scene);
+
+            if (GetDontSaveVisualsToScene())
+            {
+                _meshes = _lastMeshes;
+                _isSharedMeshFlags = _lastIsSharedMeshFlags;
+                if (_meshes != null)
+                {
+                    for (int i = _meshes.Count - 1; i >= 0; i--)
+                        _meshes[i].dontSaveToScene = false;
+                }
             }
         }
 
         public List<MeshRendererVisualModifier> meshRendererVisualModifiers
         {
-            get 
-            {
-                _meshRendererVisualModifiers ??= new List<MeshRendererVisualModifier>();
-                return _meshRendererVisualModifiers; 
-            }
+            get { _meshRendererVisualModifiers ??= new List<MeshRendererVisualModifier>(); return _meshRendererVisualModifiers; }
             set 
             {
                 if (Object.ReferenceEquals(_meshRendererVisualModifiers, value))
@@ -339,15 +367,25 @@ namespace DepictionEngine
                 {
                     meshDataProcessor ??= InstanceManager.Instance(false)?.CreateInstance<Processor>();
 
-                    meshDataProcessor.StartProcessing(MeshProcessingFunctions.ModifyMeshes, null, typeof(MeshesParameters), 
+                    meshDataProcessor.StartProcessing(MeshProcessingFunctions.ModifyMeshes, typeof(MeshesProcessorOutput), typeof(MeshesParameters), 
                         (parameters) => 
                         { 
                             (parameters as MeshesParameters).Init(_meshParameters); 
                         },
                         (data, errorMsg) => 
                         {
+                            MeshesProcessorOutput meshesProcessorOutput = data as MeshesProcessorOutput;
+                            transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
+                            {
+                                if (meshesProcessorOutput.Contains(meshRendererVisual))
+                                    meshRendererVisual.UpdateCollider();
+
+                                return true;
+                            });
+
                             if (string.IsNullOrEmpty(errorMsg))
                                 ProcessingCompletedEvent?.Invoke();
+
                         }, sceneManager.enableMultithreading ? Processor.ProcessingType.AsyncTask : Processor.ProcessingType.Sync);
                     _meshParameters = null;
                 }
@@ -500,8 +538,6 @@ namespace DepictionEngine
                         DisposeMesh(i, disposeContext);
                 }
 
-                ProcessingCompletedEvent = null;
-
                 return true;
             }
             return false;
@@ -536,12 +572,41 @@ namespace DepictionEngine
             get { return _meshesParameters; }
         }
 
-        public IEnumerable ApplyPhysicsBakeMeshToMesh()
+        public IEnumerable ApplyPhysicsBakeMeshToMesh(MeshesProcessorOutput meshesProcessorOutput)
         {
             foreach (MeshParameters meshParameters in meshesParameters)
-                meshParameters.mesh.PhysicsBakeMesh(meshParameters.physicsBakeMesh);
+            {
+                if (meshParameters.mesh.PhysicsBakeMesh(meshParameters.physicsBakeMesh))
+                    meshesProcessorOutput.Add(meshParameters.mesh.unityMesh);
+            }
 
             yield break;
+        }
+    }
+
+    /// <summary>
+    /// A list of Mesh used by <see cref="DepictionEngine.MeshProcessingFunctions"/>.
+    /// </summary>
+    public class MeshesProcessorOutput : ProcessorOutput
+    {
+        private List<UnityEngine.Mesh> _meshes;
+
+        public override void Recycle()
+        {
+            base.Recycle();
+
+            _meshes?.Clear();
+        }
+
+        public void Add(UnityEngine.Mesh mesh)
+        {
+            _meshes ??= new();
+            _meshes.Add(mesh);
+        }
+
+        public bool Contains(MeshRendererVisual meshRendererVisual)
+        {
+            return _meshes != null ? _meshes.Contains(meshRendererVisual.sharedMesh) : false;
         }
     }
 
@@ -568,9 +633,9 @@ namespace DepictionEngine
                 yield return enumeration;
         }
 
-        protected static IEnumerable ModifyMeshes(object _, MeshesParameters parameters)
+        protected static IEnumerable ModifyMeshes(object data, MeshesParameters parameters)
         {
-            foreach (object enumeration in parameters.ApplyPhysicsBakeMeshToMesh())
+            foreach (object enumeration in parameters.ApplyPhysicsBakeMeshToMesh(data as MeshesProcessorOutput))
                 yield return enumeration;
         }
     }
@@ -588,27 +653,18 @@ namespace DepictionEngine
 
         public MeshRendererVisualModifier currentMeshRendererVisualModifier
         {
-            get { return meshRendererVisualModifiers.Count == 0 ? null : meshRendererVisualModifiers[^1]; }
+            get => meshRendererVisualModifiers.Count == 0 ? null : meshRendererVisualModifiers[^1];
         }
 
         public int meshRendererVisualModifiersCount
         {
-            get { return meshRendererVisualModifiers.Count; }
+            get => meshRendererVisualModifiers.Count;
         }
 
         public List<MeshRendererVisualModifier> meshRendererVisualModifiers
         {
-            get 
-            {
-                _meshRendererVisualModifiers ??= new List<MeshRendererVisualModifier>();
-                return _meshRendererVisualModifiers; 
-            }
-            private set
-            {
-                if (Object.ReferenceEquals(_meshRendererVisualModifiers, value))
-                    return;
-                _meshRendererVisualModifiers = value;
-            }
+            get { _meshRendererVisualModifiers ??= new List<MeshRendererVisualModifier>(); return _meshRendererVisualModifiers; }
+            private set => _meshRendererVisualModifiers = value;
         }
 
         public void AddMeshRendererVisualModifier(MeshRendererVisualModifier meshModifier)

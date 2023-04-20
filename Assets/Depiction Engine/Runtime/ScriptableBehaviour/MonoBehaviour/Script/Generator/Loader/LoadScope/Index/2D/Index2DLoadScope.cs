@@ -31,7 +31,7 @@ namespace DepictionEngine
         [SerializeField]
         private URLParametersType _indexUrlParamType;
         [SerializeField]
-        private VisibleCameras _visibleCameras;
+        private VisibleCameras _visibleInCameras;
 
         public override void Recycle()
         {
@@ -39,7 +39,7 @@ namespace DepictionEngine
 
             _indexUrlParamType = default;
 
-            _visibleCameras = default;
+            _visibleInCameras = default;
         }
 
         public Index2DLoadScope Init(LoaderBase loader, Vector2Int index, Vector2Int dimensions, URLParametersType indexUrlParamType)
@@ -172,19 +172,19 @@ namespace DepictionEngine
             return scopeGrid2DIndex.GetHashCode();
         }
 
-        public VisibleCameras visibleCameras
+        public VisibleCameras visibleInCameras
         {
-            get { return _visibleCameras; }
+            get { return _visibleInCameras; }
             set
             {
-                if (_visibleCameras == value)
+                if (_visibleInCameras == value)
                     return;
 
-                _visibleCameras = value;
+                _visibleInCameras = value;
 
                 IterateOverPersistents((i, persistent) =>
                 {
-                    UpdateObjectGridProperties(persistent, _visibleCameras);
+                    UpdateObjectGridProperties(persistent, _visibleInCameras);
 
                     return true;
                 });
@@ -195,7 +195,7 @@ namespace DepictionEngine
         {
             if (base.AddPersistent(persistent))
             {
-                UpdateObjectGridProperties(persistent, visibleCameras);
+                UpdateObjectGridProperties(persistent, visibleInCameras);
 
                 return true;
             }
@@ -215,10 +215,10 @@ namespace DepictionEngine
             return false;
         }
 
-        private void UpdateObjectGridProperties(IPersistent persistent, VisibleCameras visibleCameras = null)
+        private void UpdateObjectGridProperties(IPersistent persistent, VisibleCameras visibleInCameras = null)
         {
             if (!Disposable.IsDisposed(persistent) && persistent is Object)
-                (persistent as Object).SetGridProperties(GetInstanceID(), visibleCameras);
+                (persistent as Object).SetGridProperties(GetInstanceID(), visibleInCameras);
         }
     }
 }

@@ -8,6 +8,11 @@ namespace DepictionEngine.Editor
 {
     public class MenuItems
     {
+        private const string MAPBOX_DEMO_KEY = "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA";
+        private const string MAPTILER_DEMO_KEY = "eIgS48TpQ70m77qKYrsx&mtsid=64dd8e20-30f3-4fb5-88d7-8f2f83ffc077";
+        private const string OSMBUILDINGS_DEMO_KEY = "dixw8kmb";
+        private const string ARCGIS_DEMO_KEY = "WQ9KVmV6xGGMnCiQ";
+
         //Tip: If context menu order changes do not immediately show up in the editor, change the MenuItem itemName for changes to take effect
 
         //Depiction Engine Object
@@ -69,7 +74,7 @@ namespace DepictionEngine.Editor
         [MenuItem("GameObject/Depiction Engine/Astro/Planet/Earth (Realistic)", false, 28)]
         private static void CreatePlanetEarthRealistic(MenuCommand menuCommand)
         {
-            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "Mapbox API Key", "OSMBuildings API Key" }, new List<string> { "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA", "dixw8kmb" });
+            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "Mapbox API Key", "MapTiler API Key", "OSMBuildings API Key" }, new List<string> { MAPBOX_DEMO_KEY, MAPTILER_DEMO_KEY, OSMBUILDINGS_DEMO_KEY });
             textInputPopup.ClosedEvent = (closeState, keys) =>
             {
                 if (closeState == APIKeyInputsPopup.DialogCloseState.Ok)
@@ -77,7 +82,7 @@ namespace DepictionEngine.Editor
                     bool spherical = true;
                     InitializeSceneCameraSkybox(!spherical);
 
-                    SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical, keys[0], keys[1]));
+                    SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical, keys[0], keys[1], keys[2]));
                 }
             };
         }
@@ -85,16 +90,23 @@ namespace DepictionEngine.Editor
         [MenuItem("GameObject/Depiction Engine/Astro/Planet/Earth (Basic)", false, 29)]
         private static void CreatePlanetEarthBasic(MenuCommand menuCommand)
         {
-            bool spherical = true;
-            InitializeSceneCameraSkybox(!spherical);
+            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "OSMBuildings API Key" }, new List<string> { OSMBUILDINGS_DEMO_KEY });
+            textInputPopup.ClosedEvent = (closeState, keys) =>
+            {
+                if (closeState == APIKeyInputsPopup.DialogCloseState.Ok)
+                {
+                    bool spherical = true;
+                    InitializeSceneCameraSkybox(!spherical);
 
-            SetAlignViewToGeoAstroObject(CreateEarthBasic(GetContextTransform(menuCommand), "Earth", spherical));
+                    SetAlignViewToGeoAstroObject(CreateEarthBasic(GetContextTransform(menuCommand), "Earth", spherical, keys[0]));
+                }
+            };
         }
 
         [MenuItem("GameObject/Depiction Engine/Astro/Planet/Moon (Realistic)", false, 30)]
         private static void CreatePlanetMoonRealistic(MenuCommand menuCommand)
         {
-            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "ArcGIS API Key" }, new List<string> { "WQ9KVmV6xGGMnCiQ" });
+            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "ArcGIS API Key" }, new List<string> { ARCGIS_DEMO_KEY });
             textInputPopup.ClosedEvent = (closeState, keys) =>
             {
                 if (closeState == APIKeyInputsPopup.DialogCloseState.Ok)
@@ -119,7 +131,7 @@ namespace DepictionEngine.Editor
         [MenuItem("GameObject/Depiction Engine/Astro/Map/Earth (Realistic)", false, 32)]
         private static void CreateMapEarthRealistic(MenuCommand menuCommand)
         {
-            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "Mapbox API Key", "OSMBuildings API Key" }, new List<string> { "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA", "dixw8kmb" });
+            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "Mapbox API Key", "MapTiler API Key", "OSMBuildings API Key" }, new List<string> { MAPBOX_DEMO_KEY, MAPTILER_DEMO_KEY, OSMBUILDINGS_DEMO_KEY });
             textInputPopup.ClosedEvent = (closeState, keys) =>
             {
                 if (closeState == APIKeyInputsPopup.DialogCloseState.Ok)
@@ -127,7 +139,7 @@ namespace DepictionEngine.Editor
                     bool spherical = false;
                     InitializeSceneCameraSkybox(!spherical);
 
-                    SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical, keys[0], keys[1]));
+                    SetAlignViewToGeoAstroObject(CreateEarthRealistic(GetContextTransform(menuCommand), "Earth", spherical, keys[0], keys[1], keys[2]));
                 }
             };
         }
@@ -135,22 +147,29 @@ namespace DepictionEngine.Editor
         [MenuItem("GameObject/Depiction Engine/Astro/Map/Earth (Basic)", false, 33)]
         private static void CreateMapEarthBasic(MenuCommand menuCommand)
         {
-            bool spherical = false;
-            InitializeSceneCameraSkybox(!spherical);
-
-            SetAlignViewToGeoAstroObject(CreateEarthBasic(GetContextTransform(menuCommand), "Earth", spherical));
-        }
-
-        [MenuItem("GameObject/Depiction Engine/Astro/Map/Moon (Realistic)", false, 34)]
-        private static void CreateMapMoonRealistic(MenuCommand menuCommand)
-        {
-            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "ArcGIS API Key"}, new List<string> { "WQ9KVmV6xGGMnCiQ" });
+            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "OSMBuildings API Key" }, new List<string> { OSMBUILDINGS_DEMO_KEY });
             textInputPopup.ClosedEvent = (closeState, keys) =>
             {
                 if (closeState == APIKeyInputsPopup.DialogCloseState.Ok)
                 {
                     bool spherical = false;
                     InitializeSceneCameraSkybox(!spherical);
+
+                    SetAlignViewToGeoAstroObject(CreateEarthBasic(GetContextTransform(menuCommand), "Earth", spherical, keys[0]));
+                }
+            };
+        }
+
+        [MenuItem("GameObject/Depiction Engine/Astro/Map/Moon (Realistic)", false, 34)]
+        private static void CreateMapMoonRealistic(MenuCommand menuCommand)
+        {
+            APIKeyInputsPopup textInputPopup = ShowMapAPIKeyDialog(new List<string> { "ArcGIS API Key"}, new List<string> { ARCGIS_DEMO_KEY });
+            textInputPopup.ClosedEvent = (closeState, keys) =>
+            {
+                if (closeState == APIKeyInputsPopup.DialogCloseState.Ok)
+                {
+                    bool spherical = false;
+                    InitializeSceneCameraSkybox(spherical);
 
                     SetAlignViewToGeoAstroObject(CreateMoonRealistic(GetContextTransform(menuCommand), "Moon", spherical, keys[0]));
                 }
@@ -321,6 +340,7 @@ namespace DepictionEngine.Editor
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 15));
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 2;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 2;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.normalsType)] = JsonUtility.ToJson(TerrainGridMeshObject.NormalsType.SurfaceUp);
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = ElevationGridMeshObjectBase.ELEVATION_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = TerrainGridMeshObject.COLORMAP_REFERENCE_DATATYPE;
@@ -333,13 +353,13 @@ namespace DepictionEngine.Editor
             return planet;
         }
 
-        private static Planet CreateEarthBasic(Transform parent, string name, bool spherical)
+        private static Planet CreateEarthBasic(Transform parent, string name, bool spherical, string osmBuildingsKey)
         {
             UndoManager.CreateNewGroup("Create " + name);
 
             CreateStarIfMissing(parent);
 
-            DatasourceBase mapboxDatasource = GetRestDatasource("https://api.mapbox.com/");
+            DatasourceBase arcgisDatasource = GetRestDatasource("https://services.arcgisonline.com/");
 
             DatasourceBase buildingFeatureDatasource = GetRestDatasource(
             "https://a-data.3dbuildings.com/",
@@ -353,10 +373,10 @@ namespace DepictionEngine.Editor
             //Add Earth -> Color Texture Index2DLoader
             JSONArray colorTextureLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
             string colorTextureLoaderId = colorTextureLoaderJson[0][nameof(Index2DLoader.id)];
-            colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
+            colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(arcgisDatasource.id);
             colorTextureLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 30));
             colorTextureLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
-            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=";
+            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "arcgis/rest/services/World_Topo_Map/MapServer/tile/{0}/{2}/{1}";
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(colorTextureLoaderJson, earthJson);
 
@@ -373,9 +393,12 @@ namespace DepictionEngine.Editor
             JSONArray buildingFeatureDataLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(BuildingFeature));
             string buildingFeatureDataLoaderId = buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.id)];
             buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(buildingFeatureDatasource.id);
-            buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tile/{0}/{1}/{2}.json?token=";
+            buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tile/{0}/{1}/{2}.json?token=" + osmBuildingsKey;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(buildingFeatureDataLoaderJson, earthJson);
+
+            //Add Earth -> Atmosphere
+            InstanceUtility.MergeComponentsToObjectInitializationJson(InstanceUtility.GetComponentJson(typeof(AtmosphereEffect)), earthJson);
 
             Planet earth = CreatePlanet(parent, name, spherical, GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Earth), GeoAstroObject.GetPlanetMass(AstroObject.PlanetType.Earth), earthJson);
 
@@ -383,17 +406,16 @@ namespace DepictionEngine.Editor
             JSONObject terrainJson = new();
 
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
-            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
-            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 15));
-            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(new Vector2Int(0, 4));
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 3.0f;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 19));
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(new Vector2Int(0, 5));
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 1;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 1;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.subdivisionZoomFactor)] = 1.1f;
             if (!spherical)
                 terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.subdivisionZoomFactor)] = 1.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.edgeDepth)] = 0.0f;
-            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.normalsType)] = JsonUtility.ToJson(TerrainGridMeshObject.NormalsType.SurfaceUp);
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = ElevationGridMeshObjectBase.ELEVATION_REFERENCE_DATATYPE;
-            terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = TerrainGridMeshObject.COLORMAP_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = colorTextureLoaderId;
 
@@ -419,7 +441,7 @@ namespace DepictionEngine.Editor
             return earth;
         }
 
-        private static Planet CreateEarthRealistic(Transform parent, string name, bool spherical, string mapboxKey, string osmBuildingsKey)
+        private static Planet CreateEarthRealistic(Transform parent, string name, bool spherical, string mapboxKey, string mapTilerKey, string osmBuildingsKey)
         {
             UndoManager.CreateNewGroup("Create " + name);
 
@@ -428,6 +450,8 @@ namespace DepictionEngine.Editor
             DatasourceBase mapboxDatasource = GetRestDatasource("https://api.mapbox.com/");
 
             DatasourceBase arcgisDatasource = GetRestDatasource("https://services.arcgisonline.com/");
+
+            DatasourceBase mapTilerDatasource = GetRestDatasource("https://api.maptiler.com/");
 
             DatasourceBase buildingFeatureDatasource = GetRestDatasource(
             "https://a-data.3dbuildings.com/",
@@ -438,19 +462,24 @@ namespace DepictionEngine.Editor
             //Add Earth
             JSONObject earthJson = new();
 
-            List<string> headers = new List<string>();
+            List<string> mapboxHeaders = new List<string>();
             //Forcing a different Referer spams warnings but it is only ment to be used as an Editor demo, A real development key should be used.
-            if (mapboxKey == "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA")
-                headers.Add("Referer#https://www.mapbox.com/");
+            if (mapboxKey == MAPBOX_DEMO_KEY)
+                mapboxHeaders.Add("Referer#https://www.mapbox.com/");
+
+            List<string> mapTilerHeaders = new List<string>();
+            //Forcing a different Referer spams warnings but it is only ment to be used as an Editor demo, A real development key should be used.
+            if (mapTilerKey == MAPTILER_DEMO_KEY)
+                mapTilerHeaders.Add("Referer#https://api.maptiler.com/");
 
             //Add Earth -> Color Texture Index2DLoader
             JSONArray colorTextureLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
             string colorTextureLoaderId = colorTextureLoaderJson[0][nameof(Index2DLoader.id)];
-            colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
+            colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapTilerDatasource.id);
             colorTextureLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 30));
             colorTextureLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
-            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "v4/mapbox.satellite/{0}/{1}/{2}@2x.jpg90?access_token=" + mapboxKey;
-            colorTextureLoaderJson[0][nameof(LoaderBase.headers)] = JsonUtility.ToJson(headers);
+            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tiles/satellite-v2/{0}/{1}/{2}.jpg?key=" + mapTilerKey;
+            colorTextureLoaderJson[0][nameof(LoaderBase.headers)] = JsonUtility.ToJson(mapTilerHeaders);
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(colorTextureLoaderJson, earthJson);
 
@@ -464,7 +493,7 @@ namespace DepictionEngine.Editor
             //Alternative Elevation
             //LoaderBase.DataType.ElevationMapboxTerrainRGBWebP
             //"raster/v1/mapbox.mapbox-terrain-dem-v1/{0}/{1}/{2}.webp?sku=101WQxhVS07ft&access_token=" + mapboxKey
-            elevationLoaderJson[0][nameof(LoaderBase.headers)] = JsonUtility.ToJson(headers);
+            elevationLoaderJson[0][nameof(LoaderBase.headers)] = JsonUtility.ToJson(mapboxHeaders);
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(elevationLoaderJson, earthJson);
 
@@ -475,7 +504,6 @@ namespace DepictionEngine.Editor
             surfaceLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 12));
             surfaceLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
             surfaceLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{0}/{2}/{1}";
-            surfaceLoaderJson[0][nameof(LoaderBase.headers)] = JsonUtility.ToJson(headers);
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(surfaceLoaderJson, earthJson);
 
@@ -504,12 +532,9 @@ namespace DepictionEngine.Editor
 
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
-            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 15));
-            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 2;
-            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 2;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 18));
             if (!spherical)
                 terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.subdivisionZoomFactor)] = 1.0f;
-            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.normalsType)] = JsonUtility.ToJson(TerrainGridMeshObject.NormalsType.SurfaceUp);
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = ElevationGridMeshObjectBase.ELEVATION_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = TerrainGridMeshObject.COLORMAP_REFERENCE_DATATYPE;
@@ -574,7 +599,7 @@ namespace DepictionEngine.Editor
             elevationLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tiles/"+ arcGISKey + "/arcgis/rest/services/Moon_Elevation_Surface/ImageServer/tile/{0}/{2}/{1}?blankTile=false";
             elevationLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(arcGISDatasource.id);
             
-            elevationLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(Elevation.elevationMultiplier)] = 0.2f;
+            elevationLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(Elevation.elevationMultiplier)] = spherical ? 0.2f : 1.0f;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(elevationLoaderJson, planetJson);
 
@@ -586,8 +611,8 @@ namespace DepictionEngine.Editor
             JSONArray terrainGridMeshObjectCameraGrid2DLoaderJson = InstanceUtility.GetLoaderJson(typeof(CameraGrid2DLoader), typeof(TerrainGridMeshObject));
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 3.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 7));
-            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 1;
-            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 1;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 2;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 2;
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = ElevationGridMeshObjectBase.ELEVATION_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = TerrainGridMeshObject.COLORMAP_REFERENCE_DATATYPE;
@@ -730,9 +755,9 @@ namespace DepictionEngine.Editor
             return HasSceneViewDouble();
         }
 
-        private const string AUTO_SNAP_VIEW_TO_TERRAIN_MENU_ITEM = "GameObject/Auto Snap View to Terrain";
-        [MenuItem(AUTO_SNAP_VIEW_TO_TERRAIN_MENU_ITEM, false, 96)]
-        private static void AutoSnapViewToTerrain(MenuCommand menuCommand)
+        private const string AUTO_SNAP_VIEW_TO_SURFACE_MENU_ITEM = "GameObject/Auto Snap View to Surface";
+        [MenuItem(AUTO_SNAP_VIEW_TO_SURFACE_MENU_ITEM, false, 96)]
+        private static void AutoSnapViewToSurface(MenuCommand menuCommand)
         {
             if (menuCommand is null)
             {
@@ -741,7 +766,7 @@ namespace DepictionEngine.Editor
 
             SceneViewDouble sceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
             if (sceneViewDouble != Disposable.NULL)
-                SetAlignViewToGeoAstroObject(sceneViewDouble, sceneViewDouble.camera, sceneViewDouble.alignViewToGeoAstroObject, !sceneViewDouble.autoSnapViewToTerrain);
+                SetAlignViewToGeoAstroObject(sceneViewDouble, sceneViewDouble.camera, sceneViewDouble.alignViewToGeoAstroObject, !sceneViewDouble.autoSnapViewToSurface);
         }
 
         private static void SetAlignViewToGeoAstroObject(GeoAstroObject geoAstroObject)
@@ -751,20 +776,20 @@ namespace DepictionEngine.Editor
                 SetAlignViewToGeoAstroObject(sceneViewDouble, sceneViewDouble.camera, geoAstroObject);
         }
 
-        private static void SetAlignViewToGeoAstroObject(SceneViewDouble sceneViewDouble, SceneCamera activeSceneCamera, GeoAstroObject geoAstroObject, bool autoSnapViewToTerrain = true)
+        private static void SetAlignViewToGeoAstroObject(SceneViewDouble sceneViewDouble, SceneCamera activeSceneCamera, GeoAstroObject geoAstroObject, bool autoSnapViewToSurface = true)
         {
             if (sceneViewDouble != Disposable.NULL)
             {
                 if (geoAstroObject != Disposable.NULL)
                 {
-                    if (sceneViewDouble.alignViewToGeoAstroObject != geoAstroObject || (!sceneViewDouble.autoSnapViewToTerrain && autoSnapViewToTerrain))
+                    if (sceneViewDouble.alignViewToGeoAstroObject != geoAstroObject || (!sceneViewDouble.autoSnapViewToSurface && autoSnapViewToSurface))
                     {
                         activeSceneCamera.targetController.GetGeoAstroObjectSurfaceComponents(out Vector3Double targetPosition, out QuaternionDouble rotation, out double cameraDistance, geoAstroObject);
                         sceneViewDouble.SetComponents(targetPosition, rotation, cameraDistance);
                     }
 
                     sceneViewDouble.alignViewToGeoAstroObject = geoAstroObject;
-                    sceneViewDouble.autoSnapViewToTerrain = autoSnapViewToTerrain;
+                    sceneViewDouble.autoSnapViewToSurface = autoSnapViewToSurface;
                 }
                 else
                 {
@@ -776,12 +801,12 @@ namespace DepictionEngine.Editor
             }
         }
 
-        [MenuItem(AUTO_SNAP_VIEW_TO_TERRAIN_MENU_ITEM, true)]
-        private static bool AutoSnapViewToTerrain()
+        [MenuItem(AUTO_SNAP_VIEW_TO_SURFACE_MENU_ITEM, true)]
+        private static bool AutoSnapViewToSurface()
         {
             SceneViewDouble sceneViewDouble = SceneViewDouble.lastActiveSceneViewDouble;
             if (sceneViewDouble != Disposable.NULL)
-                Menu.SetChecked(AUTO_SNAP_VIEW_TO_TERRAIN_MENU_ITEM, sceneViewDouble.autoSnapViewToTerrain);
+                Menu.SetChecked(AUTO_SNAP_VIEW_TO_SURFACE_MENU_ITEM, sceneViewDouble.autoSnapViewToSurface);
             
             return IsAlignedToGeoAstroObject();
         }

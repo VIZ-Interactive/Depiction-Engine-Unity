@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Xml.Linq;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -402,14 +404,18 @@ namespace DepictionEngine
 
         private void ObjectComponentPropertyAssignedHandler(Object objectBase, IJson component, string name, object newValue, object oldValue)
         {
-            IPersistent persistent = objectBase as IPersistent;
-            SetComponentPropertyOutOfSynch(persistent, component, name);
+            if (SetComponentPropertyOutOfSynch(objectBase, component, name) && objectBase.GetJsonAttribute(objectBase.GetScriptProperty(component).Item1, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
+                SetPersistentComponentPropertyOutOfSync(objectBase, objectBase, propertyInfo, allowAutoDispose);
         }
 
-        private void SetComponentPropertyOutOfSynch(IPersistent persistent, IJson component, string propertyName)
+        private bool SetComponentPropertyOutOfSynch(IPersistent persistent, IJson component, string propertyName)
         {
             if (SceneManager.IsUserChangeContext() && component.GetJsonAttribute(propertyName, out JsonAttribute _, out PropertyInfo propertyInfo) && SetPersistentComponentPropertyOutOfSync(persistent, component, propertyInfo, allowAutoDispose))
+            { 
                 SetPersistentIsOutOfSynch(persistent, true);
+                return true;
+            }
+            return false;
         }
 
         private void ObjectChildRemovedHandler(Object objectBase, PropertyMonoBehaviour child)

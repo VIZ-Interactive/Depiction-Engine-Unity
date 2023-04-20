@@ -93,17 +93,13 @@ namespace DepictionEngine
             get { _lastIdReferences ??= new(); return _lastIdReferences; }
         }
 
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                PerformAddRemoveLoadScopesChange(idLoadScopes, lastIdLoadScopes, true);
+            base.UpdateUndoRedoSerializedFields();
 
-                PerformAddRemoveReferencesChange(idReferences, lastIdReferences);
+            PerformAddRemoveLoadScopesChange(idLoadScopes, lastIdLoadScopes, true);
 
-                return true;
-            }
-            return false;
+            PerformAddRemoveReferencesChange(idReferences, lastIdReferences);
         }
 
         public override bool AfterAssemblyReload()

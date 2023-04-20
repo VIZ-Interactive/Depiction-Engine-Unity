@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace DepictionEngine
 {
@@ -552,22 +553,18 @@ namespace DepictionEngine
             get { _lastPersistentsDictionary ??= new PersistentsDictionary(); return _lastPersistentsDictionary; }
         }
 
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                //Undos trigger OnEnable which queues an auto update.
-                _autoUpdate = false;
+            base.UpdateUndoRedoSerializedFields();
 
-                SerializationUtility.RecoverLostReferencedObject(ref _datasource);
+            //Undos trigger OnEnable which queues an auto update.
+            _autoUpdate = false;
 
-                PerformAddRemovePersistentsChange(persistentsDictionary, lastPersistentsDictionary);
+            SerializationUtility.RecoverLostReferencedObject(ref _datasource);
 
-                IterateOverLoadScopes((loadScopeKey, loadScope) => { loadScope.LoaderUndoRedoPerformed(); return true; });
+            PerformAddRemovePersistentsChange(persistentsDictionary, lastPersistentsDictionary);
 
-                return true;
-            }
-            return false;
+            IterateOverLoadScopes((loadScopeKey, loadScope) => { loadScope.LoaderUndoRedoPerformed(); return true; });
         }
 #endif
 
@@ -648,7 +645,7 @@ namespace DepictionEngine
         public PropertyMonoBehaviour datasource
         {
             get => _datasource;
-            set { datasourceId = value != Disposable.NULL ? value.id : SerializableGuid.Empty; }
+            set => datasourceId = value != Disposable.NULL ? value.id : SerializableGuid.Empty;
         }
 
         private bool SetDatasource(PropertyMonoBehaviour value)

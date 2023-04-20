@@ -71,15 +71,11 @@ namespace DepictionEngine
             get { _lastIndexReferences ??= new(); return _lastIndexReferences; }
         }
 
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                PerformAddRemoveReferencesChange(index2DReferences, lastIndexReferences);
+            base.UpdateUndoRedoSerializedFields();
 
-                return true;
-            }
-            return false;
+            PerformAddRemoveReferencesChange(index2DReferences, lastIndexReferences);
         }
 #endif
 

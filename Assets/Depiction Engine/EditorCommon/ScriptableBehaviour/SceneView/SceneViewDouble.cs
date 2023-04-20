@@ -8,6 +8,7 @@ using System.Reflection;
 using UnityEditor.AnimatedValues;
 using UnityEngine.Events;
 using System.Collections.Generic;
+using UnityEngine.UIElements;
 
 namespace DepictionEngine.Editor
 {
@@ -40,7 +41,7 @@ namespace DepictionEngine.Editor
         private int _sceneViewInstanceId;
 
         [SerializeField]
-        private bool _autoSnapViewToTerrain;
+        private bool _autoSnapViewToSurface;
         [SerializeField]
         private GeoAstroObject _alignViewToGeoAstroObject;
 
@@ -96,7 +97,7 @@ namespace DepictionEngine.Editor
             {
                 if (SceneManager.playModeState == PlayModeStateChange.ExitingPlayMode)
                 {
-                    _autoSnapViewToTerrain = EditorPrefs.GetBool(id + AUTO_SNAP_VIEW_TO_TERRAIN_EDITOR_PREFS_NAME);
+                    _autoSnapViewToSurface = EditorPrefs.GetBool(id + AUTO_SNAP_VIEW_TO_TERRAIN_EDITOR_PREFS_NAME);
                     EditorPrefs.DeleteKey(id + AUTO_SNAP_VIEW_TO_TERRAIN_EDITOR_PREFS_NAME);
 
                     _alignViewToGeoAstroObject = EditorUtility.InstanceIDToObject(EditorPrefs.GetInt(id + ALIGN_VIEW_TO_GEOASTROOBJECT_EDITOR_PREFS_NAME)) as GeoAstroObject;
@@ -226,7 +227,7 @@ namespace DepictionEngine.Editor
         {
             if (state == PlayModeStateChange.ExitingPlayMode)
             {
-                EditorPrefs.SetBool(id + AUTO_SNAP_VIEW_TO_TERRAIN_EDITOR_PREFS_NAME, _autoSnapViewToTerrain);
+                EditorPrefs.SetBool(id + AUTO_SNAP_VIEW_TO_TERRAIN_EDITOR_PREFS_NAME, _autoSnapViewToSurface);
                 
                 EditorPrefs.SetInt(id + ALIGN_VIEW_TO_GEOASTROOBJECT_EDITOR_PREFS_NAME, _alignViewToGeoAstroObject != Disposable.NULL ? _alignViewToGeoAstroObject.GetInstanceID() : 0);
                 
@@ -379,16 +380,16 @@ namespace DepictionEngine.Editor
             set => _handleCount = value;
         }
 
-        private bool _lastAutoSnapViewToTerrain;
-        public bool autoSnapViewToTerrain
+        private bool _lastAutoSnapViewToSurface;
+        public bool autoSnapViewToSurface
         {
-            get => _autoSnapViewToTerrain;
+            get => _autoSnapViewToSurface;
             set
             {
-                if (_autoSnapViewToTerrain == value)
+                if (_autoSnapViewToSurface == value)
                     return;
 
-                _lastAutoSnapViewToTerrain = _autoSnapViewToTerrain = value;
+                _lastAutoSnapViewToSurface = _autoSnapViewToSurface = value;
             }
         }
 
@@ -1134,7 +1135,7 @@ namespace DepictionEngine.Editor
         {
             if (alignViewToGeoAstroObject != Disposable.NULL)
             {
-                autoSnapViewToTerrain = false;
+                autoSnapViewToSurface = false;
 
                 GeoAstroObject parentGeoAstroObject = t.GetComponentInParent<GeoAstroObject>();
                 if (parentGeoAstroObject != Disposable.NULL && parentGeoAstroObject != alignViewToGeoAstroObject)
@@ -1451,10 +1452,21 @@ namespace DepictionEngine.Editor
             }
         }
 
+        private bool _mouseDown;
+        public bool mouseDown { get => _mouseDown; }
         private Tool _lastToolCurrent;
         private static List<TransformDouble> _lastActiveSceneCameraTransforms;
         private void PreDefaultHandles(SceneView sceneView)
         {
+            Event evt = Event.current;
+            if (evt != null && evt.isMouse)
+            {
+                if (evt.type == EventType.MouseDown)
+                    _mouseDown = true;
+                if (evt.type == EventType.MouseUp)
+                    _mouseDown = false;
+            }
+         
             sceneManager.UpdateAstroObjects(camera);
 
             UpdatePivotRotationDistance();
@@ -1471,7 +1483,6 @@ namespace DepictionEngine.Editor
                     Vector3Double origin = lastActiveSceneViewDouble.camera.GetOrigin();
                     if (UnityEditor.Selection.transforms.Length > 0)
                     {
-                        Event evt = Event.current;
                         bool rayDrag = Tools.vertexDragging || (evt.GetTypeForControl(GUIUtility.GetControlID(Handles.s_FreeMoveHandleHash, FocusType.Passive)) == EventType.MouseDrag && EditorGUI.actionKey && evt.shift);
                         // If we are mouse dragging because of 'vertext snapping' or 'Ctrl + Shift in windows' we need to apply origin shifting to all the transforms because the Handles will perform ray casting against the scene.
                         // Otherwise we only need to apply origin shifting to the selected transforms and the camera + target transforms.
@@ -1601,7 +1612,7 @@ namespace DepictionEngine.Editor
                 sceneCameraTarget = sceneCameraController.target as SceneCameraTarget;
                 if (sceneCameraTarget != Disposable.NULL)
                 {
-                    sceneCameraTarget.SetTargetAutoSnapToGround(autoSnapViewToTerrain);
+                    sceneCameraTarget.SetTargetAutoSnapToAltitude(autoSnapViewToSurface);
                     sceneCameraTarget.SetTargetParent(alignViewToGeoAstroObject != Disposable.NULL ? alignViewToGeoAstroObject.gameObject.GetSafeComponent<TransformDouble>() : null);
                 }
 

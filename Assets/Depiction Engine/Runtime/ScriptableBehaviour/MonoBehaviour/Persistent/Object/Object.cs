@@ -17,7 +17,7 @@ namespace DepictionEngine
     public class Object : PersistentMonoBehaviour, IRequiresComponents
     {
         [Serializable]
-        private class VisibleCamerasDictionary : SerializableDictionary<int, VisibleCameras> { };
+        private class VisibleInCamerasDictionary : SerializableDictionary<int, VisibleCameras> { };
 
         [SerializeField, ConditionalShow(nameof(IsFallbackValues))]
         private ObjectAdditionalFallbackValues _objectAdditionalFallbackValues;
@@ -36,7 +36,7 @@ namespace DepictionEngine
         private bool _isHiddenInHierarchy;
       
         [SerializeField, HideInInspector]
-        private VisibleCamerasDictionary _visibleCameras;
+        private VisibleInCamerasDictionary _visibleInCameras;
 
         private TransformDouble _transform;
         private GeoAstroObject _parentGeoAstroObject;
@@ -130,7 +130,7 @@ namespace DepictionEngine
 
             _targetController = default;
 
-            _visibleCameras?.Clear();
+            _visibleInCameras?.Clear();
         }
 
         protected override bool Initialize(InitializationContext initializingContext)
@@ -627,8 +627,8 @@ namespace DepictionEngine
         {
             if (transform is not null)
             {
-                transform.PropertyAssignedEvent -= TransformPropertyAssignedHandler;
                 transform.ChangedEvent -= TransformChangedHandler;
+                transform.PropertyAssignedEvent -= TransformPropertyAssignedHandler;
                 transform.ChildAddedEvent -= TransformChildAddedHandler;
                 transform.ChildRemovedEvent -= TransformChildRemovedHandler;
                 transform.ChildPropertyAssignedEvent -= TransformChildPropertyChangedHandler;
@@ -654,8 +654,8 @@ namespace DepictionEngine
         {
             if (!IsDisposing() && transform != Disposable.NULL)
             {
-                transform.PropertyAssignedEvent += TransformPropertyAssignedHandler;
                 transform.ChangedEvent += TransformChangedHandler;
+                transform.PropertyAssignedEvent += TransformPropertyAssignedHandler;
                 transform.ChildAddedEvent += TransformChildAddedHandler;
                 transform.ChildRemovedEvent += TransformChildRemovedHandler;
                 transform.ChildPropertyAssignedEvent += TransformChildPropertyChangedHandler;
@@ -678,6 +678,18 @@ namespace DepictionEngine
             }
         }
 
+        private void TransformChangedHandler(TransformBase.Component changedComponent, TransformBase.Component capturedComponent)
+        {
+            TransformChanged(changedComponent, capturedComponent);
+
+            TransformChangedEvent?.Invoke(changedComponent, capturedComponent);
+        }
+
+        protected virtual bool TransformChanged(TransformBase.Component changedComponent, TransformBase.Component capturedComponent)
+        {
+            return initialized;
+        }
+
         protected virtual void TransformPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             if (!HasChanged(newValue, oldValue) || property.IsDisposing())
@@ -691,18 +703,6 @@ namespace DepictionEngine
                 Originator(() => { UpdateParentGeoAstroObject(); }, property);
 
             TransformPropertyAssignedEvent?.Invoke(transform, name, newValue, oldValue);
-        }
-
-        private void TransformChangedHandler(TransformBase.Component changedComponent, TransformBase.Component capturedComponent)
-        {
-            TransformChanged(changedComponent, capturedComponent);
-
-            TransformChangedEvent?.Invoke(changedComponent, capturedComponent);
-        }
-
-        protected virtual bool TransformChanged(TransformBase.Component changedComponent, TransformBase.Component capturedComponent)
-        {
-            return initialized;
         }
 
         private void RemoveScriptDelegate(Script script)
@@ -727,13 +727,7 @@ namespace DepictionEngine
 
         private void ComponentPropertyAssigned(IJson iJson, string name, object newValue, object oldValue)
         {
-            Originator(() => 
-            {
-                (string, object) localProperty = GetProperty(iJson);
-                PropertyAssigned(this, localProperty.Item1, localProperty.Item2, null);
-
-                ComponentPropertyAssignedEvent?.Invoke(this, iJson, name, newValue, oldValue);
-            }, iJson);
+            Originator(() => { ComponentPropertyAssignedEvent?.Invoke(this, iJson, name, newValue, oldValue); }, iJson);
         }
 
         protected bool RemoveLoadScopeDataReferenceDelegate(ReferenceBase reference)
@@ -777,7 +771,7 @@ namespace DepictionEngine
 
         protected T GetAssetFromAssetReference<T>(AssetReference assetReference) where T : AssetBase
         {
-            return assetReference != Disposable.NULL ? (T)assetReference.data : null;
+            return assetReference != Disposable.NULL ? assetReference.data as T : null;
         }
 
         protected virtual bool IterateOverAssetReferences(Func<AssetBase, AssetReference, bool, bool> callback)
@@ -919,7 +913,7 @@ namespace DepictionEngine
         /// <returns>The parent Object or null if none exists.</returns>
         public Object GetParentObject()
         {
-            return gameObject.transform?.parent.GetComponent<Object>();
+            return gameObject.transform?.parent?.GetComponent<Object>();
         }
 
         /// <summary>
@@ -980,9 +974,42 @@ namespace DepictionEngine
             return siblingChanged;
         }
 
-        private VisibleCamerasDictionary visibleCameras
+        protected override bool GetDontSaveToScene()
         {
-            get { _visibleCameras ??= new VisibleCamerasDictionary(); return _visibleCameras; }
+            bool dontSaveToScene = base.GetDontSaveToScene();
+
+#if UNITY_EDITOR
+            if (!dontSaveToScene && visibleInCameras.Count > 0)
+            {
+                bool visibleInCamera = false;
+
+                instanceManager.IterateOverInstances<Camera>((camera) => 
+                {
+                    if (!(camera is Editor.SceneCamera))
+                    {
+                        foreach (VisibleCameras visibleInCameras in visibleInCameras.Values)
+                        {
+                            if (visibleInCameras.CameraVisible(camera))
+                            {
+                                visibleInCamera = true;
+                                break;
+                            }
+                        }
+                    }
+                    return !visibleInCamera;
+                });
+
+                if (!visibleInCamera)
+                    dontSaveToScene = true;
+            }
+#endif
+
+            return dontSaveToScene;
+        }
+
+        private VisibleInCamerasDictionary visibleInCameras
+        {
+            get { _visibleInCameras ??= new VisibleInCamerasDictionary(); return _visibleInCameras; }
         }
 
         protected virtual bool GetDefaultIsHiddenInHierarchy()
@@ -1700,7 +1727,7 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private (string,object) GetProperty(IProperty property)
+        public (string,object) GetScriptProperty(IProperty property)
         {
             if (property is TransformBase)
                 return (nameof(transform), transform);
@@ -1762,7 +1789,7 @@ namespace DepictionEngine
 
                 if (hasChanged)
                 {
-                    (string, object) localProperty = GetProperty(script);
+                    (string, object) localProperty = GetScriptProperty(script);
                     PropertyAssigned(this, localProperty.Item1, localProperty.Item2, null);
                 }
             }
@@ -1873,7 +1900,7 @@ namespace DepictionEngine
 
                 if (hasChanged)
                 {
-                    (string, object) localProperty = GetProperty(script);
+                    (string, object) localProperty = GetScriptProperty(script);
                     PropertyAssigned(this, localProperty.Item1, localProperty.Item2, null);
                 }
             }
@@ -1936,22 +1963,22 @@ namespace DepictionEngine
             return scriptableBehaviour;
         }
 
-        public void SetGridProperties(int loadScopeInstanceId, VisibleCameras visibleCamerasInstanceId)
+        public void SetGridProperties(int loadScopeInstanceId, VisibleCameras visibleInCamerasInstanceId)
         {
-            bool visibleCamerasChanged = false;
+            bool visibleInCamerasChanged = false;
 
-            if (visibleCamerasInstanceId != null)
+            if (visibleInCamerasInstanceId != null)
             {
-                if (!visibleCameras.TryGetValue(loadScopeInstanceId, out VisibleCameras currentVisibleCamerasInstanceId) || currentVisibleCamerasInstanceId != visibleCamerasInstanceId)
+                if (!visibleInCameras.TryGetValue(loadScopeInstanceId, out VisibleCameras currentVisibleInCamerasInstanceId) || currentVisibleInCamerasInstanceId != visibleInCamerasInstanceId)
                 {
-                    visibleCameras[loadScopeInstanceId] = visibleCamerasInstanceId;
-                    visibleCamerasChanged = true;
+                    visibleInCameras[loadScopeInstanceId] = visibleInCamerasInstanceId;
+                    visibleInCamerasChanged = true;
                 }
             }
-            else if (visibleCameras.Remove(loadScopeInstanceId))
-                visibleCamerasChanged = true;
+            else if (visibleInCameras.Remove(loadScopeInstanceId))
+                visibleInCamerasChanged = true;
 
-            if (visibleCamerasChanged)
+            if (visibleInCamerasChanged)
                 VisibleCamerasChanged();
         }
 
@@ -1966,9 +1993,9 @@ namespace DepictionEngine
 
             if (camera != Disposable.NULL)
             {
-                masked = visibleCameras.Count > 0;
+                masked = visibleInCameras.Count > 0;
 
-                foreach (VisibleCameras visibleCamera in visibleCameras.Values)
+                foreach (VisibleCameras visibleCamera in visibleInCameras.Values)
                 {
                     if (visibleCamera != null && visibleCamera.CameraVisible(camera))
                     {

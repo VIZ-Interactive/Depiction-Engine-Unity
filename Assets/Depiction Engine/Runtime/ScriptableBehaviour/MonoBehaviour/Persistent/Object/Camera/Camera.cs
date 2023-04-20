@@ -2,8 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -621,6 +619,14 @@ namespace DepictionEngine
             }
         }
 
+        protected override void ActiveAndEnabledChanged(bool newValue, bool oldValue)
+        {
+            base.ActiveAndEnabledChanged(newValue, oldValue);
+
+            IterateOverCameraStack((unityCamera, i, stack) => { unityCamera.enabled = enabled; });
+            unityCamera.enabled = enabled;
+        }
+
         public virtual int GetCameraInstanceID()
         {
             return GetInstanceID();
@@ -767,40 +773,43 @@ namespace DepictionEngine
 
             IterateOverCameraStack((unityCamera, i, stack) =>
             {
-                bool synchRenderProperties = false;
-                bool synchOpticalProperties = false;
-                bool synchAspectProperty = false;
-                bool synchBackgroundProperties = false;
-                bool synchClipPlaneProperties = false;
-                bool synchCullingMaskProperty = false;
-
-                if (stack != null)
+                if (unityCamera.isActiveAndEnabled)
                 {
-                    synchRenderProperties = stack.synchRenderProperties;
-                    synchOpticalProperties = stack.synchOpticalProperties;
-                    synchAspectProperty = stack.synchAspectProperty;
-                    synchBackgroundProperties = stack.synchBackgroundProperties;
-                    synchClipPlaneProperties = stack.synchClipPlaneProperties;
-                    synchCullingMaskProperty = stack.synchCullingMaskProperty;
-                    if (stack.main)
-                        mainStackCount++;
-                }
+                    bool synchRenderProperties = false;
+                    bool synchOpticalProperties = false;
+                    bool synchAspectProperty = false;
+                    bool synchBackgroundProperties = false;
+                    bool synchClipPlaneProperties = false;
+                    bool synchCullingMaskProperty = false;
 
-                if (synchRenderProperties)
-                {
-                    ApplyRenderPropertiesToUnityCamera(unityCamera);
-                    ApplyPostProcessingPropertyToUnityCamera(unityCamera, i);
+                    if (stack != null)
+                    {
+                        synchRenderProperties = stack.synchRenderProperties;
+                        synchOpticalProperties = stack.synchOpticalProperties;
+                        synchAspectProperty = stack.synchAspectProperty;
+                        synchBackgroundProperties = stack.synchBackgroundProperties;
+                        synchClipPlaneProperties = stack.synchClipPlaneProperties;
+                        synchCullingMaskProperty = stack.synchCullingMaskProperty;
+                        if (stack.main)
+                            mainStackCount++;
+                    }
+
+                    if (synchRenderProperties)
+                    {
+                        ApplyRenderPropertiesToUnityCamera(unityCamera);
+                        ApplyPostProcessingPropertyToUnityCamera(unityCamera, i);
+                    }
+                    if (synchOpticalProperties)
+                        ApplyOpticalPropertiesToUnityCamera(unityCamera);
+                    if (synchAspectProperty)
+                        ApplyAspectPropertyToUnityCamera(unityCamera);
+                    if (synchBackgroundProperties)
+                        ApplyBackgroundPropertiesToUnityCamera(unityCamera);
+                    if (synchClipPlaneProperties)
+                        ApplyClipPlanePropertiesToUnityCamera(unityCamera, i);
+                    if (synchCullingMaskProperty)
+                        ApplyCullingMaskPropertyToUnityCamera(unityCamera);
                 }
-                if (synchOpticalProperties)
-                    ApplyOpticalPropertiesToUnityCamera(unityCamera);
-                if (synchAspectProperty)
-                    ApplyAspectPropertyToUnityCamera(unityCamera);
-                if (synchBackgroundProperties)
-                    ApplyBackgroundPropertiesToUnityCamera(unityCamera);
-                if (synchClipPlaneProperties)
-                    ApplyClipPlanePropertiesToUnityCamera(unityCamera, i);
-                if (synchCullingMaskProperty)
-                    ApplyCullingMaskPropertyToUnityCamera(unityCamera);
             });
 
             ApplyPropertiesToUnityCamera(mainStackCount);
@@ -896,7 +905,7 @@ namespace DepictionEngine
                     {
                         UnityEngine.Camera stackedUnityCamera = additionalData.cameraStack[i];
 
-                        if (stackedUnityCamera != null && stackedUnityCamera.isActiveAndEnabled)
+                        if (stackedUnityCamera != null)
                         {
                             Stack stack = stackedUnityCamera.GetComponentInParent<Stack>();
                             if (stack != null)

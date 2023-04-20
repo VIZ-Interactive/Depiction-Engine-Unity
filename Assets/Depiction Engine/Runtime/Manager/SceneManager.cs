@@ -285,16 +285,12 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         private bool _lastDebug;
         private bool _lastRunInBackground;
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { debug = value; }, ref _debug, ref _lastDebug);
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { runInBackground = value; }, ref _runInBackground, ref _lastRunInBackground);
-               
-                return true;
-            }
-            return false;
+            base.UpdateUndoRedoSerializedFields();
+
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { debug = value; }, ref _debug, ref _lastDebug);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { runInBackground = value; }, ref _runInBackground, ref _lastRunInBackground);
         }
 
         /// <summary>
@@ -396,16 +392,20 @@ namespace DepictionEngine
 
         private void SceneClosingHandler(UnityEngine.SceneManagement.Scene scene, bool removingScene)
         {
-            if (gameObject.scene == scene)
+            try
             {
-                UnityEditor.SceneManagement.EditorSceneManager.sceneClosed += SceneClosed;
-                _sceneClosing = true;
+                if (gameObject.scene == scene)
+                {
+                    UnityEditor.SceneManagement.EditorSceneManager.sceneClosed += SceneClosed;
+                    _sceneClosing = true;
 
-                SceneClosingEvent?.Invoke();
-            }
+                    SceneClosingEvent?.Invoke();
+                }
+            }catch(MissingReferenceException)
+            { }
         }
 
-        private void SceneClosed(UnityEngine.SceneManagement.Scene scene)
+        private void SceneClosed(Scene scene)
         {
             UnityEditor.SceneManagement.EditorSceneManager.sceneClosed -= SceneClosed;
             _sceneClosing = false;
@@ -1425,6 +1425,23 @@ namespace DepictionEngine
                 containsDisposed = true;
 
             return containsDisposed;
+        }
+
+        public override bool OnDispose(DisposeContext disposeContext)
+        {
+            if (base.OnDispose(disposeContext))
+            {
+                LateUpdateEvent = null;
+                DelayedOnDestroyEvent = null;
+
+#if UNITY_EDITOR
+                SceneClosingEvent = null;
+                BeforeAssemblyReloadEvent = null;
+                LeftMouseUpInSceneOrInspectorEvent = null;
+#endif
+                return true;
+            }
+            return false;
         }
     }
 }

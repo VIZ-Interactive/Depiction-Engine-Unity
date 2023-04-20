@@ -59,6 +59,14 @@ namespace DepictionEngine
             _loader = default;
         }
 
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
+
+            if (loadIntervalTween != null)
+            Debug.Log(datasourceOperation+", "+ datasourceOperation.loadingState);
+        }
+
         public bool InitializeLastFields()
         {
 #if UNITY_EDITOR
@@ -266,9 +274,58 @@ namespace DepictionEngine
             }
         }
 
-        public virtual object[] GetURLParams()
+        public bool LoadInProgress()
         {
-            return null;
+            return loadingState == DatasourceOperationBase.LoadingState.Interval || loadingState == DatasourceOperationBase.LoadingState.Loading;
+        }
+
+        public void Load(float loadInterval = 0.0f)
+        {
+            datasourceOperation = null;
+
+            TweenManager tweenManager = this.tweenManager;
+            if (tweenManager != Disposable.NULL)
+            {
+                loadingState = DatasourceOperationBase.LoadingState.Interval;
+                loadIntervalTween = tweenManager.DelayedCall(loadInterval, null, () =>
+                {
+                    loadingState = DatasourceOperationBase.LoadingState.None;
+
+                    ILoadDatasource datasource = loader.datasource as ILoadDatasource;
+                    if (!Disposable.IsDisposed(datasource))
+                    {
+                        loadingState = DatasourceOperationBase.LoadingState.Loading;
+                        datasourceOperation = datasource.Load((persistents, loadingResult) =>
+                        {
+                            IterateOverPersistents((persistentId, persistent) =>
+                            {
+                                if (persistents == null || !persistents.Contains(persistent))
+                                {
+                                    RemovePersistent(persistent);
+                                    if (!loader.IsPersistentInScope(persistent))
+                                        loader.RemovePersistent(persistent);
+                                }
+                                return true;
+                            });
+
+                            if (persistents != null)
+                            {
+                                foreach (IPersistent persistent in persistents)
+                                {
+                                    if (loader.AddPersistent(persistent))
+                                        AddPersistent(persistent);
+                                }
+                            }
+
+                            loadingState = loadingResult;
+                        }, this);
+
+                        if (datasourceOperation == Disposable.NULL)
+                            loadingState = DatasourceOperationBase.LoadingState.Failed;
+
+                    }
+                }, () => loadIntervalTween = null);
+            }
         }
 
         public JSONArray GetPersistentFallbackValuesJson()
@@ -337,63 +394,14 @@ namespace DepictionEngine
             return persistentFallbackValues;
         }
 
-        public bool LoadInProgress()
-        {
-            return loadingState == DatasourceOperationBase.LoadingState.Interval || loadingState == DatasourceOperationBase.LoadingState.Loading;
-        }
-
-        public void Load(float loadInterval = 0.0f)
-        {
-            datasourceOperation = null;
-
-            TweenManager tweenManager = this.tweenManager;
-            if (tweenManager != Disposable.NULL)
-            {
-                loadingState = DatasourceOperationBase.LoadingState.Interval;
-                loadIntervalTween = tweenManager.DelayedCall(loadInterval, null, () =>
-                {
-                    loadingState = DatasourceOperationBase.LoadingState.None;
-
-                    ILoadDatasource datasource = loader.datasource as ILoadDatasource;
-                    if (!Disposable.IsDisposed(datasource))
-                    {
-                        loadingState = DatasourceOperationBase.LoadingState.Loading;
-                        datasourceOperation = datasource.Load((persistents, loadingResult) =>
-                        {
-                            IterateOverPersistents((persistentId, persistent) =>
-                            {
-                                if (persistents == null || !persistents.Contains(persistent))
-                                {
-                                    RemovePersistent(persistent);
-                                    if (!loader.IsPersistentInScope(persistent))
-                                        loader.RemovePersistent(persistent);
-                                }
-                                return true;
-                            });
-
-                            if (persistents != null)
-                            {
-                                foreach (IPersistent persistent in persistents)
-                                {
-                                    if (loader.AddPersistent(persistent))
-                                        AddPersistent(persistent);
-                                }
-                            }
-
-                            loadingState = loadingResult;
-                        }, this);
-
-                        if (datasourceOperation == Disposable.NULL)
-                            loadingState = DatasourceOperationBase.LoadingState.Failed;
-
-                    }
-                }, () => loadIntervalTween = null);
-            }
-        }
-
         public virtual bool IsInScope(IPersistent persistent)
         {
             return false;
+        }
+
+        public virtual object[] GetURLParams()
+        {
+            return null;
         }
 
         public void Merge(LoadScope loadScope)

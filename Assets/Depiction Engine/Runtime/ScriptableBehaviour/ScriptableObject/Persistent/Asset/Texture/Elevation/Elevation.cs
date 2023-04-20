@@ -101,15 +101,11 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
         private float _lastElevationMultiplier;
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { elevationMultiplier = value; }, ref _elevationMultiplier, ref _lastElevationMultiplier);
-                
-                return true;
-            }
-            return false;
+            base.UpdateUndoRedoSerializedFields();
+           
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { elevationMultiplier = value; }, ref _elevationMultiplier, ref _lastElevationMultiplier);
         }
 #endif
 

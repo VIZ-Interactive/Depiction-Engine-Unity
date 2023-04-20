@@ -145,9 +145,11 @@ namespace DepictionEngine
         private GeoCoordinate3Double _lastGeoCoordinate;
         private QuaternionDouble _lastLocalRotation;
         private Vector3Double _lastLocalScale;
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
+            base.UpdateUndoRedoSerializedFields();
+
+            if (!IsDisposing())
             {
                 if (isGeoCoordinateTransform)
                     SerializationUtility.PerformUndoRedoPropertyChange((value) => { geoCoordinate = value; }, ref _geoCoordinate, ref _lastGeoCoordinate);
@@ -155,10 +157,7 @@ namespace DepictionEngine
                     SerializationUtility.PerformUndoRedoPropertyChange((value) => { localPosition = value; }, ref _localPosition, ref _lastLocalPosition);
                 SerializationUtility.PerformUndoRedoPropertyChange((value) => { localRotation = value; }, ref _localRotation, ref _lastLocalRotation);
                 SerializationUtility.PerformUndoRedoPropertyChange((value) => { localScale = value; }, ref _localScale, ref _lastLocalScale);
-
-                return true;
             }
-            return false;
         }
 #endif
 

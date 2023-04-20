@@ -4,7 +4,7 @@ namespace DepictionEngine
 {
     public class GlobalLoader : FillGrid2DLoader
     {
-        protected override Vector2Int GetDefaultZoomRange()
+        protected override Vector2Int GetDefaultMinMaxZoom()
         {
             return new Vector2Int(2, 2);
         }

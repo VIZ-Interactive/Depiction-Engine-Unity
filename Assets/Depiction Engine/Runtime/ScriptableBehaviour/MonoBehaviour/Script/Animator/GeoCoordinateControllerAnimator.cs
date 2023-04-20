@@ -30,7 +30,7 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => toGroundSnapOffset = value, GeoCoordinateController.DEFAULT_GROUND_SNAP_OFFSET_VALUE, initializingContext);
+            InitValue(value => toGroundSnapOffset = value, GeoCoordinateController.DEFAULT_SURFACE_SNAP_OFFSET_VALUE, initializingContext);
         }
 
         protected override float GetDefaultDuration()
@@ -110,8 +110,8 @@ namespace DepictionEngine
             GeoCoordinateController controller = objectBase.controller as GeoCoordinateController;
             if (controller != Disposable.NULL)
             {
-                _fromGroundSnapOffset = controller.groundSnapOffset;
-                groundSnapOffsetTween = tweenManager.To(0.0f, 1.0f, duration, (t) => { controller.groundSnapOffset = _fromGroundSnapOffset + (TCallback(t) * (value - _fromGroundSnapOffset)); }, null, () => { groundSnapOffsetTween = null; }, easing);
+                _fromGroundSnapOffset = controller.surfaceSnapOffset;
+                groundSnapOffsetTween = tweenManager.To(0.0f, 1.0f, duration, (t) => { controller.surfaceSnapOffset = _fromGroundSnapOffset + (TCallback(t) * (value - _fromGroundSnapOffset)); }, null, () => { groundSnapOffsetTween = null; }, easing);
             }
         }
 

@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 namespace DepictionEngine
 {
@@ -61,7 +62,7 @@ namespace DepictionEngine
 
             if (_meshFilter == null)
             {
-                if (!gameObject.TryGetComponent<MeshFilter>(out _meshFilter))
+                if (!gameObject.TryGetComponent(out _meshFilter))
                     _meshFilter = gameObject.AddComponent<MeshFilter>();
                 return true;
             }
@@ -75,7 +76,7 @@ namespace DepictionEngine
 
             if (_meshRenderer == null)
             {
-                if (!gameObject.TryGetComponent<MeshRenderer>(out _meshRenderer))
+                if (!gameObject.TryGetComponent(out _meshRenderer))
                     _meshRenderer = gameObject.AddComponent<MeshRenderer>();
                 return true;
             }
@@ -84,7 +85,7 @@ namespace DepictionEngine
 
         private void InitCollider()
         {
-            if (gameObject.TryGetComponent<Collider>(out _colliderInternal))
+            if (gameObject.TryGetComponent(out _colliderInternal))
             {
                 if (_colliderInternal is BoxCollider)
                     _colliderType = ColliderType.Box;
@@ -226,13 +227,13 @@ namespace DepictionEngine
                     {
                         if (collider is MeshCollider)
                             (collider as MeshCollider).sharedMesh = newValue;
-                        UpdateColliderProperties();
+                        UpdateCollider();
                     }
                 }
             }
         }
 
-        private void UpdateColliderProperties()
+        public void UpdateCollider()
         {
             if (IsDisposing())
                 return;
@@ -311,7 +312,7 @@ namespace DepictionEngine
 
                 _colliderInternal = value;
 
-                UpdateColliderProperties();
+                UpdateCollider();
             }
         }
 
@@ -369,7 +370,7 @@ namespace DepictionEngine
                 //When undoing an Add Component(such as Add GeoCoordinateController) on a VisualObject(tested on Markers) the children whose creation was not registered with the UndoManager are disposed automatically for some reason.
                 //If we detect that the visuals were disposed as a result of an Undo Redo we ask the AutoGenerateVisualObject to recreate them. If it was the AutoGenerateVisualObject that was destroyed, and not just its child visuals, then the visualObject will be null and nothing will happen.
                 if (disposeContext == DisposeContext.Editor_UndoRedo)
-                    (visualObject as AutoGenerateVisualObject)?.SetMeshRendererVisualsDirty();
+                    (visualObject as AutoGenerateVisualObject)?.SetMeshRendererVisualsAllDirty();
 #endif
                 return true;
             }
@@ -484,7 +485,7 @@ namespace DepictionEngine
 
         public MeshModifier meshModifier
         {
-            get { return _meshModifier; }
+            get => _meshModifier;
             set
             {
                 if (Object.ReferenceEquals(_meshModifier, value))
@@ -498,7 +499,7 @@ namespace DepictionEngine
 
         public Mesh sharedMesh
         {
-            get { return _sharedMesh; }
+            get => _sharedMesh;
             set 
             {
                 if (_sharedMesh == value)
@@ -534,7 +535,7 @@ namespace DepictionEngine
 
         public Processor meshModifierProcessor
         {
-            get { return _meshModifierProcessor; }
+            get => _meshModifierProcessor;
             private set
             {
                 if (Object.ReferenceEquals(_meshModifierProcessor, value))

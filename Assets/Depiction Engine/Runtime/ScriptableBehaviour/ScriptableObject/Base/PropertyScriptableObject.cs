@@ -89,9 +89,16 @@ namespace DepictionEngine
         protected virtual void InitializeFields(InitializationContext initializingContext)
         {
 #if UNITY_EDITOR
-            RenderingManager.UpdateIcon(this);
+            UpdateIcon();
 #endif
         }
+
+#if UNITY_EDITOR
+        private void UpdateIcon()
+        {
+            RenderingManager.UpdateIcon(this);
+        }
+#endif
 
         /// <summary>
         /// Initialize SerializedField's to their default values.
@@ -123,7 +130,11 @@ namespace DepictionEngine
         {
             if (base.AfterAssemblyReload())
             {
-                return !IsDisposing();
+                if (!IsDisposing())
+                {
+                    UpdateIcon();
+                    return true;
+                }
             }
             return false;
         }

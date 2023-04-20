@@ -63,7 +63,7 @@ namespace DepictionEngine
                 if (propertyInfo != null)
                 {
                     jsonAttribute = propertyInfo.GetCustomAttribute<JsonAttribute>();
-                    if (jsonAttribute != null && jsonAttribute.get && propertyInfo.CanWrite)
+                    if (jsonAttribute != null)
                         return true;
                 }
             }

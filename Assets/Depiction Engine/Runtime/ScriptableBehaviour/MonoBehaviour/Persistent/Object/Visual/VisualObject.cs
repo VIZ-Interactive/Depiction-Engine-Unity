@@ -110,17 +110,13 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
         private float _lastAlpha;
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                RemoveNullManagedMeshRenderers();
+            base.UpdateUndoRedoSerializedFields();
 
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { alpha = value; }, ref _alpha, ref _lastAlpha);
-                
-                return true;
-            }
-            return false;
+            RemoveNullManagedMeshRenderers();
+
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { alpha = value; }, ref _alpha, ref _lastAlpha);
         }
 #endif
 
@@ -304,7 +300,8 @@ namespace DepictionEngine
                 {
                     InitializeMaterial(meshRenderer, meshRenderer.sharedMaterial);
 
-                    ApplyPropertiesToMaterial(meshRenderer, meshRenderer.sharedMaterial, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, star);
+                    if (meshRenderer?.sharedMaterial != null)
+                        ApplyPropertiesToMaterial(meshRenderer, meshRenderer.sharedMaterial, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, star);
                 });
 
                 return true;

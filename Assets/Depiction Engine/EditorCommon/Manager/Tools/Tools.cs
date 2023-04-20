@@ -10,47 +10,46 @@ namespace DepictionEngine.Editor
     {
         public static bool hidden
         {
-            get { return UnityEditor.Tools.hidden; }
-            set { UnityEditor.Tools.hidden = value; }
+            get => UnityEditor.Tools.hidden;
+            set => UnityEditor.Tools.hidden = value;
         }
 
         public static UnityEditor.Tool current
         {
-            get { return UnityEditor.Tools.current; }
-            set { UnityEditor.Tools.current = value; }
+            get => UnityEditor.Tools.current;
+            set => UnityEditor.Tools.current = value;
         }
 
         public static UnityEditor.PivotMode pivotMode
         {
-            get { return UnityEditor.Tools.pivotMode; }
-            set { UnityEditor.Tools.pivotMode = value; }
+            get => UnityEditor.Tools.pivotMode;
+            set => UnityEditor.Tools.pivotMode = value;
         }
 
         public static Quaternion handleRotation
         {
-            get { return UnityEditor.Tools.handleRotation; }
-            set { UnityEditor.Tools.handleRotation = value; }
+            get => UnityEditor.Tools.handleRotation;
+            set => UnityEditor.Tools.handleRotation = value;
         }
 
         public static bool handlePositionComputed
         {
-            set { typeof(UnityEditor.Tools).GetField("s_HandlePositionComputed", BindingFlags.Static | BindingFlags.NonPublic).SetValue(null, value); }
+            set => typeof(UnityEditor.Tools).GetField("s_HandlePositionComputed", BindingFlags.Static | BindingFlags.NonPublic).SetValue(null, value);
         }
 
         public static bool vertexDragging
         {
-            get { return (bool)typeof(UnityEditor.Tools).GetField("vertexDragging", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null); }
+            get => (bool)typeof(UnityEditor.Tools).GetField("vertexDragging", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
         }
 
         public static Vector3 handleOffset
         {
-            get { return (Vector3)typeof(UnityEditor.Tools).GetField("handleOffset", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null); }
+            get => (Vector3)typeof(UnityEditor.Tools).GetField("handleOffset", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
         }
 
         public static Vector3 GetHandlePosition()
         {
-            Vector3 position;
-            GetHandlePosition(out position);
+            GetHandlePosition(out Vector3 position);
             return position;
         }
 

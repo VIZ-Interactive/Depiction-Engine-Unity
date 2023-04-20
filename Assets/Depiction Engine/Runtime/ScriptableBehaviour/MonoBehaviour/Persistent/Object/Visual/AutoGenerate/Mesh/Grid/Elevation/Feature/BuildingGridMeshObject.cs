@@ -141,7 +141,7 @@ namespace DepictionEngine
         [Json]
         public Color defaultColor
         {
-            get { return _defaultColor; }
+            get => _defaultColor;
             set { SetValue(nameof(defaultColor), value, ref _defaultColor); }
         }
 
@@ -151,7 +151,7 @@ namespace DepictionEngine
         [Json]
         public float defaultHeight
         {
-            get { return _defaultHeight; }
+            get => _defaultHeight;
             set { SetValue(nameof(defaultHeight), value, ref _defaultHeight); }
         }
 
@@ -161,7 +161,7 @@ namespace DepictionEngine
         [Json]
         public float defaultLevelHeight
         {
-            get { return _defaultLevelHeight; }
+            get => _defaultLevelHeight;
             set { SetValue(nameof(defaultLevelHeight), value, ref _defaultLevelHeight); }
         }
 
@@ -171,7 +171,7 @@ namespace DepictionEngine
         [Json]
         public string shaderPath
         {
-            get { return _shaderPath; }
+            get => _shaderPath;
             set { SetValue(nameof(shaderPath), value, ref _shaderPath); }
         }
 
@@ -181,7 +181,7 @@ namespace DepictionEngine
         [Json]
         public Color color
         {
-            get { return _color; }
+            get => _color;
             set { SetValue(nameof(color), value, ref _color); }
         }
 
@@ -192,12 +192,12 @@ namespace DepictionEngine
 
         private AssetReference colorMapAssetReference
         {
-            get { return GetFirstReferenceOfType(COLORMAP_REFERENCE_DATATYPE) as AssetReference; }
+            get => GetFirstReferenceOfType(COLORMAP_REFERENCE_DATATYPE) as AssetReference;
         }
 
         private Texture colorMap
         {
-            get { return _colorMap; }
+            get => _colorMap;
             set
             {
                 if (_colorMap == value)
@@ -214,12 +214,12 @@ namespace DepictionEngine
 
         private AssetReference additionalMapAssetReference
         {
-            get { return GetFirstReferenceOfType(ADDITIONALMAP_REFERENCE_DATATYPE) as AssetReference; }
+            get => GetFirstReferenceOfType(ADDITIONALMAP_REFERENCE_DATATYPE) as AssetReference;
         }
 
         private Texture additionalMap
         {
-            get { return _additionalMap; }
+            get => _additionalMap;
             set
             {
                 if (_additionalMap == value)
@@ -391,17 +391,17 @@ namespace DepictionEngine
 
             public Color defaultColor
             {
-                get { return _defaultColor; }
+                get => _defaultColor;
             }
 
             public float defaultLevelHeight
             {
-                get { return _defaultLevelHeight; }
+                get => _defaultLevelHeight;
             }
 
             public float defaultHeight
             {
-                get { return _defaultHeight; }
+                get => _defaultHeight;
             }
         }
 

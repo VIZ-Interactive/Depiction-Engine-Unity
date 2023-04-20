@@ -96,8 +96,8 @@ namespace DepictionEngine
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
                 _material = null;
 
-            InitValue(value => sphericalSubdivision = value, 2, initializingContext);
-            InitValue(value => flatSubdivision = value, 2, initializingContext);
+            InitValue(value => sphericalSubdivision = value, 6, initializingContext);
+            InitValue(value => flatSubdivision = value, 6, initializingContext);
             InitValue(value => subdivisionZoomFactor = value, 1.2f, initializingContext);
             InitValue(value => overlapFactor = value, 1.0f, initializingContext);
             InitValue(value => edgeDepth = value, GetDefaultEdgeDepth(), initializingContext);
@@ -684,7 +684,7 @@ namespace DepictionEngine
 
             public bool generateEdgeInSeperateMesh
             {
-                get { return _generateEdgeInSeperateMesh; }
+                get => _generateEdgeInSeperateMesh;
             }
 
             public int GetSubdivision()
@@ -724,32 +724,32 @@ namespace DepictionEngine
 
             public float edgeDepth
             {
-                get { return _edgeDepth; }
+                get => _edgeDepth;
             }
 
             public NormalsType normalsType
             {
-                get { return _normalsType; }
+                get => _normalsType;
             }
 
             public bool trianglesDirty
             {
-                get { return _trianglesDirty; }
+                get => _trianglesDirty;
             }
 
             public bool uvsDirty
             {
-                get { return _uvsDirty; }
+                get => _uvsDirty;
             }
 
             public bool verticesDirty
             {
-                get { return _verticesDirty; }
+                get => _verticesDirty;
             }
 
             public bool normalsDirty
             {
-                get { return _normalsDirty; }
+                get => _normalsDirty;
             }
 
             public override bool OnDispose(DisposeContext disposeContext)
@@ -856,13 +856,13 @@ namespace DepictionEngine
                 _changed = true;
             }
 
-            private void TerrainGridMeshObjectChildAddedHandler(Object objectBase, PropertyMonoBehaviour child)
+            private void TerrainGridMeshObjectChildAddedHandler(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObjects, Object objectBase, PropertyMonoBehaviour child)
             {
                 if (child is MeshRendererVisual)
                     _changed = true;
             }
 
-            private void TerrainGridMeshObjectChildRemovedHandler(Object objectBase, PropertyMonoBehaviour child)
+            private void TerrainGridMeshObjectChildRemovedHandler(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObjects, Object objectBase, PropertyMonoBehaviour child)
             {
                 if (child is MeshRendererVisual)
                     _changed = true;
@@ -1392,8 +1392,7 @@ namespace DepictionEngine
                             for (int index = 0; index < vertexCount; index++)
                                 Grid2DMeshObjectProcessingFunctions.SetNormals(parameters, meshModifier, startIndex + side * vertexCount + index, GetX(side, index, vertexCount) * subdivisionSize, GetY(side, index, vertexCount) * subdivisionSize);
 
-                            if (parameters.cancellationTokenSource != null)
-                                parameters.cancellationTokenSource.ThrowIfCancellationRequested();
+                            parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
                     }
 

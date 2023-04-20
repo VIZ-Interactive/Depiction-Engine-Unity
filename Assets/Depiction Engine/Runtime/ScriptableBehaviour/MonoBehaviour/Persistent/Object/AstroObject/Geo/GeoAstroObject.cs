@@ -54,13 +54,25 @@ namespace DepictionEngine
         private double _radius;
 
         /// <summary>
-        /// Dispatched when a <see cref="DepictionEngine.Grid2DIndexTerrainGridMeshObjects"/> is added at a specific zoom level and index in the <see cref="GeoAstroObject"/> grid.
+        /// Dispatched when a <see cref="DepictionEngine.Grid2DIndexTerrainGridMeshObjects"/> is added at a specific zoom level and index in the <see cref="DepictionEngine.GeoAstroObject"/> grid.
         /// </summary>
         public Action<Grid2DIndexTerrainGridMeshObjects, Vector2Int, Vector2Int> TerrainGridMeshObjectAddedEvent;
         /// <summary>
-        /// Dispatched when a <see cref="DepictionEngine.Grid2DIndexTerrainGridMeshObjects"/> is Removed from a specific zoom level and index in the <see cref="GeoAstroObject"/> grid.
+        /// Dispatched when a <see cref="DepictionEngine.Grid2DIndexTerrainGridMeshObjects"/> is Removed from a specific zoom level and index in the <see cref="DepictionEngine.GeoAstroObject"/> grid.
         /// </summary>
         public Action<Grid2DIndexTerrainGridMeshObjects, Vector2Int, Vector2Int> TerrainGridMeshObjectRemovedEvent;
+        /// <summary>
+        /// Dispatched when the <see cref="DepictionEngine.MeshRendererVisual"/>'s of any of the <see cref="DepictionEngine.TerrainGridMeshObject"/> are modified.
+        /// </summary>
+        public Action<Grid2DIndexTerrainGridMeshObjects> TerrainGridMeshObjectMeshModifiedEvent;
+        /// <summary>
+        /// Dispatched when the <see cref="DepictionEngine.MeshRendererVisual"/>'s of any of the <see cref="DepictionEngine.TerrainGridMeshObject"/> are modified.
+        /// </summary>
+        public Action<Grid2DIndexTerrainGridMeshObjects> TerrainGridMeshObjectElevationChangedEvent;
+        /// <summary>
+        /// Dispatched when the <see cref="DepictionEngine.MeshRendererVisual"/>'s of any of the <see cref="DepictionEngine.TerrainGridMeshObject"/> are modified.
+        /// </summary>
+        public Action<Grid2DIndexTerrainGridMeshObjects> TerrainGridMeshObjectAltitudeOffsetChangedEvent;
 
 #if UNITY_EDITOR
         protected virtual bool GetEnableSpherical()
@@ -189,16 +201,12 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         private double _lastSize;
         private bool _lastSpherical;
-        public override bool UndoRedoPerformed()
+        protected override void UpdateUndoRedoSerializedFields()
         {
-            if (base.UndoRedoPerformed())
-            {
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { size = value; }, ref _size, ref _lastSize);
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { spherical = value; }, ref _spherical, ref _lastSpherical);
-                
-                return true;
-            }
-            return false;
+            base.UpdateUndoRedoSerializedFields();
+
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { size = value; }, ref _size, ref _lastSize);
+            SerializationUtility.PerformUndoRedoPropertyChange((value) => { spherical = value; }, ref _spherical, ref _lastSpherical);
         }
 #endif
 
@@ -243,6 +251,7 @@ namespace DepictionEngine
         private void RemoveChildTerrainGridMeshObjectDelegates(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject)
         {
             grid2DIndexTerrainGridMeshObject.TerrainGridMeshObjectPropertyAssignedEvent -= ChildTerrainGridMeshObjectPropertyAssigned;
+            grid2DIndexTerrainGridMeshObject.TerrainGridMeshObjectMeshModifiedEvent -= ChildTerrainGridMeshObjectMeshModified;
             grid2DIndexTerrainGridMeshObject.DisposedEvent -= Grid2DIndexTerrainGridMeshObjectDisposedHandler;
         }
 
@@ -250,29 +259,8 @@ namespace DepictionEngine
         private void AddChildTerrainGridMeshObjectDelegates(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject)
         {
             grid2DIndexTerrainGridMeshObject.TerrainGridMeshObjectPropertyAssignedEvent += ChildTerrainGridMeshObjectPropertyAssigned;
+            grid2DIndexTerrainGridMeshObject.TerrainGridMeshObjectMeshModifiedEvent += ChildTerrainGridMeshObjectMeshModified;
             grid2DIndexTerrainGridMeshObject.DisposedEvent += Grid2DIndexTerrainGridMeshObjectDisposedHandler;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Grid2DIndexTerrainGridMeshObjectDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
-        {
-            Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject = disposable as Grid2DIndexTerrainGridMeshObjects;
-
-            int zoom = MathPlus.GetZoomFromGrid2DDimensions(grid2DIndexTerrainGridMeshObject.grid2DDimensions);
-
-            Grid2DIndexTerrainGridMeshObjectDictionary grid2DIndexTerrainGridMeshObjects = _grid2DIndexTerrainGridMeshObjects[zoom];
-            if (grid2DIndexTerrainGridMeshObjects == null)
-            {
-                grid2DIndexTerrainGridMeshObjects = new Grid2DIndexTerrainGridMeshObjectDictionary();
-                _grid2DIndexTerrainGridMeshObjects[zoom] = grid2DIndexTerrainGridMeshObjects;
-            }
-
-            if (grid2DIndexTerrainGridMeshObjects.Remove(grid2DIndexTerrainGridMeshObject.grid2DIndex))
-            {
-                RemoveChildTerrainGridMeshObjectDelegates(grid2DIndexTerrainGridMeshObject);
-
-                TerrainGridMeshObjectRemovedEvent?.Invoke(grid2DIndexTerrainGridMeshObject, grid2DIndexTerrainGridMeshObject.grid2DDimensions, grid2DIndexTerrainGridMeshObject.grid2DIndex);
-            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -309,6 +297,37 @@ namespace DepictionEngine
 
                 TerrainGridMeshObjectRemovedEvent?.Invoke(grid2DIndexTerrainGridMeshObjects, oldGrid2DDimensions, oldGrid2DIndex);
                 TerrainGridMeshObjectAddedEvent?.Invoke(grid2DIndexTerrainGridMeshObjects, newGrid2DDimensions, newGrid2DIndex);
+            }
+            if (name == nameof(Grid2DMeshObjectBase.altitudeOffset))
+                TerrainGridMeshObjectAltitudeOffsetChangedEvent?.Invoke(grid2DIndexTerrainGridMeshObjects);
+            if (name == nameof(ElevationGridMeshObjectBase.elevation))
+                TerrainGridMeshObjectElevationChangedEvent?.Invoke(grid2DIndexTerrainGridMeshObjects);
+        }
+
+        private void ChildTerrainGridMeshObjectMeshModified(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObjects)
+        {
+            TerrainGridMeshObjectMeshModifiedEvent?.Invoke(grid2DIndexTerrainGridMeshObjects);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Grid2DIndexTerrainGridMeshObjectDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
+        {
+            Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject = disposable as Grid2DIndexTerrainGridMeshObjects;
+
+            int zoom = MathPlus.GetZoomFromGrid2DDimensions(grid2DIndexTerrainGridMeshObject.grid2DDimensions);
+
+            Grid2DIndexTerrainGridMeshObjectDictionary grid2DIndexTerrainGridMeshObjects = _grid2DIndexTerrainGridMeshObjects[zoom];
+            if (grid2DIndexTerrainGridMeshObjects == null)
+            {
+                grid2DIndexTerrainGridMeshObjects = new Grid2DIndexTerrainGridMeshObjectDictionary();
+                _grid2DIndexTerrainGridMeshObjects[zoom] = grid2DIndexTerrainGridMeshObjects;
+            }
+
+            if (grid2DIndexTerrainGridMeshObjects.Remove(grid2DIndexTerrainGridMeshObject.grid2DIndex))
+            {
+                RemoveChildTerrainGridMeshObjectDelegates(grid2DIndexTerrainGridMeshObject);
+
+                TerrainGridMeshObjectRemovedEvent?.Invoke(grid2DIndexTerrainGridMeshObject, grid2DIndexTerrainGridMeshObject.grid2DDimensions, grid2DIndexTerrainGridMeshObject.grid2DIndex);
             }
         }
 
@@ -398,13 +417,13 @@ namespace DepictionEngine
         /// <param name="fallbackToRaycast">When true, a second attempt at getting an elevation value will be made using raycast if an elevation texture is not present.</param>
         /// <returns>True if a valid elevation value was calculated.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool GetGeoCoordinateElevation(out double elevation, GeoCoordinate3Double geoCoordinate, Camera camera = null, bool fallbackToRaycast = true)
+        public bool GetGeoCoordinateElevation(out double elevation, GeoCoordinate3Double geoCoordinate, Camera camera = null, bool raycast = false)
         {
             Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject = GetGrid2DIndexTerrainGridMeshObjectFromGeoCoordinate(geoCoordinate, camera);
 
             if (grid2DIndexTerrainGridMeshObject != Disposable.NULL)
             {
-                if (grid2DIndexTerrainGridMeshObject.GetGeoCoordinateElevation(out elevation, geoCoordinate, camera) || (fallbackToRaycast && grid2DIndexTerrainGridMeshObject.GetGeoCoordinateElevation(out elevation, geoCoordinate, camera, true)))
+                if (grid2DIndexTerrainGridMeshObject.GetGeoCoordinateElevation(out elevation, geoCoordinate, camera, raycast))
                     return true;
             }
 
@@ -483,7 +502,7 @@ namespace DepictionEngine
 
         public double radius
         {
-            get { return _radius; }
+            get => _radius;
             private set { SetValue(nameof(radius), value, ref _radius); }
         }
 
@@ -498,7 +517,7 @@ namespace DepictionEngine
         [Json]
         public double size
         {
-            get { return _size; }
+            get => _size;
             set 
             { 
                 SetValue(nameof(size), Math.Max(value, 0.01d), ref _size, (newValue, oldValue) => 
@@ -517,7 +536,7 @@ namespace DepictionEngine
         [Json]
         public float sphericalDuration
         {
-            get { return _sphericalDuration; }
+            get => _sphericalDuration;
             set { SetValue(nameof(sphericalDuration), value, ref _sphericalDuration); }
         }
 
@@ -527,7 +546,7 @@ namespace DepictionEngine
         [Json]
         public bool spherical
         {
-            get { return _spherical; }
+            get => _spherical;
             set { SetSpherical(value); }
         }
 
@@ -548,19 +567,19 @@ namespace DepictionEngine
         [Json]
         public bool reflectionProbe
         {
-            get { return _reflectionProbe; }
+            get => _reflectionProbe;
             set { SetValue(nameof(reflectionProbe), value, ref _reflectionProbe); }
         }
 
         public float sphericalRatio
         {
-            get { return _sphericalRatio; }
+            get => _sphericalRatio;
             private set { SetValue(nameof(sphericalRatio), value, ref _sphericalRatio); }
         }
 
         private Tween sphericalRatioTween
         {
-            get { return _sphericalRatioTween; }
+            get => _sphericalRatioTween;
             set
             {
                 if (Object.ReferenceEquals(_sphericalRatioTween, value))
@@ -833,6 +852,9 @@ namespace DepictionEngine
 
                 TerrainGridMeshObjectAddedEvent = null;
                 TerrainGridMeshObjectRemovedEvent = null;
+                TerrainGridMeshObjectMeshModifiedEvent = null;
+                TerrainGridMeshObjectElevationChangedEvent = null;
+                TerrainGridMeshObjectAltitudeOffsetChangedEvent = null;
 
                 return true;
             }
@@ -862,11 +884,15 @@ namespace DepictionEngine
         /// <summary>
         /// Dispatched when a child is added to any of the <see cref="DepictionEngine.TerrainGridMeshObject"/>.
         /// </summary>
-        public Action<Object, PropertyMonoBehaviour> TerrainGridMeshObjectChildAddedEvent;
+        public Action<Grid2DIndexTerrainGridMeshObjects, Object, PropertyMonoBehaviour> TerrainGridMeshObjectChildAddedEvent;
         /// <summary>
         /// Dispatched when a child is removed from any of the <see cref="DepictionEngine.TerrainGridMeshObject"/>.
         /// </summary>
-        public Action<Object, PropertyMonoBehaviour> TerrainGridMeshObjectChildRemovedEvent;
+        public Action<Grid2DIndexTerrainGridMeshObjects, Object, PropertyMonoBehaviour> TerrainGridMeshObjectChildRemovedEvent;
+        /// <summary>
+        /// Dispatched when any of the <see cref="DepictionEngine.TerrainGridMeshObject"/> modifies a <see cref="DepictionEngine.Mesh"/>.
+        /// </summary>
+        public Action<Grid2DIndexTerrainGridMeshObjects> TerrainGridMeshObjectMeshModifiedEvent;
 
         /// <summary>
         /// Dispatched when a <see cref="DepictionEngine.TerrainGridMeshObject"/> is added.
@@ -904,16 +930,16 @@ namespace DepictionEngine
 
         public Vector2Int grid2DDimensions
         {
-            get { return _grid2DDimensions; }
+            get => _grid2DDimensions;
         }
         public Vector2Int grid2DIndex
         {
-            get { return _grid2DIndex; }
+            get => _grid2DIndex;
         }
 
         public int Count
         {
-            get { return _terrainGridMeshObjects.Count; }
+            get => _terrainGridMeshObjects.Count; 
         }
 
         public bool Contains(TerrainGridMeshObject terrainGridMeshObject)
@@ -966,6 +992,7 @@ namespace DepictionEngine
             terrainGridMeshObject.PropertyAssignedEvent += TerrainGridMeshObjectPropertyAssignedHandler;
             terrainGridMeshObject.ChildAddedEvent += TerrainGridMeshObjectChildAddedHandler;
             terrainGridMeshObject.ChildRemovedEvent += TerrainGridMeshObjectChildRemovedHandler;
+            terrainGridMeshObject.ProcessingCompletedEvent += TerrainGridMeshObjectMeshModifiedHandler;
             terrainGridMeshObject.DisposedEvent += TerrainGridMeshObjectDisposedHandler;
         }
 
@@ -974,6 +1001,7 @@ namespace DepictionEngine
             terrainGridMeshObject.PropertyAssignedEvent -= TerrainGridMeshObjectPropertyAssignedHandler;
             terrainGridMeshObject.ChildAddedEvent -= TerrainGridMeshObjectChildAddedHandler;
             terrainGridMeshObject.ChildRemovedEvent -= TerrainGridMeshObjectChildRemovedHandler;
+            terrainGridMeshObject.ProcessingCompletedEvent -= TerrainGridMeshObjectMeshModifiedHandler;
             terrainGridMeshObject.DisposedEvent -= TerrainGridMeshObjectDisposedHandler;
         }
 
@@ -984,12 +1012,17 @@ namespace DepictionEngine
 
         protected void TerrainGridMeshObjectChildAddedHandler(Object objectBase, PropertyMonoBehaviour child)
         {
-            TerrainGridMeshObjectChildAddedEvent?.Invoke(objectBase, child);
+            TerrainGridMeshObjectChildAddedEvent?.Invoke(this, objectBase, child);
         }
 
         protected void TerrainGridMeshObjectChildRemovedHandler(Object objectBase, PropertyMonoBehaviour child)
         {
-            TerrainGridMeshObjectChildRemovedEvent?.Invoke(objectBase, child);
+            TerrainGridMeshObjectChildRemovedEvent?.Invoke(this, objectBase, child);
+        }
+
+        protected void TerrainGridMeshObjectMeshModifiedHandler()
+        {
+            TerrainGridMeshObjectMeshModifiedEvent?.Invoke(this);
         }
 
         protected void TerrainGridMeshObjectDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
@@ -1051,12 +1084,12 @@ namespace DepictionEngine
 
         public static bool operator <(Grid2DIndexTerrainGridMeshObjects a, Grid2DIndexTerrainGridMeshObjects b)
         {
-            return a.grid2DDimensions.x < b.grid2DDimensions.x;
+            return a.grid2DDimensions.x < b.grid2DDimensions.x || a.grid2DDimensions.y < b.grid2DDimensions.y;
         }
 
         public static bool operator >(Grid2DIndexTerrainGridMeshObjects a, Grid2DIndexTerrainGridMeshObjects b)
         {
-            return a.grid2DDimensions.x > b.grid2DDimensions.x;
+            return a.grid2DDimensions.x > b.grid2DDimensions.x || a.grid2DDimensions.y > b.grid2DDimensions.y;
         }
 
         public override bool OnDispose(DisposeContext disposeContext)
@@ -1072,6 +1105,7 @@ namespace DepictionEngine
                 TerrainGridMeshObjectPropertyAssignedEvent = null;
                 TerrainGridMeshObjectChildAddedEvent = null;
                 TerrainGridMeshObjectChildRemovedEvent = null;
+                TerrainGridMeshObjectMeshModifiedEvent = null;
                 TerrainGridMeshObjectAddedEvent = null;
                 TerrainGridMeshObjectRemovedEvent = null;
 
