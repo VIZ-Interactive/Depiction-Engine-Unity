@@ -359,3 +359,4 @@ healthchecksdb
 *.unitypackage
 /Assets/Smart Turret Template
 /Assets/test.unity
+/Assets/test2.unity
