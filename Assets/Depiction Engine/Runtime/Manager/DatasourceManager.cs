@@ -67,11 +67,15 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                sceneDatasource?.UndoRedoPerformed();
 
-            sceneDatasource?.UndoRedoPerformed();
+                return true;
+            }
+            return false;
         }
 #endif
 
@@ -106,9 +110,8 @@ namespace DepictionEngine
         {
             base.InstanceAddedHandler(property);
 
-            if (property is LoaderBase)
+            if (property is LoaderBase loader)
             {
-                LoaderBase loader = property as LoaderBase;
                 RemoveLoaderDelegates(loader);
                 DatasourceLoadersChanged(loader);
             }
@@ -118,9 +121,8 @@ namespace DepictionEngine
         {
             base.InstanceAddedHandler(property);
             
-            if (property is LoaderBase)
+            if (property is LoaderBase loader)
             {
-                LoaderBase loader = property as LoaderBase;
                 AddLoaderDelegates(loader);
                 DatasourceLoadersChanged(loader);
             }

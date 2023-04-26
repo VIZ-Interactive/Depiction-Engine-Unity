@@ -90,7 +90,7 @@ namespace DepictionEngine
 
             private static IEnumerable PopulateOperationResult(OperationResult operationResult, WebRequestProcessorParameters webRequestProcessorParameters)
             {
-                if (operationResult is OperationResult)
+                if (operationResult is not null)
                 {
                     LoadWebRequestProcessorParameters loadWebRequestProcessorParameters = webRequestProcessorParameters as LoadWebRequestProcessorParameters;
 
@@ -112,9 +112,11 @@ namespace DepictionEngine
                                     {
                                         JSONNode levelMeshObjectJsonResult = jsonResult["levels"][i];
 
-                                        JSONObject levelJsonResult = new();
-                                        levelJsonResult["id"] = SerializableGuid.NewGuid().ToString();
-                                        levelJsonResult["name"] = levelMeshObjectJsonResult["name"];
+                                        JSONObject levelJsonResult = new()
+                                        {
+                                            ["id"] = SerializableGuid.NewGuid().ToString(),
+                                            ["name"] = levelMeshObjectJsonResult["name"]
+                                        };
                                         jsonResult["children"].Add(levelJsonResult);
 
                                         levelJsonResult["type"] = typeof(Level).FullName;
@@ -172,9 +174,11 @@ namespace DepictionEngine
 
                     if (json["longitude"] != null && json["latitude"] != null)
                     {
-                        JSONObject transformJson = new JSONObject();
-                        transformJson["type"] = typeof(TransformDouble).FullName;
-                        transformJson["geoCoordinate"] = JsonUtility.ToJson(new GeoCoordinate3Double(json["latitude"], json["longitude"]));
+                        JSONObject transformJson = new()
+                        {
+                            ["type"] = typeof(TransformDouble).FullName,
+                            ["geoCoordinate"] = JsonUtility.ToJson(new GeoCoordinate3Double(json["latitude"], json["longitude"]))
+                        };
                         json.Remove("latitude");
                         json.Remove("longitude");
                         json["transform"] = transformJson;
@@ -193,8 +197,7 @@ namespace DepictionEngine
                             json.Remove("wallsBuffers");
                             json.Remove("ceilingBuffers");
 
-                            if (propertyModifiers == null)
-                                propertyModifiers = new List<PropertyModifier>();
+                            propertyModifiers ??= new();
                             propertyModifiers.Add(levelModifier);
                         }
                     }
@@ -203,8 +206,7 @@ namespace DepictionEngine
                         BuildingFeatureModifier buildingfeatureModifier = CreatePropertyModifier<BuildingFeatureModifier>();
                         if (buildingfeatureModifier != Disposable.NULL && BuildingFeatureProcessingFunctions.ParseJSON(json, buildingfeatureModifier, loadOperationResultParameters.cancellationTokenSource))
                         {
-                            if (propertyModifiers == null)
-                                propertyModifiers = new List<PropertyModifier>();
+                            propertyModifiers ??= new();
                             propertyModifiers.Add(buildingfeatureModifier);
                         }
                     }
@@ -216,8 +218,7 @@ namespace DepictionEngine
                         JSONArray childrenJson = json["children"].AsArray;
                         foreach (JSONObject jsonItem in childrenJson)
                         {
-                            if (children == null)
-                                children = new List<LoadResultData>();
+                            children ??= new();
                             children.Add(GetLoadResultDataFromJson(loadOperationResultParameters, jsonItem));
                         }
                     }
@@ -313,8 +314,7 @@ namespace DepictionEngine
 
                             if (textureModifier != Disposable.NULL)
                             {
-                                if (propertyModifiers == null)
-                                    propertyModifiers = new List<PropertyModifier>();
+                                propertyModifiers ??= new List<PropertyModifier>();
                                 propertyModifiers.Add(textureModifier);
                             }
                         }

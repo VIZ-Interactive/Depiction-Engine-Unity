@@ -40,7 +40,7 @@ namespace DepictionEngine
         [Json]
         public Vector2Int reflectionTextureSize
         {
-            get { return _reflectionTextureSize; }
+            get => _reflectionTextureSize;
             set 
             {
                 if (value.x < 2)
@@ -57,8 +57,8 @@ namespace DepictionEngine
         [Json]
         public bool renderShadows
         {
-            get { return _renderShadows; }
-            set { SetValue(nameof(renderShadows), value, ref _renderShadows); }
+            get => _renderShadows;
+            set => SetValue(nameof(renderShadows), value, ref _renderShadows);
         }
 
         /// <summary>
@@ -67,20 +67,19 @@ namespace DepictionEngine
         [Json]
         public int ignoreLayers
         {
-            get { return _ignoreLayers; }
-            set { SetValue(nameof(ignoreLayers), value, ref _ignoreLayers); }
+            get => _ignoreLayers;
+            set => SetValue(nameof(ignoreLayers), value, ref _ignoreLayers);
         }
 
         private RenderTexture reflectionTexture
         {
-            get { return _reflectionTexture; }
+            get => _reflectionTexture;
             set
             {
                 if (Object.ReferenceEquals(_reflectionTexture, value))
                     return;
 
-                if (!Object.ReferenceEquals(_reflectionTexture, null))
-                    DisposeManager.Dispose(_reflectionTexture);
+                DisposeManager.Dispose(_reflectionTexture);
 
                 _reflectionTexture = value;
                 _reflectionTextureDirty = true;

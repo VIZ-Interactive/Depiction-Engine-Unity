@@ -270,12 +270,16 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                //UndoManager.RecordObject does not work with UnityMesh so when we detect an Undo/Redo we push the UVs back onto the UnityMesh in case an icon change was part of the Undo/Redo
+                UpdateUILabelMeshUVs();
 
-            //UndoManager.RecordObject does not work with UnityMesh so when we detect an Undo/Redo we push the UVs back onto the UnityMesh in case an icon change was part of the Undo/Redo
-            UpdateUILabelMeshUVs();
+                return true;
+            }
+            return false;
         }
 #endif
 
@@ -354,13 +358,13 @@ namespace DepictionEngine
 
         private SerializableGuid buildingId
         {
-            get { return _buildingId; }
-            set { _buildingId = value; }
+            get => _buildingId;
+            set => _buildingId = value;
         }
 
         private Building building
         {
-            get { return _building; }
+            get => _building;
             set 
             {
                 if (Object.ReferenceEquals(_building, value))
@@ -377,8 +381,8 @@ namespace DepictionEngine
         [Json]
         public Color color
         {
-            get { return _color; }
-            set { SetValue(nameof(color), value, ref _color); }
+            get => _color;
+            set => SetValue(nameof(color), value, ref _color);
         }
 
 #if UNITY_EDITOR
@@ -409,7 +413,7 @@ namespace DepictionEngine
 #endif
         public float badgeOffset
         {
-            get { return _badgeOffset; }
+            get => _badgeOffset;
             set
             {
                 SetValue(nameof(badgeOffset), value < 0.0f ? 0.0f : value, ref _badgeOffset, (newValue, oldValue) =>
@@ -425,7 +429,7 @@ namespace DepictionEngine
         [Json]
         public Icon icon
         {
-            get { return _icon; }
+            get => _icon;
             set 
             { 
                 SetValue(nameof(icon), value, ref _icon, (newValue, oldValue) => 
@@ -441,14 +445,14 @@ namespace DepictionEngine
         [Json]
         public string additionalData
         {
-            get { return _additionalData; }
-            set { SetValue(nameof(additionalData), value, ref _additionalData); }
+            get => _additionalData;
+            set => SetValue(nameof(additionalData), value, ref _additionalData);
         }
 
         private Color currentColor
         {
-            get { return _currentColor; }
-            set { SetValue(nameof(currentColor), value, ref _currentColor); }
+            get => _currentColor;
+            set => SetValue(nameof(currentColor), value, ref _currentColor);
         }
 
         private CharacterInfo characterInfo
@@ -512,14 +516,6 @@ namespace DepictionEngine
                 UpdateUILabelTransform();
                 UpdateUILabelMeshUVs();
             }
-
-            transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
-            {
-                if (meshRendererVisual.name == BADGE_MESH_NAME)
-                    UpdateMeshRendererVisualCollider(meshRendererVisual, visualsChanged);
-
-                return true;
-            });
         }
 
         private void UpdateUILabelTransform()
@@ -619,14 +615,14 @@ namespace DepictionEngine
         private static Texture2D _shadowTexture;
         private Texture2D GetShadowTexture()
         {
-            _shadowTexture ??= Resources.Load<Texture2D>("Texture/Marker/Shadow");
+            _shadowTexture = _shadowTexture != null ? _shadowTexture : Resources.Load<Texture2D>("Texture/Marker/Shadow");
             return _shadowTexture;
         }
 
         private static Texture2D _badgeLuminosityTexture;
         private Texture2D GetBadgeLuminosityTextureShadowTexture()
         {
-            _badgeLuminosityTexture ??= Resources.Load<Texture2D>("Texture/Marker/Marker");
+            _badgeLuminosityTexture = _badgeLuminosityTexture != null ? _badgeLuminosityTexture : Resources.Load<Texture2D>("Texture/Marker/Marker");
             return _badgeLuminosityTexture;
         }
 

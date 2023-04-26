@@ -48,6 +48,7 @@ namespace DepictionEngine.Editor
 
         private static void UndoRedoPerformed()
         {
+            //Object.FindObjectsOfType does not include objects with hideFlags 'dontSave'
             MonoBehaviourDisposable[] monoBehaviourDisposables = Object.FindObjectsOfType<MonoBehaviourDisposable>(true);
             foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
                 monoBehaviourDisposable.UndoRedoPerformed();
@@ -498,7 +499,7 @@ namespace DepictionEngine.Editor
             {
                 if (IsInitialized(transform))
                 {
-                    Undo.SetTransformParent(transform?.transform, newParent?.transform, worldPositionStays, Undo.GetCurrentGroupName());
+                    Undo.SetTransformParent(transform != null ? transform.transform : null, newParent != null ? newParent.transform : null, worldPositionStays, Undo.GetCurrentGroupName());
                     UndoRedoPerformed(transform);
                 }
             }
@@ -750,9 +751,8 @@ namespace DepictionEngine.Editor
 
         private static bool IsInitialized(UnityEngine.Object unityObject)
         {
-            if (unityObject is IScriptableBehaviour)
+            if (unityObject is IScriptableBehaviour scriptableBehaviour)
             {
-                IScriptableBehaviour scriptableBehaviour = (IScriptableBehaviour)unityObject;
                 return scriptableBehaviour.initialized || scriptableBehaviour.isFallbackValues;
             }
             return true;
@@ -822,7 +822,7 @@ namespace DepictionEngine.Editor
                     _undoOperationsQueue.Add(objectInstanceId, new(existingUndoOperationType, operationParam.Item2, operationParam.Item3, operationParam.Item4));
                 }
             }
-
+            Debug.LogError(objectToUndo +", "+undoOperationType);
             UndoRedoPerformed(objectToUndo);
         }
 
@@ -878,7 +878,7 @@ namespace DepictionEngine.Editor
                         AddAffectSiblings(ref affectedSiblings);
                         Undo.PerformRedo();
 
-                        void AddAffectSiblings(ref List<TransformBase> affectedSiblings)
+                        static void AddAffectSiblings(ref List<TransformBase> affectedSiblings)
                         {
                             foreach (GameObject selectedGameObject in UnityEditor.Selection.gameObjects)
                             {
@@ -893,7 +893,8 @@ namespace DepictionEngine.Editor
                                     foreach (GameObject sibling in rootGameObjects)
                                         AddSibling(ref affectedSiblings, sibling.transform);
                                 }
-                                void AddSibling(ref List<TransformBase> affectedSiblings, Transform sibling)
+
+                                static void AddSibling(ref List<TransformBase> affectedSiblings, Transform sibling)
                                 {
                                     TransformBase siblingTransform = sibling.GetComponent<TransformBase>();
                                     if (siblingTransform != Disposable.NULL && !affectedSiblings.Contains(siblingTransform))

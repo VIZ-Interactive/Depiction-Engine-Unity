@@ -229,9 +229,10 @@ namespace DepictionEngine
             return false;
         }
 
-        public override void HierarchicalFixedUpdate()
+        protected override void FixedUpdate()
         {
-            base.HierarchicalFixedUpdate();
+            base.FixedUpdate();
+
             SentExternalEventMessage(HIERARCHICAL_FIXED_UPDATE_EVENT);
         }
 

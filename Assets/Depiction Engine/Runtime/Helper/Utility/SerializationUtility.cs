@@ -98,7 +98,7 @@ namespace DepictionEngine
 
         public static bool RecoverLostReferencedObject<T>(ref T unityObject) where T : UnityEngine.Object
         {
-            if (!Object.ReferenceEquals(unityObject, null) && unityObject == null)
+            if (unityObject is not null && unityObject == null)
             {
                 UnityEngine.Object recoveredObject = UnityEditor.EditorUtility.InstanceIDToObject(unityObject.GetInstanceID());
                 if (recoveredObject != null)
@@ -107,7 +107,7 @@ namespace DepictionEngine
             return unityObject != null;
         }
 
-        public static void PerformUndoRedoPropertyChange<T>(Action<T> callback, ref T field, ref T lastField)
+        public static void PerformUndoRedoPropertyAssign<T>(Action<T> callback, ref T field, ref T lastField)
         {
             T newValue = field;
             field = lastField;

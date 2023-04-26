@@ -107,6 +107,14 @@ namespace DepictionEngine
 
         private static Dictionary<SerializableGuid, SerializableGuid> _duplicatingIdMapping;
 
+        public static bool preventAutoInitialize 
+        { 
+            get => _preventAutoInitialize; 
+            set => _preventAutoInitialize = value;
+        }
+        [ThreadStatic]
+        private static bool _preventAutoInitialize = false;
+
         [ThreadStatic]
         public static InitializationContext initializingContext = InitializationContext.Editor;
         [ThreadStatic]
@@ -322,7 +330,7 @@ namespace DepictionEngine
 
         public static List<SerializableGuid> GetDuplicatedObjectIds(List<SerializableGuid> ids)
         {
-            List<SerializableGuid> duplicatedObjectIds = new List<SerializableGuid>();
+            List<SerializableGuid> duplicatedObjectIds = new();
             foreach (SerializableGuid id in ids)
                 duplicatedObjectIds.Add(GetDuplicatedObjectId(id));
             return duplicatedObjectIds;
@@ -362,6 +370,8 @@ namespace DepictionEngine
                         IterateOverEnumerable(type, cameras, callback);
                     else if (typeof(VisualObject).IsAssignableFrom(type))
                         IterateOverEnumerable(type, visualObjects.Values, callback);
+                    else if (typeof(AstroObject).IsAssignableFrom(type))
+                        IterateOverEnumerable(type, astroObjects.Values, callback);
                     else
                         IterateOverEnumerable(type, persistentMonoBehaviours.Values, callback);
                 }
@@ -671,37 +681,36 @@ namespace DepictionEngine
             SerializableGuid id = property.id;
 
             bool added = false;
-            if (property is TransformBase)
+            if (property is TransformBase transform)
             {
                 if (!transforms.ContainsKey(id))
                 {
                     added = true;
-                    transforms[id] = property as TransformBase;
+                    transforms[id] = transform;
                 }
             }
             else if (property is IPersistent)
             {
-                if (property is PersistentMonoBehaviour)
+                if (property is PersistentMonoBehaviour persistentMonoBehaviour)
                 {
                     if (!persistentMonoBehaviours.ContainsKey(id))
                     {
-                        if (property is VisualObject)
+                        if (persistentMonoBehaviour is VisualObject visualObject)
                         {
                             if (!visualObjects.ContainsKey(id))
                             {
-                                visualObjects[id] = property as VisualObject;
-                                if (property is TerrainGridMeshObject)
-                                    terrainGridMeshObjects[id] = property as TerrainGridMeshObject;
+                                visualObjects[id] = visualObject;
+                                if (visualObject is TerrainGridMeshObject terrainGridMeshObject)
+                                    terrainGridMeshObjects[id] = terrainGridMeshObject;
                                 added = true;
                             }
                         }
-                        else if (property is AstroObject)
+                        else if (persistentMonoBehaviour is AstroObject astroObject)
                         {
                             if (!astroObjects.ContainsKey(id))
                             {
-                                if (property is Star)
+                                if (astroObject is Star star)
                                 {
-                                    Star star = property as Star;
                                     if (!stars.Contains(star))
                                     {
                                         if (stars.Count == 0)
@@ -710,28 +719,26 @@ namespace DepictionEngine
                                             added = true;
                                         }
                                         else
-                                            errorMsg = GetMutlipleInstanceErrorMsg(property);
+                                            errorMsg = GetMutlipleInstanceErrorMsg(star);
                                     }
                                 }
                                 else
                                     added = true;
 
                                 if (added)
-                                    astroObjects[id] = property as AstroObject;
+                                    astroObjects[id] = astroObject;
                             }
                         }
-                        else if (property is StarSystem)
+                        else if (persistentMonoBehaviour is StarSystem starSystem)
                         {
-                            StarSystem starSystem = property as StarSystem;
                             if (!starSystems.Contains(starSystem))
                             {
                                 starSystems.Add(starSystem);
                                 added = true;
                             }
                         }
-                        else if (property is Camera)
+                        else if (persistentMonoBehaviour is Camera camera)
                         {
-                            Camera camera = property as Camera;
                             if (!cameras.Contains(camera))
                             {
                                 cameras.Add(camera);
@@ -743,87 +750,87 @@ namespace DepictionEngine
                             added = true;
 
                         if (added)
-                            persistentMonoBehaviours[id] = property as PersistentMonoBehaviour;
+                            persistentMonoBehaviours[id] = persistentMonoBehaviour;
                     }
                 }
-                else if (property is PersistentScriptableObject)
+                else if (property is PersistentScriptableObject persistentScriptableObject)
                 {
                     if (!persistentScriptableObjects.ContainsKey(id))
                     {
-                        persistentScriptableObjects[id] = property as PersistentScriptableObject;
+                        persistentScriptableObjects[id] = persistentScriptableObject;
                         added = true;
                     }
                 }
             }
-            else if (property is Script)
+            else if (property is Script script)
             {
-                if (property is AnimatorBase)
+                if (script is AnimatorBase animator)
                 {
                     if (!animators.ContainsKey(id))
                     {
                         added = true;
-                        animators[id] = property as AnimatorBase;
+                        animators[id] = animator;
                     }
                 }
-                else if (property is ControllerBase)
+                else if (script is ControllerBase controller)
                 {
                     if (!controllers.ContainsKey(id))
                     {
                         added = true;
-                        controllers[id] = property as ControllerBase;
+                        controllers[id] = controller;
                     }
                 }
-                else if (property is GeneratorBase)
+                else if (script is GeneratorBase generator)
                 {
                     if (!generators.ContainsKey(id))
                     {
                         added = true;
-                        generators[id] = property as GeneratorBase;
+                        generators[id] = generator;
                     }
                 }
-                else if (property is ReferenceBase)
+                else if (script is ReferenceBase reference)
                 {
                     if (!references.ContainsKey(id))
                     {
                         added = true;
-                        references[id] = property as ReferenceBase;
+                        references[id] = reference;
                     }
                 }
-                else if (property is EffectBase)
+                else if (script is EffectBase effect)
                 {
                     if (!effects.ContainsKey(id))
                     {
                         added = true;
-                        effects[id] = property as EffectBase;
+                        effects[id] = effect;
                     }
                 }
-                else if (property is FallbackValues)
+                else if (script is FallbackValues fallback)
                 {
                     if (!fallbackValues.ContainsKey(id))
                     {
                         added = true;
-                        fallbackValues[id] = property as FallbackValues;
+                        fallbackValues[id] = fallback;
                     }
                 }
-                else if (property is DatasourceBase)
+                else if (script is DatasourceBase datasource)
                 {
                     if (!datasources.ContainsKey(id))
                     {
                         added = true;
-                        datasources[id] = property as DatasourceBase;
+                        datasources[id] = datasource;
                     }
                 }
             }
-            else if (property is ManagerBase)
+            else if (property is ManagerBase manager)
             {
                 if (!managers.ContainsKey(id))
                 {
                     bool managerExist = false;
 
-                    Type managerType = property.GetType();
-                    foreach (ManagerBase manager in managers.Values)
+                    Type managerType = manager.GetType();
+                    foreach (ManagerBase existingManager in managers.Values)
                     {
-                        if (manager.GetType() == managerType)
+                        if (existingManager.GetType() == managerType)
                         {
                             managerExist = true;
                             errorMsg = "You can only have one '" + managerType.Name + "' instance per Scene.";
@@ -834,7 +841,7 @@ namespace DepictionEngine
                     if (!managerExist)
                     {
                         added = true;
-                        managers[id] = property as ManagerBase;
+                        managers[id] = manager;
                     }
                 }
             }
@@ -906,18 +913,14 @@ namespace DepictionEngine
                         {
                             if (astroObjects.Remove(id))
                             {
-                                if (property is Star)
-                                    stars.Remove(property as Star);
+                                if (property is Star star)
+                                    stars.Remove(star);
                             }
                         }
-                        else if (property is StarSystem)
-                        {
-                            StarSystem starSystem = property as StarSystem;
+                        else if (property is StarSystem starSystem)
                             starSystems.Remove(starSystem);
-                        }
-                        else if (property is Camera)
+                        else if (property is Camera camera)
                         {
-                            Camera camera = property as Camera;
                             int index = cameras.IndexOf(camera);
                             cameras.RemoveAt(index);
                             camerasInstanceIds.RemoveAt(index);
@@ -994,6 +997,7 @@ namespace DepictionEngine
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
         /// <param name="isFallbackValues">If true a <see cref="DepictionEngine.FallbackValues"/> will be created and the instance type will be passed to the <see cref="DepictionEngine.FallbackValues.SetFallbackJsonFromType"/> function.</param>
         /// <returns>The newly created instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         public T CreateInstance<T>(Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false) where T : IDisposable
         {
             return (T)CreateInstance(typeof(T), parent, json, propertyModifiers, initializingContext, setParentAndAlign, moveToView, isFallbackValues);
@@ -1011,15 +1015,23 @@ namespace DepictionEngine
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
         /// <param name="isFallbackValues">If true a <see cref="DepictionEngine.FallbackValues"/> will be created and the instance type will be passed to the <see cref="DepictionEngine.FallbackValues.SetFallbackJsonFromType"/> function.</param>
         /// <returns>The newly created instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IDisposable CreateInstance(Type type, Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false)
         {
             if (SceneManager.sceneClosing || type == null)
                 return null;
 
+            IDisposable disposable = null;
+
             if (initializingContext == InitializationContext.Existing)
                 initializingContext = InitializationContext.Programmatically;
 
-            bool isMonoBehaviourType = type.IsSubclassOf(typeof(MonoBehaviour));
+            if (initializingContext != InitializationContext.Editor && initializingContext != InitializationContext.Editor_Duplicate)
+            {
+                PoolManager poolManager = PoolManager.Instance();
+                if (poolManager != Disposable.NULL)
+                    disposable = poolManager.GetFromPool(type);
+            }
 
             if (json != null)
             {
@@ -1031,104 +1043,61 @@ namespace DepictionEngine
                         [nameof(IPersistent.name)] = name
                     };
                 }
-                if (json[nameof(Object.transform)] != null && !string.IsNullOrEmpty(json[nameof(Object.transform)][nameof(TransformBase.parent)]))
+            }
+
+            if (disposable is not null)
+            {
+                //Pooled Instance Recycled
+                if (disposable is MonoBehaviourDisposable monoBehaviourDisposable)
                 {
-                    //If Parent does not exist do not create the Object
-                    TransformBase parentTransform = GetTransform(SerializableGuid.Parse(json[nameof(Object.transform)][nameof(TransformBase.parent)]));
-                    json[nameof(Object.transform)].Remove(nameof(TransformBase.parent));
-                    if (parentTransform != Disposable.NULL)
-                        parent = parentTransform.transform;
+                    GameObject go = InitializeGameObject(monoBehaviourDisposable.gameObject, GetParentFromJson(parent, json), setParentAndAlign, moveToView);
+
+                    disposable = go.GetSafeComponent(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
                 }
+                else
+                    Initialize(disposable, initializingContext, json, propertyModifiers, isFallbackValues);
             }
-
-            IDisposable disposable = null;
-
-            if (initializingContext != InitializationContext.Editor && initializingContext != InitializationContext.Editor_Duplicate)
+            else 
             {
-                PoolManager poolManager = PoolManager.Instance();
-                if (poolManager != Disposable.NULL)
-                    disposable = poolManager.GetFromPool(type);
-            }
-
-            if (disposable is null)
-            {
-                if (isMonoBehaviourType)
+                //New Instance Created
+                if (type.IsSubclassOf(typeof(MonoBehaviour)))
                 {
-                    GameObject go = new();
-                    InitializeGameObject(go, parent, setParentAndAlign, moveToView);
-
+                    GameObject go = InitializeGameObject(new(), GetParentFromJson(parent, json), setParentAndAlign, moveToView);
 #if UNITY_EDITOR
                     Editor.UndoManager.QueueRegisterCreatedObjectUndo(go, initializingContext);
 #endif
-
                     disposable = go.AddSafeComponent(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
                 }
                 else if (typeof(IDisposable).IsAssignableFrom(type))
                 {
-                    InitializingContext(() =>
+                    if (typeof(IScriptableBehaviour).IsAssignableFrom(type))
                     {
-                        if (typeof(IScriptableBehaviour).IsAssignableFrom(type))
-                            disposable = ScriptableObject.CreateInstance(type) as IScriptableBehaviour;
-                        else
-                            disposable = Activator.CreateInstance(type) as IDisposable;
-
+                        _preventAutoInitialize = true;
+                        disposable = ScriptableObject.CreateInstance(type) as IScriptableBehaviour;
+                        _preventAutoInitialize = false;
+                    }
+                    else
+                        disposable = Activator.CreateInstance(type) as IDisposable;
 #if UNITY_EDITOR
-                        Editor.UndoManager.QueueRegisterCreatedObjectUndo(disposable as UnityEngine.Object, initializingContext);
+                    Editor.UndoManager.QueueRegisterCreatedObjectUndo(disposable as UnityEngine.Object, initializingContext);
 #endif
-
-                        disposable.Initialize();
-
-                    }, initializingContext, json, propertyModifiers, isFallbackValues);
+                    disposable = Initialize(disposable, initializingContext, json, propertyModifiers, isFallbackValues);
                 }
-            }
-            else if (disposable is MonoBehaviourDisposable)
-            {
-                GameObject go = (disposable as MonoBehaviourDisposable).gameObject;
-                InitializeGameObject(go, parent, setParentAndAlign, moveToView);
-
-                MonoBehaviourDisposable[] components = go.GetComponents<MonoBehaviourDisposable>();
-
-                foreach (MonoBehaviourDisposable component in components)
-                    component.InhibitExplicitOnEnableDisable();
-
-                go.SetActive(true);
-                disposable = go.GetSafeComponent(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
-
-                foreach (MonoBehaviourDisposable component in components)
-                    component.UninhibitExplicitOnEnableDisable();
-
-                foreach (MonoBehaviourDisposable component in components)
-                {
-                    if (!Object.ReferenceEquals(disposable, component))
-                        component.ExplicitOnEnable();
-                }
-            }
-            else
-                Initialize(disposable, initializingContext, json, propertyModifiers, isFallbackValues);
-
-            if (!disposable.IsDisposing())
-            {
-                if (disposable is IScriptableBehaviour)
-                    (disposable as IScriptableBehaviour).ExplicitOnEnable();
-            }
-
-            static void InitializeGameObject(GameObject gameObject, Transform newParent, bool setParentAndAlign, bool moveToView)
-            {
-                Transform goTransform = gameObject.transform;
-#if UNITY_EDITOR
-                if (setParentAndAlign)
-                    UnityEditor.GameObjectUtility.SetParentAndAlign(gameObject, newParent != null ? newParent.gameObject : null);
-#endif
-                if (goTransform.parent != newParent)
-                    goTransform.SetParent(newParent, false);
-
-#if UNITY_EDITOR
-                if (moveToView && goTransform.parent == null && UnityEditor.SceneView.lastActiveSceneView != null)
-                    UnityEditor.SceneView.lastActiveSceneView.MoveToView(goTransform);
-#endif
             }
 
             return disposable;
+        }
+
+        private Transform GetParentFromJson(Transform parent, JSONNode json)
+        {
+            if (json != null && json[nameof(Object.transform)] != null && !string.IsNullOrEmpty(json[nameof(Object.transform)][nameof(TransformBase.parent)]))
+            {
+                TransformBase parentTransform = GetTransform(SerializableGuid.Parse(json[nameof(Object.transform)][nameof(TransformBase.parent)]));
+                json[nameof(Object.transform)].Remove(nameof(TransformBase.parent));
+                if (parentTransform != Disposable.NULL)
+                    parent = parentTransform.transform;
+            }
+            return parent;
         }
 
         /// <summary>
@@ -1138,53 +1107,75 @@ namespace DepictionEngine
         /// <param name="objectToDuplicate">The UnityEngine.Object instance to duplicate.</param>
         /// <param name="initializingContext"></param>
         /// <returns>The duplicated object</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Duplicate<T>(T objectToDuplicate, InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Object
         {
             T duplicatedObject = null;
 
             if (!DisposeManager.IsNullOrDisposing(objectToDuplicate))
             {
-                InitializingContext(() =>
-                {
-                    duplicatedObject = Object.Instantiate(objectToDuplicate);
-
+                _preventAutoInitialize = true;
+                duplicatedObject = Object.Instantiate(objectToDuplicate);
+                _preventAutoInitialize = false;
 #if UNITY_EDITOR
-                    Editor.UndoManager.QueueRegisterCreatedObjectUndo(duplicatedObject, initializingContext);
+                Editor.UndoManager.QueueRegisterCreatedObjectUndo(duplicatedObject, initializingContext);
 #endif
+                duplicatedObject = Initialize(duplicatedObject, initializingContext);
 
-                    if (duplicatedObject is IDisposable)
-                        (duplicatedObject as IDisposable).Initialize();
-
-                    LateInitializeObjects();
-                }, initializingContext);
+                LateInitializeObjects();
             }
 
             return duplicatedObject;
         }
 
-        public static void LateInitializeObjects()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static GameObject InitializeGameObject(GameObject gameObject, Transform newParent, bool setParentAndAlign, bool moveToView)
         {
-            SceneManager.InvokeAction(ref LateInitializeEvent, "LateInitialize", SceneManager.ExecutionState.LateInitialize);
-            SceneManager.InvokeAction(ref PostLateInitializeEvent, "PostLateInitialize", SceneManager.ExecutionState.PostLateInitialize);
+            Transform goTransform = gameObject.transform;
+
+#if UNITY_EDITOR
+            if (setParentAndAlign)
+                UnityEditor.GameObjectUtility.SetParentAndAlign(gameObject, newParent != null ? newParent.gameObject : null);
+#endif
+            if (goTransform.parent != newParent)
+                goTransform.SetParent(newParent, false);
+
+#if UNITY_EDITOR
+            if (moveToView && goTransform.parent == null && UnityEditor.SceneView.lastActiveSceneView != null)
+                UnityEditor.SceneView.lastActiveSceneView.MoveToView(goTransform);
+#endif
+            return gameObject;
         }
 
         /// <summary>
         /// Initialize an object.
         /// </summary>
-        /// <param name="disposable">The object to initialize.</param>
+        /// <param name="obj">The object to initialize.</param>
         /// <param name="initializingContext"></param>
         /// <param name="json">Values to initialize the instance with.</param>
         /// <param name="propertyModifiers">A list of <see cref="DepictionEngine.PropertyModifier"/>'s used to modify properties that cannot be initialized through json.</param>
         /// <param name="isFallbackValues">If true a <see cref="DepictionEngine.FallbackValues"/> will be created and the instance type will be passed to the <see cref="DepictionEngine.FallbackValues.SetFallbackJsonFromType"/> function.</param>
         /// <returns>The object that was initialized.</returns>
-        public static IDisposable Initialize(IDisposable disposable, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Initialize<T>(T obj, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
-            InitializingContext(() => { disposable.Initialize(); }, initializingContext, json, propertyModifiers, isFallbackValues);
+            if (obj is IDisposable disposable)
+            {
+                //Make sure object is not disposed
+                if (DisposeManager.IsNullOrDisposing(disposable))
+                    return default(T);
 
-            return disposable;
+                InitializingContext(() => { disposable.Initialize(); }, initializingContext, json, propertyModifiers, isFallbackValues);
+
+                //The IDisposable might have been disposed if the initialization was not valid.
+                if (DisposeManager.IsNullOrDisposing(disposable))
+                    return default(T);
+            }
+
+            return obj;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         public static void InitializingContext(Action callback, InitializationContext initializingContext, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
             InitializationContext lastinitializingContext = InstanceManager.initializingContext;
@@ -1203,6 +1194,12 @@ namespace DepictionEngine
             InstanceManager.initializeJSON = lastInitializeJSON;
             InstanceManager.initializePropertyModifiers = lastInitializePropertyModifers;
             InstanceManager.initializeIsFallbackValues = lastIsFallbackValues;
+        }
+
+        public static void LateInitializeObjects()
+        {
+            SceneManager.InvokeAction(ref LateInitializeEvent, "LateInitialize", SceneManager.ExecutionState.LateInitialize);
+            SceneManager.InvokeAction(ref PostLateInitializeEvent, "PostLateInitialize", SceneManager.ExecutionState.PostLateInitialize);
         }
 
         protected override void LateUpdate()

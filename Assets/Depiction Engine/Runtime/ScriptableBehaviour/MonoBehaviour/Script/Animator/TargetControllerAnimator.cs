@@ -56,8 +56,8 @@ namespace DepictionEngine
         [Json]
         private Vector3Double toForwardVector
         {
-            get { return _toForwardVector; }
-            set { SetValue(nameof(toForwardVector), value, ref _toForwardVector); }
+            get => _toForwardVector;
+            set => SetValue(nameof(toForwardVector), value, ref _toForwardVector);
         }
 
         /// <summary>
@@ -66,13 +66,13 @@ namespace DepictionEngine
         [Json]
         private double toDistance
         {
-            get { return _toDistance; }
-            set { SetValue(nameof(toDistance), value, ref _toDistance); }
+            get => _toDistance;
+            set => SetValue(nameof(toDistance), value, ref _toDistance);
         }
 
         private Tween forwardVectorTween
         {
-            get { return _forwardVectorTween; }
+            get => _forwardVectorTween;
             set
             {
                 if (Object.ReferenceEquals(_forwardVectorTween, value))
@@ -139,7 +139,7 @@ namespace DepictionEngine
 
         private Tween distanceTween
         {
-            get { return _distanceTween; }
+            get => _distanceTween;
             set
             {
                 if (Object.ReferenceEquals(_distanceTween, value))

@@ -227,11 +227,15 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                datasource?.UndoRedoPerformed();
 
-            datasource?.UndoRedoPerformed();
+                return true;
+            }
+            return false;
         }
 #endif
 

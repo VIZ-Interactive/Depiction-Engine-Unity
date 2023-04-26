@@ -145,19 +145,23 @@ namespace DepictionEngine
         private GeoCoordinate3Double _lastGeoCoordinate;
         private QuaternionDouble _lastLocalRotation;
         private Vector3Double _lastLocalScale;
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
-
-            if (!IsDisposing())
+            if (base.UpdateUndoRedoSerializedFields())
             {
-                if (isGeoCoordinateTransform)
-                    SerializationUtility.PerformUndoRedoPropertyChange((value) => { geoCoordinate = value; }, ref _geoCoordinate, ref _lastGeoCoordinate);
-                else
-                    SerializationUtility.PerformUndoRedoPropertyChange((value) => { localPosition = value; }, ref _localPosition, ref _lastLocalPosition);
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { localRotation = value; }, ref _localRotation, ref _lastLocalRotation);
-                SerializationUtility.PerformUndoRedoPropertyChange((value) => { localScale = value; }, ref _localScale, ref _lastLocalScale);
+                if (!IsDisposing())
+                {
+                    if (isGeoCoordinateTransform)
+                        SerializationUtility.PerformUndoRedoPropertyAssign((value) => { geoCoordinate = value; }, ref _geoCoordinate, ref _lastGeoCoordinate);
+                    else
+                        SerializationUtility.PerformUndoRedoPropertyAssign((value) => { localPosition = value; }, ref _localPosition, ref _lastLocalPosition);
+                    SerializationUtility.PerformUndoRedoPropertyAssign((value) => { localRotation = value; }, ref _localRotation, ref _lastLocalRotation);
+                    SerializationUtility.PerformUndoRedoPropertyAssign((value) => { localScale = value; }, ref _localScale, ref _lastLocalScale);
+                }
+
+                return true;
             }
+            return false;
         }
 #endif
 
@@ -285,17 +289,17 @@ namespace DepictionEngine
 
         protected override bool positionDirty
         {
-            set { SetValue(nameof(position), value, ref _positionDirty); }
+            set => SetValue(nameof(position), value, ref _positionDirty);
         }
 
         protected override bool rotationDirty
         {
-            set { SetValue(nameof(rotation), value, ref _rotationDirty); }
+            set => SetValue(nameof(rotation), value, ref _rotationDirty);
         }
 
         protected override bool lossyScaleDirty
         {
-            set { SetValue(nameof(lossyScale), value, ref _lossyScaleDirty); }
+            set => SetValue(nameof(lossyScale), value, ref _lossyScaleDirty);
         }
 
         /// <summary>
@@ -330,7 +334,7 @@ namespace DepictionEngine
         /// </summary>
         public JSONNode localPositionJson
         {
-            get { return !isGeoCoordinateTransform ? JsonUtility.ToJson(localPosition) : null; }
+            get => !isGeoCoordinateTransform ? JsonUtility.ToJson(localPosition) : null;
             set
             {
                 if (JsonUtility.FromJson(out Vector3Double parsedLocalPosition, value))
@@ -349,7 +353,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IncludeLocalPosition), propertyName: nameof(localPositionJson))]
         public Vector3Double localPosition
         {
-            get { return _localPosition; }
+            get => _localPosition;
             set
             {
                 if (!localPositionParam.isGeoCoordinate)
@@ -380,7 +384,7 @@ namespace DepictionEngine
         /// </summary>
         public JSONNode geoCoordinateJson
         {
-            get { return isGeoCoordinateTransform ? JsonUtility.ToJson(geoCoordinate) : null; }
+            get => isGeoCoordinateTransform ? JsonUtility.ToJson(geoCoordinate) : null;
             set
             {
                 if (JsonUtility.FromJson(out GeoCoordinate3Double parsedGeoCoordinate, value))
@@ -399,7 +403,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IncludeGeoCoordinate), propertyName: nameof(geoCoordinateJson))]
         public GeoCoordinate3Double geoCoordinate
         {
-            get { return _geoCoordinate; }
+            get => _geoCoordinate;
             set
             {
                 if (localPositionParam.isGeoCoordinate)
@@ -491,7 +495,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         private Vector3Double localEditorEulerAnglesHint
         {
-            set { localRotation = GetLocalRotationFromInspectorEuler(value); }
+            set => localRotation = GetLocalRotationFromInspectorEuler(value);
         }
 #endif
 
@@ -500,8 +504,8 @@ namespace DepictionEngine
         /// </summary>
         public Vector3Double localEulerAngles
         {
-            get { return localRotation.eulerAngles; }
-            set { localRotation = QuaternionDouble.Euler(value); }
+            get => localRotation.eulerAngles;
+            set => localRotation = QuaternionDouble.Euler(value);
         }
 
         /// <summary>
@@ -509,7 +513,7 @@ namespace DepictionEngine
         /// </summary>
         public JSONNode localRotationJson
         {
-            get { return JsonUtility.ToJson(localRotation); }
+            get => JsonUtility.ToJson(localRotation);
             set
             {
                 if (JsonUtility.FromJson(out QuaternionDouble parsedLocalRotation, value))
@@ -523,8 +527,8 @@ namespace DepictionEngine
         [Json(propertyName: nameof(localRotationJson))]
         public QuaternionDouble localRotation
         {
-            get { return _localRotation; }
-            set { SetTransformComponents(UpdateLocalPositionParam(), localRotationParam.SetValue(value), UpdateLocalScaleParam()); }
+            get => _localRotation;
+            set => SetTransformComponents(UpdateLocalPositionParam(), localRotationParam.SetValue(value), UpdateLocalScaleParam());
         }
 
         private bool SetLocalRotation(QuaternionDouble value)
@@ -570,7 +574,7 @@ namespace DepictionEngine
         /// </summary>
         public JSONNode localScaleJson
         {
-            get { return JsonUtility.ToJson(localScale); }
+            get => JsonUtility.ToJson(localScale);
             set
             {
                 if (JsonUtility.FromJson(out Vector3Double parsedLocalScale, value))
@@ -584,8 +588,8 @@ namespace DepictionEngine
         [Json(propertyName: nameof(localScaleJson))]
         public Vector3Double localScale
         {
-            get { return _localScale; }
-            set { SetTransformComponents(UpdateLocalPositionParam(), UpdateLocalRotationParam(), localScaleParam.SetValue(value)); }
+            get => _localScale;
+            set => SetTransformComponents(UpdateLocalPositionParam(), UpdateLocalRotationParam(), localScaleParam.SetValue(value));
         }
 
         private bool SetLocalScale(Vector3Double value)
@@ -647,22 +651,17 @@ namespace DepictionEngine
             PropertyAssigned(this, nameof(geoCoordinate), geoCoordinate, geoCoordinate);
         }
 
-        protected override void DetectUserChanges()
+        public void DetectTransformChanged()
         {
-            base.DetectUserChanges();
-
             if (DetectDirectTransformLocalPositionManipulation() || DetectDirectTransformLocalRotationManipulation() || DetectDirectTransformLocalScaleManipulation())
             {
 #if UNITY_EDITOR
-                if (SceneManager.IsUserChangeContext())
+                if (SceneManager.GetIsUserChangeContext())
                     RegisterCompleteObjectUndo();
 #endif
-                //Changes made during the FixedUpdate are physics driven, we do not want them to prevent autoDispose.
-                Datasource.AllowAutoDisposeOnOutOfSynchProperty(() =>
-                {
-                    SetTransformComponents(CaptureLocalPosition(), CaptureLocalRotation(), CaptureLocalScale());
-                }, SceneManager.sceneExecutionState == SceneManager.ExecutionState.FixedUpdate);
-
+     
+                SetTransformComponents(CaptureLocalPosition(), CaptureLocalRotation(), CaptureLocalScale());
+           
                 InitLastTransformFields();
             }
         }
@@ -736,7 +735,7 @@ namespace DepictionEngine
             Component changedComponents = Component.None;
             Component capturedComponents = Component.None;
 
-            bool isUserChange = SceneManager.IsUserChangeContext();
+            bool isUserChange = SceneManager.GetIsUserChangeContext();
 
             if (localPosition.changed && (!localPosition.isGeoCoordinate && SetLocalPosition(localPosition.vector3DoubleValue) || (localPosition.isGeoCoordinate && SetGeoCoordinate(localPosition.geoCoordinateValue, true, forceDeriveLocalPosition))))
             {
@@ -772,8 +771,7 @@ namespace DepictionEngine
 
         public static void RemoveOriginShiftDirty(int instanceId)
         {
-            if (_originShiftDirty != null)
-                _originShiftDirty.Remove(instanceId);
+            _originShiftDirty?.Remove(instanceId);
         }
 
         public static Vector3Double AddOrigin(Vector3 point)
@@ -804,7 +802,7 @@ namespace DepictionEngine
 
         private static Vector3Double origin
         {
-            get { return _origin; }
+            get => _origin;
         }
 
         public static OriginShiftSnapshot GetOriginShiftSnapshot()
@@ -849,6 +847,7 @@ namespace DepictionEngine
                     {
                         if (transformDouble != Disposable.NULL)
                             transformDouble.HierarchicalApplyOriginShifting(origin, forceOriginShiftSelected);
+                        //transformDouble.TraverseHierarchy(null, (property) => { property.HierarchicalApplyOriginShifting(origin, forceOriginShiftSelected); });
                     }
                 }
                 else
@@ -856,6 +855,7 @@ namespace DepictionEngine
                     SceneManager sceneManager = SceneManager.Instance(false);
                     if (sceneManager != Disposable.NULL)
                         sceneManager.HierarchicalApplyOriginShifting(origin, forceOriginShiftSelected);
+                    //sceneManager.TraverseHierarchy(null, (property) => { property.HierarchicalApplyOriginShifting(origin, forceOriginShiftSelected); });
                 }
             }
         }

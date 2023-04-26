@@ -2,6 +2,7 @@
 
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace DepictionEngine.Editor
 {
@@ -72,10 +73,12 @@ namespace DepictionEngine.Editor
                 {
                     IJson iJson = pastingComponentValuesToObject.Item1;
                     JSONObject json = pastingComponentValuesToObject.Item2;
-                    SceneManager.UserContext(() =>
-                    {
-                        iJson.SetJson(json);
-                    });
+
+                    SceneManager.StartUserContext();
+
+                    iJson.SetJson(json);
+
+                    SceneManager.EndUserContext();
                 }
                 _pastingComponentValuesToObjects.Clear();
 

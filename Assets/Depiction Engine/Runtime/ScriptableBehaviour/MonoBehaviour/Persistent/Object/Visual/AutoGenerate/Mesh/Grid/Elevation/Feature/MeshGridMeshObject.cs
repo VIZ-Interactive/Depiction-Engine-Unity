@@ -32,9 +32,9 @@ namespace DepictionEngine
             InitValue(value => shaderPath = value, RenderingManager.SHADER_BASE_PATH + "BuildingGrid", initializingContext);
         }
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             InitializeReferenceDataType(MESH_REFERENCE_DATATYPE, typeof(AssetReference));
         }
@@ -109,8 +109,7 @@ namespace DepictionEngine
             {
                 if (Object.ReferenceEquals(_meshRendererVisualModifiersProcessor, value))
                     return;
-                if (_meshRendererVisualModifiersProcessor != null)
-                    _meshRendererVisualModifiersProcessor.Cancel();
+                _meshRendererVisualModifiersProcessor?.Cancel();
                 _meshRendererVisualModifiersProcessor = value;
             }
         }
@@ -154,24 +153,19 @@ namespace DepictionEngine
             get => GetFirstReferenceOfType(MESH_REFERENCE_DATATYPE) as AssetReference;
         }
 
-        protected AssetBase meshAsset
+        public AssetBase meshAsset
         {
             get => _meshAsset;
             private set
             {
-                if (value is not IUnityMeshAsset)
-                    value = null;
-
-                AssetBase oldValue = _meshAsset;
-                AssetBase newValue = value;
-
-                if (oldValue == newValue)
-                    return;
-
-                RemoveAssetDelgates(oldValue);
-                AddAssetDelegates(newValue);
-
-                _meshAsset = newValue;
+                SetValue(nameof(meshAsset), value is not IUnityMeshAsset ? null : value, ref _meshAsset, (newValue, oldValue) =>
+                {
+                    if (initialized & HasChanged(newValue, oldValue, false))
+                    {
+                        RemoveAssetDelgates(oldValue);
+                        AddAssetDelegates(newValue);
+                    }
+                });
             }
         }
 
@@ -184,7 +178,9 @@ namespace DepictionEngine
 
             if (meshGridMeshObjectVisualDirtyFlags != null)
             {
-                meshRendererVisualModifiersProcessor ??= InstanceManager.Instance(false)?.CreateInstance<Processor>();
+                InstanceManager instanceManager = InstanceManager.Instance(false);
+                if (instanceManager != null)
+                    meshRendererVisualModifiersProcessor ??= instanceManager.CreateInstance<Processor>();
 
                 meshGridMeshObjectVisualDirtyFlags.SetProcessing(true, meshRendererVisualModifiersProcessor);
 

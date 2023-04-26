@@ -77,15 +77,15 @@ namespace DepictionEngine
 
             if (_eventSystem == null)
             {
-                if (!gameObject.TryGetComponent<EventSystem>(out _eventSystem))
-                    _eventSystem = gameObject.AddComponent<EventSystem>();
+                if (!gameObject.TryGetComponent(out _eventSystem))
+                    _eventSystem = AddComponent<EventSystem>(initializingContext);
             }
 
             if (_leanTouch == null)
             {
-                if (!gameObject.TryGetComponent<LeanTouch>(out _leanTouch))
+                if (!gameObject.TryGetComponent(out _leanTouch))
                 {
-                    _leanTouch = gameObject.AddComponent<LeanTouch>();
+                    _leanTouch = AddComponent<LeanTouch>(initializingContext);
                     _leanTouch.UseHover = false;
                 }
             }

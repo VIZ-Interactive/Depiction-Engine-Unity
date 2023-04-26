@@ -11,10 +11,12 @@ namespace DepictionEngine
     /// </summary>
     public class MathPlus
     {
-        private const double EPSILON_DOUBLE = 0.0000000000001d;
-        private const float EPSILON_FLOAT = 0.0000000001f;
+        private const int kMaxDecimals = 15;
 
-        public static readonly Vector2Double HALF_INDEX = new Vector2Double(0.5d, 0.5d);
+        public const double EPSILON_DOUBLE = 0.0000000000001d;
+        public const float EPSILON_FLOAT = 0.0000000001f;
+
+        public static readonly Vector2Double HALF_INDEX = new(0.5d, 0.5d);
         public static readonly double DOUBLE_RADIUS = GetRadiusFromCircumference(SIZE);
 
         public const double RAD2DEG = 180.0d / Math.PI;
@@ -29,6 +31,18 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Approximately(Vector3Double a, Vector3Double b, double threshold = EPSILON_DOUBLE)
+        {
+            return Vector3Double.Distance(a, b) < threshold;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Approximately(QuaternionDouble a, QuaternionDouble b, double threshold = EPSILON_DOUBLE)
+        {
+            return (Math.Abs(a.x - b.x) + Math.Abs(a.y - b.y) + Math.Abs(a.z - b.z) + Math.Abs(a.w - b.w)) < threshold;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Approximately(double a, double b, double threshold = EPSILON_DOUBLE)
         {
             return Math.Abs(a - b) < threshold;
@@ -38,6 +52,47 @@ namespace DepictionEngine
         public static bool Approximately(float a, float b, float threshold = EPSILON_FLOAT)
         {
             return Mathf.Abs(a - b) < threshold;
+        }
+
+        public static float RoundBasedOnMinimumDifference(float valueToRound, float minDifference)
+        {
+            if (minDifference == 0)
+                return DiscardLeastSignificantDecimal(valueToRound);
+            return (float)Math.Round(valueToRound, GetNumberOfDecimalsForMinimumDifference(minDifference),
+               MidpointRounding.AwayFromZero);
+        }
+
+        public static double RoundBasedOnMinimumDifference(double valueToRound, double minDifference)
+        {
+            if (minDifference == 0)
+                return DiscardLeastSignificantDecimal(valueToRound);
+            return Math.Round(valueToRound, GetNumberOfDecimalsForMinimumDifference(minDifference),
+                MidpointRounding.AwayFromZero);
+        }
+
+        public static float DiscardLeastSignificantDecimal(float v)
+        {
+            int decimals = Mathf.Clamp((int)(5 - Mathf.Log10(Mathf.Abs(v))), 0, kMaxDecimals);
+            return (float)Math.Round(v, decimals, MidpointRounding.AwayFromZero);
+        }
+
+        public static double DiscardLeastSignificantDecimal(double v)
+        {
+            int decimals = Math.Max(0, (int)(5 - Math.Log10(Math.Abs(v))));
+            try
+            {
+                return Math.Round(v, decimals);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // This can happen for very small numbers.
+                return 0;
+            }
+        }
+
+        public static int GetNumberOfDecimalsForMinimumDifference(double minDifference)
+        {
+            return (int)Math.Max(0.0, -Math.Floor(Math.Log10(Math.Abs(minDifference))));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -264,7 +319,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static GeoCoordinate3Double GetFlatGeoCoordinateFromLocalPoint(Vector3Double localPoint, double size)
         {
-            Vector2Double normalizedPosition = new Vector2Double(Math.Min(Math.Max((localPoint.x / size) + 0.5, 0.0d), 1.0d), Math.Min(Math.Max((-localPoint.z / size) + 0.5, 0.0d), 1.0d));
+            Vector2Double normalizedPosition = new(Math.Min(Math.Max((localPoint.x / size) + 0.5, 0.0d), 1.0d), Math.Min(Math.Max((-localPoint.z / size) + 0.5, 0.0d), 1.0d));
             GeoCoordinate3Double geoCoord = GetGeoCoordinate3FromIndex(normalizedPosition, Vector2Int.one);
             return new GeoCoordinate3Double(geoCoord.latitude, geoCoord.longitude, localPoint.y);
         }
@@ -331,7 +386,7 @@ namespace DepictionEngine
         public static Vector2Double GetIndexFromGeoCoordinate(GeoCoordinate2Double geoCoordinate, Vector2Int gridDimensions, bool clip = true)
         {
             double latitude = Clamp(geoCoordinate.latitude, -89.0d, 89.0d) * DEG2RAD;
-            Vector2Double index = new Vector2Double(Clamp((geoCoordinate.longitude + 180.0d) / 360.0d * gridDimensions.x, 0.0d, gridDimensions.x), Clamp((1.0d - Math.Log(Math.Tan(latitude) + 1.0d / Math.Cos(latitude)) / Math.PI) / 2.0d * gridDimensions.y, 0.0d, gridDimensions.y));
+            Vector2Double index = new(Clamp((geoCoordinate.longitude + 180.0d) / 360.0d * gridDimensions.x, 0.0d, gridDimensions.x), Clamp((1.0d - Math.Log(Math.Tan(latitude) + 1.0d / Math.Cos(latitude)) / Math.PI) / 2.0d * gridDimensions.y, 0.0d, gridDimensions.y));
             if (clip)
             {
                 index.x = ClipIndex(index.x);

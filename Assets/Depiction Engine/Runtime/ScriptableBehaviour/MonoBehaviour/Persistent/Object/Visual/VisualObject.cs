@@ -110,13 +110,17 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
         private float _lastAlpha;
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                RemoveNullManagedMeshRenderers();
 
-            RemoveNullManagedMeshRenderers();
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { alpha = value; }, ref _alpha, ref _lastAlpha);
 
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { alpha = value; }, ref _alpha, ref _lastAlpha);
+                return true;
+            }
+            return false;
         }
 #endif
 
@@ -253,7 +257,8 @@ namespace DepictionEngine
             managedMeshRenderers.Remove(meshRenderer);
             try
             {
-                meshRenderer?.SetPropertyBlock(null);
+                if (meshRenderer != null)
+                    meshRenderer.SetPropertyBlock(null);
             }catch(MissingReferenceException)
             { }
         }
@@ -283,7 +288,11 @@ namespace DepictionEngine
         {
             if (base.HierarchicalBeginCameraRendering(camera))
             {
-                Star star = InstanceManager.Instance(false)?.GetStar();
+                Star star = null;
+
+                InstanceManager instanceManager = InstanceManager.Instance(false);
+                if (instanceManager != null)
+                    star = instanceManager.GetStar();
 
                 GeoAstroObject closestGeoAstroObject = GetClosestGeoAstroObject();
 
@@ -300,7 +309,7 @@ namespace DepictionEngine
                 {
                     InitializeMaterial(meshRenderer, meshRenderer.sharedMaterial);
 
-                    if (meshRenderer?.sharedMaterial != null)
+                    if (meshRenderer != null && meshRenderer.sharedMaterial != null)
                         ApplyPropertiesToMaterial(meshRenderer, meshRenderer.sharedMaterial, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, star);
                 });
 
@@ -309,9 +318,9 @@ namespace DepictionEngine
             return false;
         }
 
-        public override bool HierarchicalUpdateEnvironmentAndReflection(Camera camera, ScriptableRenderContext? context)
+        public void UpdateReflectionMaterial(Camera camera, ScriptableRenderContext? context)
         {
-            if (base.HierarchicalUpdateEnvironmentAndReflection(camera, context))
+            if (managedMeshRenderers.Count > 0)
             {
                 GeoAstroObject closestGeoAstroObject = GetClosestGeoAstroObject();
 
@@ -341,15 +350,12 @@ namespace DepictionEngine
                             meshRenderer.GetPropertyBlock(materialPropertyBlock);
 
                         ApplyReflectionTextureToMaterial(meshRenderer, meshRenderer.sharedMaterial, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, rttCamera, context);
-                       
+
                         if (materialPropertyBlock != null)
                             meshRenderer.SetPropertyBlock(materialPropertyBlock);
                     }
                 }
-
-                return true;
             }
-            return false;
         }
 
         public override bool HierarchicalEndCameraRendering(Camera camera)

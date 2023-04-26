@@ -28,16 +28,16 @@ namespace DepictionEngine
 
         private GlobalLoader _atmosphereGlobalLoader;
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
           
             string atmosphereLoadersName = "AtmosphereLoader";
 
             Transform atmosphereLoaderTransform = gameObject.transform.Find(atmosphereLoadersName);
 
             if (atmosphereLoaderTransform != null)
-                atmosphereGlobalLoader = atmosphereLoaderTransform.GetSafeComponent<GlobalLoader>(initializingContext);
+                atmosphereGlobalLoader = atmosphereLoaderTransform.gameObject.GetSafeComponent<GlobalLoader>(initializingContext);
             else
             {
                 DatasourceRoot datasourceRoot = objectBase.CreateChild<DatasourceRoot>(atmosphereLoadersName, null, initializingContext);
@@ -45,7 +45,7 @@ namespace DepictionEngine
                 
                 SerializableGuid atmosphereGridMeshObjectFallbackValuesId = SerializableGuid.NewGuid();
                 
-                atmosphereGlobalLoader = datasourceRoot.gameObject.AddSafeComponent<GlobalLoader>(initializingContext);
+                atmosphereGlobalLoader = datasourceRoot.AddComponent<GlobalLoader>(initializingContext);
                 atmosphereGlobalLoader.autoUpdateInterval = 0.0f;
                 atmosphereGlobalLoader.minMaxZoom = Vector2Int.zero;
                 atmosphereGlobalLoader.fallbackValuesId = new List<SerializableGuid> { atmosphereGridMeshObjectFallbackValuesId };
@@ -54,7 +54,7 @@ namespace DepictionEngine
                 {
                     [nameof(PropertyMonoBehaviour.id)] = JsonUtility.ToJson(atmosphereGridMeshObjectFallbackValuesId)
                 };
-                FallbackValues atmosphereGridMeshObjectFallbackValues = datasourceRoot.gameObject.AddSafeComponent<FallbackValues>(initializingContext, json);
+                FallbackValues atmosphereGridMeshObjectFallbackValues = datasourceRoot.AddComponent<FallbackValues>(initializingContext, json);
                 atmosphereGridMeshObjectFallbackValues.SetFallbackJsonFromType(typeof(AtmosphereGridMeshObject).FullName);
                 atmosphereGridMeshObjectFallbackValues.SetProperty(nameof(AtmosphereGridMeshObject.dontSaveToScene), true);
             }

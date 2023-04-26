@@ -79,7 +79,7 @@ namespace DepictionEngine
             value.x = MathPlus.Clamp(value.x, GetMinForwardVectorX(), MAX_FORWARD_VECTOR_X);
             return SetValue(nameof(forwardVector), value, ref _forwardVector, (newValue, oldValue) =>
             {
-                DeriveRotationFromForwardVector();
+                UpdateRotation();
             });
         }
 
@@ -87,7 +87,7 @@ namespace DepictionEngine
         {
             base.TargetChanged(newValue, oldValue);
             
-            DeriveRotationFromForwardVector();
+            UpdateRotation();
         }
 
         protected override void ValidateTargetControllerTransform(Camera camera)
@@ -132,11 +132,11 @@ namespace DepictionEngine
         protected override void TargetTransformChanged(TransformBase.Component changedComponent, TransformBase.Component capturedComponent)
         {
             if (changedComponent.HasFlag(TransformBase.Component.Rotation))
-                DeriveRotationFromForwardVector();
+                UpdateRotation();
             base.TargetTransformChanged(changedComponent, capturedComponent);
         }
 
-        private bool DeriveRotationFromForwardVector()
+        private bool UpdateRotation()
         {
             if (target != Disposable.NULL && target.transform != Disposable.NULL)
                 return SetRotation(target.transform.rotation * QuaternionDouble.Euler(_forwardVector));

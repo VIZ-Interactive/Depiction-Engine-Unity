@@ -60,10 +60,7 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
 
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
-            {
-                if (unityTexture != null)
-                    unityTexture = InstanceManager.Duplicate(unityTexture, InitializationContext.Programmatically);
-            }
+                unityTexture = InstanceManager.Duplicate(unityTexture, initializingContext);
 
             InitValue(value => wrapMode = value, TextureWrapMode.Clamp, initializingContext);
             InitValue(value => filterMode = value, FilterMode.Bilinear, initializingContext);

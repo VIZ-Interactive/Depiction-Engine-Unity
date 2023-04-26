@@ -101,9 +101,9 @@ namespace DepictionEngine
             InitValue(value => color = value, Color.clear, initializingContext);
         }
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             InitializeReferenceDataType(COLORMAP_REFERENCE_DATATYPE, typeof(AssetReference));
             InitializeReferenceDataType(ADDITIONALMAP_REFERENCE_DATATYPE, typeof(AssetReference));
@@ -195,16 +195,10 @@ namespace DepictionEngine
             get => GetFirstReferenceOfType(COLORMAP_REFERENCE_DATATYPE) as AssetReference;
         }
 
-        private Texture colorMap
+        public Texture colorMap
         {
             get => _colorMap;
-            set
-            {
-                if (_colorMap == value)
-                    return;
-
-                _colorMap = value;
-            }
+            private set { SetValue(nameof(colorMap), value, ref _colorMap); }
         }
 
         protected override Texture GetColorMap()
@@ -217,16 +211,10 @@ namespace DepictionEngine
             get => GetFirstReferenceOfType(ADDITIONALMAP_REFERENCE_DATATYPE) as AssetReference;
         }
 
-        private Texture additionalMap
+        public Texture additionalMap
         {
             get => _additionalMap;
-            set
-            {
-                if (_additionalMap == value)
-                    return;
-
-                _additionalMap = value;
-            }
+            private set { SetValue(nameof(additionalMap), value, ref _additionalMap); }
         }
 
         protected override Texture GetAdditionalMap()
@@ -242,8 +230,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_meshRendererVisualModifiersProcessor, value))
                     return;
 
-                if (_meshRendererVisualModifiersProcessor != null)
-                    _meshRendererVisualModifiersProcessor.Cancel();
+                _meshRendererVisualModifiersProcessor?.Cancel();
 
                 _meshRendererVisualModifiersProcessor = value;
             }
@@ -294,7 +281,9 @@ namespace DepictionEngine
 
             if (buildingGridMeshObjectVisualDirtyFlags != null)
             {
-                meshRendererVisualModifiersProcessor ??= InstanceManager.Instance(false)?.CreateInstance<Processor>();
+                InstanceManager instanceManager = InstanceManager.Instance(false);
+                if (instanceManager != null)
+                    meshRendererVisualModifiersProcessor ??= instanceManager.CreateInstance<Processor>();
 
                 buildingGridMeshObjectVisualDirtyFlags.SetProcessing(true, meshRendererVisualModifiersProcessor);
 
@@ -567,8 +556,7 @@ namespace DepictionEngine
 
                             AddBuilding(meshObjectProcessorOutput, featureIndex, buildingFeature, vectorGeometry, wallHeight, wallZ, roofHeight, roofZ, wallColor, roofColor, uvTilePerUnit, parameters);
 
-                            if (parameters.cancellationTokenSource != null)
-                                parameters.cancellationTokenSource.ThrowIfCancellationRequested();
+                            parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
 
                         if (parameters.processingType == Processor.ProcessingType.AsyncCoroutine && featureIndex > nextYieldfeatureCount)

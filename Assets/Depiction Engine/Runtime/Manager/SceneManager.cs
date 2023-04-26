@@ -36,8 +36,6 @@ namespace DepictionEngine
         /// All other object have been created and initialized at this point, even during a duplicate operation involving multiple objects. <br/><br/>
         /// <b><see cref="Update"/>:</b> <br/>
         /// The hierarchy is traversed and values are updated. <br/><br/>
-        /// <b><see cref="FixedUpdate"/>:</b> <br/>
-        /// The hierarchy is traversed and values requiring fixed step are updated. <br/><br/>
         /// <b><see cref="PastingComponentValues"/>:</b> <br/>
         /// Pasting component values from the inspector(Editor only). <br/><br/>
         /// <b><see cref="LateUpdate"/>:</b> <br/>
@@ -51,7 +49,6 @@ namespace DepictionEngine
             LateInitialize,
             PostLateInitialize,
             Update,
-            FixedUpdate,
             PastingComponentValues,
             LateUpdate,
             DelayedOnDestroy
@@ -63,6 +60,8 @@ namespace DepictionEngine
         [BeginFoldout("Editor")]
         [SerializeField, Tooltip("When enabled some hidden properties and objects will be exposed to help with debugging.")]
         private bool _debug;
+        [SerializeField, Tooltip("When enabled the framerate will be shown in the scene view windows.")]
+        private bool _showFrameRateInSceneViews;
         [SerializeField, Tooltip("When enabled some log entries will be disable such as 'Child GameObject ... became dangling during undo'."), EndFoldout]
         private bool _logConsoleFiltering;
 
@@ -111,9 +110,8 @@ namespace DepictionEngine
 #endif
         private List<TransformBase> _sceneChildren;
 
+        [NonSerialized]
         private bool _updated;
-
-        private static bool _isUserChange;
 
         private static ExecutionState _sceneExecutionState;
 
@@ -141,6 +139,10 @@ namespace DepictionEngine
         /// Dispatched when a left mouse up event happens in the Scene or Inspector window. 
         /// </summary>
         public static Action LeftMouseUpInSceneOrInspectorEvent;
+        /// <summary>
+        /// Dispatched when the debug field is changed. 
+        /// </summary>
+        public static Action<bool> DebugChangedEvent;
 #endif
 
         private static SceneManager _instance;
@@ -172,6 +174,16 @@ namespace DepictionEngine
                 return true;
             }
             return false;
+        }
+
+
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
+        {
+            base.CreateAndInitializeDependencies(initializingContext);
+
+            ScriptableObjectDisposable[] scriptableObjectDisposables = Object.FindObjectsOfType<ScriptableObjectDisposable>(true);
+            foreach (ScriptableObjectDisposable scriptableObjectDisposable in scriptableObjectDisposables)
+                InstanceManager.Initialize(scriptableObjectDisposable);
         }
 
         protected override void InitializeFields(InitializationContext initializingContext)
@@ -211,6 +223,7 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
 
             InitValue(value => debug = value, false, initializingContext);
+            InitValue(value => showFrameRateInSceneViews = value, false, initializingContext);
             InitValue(value => logConsoleFiltering = value, true, initializingContext);
             InitValue(value => runInBackground = value, true, initializingContext);
             InitValue(value => enableMultithreading = value, true, initializingContext);
@@ -222,7 +235,7 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        protected override void UpdateFields()
+        public override void UpdateFields()
         {
             base.UpdateFields();
 
@@ -234,17 +247,16 @@ namespace DepictionEngine
         {
             if (base.UpdateAllDelegates())
             {
-                UnityEngine.SceneManagement.SceneManager.sceneLoaded -= SceneLoadedHandler;
                 RenderPipelineManager.beginCameraRendering -= BeginCameraRendering;
                 RenderPipelineManager.endCameraRendering -= EndCameraRendering;
                 if (!IsDisposing())
                 {
-                    UnityEngine.SceneManagement.SceneManager.sceneLoaded += SceneLoadedHandler;
                     RenderPipelineManager.beginCameraRendering += BeginCameraRendering;
                     RenderPipelineManager.endCameraRendering += EndCameraRendering;
                 }
 
 #if UNITY_EDITOR
+                UnityEditor.SceneView.duringSceneGui -= CustomOnSceneGUI;
                 UnityEditor.ClipboardUtility.copyingGameObjects -= CopyingGameObjectsHandler;
                 UnityEditor.ClipboardUtility.pastedGameObjects -= PastedGameObjectsHandler;
                 Application.logMessageReceived -= LogMessageReceivedHandler;
@@ -257,6 +269,7 @@ namespace DepictionEngine
                 UnityEditor.Selection.selectionChanged -= SelectionChangedHandler;
                 if (!IsDisposing())
                 {
+                    UnityEditor.SceneView.duringSceneGui += CustomOnSceneGUI;
                     UnityEditor.ClipboardUtility.copyingGameObjects += CopyingGameObjectsHandler;
                     UnityEditor.ClipboardUtility.pastedGameObjects += PastedGameObjectsHandler;
                     Application.logMessageReceived += LogMessageReceivedHandler;
@@ -283,14 +296,37 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        private void CustomOnSceneGUI(UnityEditor.SceneView sceneview)
+        {
+            if (showFrameRateInSceneViews)
+            {
+                GUILayout.BeginArea(new Rect(43, 2, 65, 50));
+
+                var rect = UnityEditor.EditorGUILayout.BeginVertical();
+                UnityEditor.EditorGUI.DrawRect(rect, UnityEditor.EditorGUIUtility.isProSkin ? new Color32(56, 56, 56, 200) : new Color32(194, 194, 194, 200));
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("FPS: " + Editor.GameViewGUIUtility.GetFrameRate().ToString("F1"));
+                GUILayout.EndHorizontal();
+
+                UnityEditor.EditorGUILayout.EndVertical();
+
+                GUILayout.EndArea();
+            }
+        }
+
         private bool _lastDebug;
         private bool _lastRunInBackground;
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { debug = value; }, ref _debug, ref _lastDebug);
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { runInBackground = value; }, ref _runInBackground, ref _lastRunInBackground);
 
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { debug = value; }, ref _debug, ref _lastDebug);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { runInBackground = value; }, ref _runInBackground, ref _lastRunInBackground);
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -346,7 +382,6 @@ namespace DepictionEngine
             UpdateHarmonyPatches(true);
 
             tweenManager.DisposeAllTweens();
-            poolManager.DestroyAllDisposable();
 
             BeforeAssemblyReloadEvent?.Invoke();
         }
@@ -355,34 +390,52 @@ namespace DepictionEngine
         [UnityEditor.InitializeOnLoadMethod]
         private static void AfterAssemblyReloadHandler()
         {
-            //Editor objects are not listed in FindObjectsOfType, so we find them manually.
-            Instance(false)?.sceneCameraTransforms.ForEach((sceneCameraTransform) => 
+            if (!SceneManager.IsSceneBeingDestroyed())
             {
-                if (sceneCameraTransform != Disposable.NULL)
+                //Editor objects are not listed in FindObjectsOfType, so we find them manually.
+                SceneManager sceneManager = Instance(false);
+                if (sceneManager != Disposable.NULL)
                 {
-                    _monoBehaviourDisposables ??= new();
+                    sceneManager.sceneCameraTransforms.ForEach((sceneCameraTransform) =>
+                    {
+                        if (sceneCameraTransform != Disposable.NULL)
+                        {
+                            _monoBehaviourDisposables ??= new();
 
-                    _monoBehaviourDisposables.Clear();
-                    sceneCameraTransform.GetComponents(_monoBehaviourDisposables);
-                    foreach (MonoBehaviourDisposable monoBehaviourDisposable in _monoBehaviourDisposables)
-                        monoBehaviourDisposable.AfterAssemblyReload();
+                            _monoBehaviourDisposables.Clear();
+                            sceneCameraTransform.GetComponents(_monoBehaviourDisposables);
+                            foreach (MonoBehaviourDisposable monoBehaviourDisposable in _monoBehaviourDisposables)
+                                monoBehaviourDisposable.AfterAssemblyReload();
 
-                    _monoBehaviourDisposables.Clear();
-                    sceneCameraTransform.GetComponent<Editor.SceneCamera>()?.targetController?.target?.GetComponents(_monoBehaviourDisposables);
-                    foreach (MonoBehaviourDisposable monoBehaviourDisposable in _monoBehaviourDisposables)
-                        monoBehaviourDisposable.AfterAssemblyReload();
+                            _monoBehaviourDisposables.Clear();
+                            Editor.SceneCamera sceneCamera = sceneCameraTransform.GetComponent<Editor.SceneCamera>();
+                            if (sceneCamera != null & sceneCamera.targetController != null && sceneCamera.targetController.target != null)
+                                sceneCamera.targetController.target.GetComponents(_monoBehaviourDisposables);
+                            foreach (MonoBehaviourDisposable monoBehaviourDisposable in _monoBehaviourDisposables)
+                                monoBehaviourDisposable.AfterAssemblyReload();
+                        }
+                    });
                 }
-            });
 
-            MonoBehaviourDisposable[] monoBehaviourDisposables = Resources.FindObjectsOfTypeAll<MonoBehaviourDisposable>();
-            foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
-                monoBehaviourDisposable.AfterAssemblyReload();
-            ScriptableObjectDisposable[] scriptableObjectDisposables = Resources.FindObjectsOfTypeAll<ScriptableObjectDisposable>();
-            foreach(ScriptableObjectDisposable scriptableObjectDisposable in scriptableObjectDisposables)
-                scriptableObjectDisposable.AfterAssemblyReload();
+                MonoBehaviourDisposable[] monoBehaviourDisposables = Resources.FindObjectsOfTypeAll<MonoBehaviourDisposable>();
+                foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
+                    monoBehaviourDisposable.AfterAssemblyReload();
+                ScriptableObjectDisposable[] scriptableObjectDisposables = Resources.FindObjectsOfTypeAll<ScriptableObjectDisposable>();
+                foreach (ScriptableObjectDisposable scriptableObjectDisposable in scriptableObjectDisposables)
+                    scriptableObjectDisposable.AfterAssemblyReload();
+            }
+        }
 
-            //Necessary?
-            Resources.UnloadUnusedAssets();
+        public override bool AfterAssemblyReload()
+        {
+            if (base.AfterAssemblyReload())
+            {
+                //Necessary?
+                Resources.UnloadUnusedAssets();
+
+                return true;
+            }
+            return false;
         }
 
         private void SelectionChangedHandler()
@@ -614,29 +667,22 @@ namespace DepictionEngine
         }
 #endif
 
-        private void SceneLoadedHandler(Scene scene, LoadSceneMode mode)
-        {
-            //Required in the Build as the scene is usually not completely loaded when the SceneManager is Initializing.
-            if (scene.isLoaded)
-                UpdateRelations();
-        }
-
+        private static int _isUserChange;
+        public static bool GetIsUserChangeContext() => _isUserChange > 0;
         /// <summary>
-        /// Makes available to the code executed in the callback, the user context under which it was triggered. If it was triggered by a user action, such as altering properties through the editor inspector or moving object using the manipulator, the value passed to isUserChange should be true. User context inside this callback can always be accessed by calling <see cref="DepictionEngine.IScriptableBehaviour.IsUserChangeContext"/>.
+        /// Indicates that the following code will be executed as a result of an Editor User action.
         /// </summary>
-        /// <param name="callback">The code to execute.</param>
-        /// <param name="isUserChange">Whether the current code execution was triggered by a user action.</param>
-        public static void UserContext(Action callback, bool isUserChange = true)
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
+        public static void StartUserContext()
         {
-            if (callback is null)
-                return;
-            bool lastIsUserChange = _isUserChange;
-            _isUserChange = isUserChange;
-            callback();
-            _isUserChange = lastIsUserChange;
+            _isUserChange++;
         }
 
-        public static bool IsUserChangeContext() => _isUserChange;
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
+        public static void EndUserContext()
+        {
+            _isUserChange--;
+        }
 
         public static bool IsValidActiveStateChange()
         {
@@ -880,6 +926,16 @@ namespace DepictionEngine
         }
 
         /// <summary>
+        /// When enabled the framerate will be shown in the scene view windows.
+        /// </summary>
+        [Json]
+        public bool showFrameRateInSceneViews
+        {
+            get => _showFrameRateInSceneViews;
+            set => SetValue(nameof(_showFrameRateInSceneViews), value, ref _showFrameRateInSceneViews);
+        }
+
+        /// <summary>
         /// When enabled some log entries will be disable such as 'Child GameObject ... became dangling during undo'.
         /// </summary>
         [Json]
@@ -1066,13 +1122,7 @@ namespace DepictionEngine
             return false;
         }
 
-        public override void ExplicitOnEnable()
-        {
-            base.ExplicitOnEnable();
-
-            _updated = false;
-        }
-
+        private static List<PropertyMonoBehaviour> _selectedPropertyMonoBehaviours = new();
         public void Update()
         {
             if (this != Disposable.NULL)
@@ -1087,7 +1137,33 @@ namespace DepictionEngine
                 //Detect GameObjects/Components created in the Editor.
                 HierarchicalInitializeEditorCreatedObjects();
                 Editor.UndoManager.ProcessQueuedOperations();
+
+                //Capture changes happening in Unity(Inspector, Transform etc...) such as: Name, Index, Layer, Tag, MeshRenderer Material, Enabled, GameObjectActive, Transform in the sceneview(localPosition, localRotation, localScale)
+                foreach (GameObject go in UnityEditor.Selection.gameObjects)
+                {
+                    go.GetComponents(_selectedPropertyMonoBehaviours);
+                    foreach (PropertyMonoBehaviour propertyMonoBehaviour in _selectedPropertyMonoBehaviours)
+                    {
+                        if (propertyMonoBehaviour != Disposable.NULL && !propertyMonoBehaviour.isFallbackValues)
+                        {
+                            if (propertyMonoBehaviour is TransformBase transform)
+                                transform.DetectGameObjectChanges();
+
+                            SceneManager.StartUserContext();
+
+                            if (propertyMonoBehaviour is JsonMonoBehaviour jsonMonoBehaviour)
+                                jsonMonoBehaviour.DetectUserGameObjectChanges();
+
+                            propertyMonoBehaviour.UpdateActiveAndEnabled();
+
+                            SceneManager.EndUserContext();
+                        }
+                    }
+                }
 #endif
+
+                //Capture physics driven transform change
+                DetectTransformChange(PhysicsManager.physicTransforms);
 
                 if (!_updated)
                 {
@@ -1097,6 +1173,22 @@ namespace DepictionEngine
                     PreHierarchicalUpdate();
                     HierarchicalUpdate();
                     PostHierarchicalUpdate();
+                    //TraverseHierarchy( 
+                    //    (property) => 
+                    //    {
+                    //        if (property.initialized)
+                    //        {
+                    //            property.UpdateFields();
+
+                    //            property.PreHierarchicalUpdateBeforeChildrenAndSiblings();
+                    //        }
+                    //    }, 
+                    //    (property) => 
+                    //    { 
+                    //        property.PreHierarchicalUpdate(); 
+                    //    });
+                    //TraverseHierarchy(null, (property) => { property.HierarchicalUpdate(); });
+                    //TraverseHierarchy(null, (property) => { property.PostHierarchicalUpdate(); });
                     sceneExecutionState = ExecutionState.None;
                 }
             }
@@ -1106,7 +1198,21 @@ namespace DepictionEngine
         {
 #if UNITY_EDITOR
             if (Editor.UndoManager.DetectEditorUndoRedoRegistered())
-                InstanceManager.InitializingContext(() => { HierarchicalInitialize(); }, InitializationContext.Editor);
+            {
+                InstanceManager.InitializingContext(() =>
+                {
+                    HierarchicalInitialize();
+                    //TraverseHierarchy(
+                    //    (property) =>
+                    //    {
+                    //        property.UpdateRelations();
+                    //    },
+                    //    (property) =>
+                    //    {
+                    //        property.HierarchicalInitialize();
+                    //    });
+                }, InitializationContext.Editor);
+            }
 #endif
         }
 
@@ -1164,9 +1270,12 @@ namespace DepictionEngine
 #endif
         }
 
-        public void FixedUpdate()
+        protected override void FixedUpdate()
         {
-            sceneExecutionState = ExecutionState.FixedUpdate;
+            base.FixedUpdate();
+
+            //Capture physics driven transform change
+            DetectTransformChange(PhysicsManager.physicTransforms);
 
             Camera physicsCamera = Camera.main;
 
@@ -1208,13 +1317,11 @@ namespace DepictionEngine
 
             if (physicsCamera != Disposable.NULL && physicsCamera.transform != Disposable.NULL)
                 TransformDouble.ApplyOriginShifting(physicsCamera.GetOrigin());
+        }
 
-            //Update Physics Driven Objects
-            HierarchicalFixedUpdate();
-
-            HierarchicalDetectChanges();
-
-            sceneExecutionState = ExecutionState.None;
+        public void DetectTransformChange(IEnumerable<TransformDouble> transforms)
+        {
+            IterateThroughList(transforms, (transform) => { transform.DetectTransformChanged(); });
         }
 
         protected override void LateUpdate()
@@ -1230,7 +1337,8 @@ namespace DepictionEngine
             //Could be replaced with [DefaultExecutionOrder(-3)] potentialy?
             UpdateUpdateDelegate();
 #endif
-
+            Datasource.ResetAllowAutoDispose();
+            _isUserChange = 0;
             _updated = false;
         }
 
@@ -1292,8 +1400,6 @@ namespace DepictionEngine
 
         public void BeginCameraRendering(Camera camera, ScriptableRenderContext? context = null)
         {
-            HierarchicalDetectChanges();
-           
             //Preemptively apply origin shifting for proper camera relative raycasting
             TransformDouble.ApplyOriginShifting(camera.GetOrigin());
 
@@ -1301,8 +1407,8 @@ namespace DepictionEngine
             instanceManager.IterateOverInstances<TransformBase>(
                 (transform) =>
                 {
-                    if (transform.objectBase is VisualObject)
-                        (transform.objectBase as VisualObject).ApplyCameraMaskLayerToVisuals(camera);
+                    if (transform.objectBase is VisualObject visualObject)
+                        visualObject.ApplyCameraMaskLayerToVisuals(camera);
 
                     return true;
                 });
@@ -1328,9 +1434,10 @@ namespace DepictionEngine
 
             //Apply all the latest Transform changes
             TransformDouble.ApplyOriginShifting(camera.GetOrigin());
-         
+
             //Update Shaders and UnityTransform
             HierarchicalBeginCameraRendering(camera);
+            //TraverseHierarchy(null, (property) => { property.HierarchicalBeginCameraRendering(camera); });
 
             //Update the Star before the Reflection/ReflectionProbe renders are generated
             //Note: The Star LensFlare might require a Raycast so we make sure final Orgin shifting as been performed before we get it ready for render
@@ -1342,7 +1449,18 @@ namespace DepictionEngine
             if (context.HasValue)
             {
                 renderingManager.ApplyEnvironmentAndReflectionToRenderSettings(camera);
-                HierarchicalUpdateEnvironmentAndReflection(camera, context);
+                InstanceManager instanceManager = this.instanceManager;
+                instanceManager.IterateOverInstances<AstroObject>((astroObject) => 
+                {
+                    if (astroObject is GeoAstroObject geoAstroObject)
+                        geoAstroObject.UpdateReflectionProbe(camera, context);
+                    return true;
+                });
+                instanceManager.IterateOverInstances<VisualObject>((visualObject) =>
+                {
+                    visualObject.UpdateReflectionMaterial(camera, context);
+                    return true;
+                });
             }
         }
 
@@ -1380,11 +1498,8 @@ namespace DepictionEngine
                         camera = parentCamera;
                 }
             }
-            else
-            {
-                if (camera.additionalData != null && camera.additionalData.cameraStack.Count != 0)
-                    camera = null;
-            }
+            else if (camera.additionalData != null && camera.additionalData.cameraStack.Count != 0)
+                camera = null;
 
             if (camera != Disposable.NULL)
                 EndCameraRendering(camera);
@@ -1393,8 +1508,10 @@ namespace DepictionEngine
         public void EndCameraRendering(Camera camera)
         {
             HierarchicalEndCameraRendering(camera);
+            //TraverseHierarchy(null, (property) => { property.HierarchicalEndCameraRendering(camera); });
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override bool ApplyBeforeChildren(Action<PropertyMonoBehaviour> callback)
         {
             bool containsDisposed = base.ApplyBeforeChildren(callback);
@@ -1415,12 +1532,14 @@ namespace DepictionEngine
             return containsDisposed;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override bool ApplyAfterChildren(Action<PropertyMonoBehaviour> callback)
         {
             bool containsDisposed = base.ApplyAfterChildren(callback);
 
             if (_datasourceManager is not null && TriggerCallback(_datasourceManager, callback))
                 containsDisposed = true;
+
             if (_renderingManager is not null && TriggerCallback(_renderingManager, callback))
                 containsDisposed = true;
 

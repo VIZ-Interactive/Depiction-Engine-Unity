@@ -63,14 +63,9 @@ namespace DepictionEngine
 #endif
         }
 
-        protected virtual void Awake()
-        {
-            Initialize();
-        }
-
         public bool Initialize()
         {
-            if (!IsDisposing() && !_initializing)
+            if (!_initializing && !IsDisposing())
             {
                 Initializing();
 
@@ -98,18 +93,22 @@ namespace DepictionEngine
 
                 bool abortInitialization = false;
 
-                SceneManager.UserContext(() =>
+                bool isUserContext = _initializingContext == InitializationContext.Editor || _initializingContext == InitializationContext.Editor_Duplicate;
+                if (isUserContext)
+                    SceneManager.StartUserContext();
+
+                if (!Initialize(_initializingContext))
                 {
-                    if (!Initialize(_initializingContext))
+                    try
                     {
-                        try
-                        {
-                            DestroyAfterFailedInitialization();
-                        }
-                        catch (MissingReferenceException) { }
-                        abortInitialization = true;
+                        DestroyAfterFailedInitialization();
                     }
-                }, _initializingContext == InitializationContext.Editor || _initializingContext == InitializationContext.Editor_Duplicate);
+                    catch (MissingReferenceException) { }
+                    abortInitialization = true;
+                }
+
+                if (isUserContext)
+                    SceneManager.EndUserContext();
 
                 if (abortInitialization)
                     return false;
@@ -210,38 +209,6 @@ namespace DepictionEngine
             UpdateAllDelegates();
         }
 
-        /// <summary>
-        /// Disables internal calls to <see cref="DepictionEngine.IScriptableBehaviour.ExplicitOnEnable"/> and <see cref="DepictionEngine.IScriptableBehaviour.ExplicitOnDisable"/>.
-        /// </summary>
-        public void InhibitExplicitOnEnableDisable()
-        {
-            _inhibitExplicitOnEnableDisable = true;
-        }
-
-        /// <summary>
-        /// Enables internal calls to <see cref="DepictionEngine.IScriptableBehaviour.ExplicitOnEnable"/> and <see cref="DepictionEngine.IScriptableBehaviour.ExplicitOnDisable"/>.
-        /// </summary>
-        public void UninhibitExplicitOnEnableDisable()
-        {
-            _inhibitExplicitOnEnableDisable = false;
-        }
-
-        /// <summary>
-        /// Experimental, do not use.
-        /// </summary>
-        public virtual void ExplicitOnEnable()
-        {
-
-        }
-
-        /// <summary>
-        /// Experimental, do not use.
-        /// </summary>
-        public virtual void ExplicitOnDisable()
-        {
-         
-        }
-
 #if UNITY_EDITOR
         /// <summary>
         /// Use to reinitialize any fields that were not serialized and kept between assembly reloads.
@@ -264,7 +231,6 @@ namespace DepictionEngine
         /// <returns></returns>
         protected virtual bool UpdateAllDelegates()
         {
-            SceneManager.LateUpdateEvent -= LateUpdateHandler;
             if (!IsDisposing())
             {
                 if (_requiresLateUpdate)
@@ -280,20 +246,18 @@ namespace DepictionEngine
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaved += Saved;
             }
 
-            SceneManager sceneManager = SceneManager.Instance(false);
-            if (sceneManager != Disposable.NULL)
-                sceneManager.PropertyAssignedEvent -= SceneManagerPropertyAssignedHandler;
-            if (!IsDisposing() && !SceneManager.IsSceneBeingDestroyed())
-                this.sceneManager.PropertyAssignedEvent += SceneManagerPropertyAssignedHandler;
+            SceneManager.DebugChangedEvent -= SceneManagerDebugChangedHandler;
+            if (!IsDisposing())
+                SceneManager.DebugChangedEvent += SceneManagerDebugChangedHandler;
 #endif
 
             return !isFallbackValues;
         }
 
 #if UNITY_EDITOR
-        protected virtual void UpdateUndoRedoSerializedFields()
+        protected virtual bool UpdateUndoRedoSerializedFields()
         {
-
+            return !isFallbackValues;
         }
 
         /// <summary>
@@ -315,13 +279,12 @@ namespace DepictionEngine
             set => _inspectorComponentNameOverride = value;
         }
 
-        private void SceneManagerPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
+                private void SceneManagerDebugChangedHandler(bool debug)
         {
-            if (name == nameof(SceneManager.debug))
-                DebugChanged();
+            DebugChanged();
         }
 
-        private void DebugChanged()
+        protected virtual void DebugChanged()
         {
             UpdateHideFlags();
         }
@@ -411,12 +374,6 @@ namespace DepictionEngine
             return _disposed;
         }
 
-        public bool poolComplete
-        {
-            get => _poolComplete;
-            set => _poolComplete = value;
-        }
-
         /// <summary>
         /// Is the object destroying?
         /// </summary>
@@ -429,6 +386,12 @@ namespace DepictionEngine
         public DisposeContext disposingContext
         {
             get => _disposingContext;
+        }
+
+        public bool poolComplete
+        {
+            get => _poolComplete;
+            set => _poolComplete = value;
         }
 
 #if UNITY_EDITOR
@@ -481,6 +444,7 @@ namespace DepictionEngine
             return false;
         }
 
+        [HideInCallstack]
         public void Originator(Action callback, IScriptableBehaviour originator)
         {
             if (callback != null)
@@ -532,7 +496,14 @@ namespace DepictionEngine
 
         public void OnDisposeInternal(DisposeContext disposeContext)
         {
-            SceneManager.UserContext(() => { OnDispose(disposeContext); }, disposeContext == DisposeContext.Editor_Destroy);
+            bool isUserContext = disposeContext == DisposeContext.Editor_Destroy;
+            if (isUserContext)
+                SceneManager.StartUserContext();
+
+            OnDispose(disposeContext);
+
+            if (isUserContext)
+                SceneManager.EndUserContext();
         }
 
         public virtual bool OnDispose(DisposeContext disposeContext)
@@ -583,29 +554,24 @@ namespace DepictionEngine
 
         protected virtual DisposeContext GetDisposingContext()
         {
-            DisposeContext destroyingContext = DisposeContext.Programmatically_Pool;
+            DisposeContext disposingContext = DisposeManager.disposingContext;
 
 #if UNITY_EDITOR
-            destroyingContext = DisposeManager.disposingContext;
-
             if (SceneManager.IsSceneBeingDestroyed() || SceneManager.Instance(false) == Disposable.NULL)
-                destroyingContext = DisposeContext.Programmatically_Destroy;
+                disposingContext = DisposeContext.Programmatically_Destroy;
 #endif
 
-            return destroyingContext;
+            return disposingContext;
         }
 
-        private bool _inhibitExplicitOnEnableDisable;
         protected virtual void OnEnable()
         {
-            if (!IsDisposing() && wasFirstUpdated && !_inhibitExplicitOnEnableDisable && SceneManager.IsValidActiveStateChange())
-                ExplicitOnEnable();
+
         }
 
         protected virtual void OnDisable()
         {
-            if (!IsDisposing() && wasFirstUpdated && !_inhibitExplicitOnEnableDisable && SceneManager.IsValidActiveStateChange())
-                ExplicitOnDisable();
+
         }
 
         public virtual void OnBeforeSerialize()
@@ -653,19 +619,19 @@ namespace DepictionEngine
         }
 #endif
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         public static bool operator !=(ScriptableObjectDisposable lhs, Disposable.Null rhs) { return !(lhs == rhs); }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         public static bool operator ==(ScriptableObjectDisposable lhs, Disposable.Null _) => DisposeManager.IsNullOrDisposing(lhs);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         public bool Equals(Disposable.Null value) { return this == value; }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         public override bool Equals(object value) { return base.Equals(value); }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         public override int GetHashCode() { return base.GetHashCode(); }
     }
 }

@@ -329,7 +329,7 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
                         bool mouseDown = Editor.SceneViewDouble.lastActiveSceneViewDouble != null && Editor.SceneViewDouble.lastActiveSceneViewDouble.mouseDown;
-                        isBeingMovedByUser = !SceneManager.IsEditorNamespace(GetType()) && (SceneManager.IsUserChangeContext() || mouseDown);
+                        isBeingMovedByUser = !SceneManager.IsEditorNamespace(GetType()) && (SceneManager.GetIsUserChangeContext() || mouseDown);
                         if (isBeingMovedByUser)
                             updateElevation = false;
 #endif

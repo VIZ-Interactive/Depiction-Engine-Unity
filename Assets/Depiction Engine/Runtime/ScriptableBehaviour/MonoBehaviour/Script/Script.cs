@@ -36,7 +36,7 @@ namespace DepictionEngine
             if (objectBase is not null)
             {
                 objectBase.InitializedEvent -= ObjectInitializedHandler;
-                objectBase.PropertyAssignedEvent -= ObjectBasePropertyAssignedHandler;
+                objectBase.PropertyAssignedEvent -= ObjectPropertyAssignedHandler;
                 objectBase.TransformPropertyAssignedEvent -= TransformPropertyAssignedHandler;
                 objectBase.TransformChangedEvent -= TransformChangedHandler;
 
@@ -50,7 +50,7 @@ namespace DepictionEngine
             if (!IsDisposing() && objectBase != Disposable.NULL)
             {
                 objectBase.InitializedEvent += ObjectInitializedHandler;
-                objectBase.PropertyAssignedEvent += ObjectBasePropertyAssignedHandler;
+                objectBase.PropertyAssignedEvent += ObjectPropertyAssignedHandler;
                 objectBase.TransformPropertyAssignedEvent += TransformPropertyAssignedHandler;
                 objectBase.TransformChangedEvent += TransformChangedHandler;
 
@@ -64,7 +64,7 @@ namespace DepictionEngine
             UpdateParentGeoAstroObject();
         }
 
-        private void ObjectBasePropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
+        protected virtual void ObjectPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             if (name == nameof(Object.parentGeoAstroObject))
                 UpdateParentGeoAstroObject();
@@ -175,7 +175,7 @@ namespace DepictionEngine
         public Object objectBase
         {
             get => _objectBase;
-            protected set { SetObjectBase(value); }
+            protected set => SetObjectBase(value);
         }
 
         protected virtual bool SetObjectBase(Object value)

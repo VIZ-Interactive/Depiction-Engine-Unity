@@ -382,7 +382,6 @@ namespace DepictionEngine.Editor
 
             //Add Earth -> Elevation Index2DLoader
             JSONArray elevationLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Elevation));
-            string elevationLoaderId = elevationLoaderJson[0][nameof(Index2DLoader.id)];
             elevationLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 19));
             elevationLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
             elevationLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "my/elevation/tile/service/endpoint/{0}/{1}/{2}";
@@ -462,12 +461,12 @@ namespace DepictionEngine.Editor
             //Add Earth
             JSONObject earthJson = new();
 
-            List<string> mapboxHeaders = new List<string>();
+            List<string> mapboxHeaders = new();
             //Forcing a different Referer spams warnings but it is only ment to be used as an Editor demo, A real development key should be used.
             if (mapboxKey == MAPBOX_DEMO_KEY)
                 mapboxHeaders.Add("Referer#https://www.mapbox.com/");
 
-            List<string> mapTilerHeaders = new List<string>();
+            List<string> mapTilerHeaders = new();
             //Forcing a different Referer spams warnings but it is only ment to be used as an Editor demo, A real development key should be used.
             if (mapTilerKey == MAPTILER_DEMO_KEY)
                 mapTilerHeaders.Add("Referer#https://api.maptiler.com/");
@@ -633,7 +632,7 @@ namespace DepictionEngine.Editor
 
             Star star = CreateStar(parent, "Star");
             star.SetPlanetPreset(AstroObject.PlanetType.Sun);
-            star.transform.localPosition = new Vector3Double(-100000000000.0d, 100000000000.0d, 0.0d);
+            star.transform.localPosition = new Vector3Double(-20000000000.0d, 100000000000.0d, -20000000000.0d);
                 
             return star;
         }

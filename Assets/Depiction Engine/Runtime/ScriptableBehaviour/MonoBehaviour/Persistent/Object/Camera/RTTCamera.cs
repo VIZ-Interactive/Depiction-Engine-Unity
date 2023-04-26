@@ -83,11 +83,9 @@ namespace DepictionEngine
 
             Camera.ApplyClipPlanePropertiesToUnityCamera(unityCamera, 0, camera.nearClipPlane, camera.farClipPlane);
 
-            unityCamera.transform.position = camera.unityCamera.transform.position;
-            unityCamera.transform.rotation = camera.unityCamera.transform.rotation;
+            unityCamera.transform.SetPositionAndRotation(camera.unityCamera.transform.position, camera.unityCamera.transform.rotation);
 
-            if (applyPropertiesToUnityCamera != null)
-                applyPropertiesToUnityCamera(unityCamera, camera);
+            applyPropertiesToUnityCamera?.Invoke(unityCamera, camera);
 
             transform.InitLastTransformFields();
         }

@@ -233,7 +233,8 @@ namespace DepictionEngine
                 Debug.LogError("Processor Data Type '" + type.Name + "' is not valid");
                 return null;
             }
-            return InstanceManager.Instance(false)?.CreateInstance(type) as ProcessorOutput;
+            InstanceManager instanceManager = InstanceManager.Instance(false);
+            return instanceManager != Disposable.NULL ? instanceManager.CreateInstance(type) as ProcessorOutput : null;
         }
 
         public static ProcessorParameters CreateParametersInstance(Type type)
@@ -243,7 +244,8 @@ namespace DepictionEngine
                 Debug.LogError("Processor Parameters Type '" + type.Name + "' is not valid");
                 return null;
             }
-            return InstanceManager.Instance().CreateInstance(type) as ProcessorParameters;
+            InstanceManager instanceManager = InstanceManager.Instance(false);
+            return instanceManager != Disposable.NULL ? instanceManager.CreateInstance(type) as ProcessorParameters : null;
         }
 
         public void Dispose()

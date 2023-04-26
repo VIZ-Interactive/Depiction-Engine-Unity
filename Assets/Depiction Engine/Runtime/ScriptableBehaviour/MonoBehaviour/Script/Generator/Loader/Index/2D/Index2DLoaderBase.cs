@@ -86,11 +86,15 @@ namespace DepictionEngine
             get { _lastIndex2DLoadScopes ??= new(); return _lastIndex2DLoadScopes; }
         }
 
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                PerformAddRemoveLoadScopesChange(index2DLoadScopes, lastIndex2DLoadScopes, true);
 
-            PerformAddRemoveLoadScopesChange(index2DLoadScopes, lastIndex2DLoadScopes, true);
+                return true;
+            }
+            return false;
         }
 
         public override bool AfterAssemblyReload()
@@ -132,8 +136,8 @@ namespace DepictionEngine
                     value.y = MAX_ZOOM;
                 SetValue(nameof(minMaxZoom), value, ref _minMaxZoom, (newValue, oldValue) =>
                 {
-                    MinMaxZoomChanged();
                     QueueAutoUpdate();
+                    MinMaxZoomChanged();
                 }, true);
             }
         }
@@ -192,10 +196,7 @@ namespace DepictionEngine
                         value = 1.0f / 10.0f;
                 }
 
-                SetValue(nameof(xyTilesRatio), value, ref _xyTilesRatio, (newValue, oldValue) =>
-                {
-                    QueueAutoUpdate();
-                }, true);
+                SetValue(nameof(xyTilesRatio), value, ref _xyTilesRatio, (newValue, oldValue) => { QueueAutoUpdate(); }, true);
             }
         }
 

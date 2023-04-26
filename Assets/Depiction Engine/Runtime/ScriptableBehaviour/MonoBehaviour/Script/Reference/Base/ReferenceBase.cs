@@ -122,6 +122,13 @@ namespace DepictionEngine
                 _loadedOrfailedIndexLoadScope = default;
             }
 
+            if (initializingContext == InitializationContext.Existing)
+            {
+#if UNITY_EDITOR
+                RecoverLoadScopeAndData();
+#endif
+            }
+
             InitValue(value => dataType = value, "", initializingContext);
             InitValue(value => loaderId = value, SerializableGuid.Empty, () => GetDuplicateComponentReferenceId(loaderId, lastLoader, initializingContext), initializingContext);
             InitValue(value => dataId = value, SerializableGuid.Empty, initializingContext);
@@ -170,19 +177,28 @@ namespace DepictionEngine
         private Grid2DIndex _lastDataIndex2D;
         private LoadScope _lastLoadScope;
         private PersistentScriptableObject _lastData;
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { dataType = value; }, ref _dataType, ref _lastDataType);
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { loaderId = value; }, ref _loaderId, ref _lastLoaderId);
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { dataId = value; }, ref _dataId, ref _lastDataId);
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { dataIndex2D = value; }, ref _dataIndex2D, ref _lastDataIndex2D);
 
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataType = value; }, ref _dataType, ref _lastDataType);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { loaderId = value; }, ref _loaderId, ref _lastLoaderId);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataId = value; }, ref _dataId, ref _lastDataId);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { dataIndex2D = value; }, ref _dataIndex2D, ref _lastDataIndex2D);
+                RecoverLoadScopeAndData();
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { loadScope = value; }, ref _loadScope, ref _lastLoadScope);
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { data = value; }, ref _data, ref _lastData);
 
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { loadScope = value; }, ref _loadScope, ref _lastLoadScope);
+                return true;
+            }
+            return false;
+        }
 
+        private void RecoverLoadScopeAndData()
+        {
+            SerializationUtility.RecoverLostReferencedObject(ref _loadScope);
             SerializationUtility.RecoverLostReferencedObject(ref _data);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { data = value; }, ref _data, ref _lastData);
         }
 #endif
 
@@ -253,7 +269,7 @@ namespace DepictionEngine
 
         private void LoadScopeChangedHandler(LoadScope loadScope)
         {
-            UpdateData(SceneManager.IsUserChangeContext() ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Pool);
+            UpdateData(SceneManager.GetIsUserChangeContext() ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Pool);
         }
 
         private void RemoveDataDelegates(ScriptableObjectDisposable data)
@@ -468,7 +484,7 @@ namespace DepictionEngine
             if (loadScope is not null && loadScope.loader != Disposable.NULL)
             {
 #if UNITY_EDITOR
-                if (SceneManager.IsUserChangeContext())
+                if (SceneManager.GetIsUserChangeContext())
                     disposeContext = DisposeContext.Editor_Destroy;
 #endif
                 loadScope.loader.RemoveReference(loadScope.scopeKey, this, disposeContext);

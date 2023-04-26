@@ -127,7 +127,7 @@ namespace DepictionEngine
 
         public QuaternionDouble rotation
         {
-            get { return _rotation; }
+            get => _rotation;
             protected set
             {
                 if (SetRotation(value))
@@ -147,8 +147,8 @@ namespace DepictionEngine
 
         public virtual Object target
         {
-            get { return _target; }
-            set { targetId = value != Disposable.NULL ? value.id : SerializableGuid.Empty; }
+            get => _target;
+            set => targetId = value != Disposable.NULL ? value.id : SerializableGuid.Empty;
         }
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace DepictionEngine
         [Json]
         public SerializableGuid targetId
         {
-            get { return _targetId; }
+            get => _targetId;
             set
             {
                 SetValue(nameof(targetId), value, ref _targetId, (newValue, oldValue) =>
@@ -192,7 +192,7 @@ namespace DepictionEngine
 
         public GeoAstroObject GetTargetParentGeoAstroObject()
         {
-            return target.transform != Disposable.NULL ? target.transform.parentGeoAstroObject : null;
+            return target != Disposable.NULL && target.transform != Disposable.NULL ? target.transform.parentGeoAstroObject : null;
         }
 
         public bool SetTargetPosition(Vector3Double value, bool forceUpdate = true)
@@ -201,7 +201,7 @@ namespace DepictionEngine
                 _forcingTargetTransformUpdate = true;
 
             bool targetPositionChanged = false;
-            if (target.transform != Disposable.NULL)
+            if (target != Disposable.NULL && target.transform != Disposable.NULL)
             {
                 if (target.transform.position != value)
                 {
@@ -249,7 +249,7 @@ namespace DepictionEngine
         public Vector2Double minMaxDistance
         {
             get => GetMinMaxDistance();
-            set { SetMinMaxDistance(value); }
+            set => SetMinMaxDistance(value);
         }
 
         protected virtual Vector2Double GetMinMaxDistance()
@@ -305,7 +305,7 @@ namespace DepictionEngine
         {
             base.UpdateControllerTransform(camera);
 
-            if (camera != Disposable.NULL && camera == objectBase && target.transform != Disposable.NULL)
+            if (camera != Disposable.NULL && camera == objectBase && target != Disposable.NULL && target.transform != Disposable.NULL)
             {
                 UpdateTargetControllerTransform(camera);
 
@@ -359,7 +359,9 @@ namespace DepictionEngine
 
                     QuaternionDouble rotation = GetRotation();
 
-                    localRotationParam.SetValue(transform.parent != Disposable.NULL ? QuaternionDouble.Inverse(transform.parent.rotation) * rotation : rotation);
+                    bool hasParent = transform.parent != Disposable.NULL;
+
+                    localRotationParam.SetValue(hasParent ? QuaternionDouble.Inverse(transform.parent.rotation) * rotation : rotation);
 
                     Vector3Double position = GetCameraPosition(target.transform.position, rotation, distance);
 
@@ -369,7 +371,7 @@ namespace DepictionEngine
                             localPositionParam.SetValue(transform.parentGeoAstroObject.GetGeoCoordinateFromPoint(position));
                     }
                     else
-                        localPositionParam.SetValue(transform.parent != Disposable.NULL ? transform.parent.InverseTransformPoint(position) : position);
+                        localPositionParam.SetValue(hasParent ? transform.parent.InverseTransformPoint(position) : position);
                 }
             }
 

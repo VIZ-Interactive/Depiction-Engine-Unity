@@ -50,7 +50,7 @@ namespace DepictionEngine
 
         private void ClearPoolBtn()
         {
-            DestroyAllDisposable();
+            DestroyAllDisposables();
         }
 
         private bool GetShowClearPool()
@@ -90,23 +90,6 @@ namespace DepictionEngine
         }
 #endif
 
-        private void InitTypes()
-        {
-            _types ??= new List<Type>();
-        }
-
-        private void InitPools()
-        {
-            _pools ??= new Dictionary<int, List<IDisposable>>();
-        }
-
-        public override void ExplicitOnEnable()
-        {
-            base.ExplicitOnEnable();
-
-            StartDynamicResizing();
-        }
-
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
@@ -117,29 +100,28 @@ namespace DepictionEngine
             InitValue(value => destroyCount = value, 50, initializingContext);
         }
 
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
+
+            StartDynamicResizing();
+        }
+
 #if UNITY_EDITOR
+        public override bool AfterAssemblyReload()
+        {
+            if (base.AfterAssemblyReload())
+            {
+                StartDynamicResizing();
+
+                return true;
+            }
+            return false;
+        }
+
         protected override void DebugChanged()
         {
             base.DebugChanged();
-
-            IterateOverDisposable((disposable) => { UpdateHideFlags(disposable); });
-        }
-
-        protected override void Saving(UnityEngine.SceneManagement.Scene scene, string path)
-        {
-            base.Saving(scene ,path);
-
-            IterateOverDisposable((disposable) =>
-            {
-                UnityEngine.Object unityObject = GetUnityObject(disposable);
-                if (unityObject != null)
-                    unityObject.hideFlags |= HideFlags.DontSave;
-            });
-        }
-
-        protected override void Saved(UnityEngine.SceneManagement.Scene scene)
-        {
-            base.Saved(scene);
 
             IterateOverDisposable((disposable) => { UpdateHideFlags(disposable); });
         }
@@ -149,7 +131,10 @@ namespace DepictionEngine
         {
             UnityEngine.Object unityObject = GetUnityObject(disposable);
             if (unityObject != null)
+            {
                 unityObject.hideFlags = SceneManager.Debugging() ? HideFlags.None : HideFlags.HideInHierarchy;
+                unityObject.hideFlags |= HideFlags.DontSave;
+            }
         }
 
         /// <summary>
@@ -158,13 +143,13 @@ namespace DepictionEngine
         [Json]
         public bool enablePooling
         {
-            get { return _enablePooling; }
+            get => _enablePooling;
             set
             {
                 SetValue(nameof(enablePooling), value, ref _enablePooling, (newValue, oldValue) =>
                 {
-                    if (!newValue)
-                        DestroyAllDisposable();
+                    if (initialized && !newValue)
+                        DestroyAllDisposables();
                 });
             }
         }
@@ -175,8 +160,8 @@ namespace DepictionEngine
         [Json]
         public int maxSize
         {
-            get { return _maxSize; }
-            set { SetValue(nameof(maxSize), value, ref _maxSize); }
+            get => _maxSize;
+            set => SetValue(nameof(maxSize), value, ref _maxSize);
         }
 
         /// <summary>
@@ -185,7 +170,7 @@ namespace DepictionEngine
         [Json]
         public float resizeInterval
         {
-            get { return _resizeInterval; }
+            get => _resizeInterval;
             set
             {
                 if (value <= 0.0f)
@@ -203,11 +188,11 @@ namespace DepictionEngine
         [Json]
         public int destroyCount
         {
-            get { return _destroyCount; }
-            set { SetValue(nameof(destroyCount), value, ref _destroyCount); }
+            get => _destroyCount;
+            set => SetValue(nameof(destroyCount), value, ref _destroyCount);
         }
 
-        protected override void IterateOverChildrenAndSiblings(Action<PropertyMonoBehaviour> callback)
+        public override void IterateOverChildrenAndSiblings(Action<PropertyMonoBehaviour> callback)
         {
 
         }
@@ -219,7 +204,7 @@ namespace DepictionEngine
 
         private Tween resizeTimer
         {
-            get { return _resizeTimer; }
+            get => _resizeTimer;
             set
             {
                 if (Object.ReferenceEquals(_resizeTimer, value))
@@ -243,10 +228,14 @@ namespace DepictionEngine
 
         public void AddToPool(IDisposable disposable)
         {
-            InitPools();
+            if (!enablePooling)
+                return;
+
             if (disposable != null)
             {
                 int typeHashCode = GetHashCodeFromType(disposable.GetType());
+
+                _pools ??= new Dictionary<int, List<IDisposable>>();
                 lock (_pools)
                 {
                     if (!_pools.TryGetValue(typeHashCode, out List<IDisposable> pool))
@@ -289,7 +278,7 @@ namespace DepictionEngine
 
         public IDisposable GetFromPool(Type type)
         {
-            if (type == null)
+            if (!enablePooling || type == null)
                 return null;
 
             IDisposable disposable = null;
@@ -326,7 +315,7 @@ namespace DepictionEngine
                                     if (disposable is MonoBehaviour)
                                     {
                                         GameObject go = (disposable as MonoBehaviour).gameObject;
-
+                                        go.SetActive(true);
 #if UNITY_EDITOR
                                         //Make sure GameObject is visible
                                         if (UnityEditor.SceneVisibilityManager.instance.IsHidden(go, true))
@@ -369,7 +358,7 @@ namespace DepictionEngine
         public int GetHashCodeFromType(Type type)
         {
             int index = 0;
-            InitTypes();
+            _types ??= new List<Type>();
             lock (_types)
             {
                 index = _types.IndexOf(type);
@@ -441,11 +430,14 @@ namespace DepictionEngine
         /// <summary>
         /// Destroy all pooled objects.
         /// </summary>
-        public void DestroyAllDisposable()
+        public void DestroyAllDisposables()
         {
             try
             {
-                IterateOverDisposable((disposable) => { Destroy(disposable); });
+                IterateOverDisposable((disposable) => 
+                { 
+                    Destroy(disposable); 
+                });
             }
             catch(InvalidOperationException e)
             {
@@ -453,7 +445,6 @@ namespace DepictionEngine
             }
 
             _pools?.Clear();
-
             _types?.Clear();
 
 #if UNITY_EDITOR
@@ -463,11 +454,10 @@ namespace DepictionEngine
 
         private static UnityEngine.Object GetUnityObject(IDisposable disposable)
         {
-            if (disposable is UnityEngine.Object)
+            if (disposable is UnityEngine.Object unityOject)
             {
-                UnityEngine.Object unityOject = disposable as UnityEngine.Object;
-                if (unityOject is Component)
-                    unityOject = (unityOject as Component).gameObject;
+                if (unityOject is Component component)
+                    unityOject = component.gameObject;
 
                 return unityOject;
             }
@@ -479,20 +469,13 @@ namespace DepictionEngine
             DisposeManager.Destroy(GetUnityObject(disposable));
         }
 
-        protected override void OnDisable()
-        {
-            base.OnDisable();
-
-            DestroyAllDisposable();
-        }
-
         public override bool OnDispose(DisposeContext disposeContext)
         {
             if (base.OnDispose(disposeContext))
             {
                 resizeTimer = null;
 
-                DestroyAllDisposable();
+                DestroyAllDisposables();
 
                 return true;
             }

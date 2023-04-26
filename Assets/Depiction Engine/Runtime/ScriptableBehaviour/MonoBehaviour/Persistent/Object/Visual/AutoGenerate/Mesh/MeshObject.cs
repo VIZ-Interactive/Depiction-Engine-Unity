@@ -13,9 +13,9 @@ namespace DepictionEngine
 
         private Mesh _mesh;
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             InitializeReferenceDataType(MESH_REFERENCE_DATATYPE, typeof(AssetReference));
         }
@@ -24,16 +24,16 @@ namespace DepictionEngine
         {
             if (base.UpdateAllDelegates())
             {
-                RemoveMeshDelegates();
+                RemoveMeshDelegates(mesh);
                 if (!IsDisposing())
-                    AddMeshDelegates();
+                    AddMeshDelegates(mesh);
 
                 return true;
             }
             return false;
         }
 
-        private bool RemoveMeshDelegates()
+        private bool RemoveMeshDelegates(Mesh mesh)
         {
             if (mesh is not null)
             {
@@ -43,7 +43,7 @@ namespace DepictionEngine
             return false;
         }
 
-        private bool AddMeshDelegates()
+        private bool AddMeshDelegates(Mesh mesh)
         {
             if (mesh != Disposable.NULL)
             {
@@ -104,19 +104,19 @@ namespace DepictionEngine
             get => GetFirstReferenceOfType(MESH_REFERENCE_DATATYPE) as AssetReference;
         }
 
-        private Mesh mesh
+        public Mesh mesh
         {
             get => _mesh;
-            set 
+            private set 
             {
-                if (Object.ReferenceEquals(_mesh, value))
-                    return;
-
-                RemoveMeshDelegates();
-
-                _mesh = value;
-
-                AddMeshDelegates();
+                SetValue(nameof(mesh), value, ref _mesh, (newValue, oldValue) =>
+                {
+                    if (initialized & HasChanged(newValue, oldValue, false))
+                    {
+                        RemoveMeshDelegates(oldValue);
+                        AddMeshDelegates(newValue);
+                    }
+                });
             }
         }
 

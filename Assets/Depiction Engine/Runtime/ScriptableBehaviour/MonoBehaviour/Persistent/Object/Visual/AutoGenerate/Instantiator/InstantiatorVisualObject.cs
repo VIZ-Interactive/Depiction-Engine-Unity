@@ -35,20 +35,22 @@ namespace DepictionEngine
 
         private void DisposeAllVisualsBtn()
         {
-            SceneManager.UserContext(() =>
-            {
-                Editor.UndoManager.CreateNewGroup("Disposed All '" + name + "' Visuals");
-                DisposeAllChildren();
-            });
+            SceneManager.StartUserContext();
+          
+            Editor.UndoManager.CreateNewGroup("Disposed All '" + name + "' Visuals");
+            DisposeAllChildren();
+
+            SceneManager.EndUserContext();
         }
 
         private void UpdateAllGameObjectsBtn()
         {
-            SceneManager.UserContext(() =>
-            {
-                Editor.UndoManager.CreateNewGroup("Updated All '" + name + "' GameObjects");
-                UpdateAllGameObjects();
-            });
+            SceneManager.StartUserContext();
+
+            Editor.UndoManager.CreateNewGroup("Updated All '" + name + "' GameObjects");
+            UpdateAllGameObjects();
+
+            SceneManager.EndUserContext();
         }
 #endif
 
@@ -59,9 +61,9 @@ namespace DepictionEngine
             _gameObjects = default;
         }
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             InitializeReferenceDataType(ASSETBUNDLE_REFERENCE_DATATYPE, typeof(AssetReference));
         }
@@ -70,16 +72,16 @@ namespace DepictionEngine
         { 
             if (base.UpdateAllDelegates())
             { 
-                RemoveAssetBundleDelegates();
+                RemoveAssetBundleDelegates(assetBundle);
                 if (!IsDisposing())
-                    AddAssetBundleDelegates();
+                    AddAssetBundleDelegates(assetBundle);
                
                 return true;
             }
             return false;
         }
 
-        private bool RemoveAssetBundleDelegates()
+        private bool RemoveAssetBundleDelegates(AssetBundle assetBundle)
         {
             if (assetBundle is not null)
             {
@@ -89,7 +91,7 @@ namespace DepictionEngine
             return false;
         }
 
-        private bool AddAssetBundleDelegates()
+        private bool AddAssetBundleDelegates(AssetBundle assetBundle)
         {
             if (assetBundle != Disposable.NULL)
             {
@@ -133,19 +135,19 @@ namespace DepictionEngine
             get => GetFirstReferenceOfType(ASSETBUNDLE_REFERENCE_DATATYPE) as AssetReference;
         }
 
-        private AssetBundle assetBundle
+        public AssetBundle assetBundle
         {
             get => _assetBundle;
-            set
+            private set
             {
-                if (Object.ReferenceEquals(_assetBundle, value))
-                    return;
-
-                RemoveAssetBundleDelegates();
-
-                _assetBundle = value;
-
-                AddAssetBundleDelegates();
+                SetValue(nameof(assetBundle), value, ref _assetBundle, (newValue, oldValue) =>
+                {
+                    if (initialized & HasChanged(newValue, oldValue, false))
+                    {
+                        RemoveAssetBundleDelegates(oldValue);
+                        AddAssetBundleDelegates(newValue);
+                    }
+                });
             }
         }
 
@@ -269,8 +271,7 @@ namespace DepictionEngine
             if (newGameObject == null)
             {
                 newGameObject = MonoBehaviourDisposable.Instantiate(gameObject, parent.transform, false);
-                MeshRenderer meshRenderer = newGameObject.GetComponent<MeshRenderer>();
-                if (meshRenderer != null)
+                if (newGameObject.TryGetComponent<MeshRenderer>(out var meshRenderer))
                     AddMeshRenderer(meshRenderer);
             }
 

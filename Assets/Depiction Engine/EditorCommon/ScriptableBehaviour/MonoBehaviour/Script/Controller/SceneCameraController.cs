@@ -10,7 +10,7 @@ namespace DepictionEngine.Editor
     {
         public bool wasFirstUpdatedBySceneViewDouble;
 
-        protected override void UpdateFields()
+        public override void UpdateFields()
         {
             base.UpdateFields();
 

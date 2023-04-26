@@ -75,14 +75,15 @@ namespace DepictionEngine
                 string assetPath = UnityEditor.EditorUtility.OpenFilePanel("Load Asset File", "Assets/DepictionEngine/Resources", GetSupportedLoadFileExtensions());
                 if (!string.IsNullOrEmpty(assetPath))
                 {
-                    SceneManager.UserContext(() => 
-                    {
-                        Editor.UndoManager.CreateNewGroup("Changed Asset Data in " + name);
-                        RegisterCompleteObjectUndo();
+                    SceneManager.StartUserContext();
+                    
+                    Editor.UndoManager.CreateNewGroup("Changed Asset Data in " + name);
+                    RegisterCompleteObjectUndo();
 
-                        LoaderBase.DataType dataType = GetDataTypeFromExtension(Path.GetExtension(assetPath));
-                        SetData(ProcessDataBytes(File.ReadAllBytes(assetPath), dataType), dataType, InitializationContext.Editor);
-                    });
+                    LoaderBase.DataType dataType = GetDataTypeFromExtension(Path.GetExtension(assetPath));
+                    SetData(ProcessDataBytes(File.ReadAllBytes(assetPath), dataType), dataType, InitializationContext.Editor);
+                    
+                    SceneManager.EndUserContext();
                 }
             }
             catch (Exception e)
@@ -161,15 +162,19 @@ namespace DepictionEngine
         private bool _lastData;
         [SerializeField, HideInInspector]
         private bool _data;
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
-
-            if (_lastData != _data)
+            if (base.UpdateUndoRedoSerializedFields())
             {
-                _data = _lastData;
-                DataPropertyAssigned();
+                if (_lastData != _data)
+                {
+                    _data = _lastData;
+                    DataPropertyAssigned();
+                }
+
+                return true;
             }
+            return false;
         }
 #endif
 
@@ -190,7 +195,7 @@ namespace DepictionEngine
         public GridIndexType gridIndexType
         {
             get => _gridIndexType;
-            set { SetValue(nameof(gridIndexType), value, ref _gridIndexType); }
+            set => SetValue(nameof(gridIndexType), value, ref _gridIndexType);
         }
 
         /// <summary>
@@ -217,7 +222,7 @@ namespace DepictionEngine
         public Vector2Int grid2DIndex
         {
             get => _grid2DIndex;
-            set { SetValue(nameof(grid2DIndex), value, ref _grid2DIndex); }
+            set => SetValue(nameof(grid2DIndex), value, ref _grid2DIndex);
         }
 
         /// <summary>

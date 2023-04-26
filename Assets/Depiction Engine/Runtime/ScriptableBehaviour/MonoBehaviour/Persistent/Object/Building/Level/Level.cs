@@ -24,12 +24,20 @@ namespace DepictionEngine
 
         private void OpenBtn()
         {
-            SceneManager.UserContext(() => { Open(); });
+            SceneManager.StartUserContext();
+            
+            Open();
+
+            SceneManager.EndUserContext();
         }
 
         private void CloseBtn()
         {
-            SceneManager.UserContext(() => { Close(); });
+            SceneManager.StartUserContext(); 
+            
+            Close();
+
+            SceneManager.EndUserContext();
         } 
 #endif
 
@@ -165,7 +173,7 @@ namespace DepictionEngine
                 {
                     DisposeContext disposeContext = DisposeContext.Programmatically_Pool;
 #if UNITY_EDITOR
-                    if (SceneManager.IsUserChangeContext())
+                    if (SceneManager.GetIsUserChangeContext())
                         disposeContext = DisposeContext.Editor_Destroy;
 #endif
 

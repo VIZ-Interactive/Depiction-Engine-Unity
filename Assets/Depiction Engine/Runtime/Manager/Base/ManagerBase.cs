@@ -24,16 +24,20 @@ namespace DepictionEngine
             return true;
         }
 
-        protected override void DetectUserChanges()
+        public override bool DetectUserGameObjectChanges()
         {
-            base.DetectUserChanges();
-
-            if (_lastGameObjectActiveSelf != gameObjectActiveSelf)
+            if (base.DetectUserGameObjectChanges())
             {
-                bool newValue = gameObjectActiveSelf;
-                gameObject.SetActive(_lastGameObjectActiveSelf);
-                gameObjectActiveSelf = newValue;
+                if (_lastGameObjectActiveSelf != gameObjectActiveSelf)
+                {
+                    bool newValue = gameObjectActiveSelf;
+                    gameObject.SetActive(_lastGameObjectActiveSelf);
+                    gameObjectActiveSelf = newValue;
+                }
+
+                return true;
             }
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -45,13 +49,15 @@ namespace DepictionEngine
             {
                 GameObject go = GameObject.Find(SceneManager.SCENE_MANAGER_NAME);
 
-                if (go is null && createIfMissing)
+                if (go == null && createIfMissing)
                 {
                     go = new GameObject(SceneManager.SCENE_MANAGER_NAME);
-                    go.AddComponent<ManagersBootstrap>();
+                    go.AddSafeComponent<ManagersBootstrap>();
+                    //Initialize SceneManager
+                    go.GetSafeComponent<SceneManager>();
                 }
                 
-                if (go is not null)
+                if (go != null)
                     manager = go.GetSafeComponent<T>();
             }
 

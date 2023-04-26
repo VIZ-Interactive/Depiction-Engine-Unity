@@ -35,8 +35,6 @@ namespace DepictionEngine
         void Originator(Action callback, IScriptableBehaviour originator);
 
         int GetInstanceID();
-        void ExplicitOnEnable();
-        void ExplicitOnDisable();
 
 #if UNITY_EDITOR
         bool AfterAssemblyReload();

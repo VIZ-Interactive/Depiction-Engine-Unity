@@ -12,16 +12,16 @@ namespace DepictionEngine
     [Serializable]
     public struct Vector3Double : IComparable, IComparable<Vector3Double>, IEquatable<Vector3Double>
     {
-        public static readonly Vector3Double zero = new Vector3Double();
-        public static readonly Vector3Double one = new Vector3Double(1.0d, 1.0d, 1.0d);
-        public static readonly Vector3Double up = new Vector3Double(0.0d, 1.0d, 0.0d);
-        public static readonly Vector3Double down = new Vector3Double(0.0d, -1.0d, 0.0d);
-        public static readonly Vector3Double forward = new Vector3Double(0.0d, 0.0d, 1.0d);
-        public static readonly Vector3Double back = new Vector3Double(0.0d, 0.0d, -1.0d);
-        public static readonly Vector3Double right = new Vector3Double(1.0d, 0.0d, 0.0d);
-        public static readonly Vector3Double left = new Vector3Double(-1.0d, 0.0d, 0.0d);
-        public static readonly Vector3Double positiveInfinity = new Vector3Double(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
-        public static readonly Vector3Double negativeInfinity = new Vector3Double(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
+        public static readonly Vector3Double zero = new();
+        public static readonly Vector3Double one = new(1.0d, 1.0d, 1.0d);
+        public static readonly Vector3Double up = new(0.0d, 1.0d, 0.0d);
+        public static readonly Vector3Double down = new(0.0d, -1.0d, 0.0d);
+        public static readonly Vector3Double forward = new(0.0d, 0.0d, 1.0d);
+        public static readonly Vector3Double back = new(0.0d, 0.0d, -1.0d);
+        public static readonly Vector3Double right = new(1.0d, 0.0d, 0.0d);
+        public static readonly Vector3Double left = new(-1.0d, 0.0d, 0.0d);
+        public static readonly Vector3Double positiveInfinity = new(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
+        public static readonly Vector3Double negativeInfinity = new(double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity);
 
         public const double kEpsilonNormalSqrt = 1e-15d;
 
@@ -353,7 +353,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(object other)
         {
-            return other is Vector3Double && Equals((Vector3Double)other) ? 1 : 0;
+            return other is Vector3Double vector3DoubleOther && Equals(vector3DoubleOther) ? 1 : 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

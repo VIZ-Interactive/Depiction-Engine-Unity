@@ -72,9 +72,26 @@ namespace DepictionEngine
             _initializationJson = null;
         }
 
-        protected override void DetectUserChanges()
+#if UNITY_EDITOR
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.DetectUserChanges();
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                DetectUserGameObjectChanges();
+
+                return true; 
+            }
+            return false;
+        }
+#endif
+
+        /// <summary>
+        /// Detect changes that happen as a result of an external influence.
+        /// </summary>
+        public virtual bool DetectUserGameObjectChanges()
+        {
+            if (IsDisposing())
+                return false;
 
             if (_lastEnabled != enabled)
             {
@@ -82,6 +99,8 @@ namespace DepictionEngine
                 (this as MonoBehaviour).enabled = _lastEnabled;
                 enabled = newValue;
             }
+
+            return true;
         }
 
         protected JSONNode initializationJson { get => _initializationJson; }
@@ -97,7 +116,7 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsNotFallbackValues))]
         public new bool enabled
         {
-            get { return (this as MonoBehaviour).enabled; }
+            get => (this as MonoBehaviour).enabled;
             set 
             {
                 if (!CanBeDisabled())
@@ -107,9 +126,17 @@ namespace DepictionEngine
                 if (HasChanged(value, oldValue, false))
                 {
                     _lastEnabled = (this as MonoBehaviour).enabled = value;
+
+                    EnabledChanged(value, oldValue);
+
                     PropertyAssigned(this, nameof(enabled), value, oldValue);
                 }
             }
+        }
+
+        protected virtual void EnabledChanged(bool newValue, bool oldValue)
+        {
+
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

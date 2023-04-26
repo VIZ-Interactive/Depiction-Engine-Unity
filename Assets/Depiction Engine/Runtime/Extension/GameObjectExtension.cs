@@ -2,87 +2,80 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace DepictionEngine
 {
     public static class GameObjectExtension
     {
-        public static T AddSafeComponent<T>(this GameObject go, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T AddSafeComponent<T>(this GameObject go, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false, bool initialize = true, bool registerCreatedUndo = false) where T : Component
         {
-            return (T)go.AddSafeComponent(typeof(T), initializingContext, json, propertyModifiers);
+            T component;
+
+            InstanceManager.preventAutoInitialize = true;
+            component = go.AddComponent<T>();
+            InstanceManager.preventAutoInitialize = false;
+
+            return ComponentAdded(component, initializingContext , json, propertyModifiers, isFallbackValues, initialize, registerCreatedUndo);
         }
 
-        public static Component AddSafeComponent(this GameObject go, Type type, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Component AddSafeComponent(this GameObject go, Type type, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false, bool initialize = true, bool registerCreatedUndo = false)
         {
-            Component component = null;
+            Component component;
 
-            InstanceManager.InitializingContext(() => 
-            {
-//#if UNITY_EDITOR
-//                Editor.UndoManager.AddComponent(go, type, ref component, initializingContext);
-//#endif
-                component ??= go.AddComponent(type);
+            InstanceManager.preventAutoInitialize = true;
+            component = go.AddComponent(type);
+            InstanceManager.preventAutoInitialize = false;
 
-            }, initializingContext, json, propertyModifiers, isFallbackValues);
-
-            //The Null check is because Unity sometimes prevent component creation if a component of similar type already exists
-            if (component is MonoBehaviourDisposable && !DisposeManager.IsNullOrDisposing(component))
-            {
-                MonoBehaviourDisposable monoBehaviourDisposable = component as MonoBehaviourDisposable;
-                TransformExtension.InitializeComponent(monoBehaviourDisposable, initializingContext, json, propertyModifiers, isFallbackValues);
-                monoBehaviourDisposable.ExplicitOnEnable();
-            }
-
-            return component;
+            return ComponentAdded(component, initializingContext, json, propertyModifiers, isFallbackValues, initialize, registerCreatedUndo);
         }
 
-        public static T GetSafeComponent<T>(this GameObject go, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
+        private static T ComponentAdded<T>(T component, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false, bool initialize = true, bool registerCreatedUndo = false) where T : Component
         {
-            return (T)go.transform.GetSafeComponent(typeof(T), initializingContext, json, propertyModifiers);
+#if UNITY_EDITOR
+            if (registerCreatedUndo)
+                Editor.UndoManager.RegisterCreatedObjectUndo(component, initializingContext);
+#endif
+
+            return initialize ? Initialize(component, initializingContext, json, propertyModifiers, isFallbackValues) : component;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T GetSafeComponent<T>(this GameObject go, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false) where T : Component
+        {
+            return Initialize(go.GetComponent<T>(), initializingContext, json, propertyModifiers, isFallbackValues);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Component GetSafeComponent(this GameObject go, Type type, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
-            return go.transform.GetSafeComponent(type, initializingContext, json, propertyModifiers, isFallbackValues);
+            return Initialize(go.GetComponent(type), initializingContext, json, propertyModifiers, isFallbackValues);
         }
 
-        public static T GetSafeComponentInParent<T>(this GameObject go, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T GetSafeComponentInParent<T>(this GameObject go, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false) where T : Component
         {
-            return (T)go.transform.GetSafeComponentInParent(typeof(T), includeInactive, initializingContext, json, propertyModifiers);
+            return Initialize(go.GetComponentInParent<T>(includeInactive), initializingContext, json, propertyModifiers, isFallbackValues);
         }
 
-        public static Component GetSafeComponentInParent(this GameObject go, Type type, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Component GetSafeComponentInParent(this GameObject go, Type type, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
-            return go.transform.GetSafeComponentInParent(type, includeInactive, initializingContext, json, propertyModifiers);
+            return Initialize(go.GetComponentInParent(type, includeInactive), initializingContext, json, propertyModifiers, isFallbackValues);
         }
 
-        public static List<T> GetSafeComponents<T>(this GameObject go, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
+        private static T Initialize<T>(T component, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false) where T : Component
         {
-            return go.transform.GetSafeComponents<T>(initializingContext, json, propertyModifiers);
+            return InstanceManager.Initialize(component, initializingContext, json, propertyModifiers, isFallbackValues);
         }
 
-        public static List<Component> GetSafeComponents(this GameObject go, Type type, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null)
-        {
-            return go.transform.GetSafeComponents(type, initializingContext, json, propertyModifiers);
-        }
-
-        public static List<T> GetSafeComponentsInChildren<T>(this GameObject go, bool includeSibling = true, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
-        {
-            return go.transform.GetSafeComponentsInChildren<T>(includeSibling, initializingContext, json, propertyModifiers);
-        }
-
-        public static List<Component> GetSafeComponentsInChildren(this GameObject go, Type type, bool includeSibling = false, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null)
-        {
-            return go.transform.GetSafeComponentsInChildren(type, includeSibling, initializingContext, json, propertyModifiers);
-        }
-
-        public static IDisposable GetDisposableInComponents(this GameObject go)
-        {
-            return GetDisposableInComponents(go, go.GetComponents<Component>());
-        }
-
-        public static IDisposable GetDisposableInComponents(this GameObject _, Component[] components)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IDisposable GetObjectOrVisualComponent(this GameObject _, Component[] components)
         {
             foreach (Component component in components)
             {
@@ -92,6 +85,7 @@ namespace DepictionEngine
             return null;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetLayerRecursively(this GameObject go, int layer)
         {
             if (go.layer != layer)

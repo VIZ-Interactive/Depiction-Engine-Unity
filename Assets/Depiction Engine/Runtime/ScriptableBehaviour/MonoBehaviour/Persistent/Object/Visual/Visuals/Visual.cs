@@ -40,7 +40,7 @@ namespace DepictionEngine
             if (!IsDisposing())
             {
                 if (parent == Disposable.NULL || parent.gameObject.transform != transform.parent)
-                    parent = transform.parent.GetSafeComponentInParent(typeof(Visual), true, GetInitializeContext()) as Visual;
+                    parent = transform.parent.gameObject.GetSafeComponentInParent(typeof(Visual), true, GetInitializeContext()) as Visual;
             }
 
             return parent;
@@ -50,7 +50,7 @@ namespace DepictionEngine
         {
             if (base.SetParent(value))
             {
-                visualObject = !IsDisposing() && transform.parent != null ? transform.parent.GetSafeComponentInParent(typeof(VisualObject), true, GetInitializeContext()) as VisualObject : null;
+                visualObject = !IsDisposing() && transform.parent != null ? transform.parent.gameObject.GetSafeComponentInParent(typeof(VisualObject), true, GetInitializeContext()) as VisualObject : null;
                 
                 return true;
             }
@@ -59,8 +59,8 @@ namespace DepictionEngine
 
         public VisualObject visualObject
         {
-            get { return _visualObject; }
-            private set { SetVisualObject(_visualObject, value); }
+            get => _visualObject;
+            private set => SetVisualObject(_visualObject, value);
         }
 
         protected virtual bool SetVisualObject(VisualObject oldValue, VisualObject newValue)

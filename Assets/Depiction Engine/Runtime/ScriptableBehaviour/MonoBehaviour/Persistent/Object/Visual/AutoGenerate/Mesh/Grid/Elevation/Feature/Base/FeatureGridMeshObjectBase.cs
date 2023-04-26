@@ -100,9 +100,9 @@ namespace DepictionEngine
             }
         }
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             InitializeReferenceDataType(FEATURE_REFERENCE_DATATYPE, typeof(AssetReference));
         }
@@ -227,21 +227,19 @@ namespace DepictionEngine
             get => GetFirstReferenceOfType(FEATURE_REFERENCE_DATATYPE) as AssetReference;
         }
 
-        protected Feature feature
+        public Feature feature
         {
             get => _feature;
             private set 
             {
-                Feature oldValue = _feature;
-                Feature newValue = value;
-
-                if (Object.ReferenceEquals(oldValue, newValue))
-                    return;
-
-                RemoveFeatureDelgates(oldValue);
-                AddFeatureDelegates(newValue);
-
-                _feature = newValue;
+                SetValue(nameof(feature), value, ref _feature, (newValue, oldValue) =>
+                {
+                    if (initialized & HasChanged(newValue, oldValue, false))
+                    {
+                        RemoveFeatureDelgates(oldValue);
+                        AddFeatureDelegates(newValue);
+                    }
+                });
             }
         }
 

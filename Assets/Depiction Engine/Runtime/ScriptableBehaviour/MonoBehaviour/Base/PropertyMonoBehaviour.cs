@@ -7,7 +7,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace DepictionEngine
 {
@@ -88,7 +87,7 @@ namespace DepictionEngine
                 {
                     if (!isFallbackValues)
                     {
-                        CreateComponents(initializingContext);
+                        CreateAndInitializeDependencies(initializingContext);
                         InitializeFields(initializingContext);
                     }
 
@@ -125,7 +124,7 @@ namespace DepictionEngine
 
         }
 
-        protected virtual void CreateComponents(InitializationContext initializingContext)
+        protected virtual void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
 
         }
@@ -135,8 +134,6 @@ namespace DepictionEngine
 #if UNITY_EDITOR
             UpdateIcon();
 #endif
-
-            UpdateActiveAndEnabled();
         }
 
 #if UNITY_EDITOR
@@ -173,18 +170,26 @@ namespace DepictionEngine
         {
             base.Initialized(initializingContext);
 
+            UpdateActiveAndEnabled();
+
             UpdateFields();
         }
 
 #if UNITY_EDITOR
         private PropertyMonoBehaviour _lastParent;
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                UpdateActiveAndEnabled();
 
-            _parent = _lastParent;
-            if (!IsDisposing())
-                UpdateRelations();
+                _parent = _lastParent;
+                if (!IsDisposing())
+                    UpdateRelations();
+
+                return true;
+            }
+            return false;
         }
 #endif
 
@@ -204,11 +209,11 @@ namespace DepictionEngine
             return false;
         }
 
-        protected virtual void UpdateFields()
+        public virtual void UpdateFields()
         {
         }
 
-        protected virtual bool UpdateRelations(Action beforeSiblingsInitializeCallback = null)
+        public virtual bool UpdateRelations(Action beforeSiblingsInitializeCallback = null)
         {
             if (ParentHasChanged())
                 UpdateParent();
@@ -324,7 +329,7 @@ namespace DepictionEngine
 
             Type parentType = GetParentType();
             if (parentType != null)
-                parent = InitializeComponent(GetComponentInParent(parentType, true), null, isFallbackValues);
+                parent = (PropertyMonoBehaviour)gameObject.GetSafeComponentInParent(parentType, true, InitializationContext.Programmatically, null, null, isFallbackValues);
 
             return parent;
         }
@@ -388,16 +393,9 @@ namespace DepictionEngine
             }
         }
 
-        protected PropertyMonoBehaviour InitializeComponent(Component component, JSONNode json = null, bool isFallbackValues = false)
+        protected T InitializeComponent<T>(T component, JSONNode json = null, bool isFallbackValues = false)
         {
-            if (component is PropertyMonoBehaviour)
-            {
-                PropertyMonoBehaviour propertyMonoBehaviour = component as PropertyMonoBehaviour;
-                InstanceManager.Initialize(propertyMonoBehaviour, GetInitializeContext(), json, null, isFallbackValues);
-                return propertyMonoBehaviour;
-            }
-
-            return null;
+            return InstanceManager.Initialize(component, GetInitializeContext(), json, null, isFallbackValues);
         }
 
         protected virtual bool ParentHasChanged()
@@ -474,7 +472,7 @@ namespace DepictionEngine
             return id;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         protected virtual bool SetValue<T>(string name, T value, ref T valueField, Action<T, T> assignedCallback = null, bool allowAutoDisposeOnOutOfSynchProperty = false)
         {
             T oldValue = valueField;
@@ -483,12 +481,15 @@ namespace DepictionEngine
             {
                 valueField = value;
 
-                Datasource.AllowAutoDisposeOnOutOfSynchProperty(() => 
-                {
-                    assignedCallback?.Invoke(value, oldValue);
+                if (allowAutoDisposeOnOutOfSynchProperty)
+                    Datasource.StartAllowAutoDisposeOnOutOfSynchProperty();
+              
+                assignedCallback?.Invoke(value, oldValue);
 
-                    PropertyAssigned(this, name, value, oldValue); 
-                }, allowAutoDisposeOnOutOfSynchProperty);
+                PropertyAssigned(this, name, value, oldValue);
+
+                if (allowAutoDisposeOnOutOfSynchProperty)
+                    Datasource.EndAllowAutoDisposeOnOutOfSynchProperty();
 
                 return true;
             }
@@ -509,11 +510,8 @@ namespace DepictionEngine
             if (forceChangeDuringInitializing && !initialized && !isFallbackValues)
                 return true;
 
-            if (newValue is IList && oldValue is IList && newValue.GetType() == oldValue.GetType())
+            if (newValue is IList newList && oldValue is IList oldList && newValue.GetType() == oldValue.GetType())
             {
-                IList newList = newValue as IList;
-                IList oldList = oldValue as IList;
-
                 if (newList.Count == oldList.Count)
                 {
                     for (int i = 0; i < newList.Count; i++)
@@ -527,7 +525,7 @@ namespace DepictionEngine
             return !Object.Equals(newValue, oldValue);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         protected void PropertyAssigned<T>(IProperty property, string name, T newValue, T oldValue)
         {
             SetPropertyDirty(name);
@@ -535,14 +533,9 @@ namespace DepictionEngine
             if (initialized)
             {
 #if UNITY_EDITOR
-                if (SceneManager.IsUserChangeContext() && property is IJson)
-                {
-                    IJson iJson = property as IJson;
-                    if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
-                        MarkAsNotPoolable();
-                }
+                if (SceneManager.GetIsUserChangeContext() && property is IJson iJson && iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
+                    MarkAsNotPoolable();
 #endif
-
                 PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
             }
         }
@@ -615,18 +608,20 @@ namespace DepictionEngine
             set => _id = value;
         }
 
-        public override void ExplicitOnDisable()
+        protected override void OnDisable()
         {
-            base.ExplicitOnDisable();
+            base.OnDisable();
 
-            UpdateActiveAndEnabled();
+            if (initialized)
+                UpdateActiveAndEnabled();
         }
 
-        public override void ExplicitOnEnable()
+        protected override void OnEnable()
         {
-            base.ExplicitOnEnable();
+            base.OnEnable();
 
-            UpdateActiveAndEnabled();
+            if (initialized)
+                UpdateActiveAndEnabled();
         }
 
         private bool GetActiveAndEnabled()
@@ -636,7 +631,7 @@ namespace DepictionEngine
             return gameObject.activeInHierarchy && enabled;
         }
 
-        private void UpdateActiveAndEnabled()
+        public void UpdateActiveAndEnabled()
         {
             activeAndEnabled = GetActiveAndEnabled();
         }
@@ -728,43 +723,6 @@ namespace DepictionEngine
             IterateOverChildren(HierarchicalApplyOriginShiftingChild);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void HierarchicalDetectChangesChild(PropertyMonoBehaviour child) { child.HierarchicalDetectChanges(); }
-        /// <summary>
-        /// Capture changes happening in Unity(Inspector, Transform etc...) such as: Name, Index, Layer, Tag, MeshRenderer Material, Enabled, GameObjectActive, Transform in the sceneview(localPosition, localRotation, localScale)
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void HierarchicalDetectChanges()
-        {
-            if (!isFallbackValues)
-            {
-                DetectChanges();
-
-                SceneManager.UserContext(() =>
-                {
-                    DetectUserChanges();
-
-                    UpdateActiveAndEnabled();
-                });
-            }
-
-            IterateOverChildrenAndSiblings(HierarchicalDetectChangesChild);
-        }
-
-        /// <summary>
-        /// Detect changes that happen as a result of an external influence.
-        /// </summary>
-        protected virtual void DetectChanges()
-        {
-        }
-
-        /// <summary>
-        /// Detect changes that happen as a result of an external influence.
-        /// </summary>
-        protected virtual void DetectUserChanges()
-        {
-        }
-
         private Camera _cameraParam;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void HierarchicalBeginCameraRenderingChild(PropertyMonoBehaviour child) { child.HierarchicalBeginCameraRendering(_cameraParam); }
@@ -776,19 +734,6 @@ namespace DepictionEngine
         {
             _cameraParam = camera;
             IterateOverChildrenAndSiblings(HierarchicalBeginCameraRenderingChild);
-
-            return initialized;
-        }
-
-        private ScriptableRenderContext? _contextParam;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void HierarchicalUpdateEnvironmentChild(PropertyMonoBehaviour child) { child.HierarchicalUpdateEnvironmentAndReflection(_cameraParam, _contextParam); }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual bool HierarchicalUpdateEnvironmentAndReflection(Camera camera, ScriptableRenderContext? context)
-        {
-            _cameraParam = camera;
-            _contextParam = context;
-            IterateOverChildrenAndSiblings(HierarchicalUpdateEnvironmentChild);
 
             return initialized;
         }
@@ -805,14 +750,6 @@ namespace DepictionEngine
             IterateOverChildrenAndSiblings(HierarchicalEndCameraRenderingChild);
 
             return initialized;
-        }
-
-        /// <summary>
-        /// Called as a result of a hierarchical traversal of the scenegraph initiated at the same time as the UnityEngine FixedUpdate.
-        /// </summary>
-        public virtual void HierarchicalFixedUpdate()
-        {
-            IterateOverChildrenAndSiblings((child) => { child.HierarchicalFixedUpdate(); });
         }
 
 #if UNITY_EDITOR
@@ -871,7 +808,7 @@ namespace DepictionEngine
             return initialized;
         }
 
-        protected virtual void PreHierarchicalUpdateBeforeChildrenAndSiblings()
+        public virtual void PreHierarchicalUpdateBeforeChildrenAndSiblings()
         {
         }
 
@@ -909,6 +846,45 @@ namespace DepictionEngine
             return true;
         }
 
+        //private Stack<PropertyMonoBehaviour> _hierarchyTraversalPropertyStack;
+        //private Stack<bool> _hierarchyTraversalBeforeFlagStack;
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public void TraverseHierarchy(Action<PropertyMonoBehaviour> beforeChildrenCallback = null, Action<PropertyMonoBehaviour> afterChildrenCallback = null)
+        //{
+        //    if (afterChildrenCallback != null)
+        //    {
+        //        _hierarchyTraversalPropertyStack ??= new();
+        //        _hierarchyTraversalPropertyStack.Clear();
+        //        _hierarchyTraversalBeforeFlagStack ??= new();
+        //        _hierarchyTraversalBeforeFlagStack.Clear();
+
+        //        _hierarchyTraversalPropertyStack.Push(this);
+        //        _hierarchyTraversalBeforeFlagStack.Push(true);
+
+        //        while (_hierarchyTraversalPropertyStack.Any())
+        //        {
+        //            PropertyMonoBehaviour current = _hierarchyTraversalPropertyStack.Pop();
+        //            bool before = _hierarchyTraversalBeforeFlagStack.Pop();
+
+        //            if (before)
+        //            {
+        //                beforeChildrenCallback?.Invoke(current);
+
+        //                _hierarchyTraversalPropertyStack.Push(current);
+        //                _hierarchyTraversalBeforeFlagStack.Push(false);
+
+        //                current.IterateOverChildrenAndSiblings((child) =>
+        //                {
+        //                    _hierarchyTraversalPropertyStack.Push(child);
+        //                    _hierarchyTraversalBeforeFlagStack.Push(true);
+        //                });
+        //            }
+        //            else
+        //                afterChildrenCallback.Invoke(current);
+        //        }
+        //    }
+        //}
+
         protected virtual bool AddChild(PropertyMonoBehaviour child)
         {
             if (!children.Contains(child))
@@ -930,12 +906,14 @@ namespace DepictionEngine
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual bool ApplyBeforeChildren(Action<PropertyMonoBehaviour> callback)
         {
             return false;
         }
 
-        protected virtual void IterateOverChildrenAndSiblings(Action<PropertyMonoBehaviour> callback = null)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public virtual void IterateOverChildrenAndSiblings(Action<PropertyMonoBehaviour> callback = null)
         {
             //Apply to Siblings before Children
             ApplyBeforeChildren(callback);
@@ -947,9 +925,10 @@ namespace DepictionEngine
             ApplyAfterChildren(callback);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void IterateOverChildren(Action<PropertyMonoBehaviour> callback = null)
         {
-            ListTriggerCallback(children, callback);
+            IterateThroughList(children, callback);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -968,17 +947,17 @@ namespace DepictionEngine
             return false;
         }
 
-        protected void ListTriggerCallback<T>(List<T> list, Action<PropertyMonoBehaviour> callback) where T : PropertyMonoBehaviour
+        protected void IterateThroughList<T>(IEnumerable<T> list, Action<T> callback) where T : PropertyMonoBehaviour
         {
             if (list != null)
             {
-                for (int i = list.Count - 1; i >= 0; i--)
+                for (int i = list.Count() - 1; i >= 0; i--)
                 {
-                    if (list.Count > 0)
+                    if (list.Count() > 0)
                     {
-                        if (i >= list.Count)
-                            i = list.Count - 1;
-                        TriggerCallback(list[i], callback);
+                        if (i >= list.Count())
+                            i = list.Count() - 1;
+                        TriggerCallback(list.ElementAt(i), callback);
                     }
                 }
             }
@@ -989,6 +968,7 @@ namespace DepictionEngine
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool TriggerCallback<T>(T child, Action<T> callback) where T : PropertyMonoBehaviour
         { 
             try
@@ -1018,8 +998,7 @@ namespace DepictionEngine
             if (_hasDirtyFlags)
             {
                 _hasDirtyFlags = false;
-                if (_dirtyKeys != null)
-                    _dirtyKeys.Clear();
+                _dirtyKeys?.Clear();
             }
         }
 
@@ -1046,10 +1025,11 @@ namespace DepictionEngine
         {
             RegisterCompleteObjectUndo();
 
-            SceneManager.UserContext(() =>
-            {
-                InitializeSerializedFields(InitializationContext.Reset);
-            });
+            SceneManager.StartUserContext();
+
+            InitializeSerializedFields(InitializationContext.Reset);
+
+            SceneManager.EndUserContext();
         }
 #endif
 
@@ -1063,7 +1043,7 @@ namespace DepictionEngine
                     if (instanceManager != Disposable.NULL)
                     {
                         if (!instanceManager.Remove(id, this) && !SceneManager.IsSceneBeingDestroyed())
-                            Debug.LogError(GetType() + " '"+ this +"' not properly removed From InstanceManager!");
+                            Debug.LogError(GetType() + " '" + this + "' not properly removed From InstanceManager!");
                     }
                 }
 

@@ -123,7 +123,10 @@ namespace DepictionEngine
 
         protected override QuaternionDouble GetRotation()
         {
-            return target.transform.rotation * QuaternionDouble.Euler(Math.Max(forwardVector.x, GetMinForwardVectorX()), forwardVector.y, forwardVector.z);
+            QuaternionDouble rotation = base.GetRotation();
+            if (target != Disposable.NULL)
+                rotation = target.transform.rotation * QuaternionDouble.Euler(Math.Max(forwardVector.x, GetMinForwardVectorX()), forwardVector.y, forwardVector.z);
+            return rotation;
         }
 
         protected override double GetMinForwardVectorX()
@@ -323,7 +326,7 @@ namespace DepictionEngine
         /// <param name="toDistance"></param>
         public void MoveTo(GeoCoordinate3Double geoCoordinate, float duration = 3.0f, double toDistance = 200.0d)
         {
-            if (target.transform != Disposable.NULL)
+            if (target != Disposable.NULL && target.transform != Disposable.NULL)
             { 
                 GeoAstroObject targetParentGeoAstroObject = target.transform.parentGeoAstroObject;
                 if (targetParentGeoAstroObject != Disposable.NULL)
@@ -338,7 +341,7 @@ namespace DepictionEngine
         /// <param name="toDistance"></param>
         public void MoveTo(Vector3Double position, double toDistance = 200.0d)
         {
-            if (target.transform != Disposable.NULL)
+            if (target != Disposable.NULL && target.transform != Disposable.NULL)
             {
                 Vector3Double moveToCameraPosition = CameraController.GetTargetPosition(position, transform.rotation, -toDistance);
                 float duration = (float)(Math.Log(Vector3Double.Distance(transform.position, moveToCameraPosition)) / 2.0d);
@@ -355,7 +358,7 @@ namespace DepictionEngine
         /// <param name="duration"></param>
         public void MoveTo(Vector3Double position, double toDistance = 200.0d, float duration = 3.0f)
         {
-            if (target.transform != Disposable.NULL)
+            if (target != Disposable.NULL && target.transform != Disposable.NULL)
             {
                 Camera camera = objectBase as Camera;
                 bool isGeoCoordinateTransform = target.transform.isGeoCoordinateTransform;
@@ -404,7 +407,7 @@ namespace DepictionEngine
         {
             int zoom = -1;
 
-            if (target.transform != Disposable.NULL)
+            if (target != Disposable.NULL && target.transform != Disposable.NULL)
             {
                 GeoAstroObject targetParentGeoAstroObject = target.transform.parentGeoAstroObject;
 
@@ -422,7 +425,7 @@ namespace DepictionEngine
         {
             double distance = -1.0d;
 
-            if (target.transform != Disposable.NULL)
+            if (target != Disposable.NULL && target.transform != Disposable.NULL)
             {
                 GeoAstroObject targetParentGeoAstroObject = target.transform.parentGeoAstroObject;
 
@@ -440,7 +443,7 @@ namespace DepictionEngine
         {
             base.UpdateTargetControllerTransform(camera);
 
-            if (isActiveAndEnabled && Application.isPlaying)
+            if (isActiveAndEnabled && Application.isPlaying && target != Disposable.NULL)
             {
                 TransformAnimator targetAnimator = target.animator as TransformAnimator;
                             
@@ -597,9 +600,12 @@ namespace DepictionEngine
             TargetControllerAnimator cameraAnimator = objectBase.animator as TargetControllerAnimator;
             if (cameraAnimator != Disposable.NULL)
                 cameraAnimator.StopAllAnimations();
-            TransformAnimator targetAnimator = target.animator as TransformAnimator; 
-            if (targetAnimator != Disposable.NULL)
-                targetAnimator.StopAllAnimations();
+            if (target != Disposable.NULL)
+            {
+                TransformAnimator targetAnimator = target.animator as TransformAnimator;
+                if (targetAnimator != Disposable.NULL)
+                    targetAnimator.StopAllAnimations();
+            }
         }
 
         private void SetInertia(Vector3 newInertia)
@@ -622,7 +628,7 @@ namespace DepictionEngine
 
         private void AddInertia(GeoAstroObject targetParentGeoAstroObject)
         {
-            if (inertia.magnitude > 0.0f)
+            if (target != Disposable.NULL && inertia.magnitude > 0.0f)
             {
                 Vector3Double newPosition = target.transform.position + inertia;
                 if (target.transform.isGeoCoordinateTransform)

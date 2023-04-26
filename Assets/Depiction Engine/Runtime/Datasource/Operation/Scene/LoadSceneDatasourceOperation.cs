@@ -42,8 +42,7 @@ namespace DepictionEngine
                 if (Object.ReferenceEquals(_proceduralDataProcessor, value))
                     return;
 
-                if (_proceduralDataProcessor != null)
-                    _proceduralDataProcessor.Cancel();
+                _proceduralDataProcessor?.Cancel();
 
                 _proceduralDataProcessor = value;
             }
@@ -91,8 +90,9 @@ namespace DepictionEngine
                 if (_jsonFallback != null && grid2DDimensions != Vector2Int.minusOne && grid2DIndex != Vector2Int.minusOne)
                     proceduralDataProcessorParametersType = typeof(PropertyModifierIndex2DParameters);
 
-                if (proceduralDataProcessor == null)
-                    proceduralDataProcessor = InstanceManager.Instance(false)?.CreateInstance<Processor>();
+                InstanceManager instanceManager = InstanceManager.Instance(false);
+                if (instanceManager != Disposable.NULL)
+                    proceduralDataProcessor ??= instanceManager.CreateInstance<Processor>();
 
                 proceduralDataProcessor.StartProcessing(PropertyModifierDataProcessingFunctions.PopulatePropertyModifier, typeof(PropertyModifierData), proceduralDataProcessorParametersType, InitProceduralModifierParameters,
                     (data, errorMsg) =>
@@ -105,7 +105,7 @@ namespace DepictionEngine
                         {
                             operationResult = CreateOperationResult<OperationResult>();
 
-                            List<PropertyModifier> propertyModifiers = new List<PropertyModifier>();
+                            List<PropertyModifier> propertyModifiers = new();
 
                             if (propertyModifierData.propertyModifier != Disposable.NULL)
                                 propertyModifiers.Add(propertyModifierData.propertyModifier);

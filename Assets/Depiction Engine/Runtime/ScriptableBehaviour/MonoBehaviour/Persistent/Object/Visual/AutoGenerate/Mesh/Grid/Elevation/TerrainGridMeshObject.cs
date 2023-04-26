@@ -107,9 +107,9 @@ namespace DepictionEngine
             InitValue(value => color = value, Color.clear, initializingContext);
         }
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             InitializeReferenceDataType(COLORMAP_REFERENCE_DATATYPE, typeof(AssetReference));
             InitializeReferenceDataType(ADDITIONALMAP_REFERENCE_DATATYPE, typeof(AssetReference));
@@ -178,7 +178,7 @@ namespace DepictionEngine
         public int sphericalSubdivision
         {
             get => _sphericalSubdivision;
-            set { SetValue(nameof(sphericalSubdivision), ValidateSubdivision(value), ref _sphericalSubdivision); }
+            set => SetValue(nameof(sphericalSubdivision), ValidateSubdivision(value), ref _sphericalSubdivision);
         }
 
         /// <summary>
@@ -188,7 +188,7 @@ namespace DepictionEngine
         public int flatSubdivision
         {
             get => _flatSubdivision;
-            set { SetValue(nameof(flatSubdivision), ValidateSubdivision(value), ref _flatSubdivision); }
+            set => SetValue(nameof(flatSubdivision), ValidateSubdivision(value), ref _flatSubdivision);
         }
 
         /// <summary>
@@ -204,7 +204,7 @@ namespace DepictionEngine
         public float subdivisionZoomFactor
         {
             get => _subdivisionZoomFactor;
-            set { SetValue(nameof(subdivisionZoomFactor), Mathf.Clamp(value, MIN_SUBDIVISION_ZOOM_FACTOR, MAX_SUBDIVISION_ZOOM_FACTOR), ref _subdivisionZoomFactor); }
+            set => SetValue(nameof(subdivisionZoomFactor), Mathf.Clamp(value, MIN_SUBDIVISION_ZOOM_FACTOR, MAX_SUBDIVISION_ZOOM_FACTOR), ref _subdivisionZoomFactor);
         }
 
         /// <summary>
@@ -214,7 +214,7 @@ namespace DepictionEngine
         public float overlapFactor
         {
             get => _overlapFactor;
-            set { SetValue(nameof(overlapFactor), Mathf.Clamp(value, 0.5f, 1.5f), ref _overlapFactor); }
+            set => SetValue(nameof(overlapFactor), Mathf.Clamp(value, 0.5f, 1.5f), ref _overlapFactor);
         }
 
         /// <summary>
@@ -224,7 +224,7 @@ namespace DepictionEngine
         public float edgeDepth
         {
             get => _edgeDepth;
-            set { SetValue(nameof(edgeDepth), value, ref _edgeDepth); }
+            set => SetValue(nameof(edgeDepth), value, ref _edgeDepth);
         }
 
         /// <summary>
@@ -234,7 +234,7 @@ namespace DepictionEngine
         public NormalsType normalsType
         {
             get => _normalsType;
-            set { SetValue(nameof(normalsType), value, ref _normalsType); }
+            set => SetValue(nameof(normalsType), value, ref _normalsType);
         }
 
         /// <summary>
@@ -244,7 +244,7 @@ namespace DepictionEngine
         public string shaderPath
         {
             get => _shaderPath;
-            set { SetValue(nameof(shaderPath), value, ref _shaderPath); }
+            set => SetValue(nameof(shaderPath), value, ref _shaderPath);
         }
 
         /// <summary>
@@ -270,7 +270,7 @@ namespace DepictionEngine
         public Color color
         {
             get => _color;
-            set { SetValue(nameof(color), value, ref _color); }
+            set => SetValue(nameof(color), value, ref _color);
         }
 
         protected override Color GetColor()
@@ -283,16 +283,10 @@ namespace DepictionEngine
             get => GetFirstReferenceOfType(COLORMAP_REFERENCE_DATATYPE) as AssetReference;
         }
 
-        private Texture colorMap
+        public Texture colorMap
         {
             get => _colorMap;
-            set
-            {
-                if (Object.ReferenceEquals(_colorMap, value))
-                    return;
-
-                _colorMap = value;
-            }
+            private set { SetValue(nameof(colorMap), value, ref _colorMap); }
         }
 
         protected override Texture GetColorMap()
@@ -310,16 +304,10 @@ namespace DepictionEngine
             additionalMap = additionalMapAssetReference != Disposable.NULL ? additionalMapAssetReference.data as Texture : null;
         }
 
-        private Texture additionalMap
+        public Texture additionalMap
         {
             get => _additionalMap;
-            set
-            {
-                if (Object.ReferenceEquals(_additionalMap, value))
-                    return;
-
-                _additionalMap = value;
-            }
+            private set { SetValue(nameof(additionalMap), value, ref _additionalMap); }
         }
 
         protected override Texture GetAdditionalMap()
@@ -337,16 +325,10 @@ namespace DepictionEngine
             surfaceTypeMap = surfaceTypeMapAssetReference != Disposable.NULL ? surfaceTypeMapAssetReference.data as Texture : null;
         }
 
-        private Texture surfaceTypeMap
+        public Texture surfaceTypeMap
         {
             get => _surfaceTypeMap;
-            set
-            {
-                if (Object.ReferenceEquals(_surfaceTypeMap, value))
-                    return;
-
-                _surfaceTypeMap = value;
-            }
+            private set { SetValue(nameof(surfaceTypeMap), value, ref _surfaceTypeMap); }
         }
 
         private TerrainGridCache terrainGridCache
@@ -1099,8 +1081,7 @@ namespace DepictionEngine
                             for (int x = 0; x < vertexCount; x++)
                                 SetVertices(parameters, meshModifier, startIndex + y * vertexCount + x, x * subdivisionSize, y * subdivisionSize, parameters.GetOverlapFactor(), 0.0f);
 
-                            if (parameters.cancellationTokenSource != null)
-                                parameters.cancellationTokenSource.ThrowIfCancellationRequested();
+                            parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
                     }
 
@@ -1141,8 +1122,7 @@ namespace DepictionEngine
                                 i += 6;
                             }
 
-                            if (parameters.cancellationTokenSource != null)
-                                parameters.cancellationTokenSource.ThrowIfCancellationRequested();
+                            parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
 
                         if (parameters.flipTriangles)
@@ -1157,8 +1137,7 @@ namespace DepictionEngine
                             for (int x = 0; x < vertexCount; x++)
                                 SetNormals(parameters, meshModifier, startIndex + y * vertexCount + x, x * subdivisionSize, y * subdivisionSize);
 
-                            if (parameters.cancellationTokenSource != null)
-                                parameters.cancellationTokenSource.ThrowIfCancellationRequested();
+                            parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
                     }
 
@@ -1170,8 +1149,7 @@ namespace DepictionEngine
                             for (int x = 0; x < vertexCount; x++)
                                 meshModifier.uvs[startIndex + y * vertexCount + x] = new Vector2((float)(subdivisionSize * x), (float)(1.0d - (subdivisionSize * y)));
 
-                            if (parameters.cancellationTokenSource != null)
-                                parameters.cancellationTokenSource.ThrowIfCancellationRequested();
+                            parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
                     }
 
@@ -1351,8 +1329,7 @@ namespace DepictionEngine
                             for (int index = 0; index < vertexCount; index++)
                                 Grid2DMeshObjectProcessingFunctions.SetVertices(parameters, meshModifier, startIndex + side * vertexCount + index, GetX(side, index, vertexCount) * subdivisionSize, GetY(side, index, vertexCount) * subdivisionSize, parameters.GetOverlapFactor(), edgeAltitudeOffset);
                             
-                            if (parameters.cancellationTokenSource != null)
-                                parameters.cancellationTokenSource.ThrowIfCancellationRequested();
+                            parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
                     }
 
@@ -1379,8 +1356,7 @@ namespace DepictionEngine
                                 i += 6;
                             }
 
-                            if (parameters.cancellationTokenSource != null)
-                                parameters.cancellationTokenSource.ThrowIfCancellationRequested();
+                            parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
                     }
 
@@ -1404,8 +1380,7 @@ namespace DepictionEngine
                             for (int index = 0; index < vertexCount; index++)
                                 meshModifier.uvs[startIndex + side * vertexCount + index] = new Vector2((float)(subdivisionSize * GetX(side, index, vertexCount)), (float)(1.0d - (subdivisionSize * GetY(side, index, vertexCount))));
                             
-                            if (parameters.cancellationTokenSource != null)
-                                parameters.cancellationTokenSource.ThrowIfCancellationRequested();
+                            parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
                     }
 

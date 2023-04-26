@@ -35,10 +35,10 @@ namespace DepictionEngine
                     memberInfo = GetMemberInfoFromMemberName<T>(targetObject.GetType(), property);
                     if (memberInfo != null)
                     {
-                        if (memberInfo is FieldInfo)
-                            targetObject = (memberInfo as FieldInfo).GetValue(targetObject);
-                        else if (memberInfo is PropertyInfo)
-                            targetObject = (memberInfo as PropertyInfo).GetValue(targetObject);
+                        if (memberInfo is FieldInfo fieldInfo)
+                            targetObject = fieldInfo.GetValue(targetObject);
+                        else if (memberInfo is PropertyInfo propertyInfo)
+                            targetObject = propertyInfo.GetValue(targetObject);
                     }
                 }
             }
@@ -190,7 +190,7 @@ namespace DepictionEngine
 #endif
                     string typeName = type.FullName;
 
-                    List<string> category = new List<string>();
+                    List<string> category = new();
                     if (iJson.isFallbackValues)
                         category.Add(typeof(FallbackValues).Name);
 

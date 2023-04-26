@@ -96,12 +96,14 @@ namespace DepictionEngine
 
         protected T CreateOperationResult<T>() where T : OperationResult
         {
-            return InstanceManager.Instance(false)?.CreateInstance<T>();
+            InstanceManager instanceManager = InstanceManager.Instance(false);
+            return instanceManager != Disposable.NULL ? instanceManager.CreateInstance<T>() : null;
         }
 
         protected T CreateResultData<T>() where T : ResultData
         {
-            return InstanceManager.Instance(false)?.CreateInstance<T>();
+            InstanceManager instanceManager = InstanceManager.Instance(false);
+            return instanceManager != Disposable.NULL ? instanceManager.CreateInstance<T>() : null;
         }
 
         protected virtual void KillLoading()
@@ -218,14 +220,14 @@ namespace DepictionEngine
             {
                 foreach (ResultData resultData in resultsData)
                 {
-                    if (resultData is T)
+                    if (resultData is T filteredResultData)
                     {
                         IPersistent persistent = null;
                         
-                        if (resultData is IdResultData)
-                            persistent = instanceManager.GetPersistent((resultData as IdResultData).id);
+                        if (resultData is IdResultData idResultData)
+                            persistent = instanceManager.GetPersistent(idResultData.id);
 
-                        callback((T)resultData, persistent);
+                        callback(filteredResultData, persistent);
                     }
                 }
             }

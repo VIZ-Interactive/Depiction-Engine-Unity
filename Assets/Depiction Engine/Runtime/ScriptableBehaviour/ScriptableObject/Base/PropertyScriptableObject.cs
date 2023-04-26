@@ -140,7 +140,7 @@ namespace DepictionEngine
         }
 #endif
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         protected virtual bool SetValue<T>(string name, T value, ref T valueField, Action<T, T> assignedCallback = null, bool allowAutoDisposeOnOutOfSynchProperty = false)
         {
             T oldValue = valueField;
@@ -149,12 +149,15 @@ namespace DepictionEngine
             {
                 valueField = value;
 
-                Datasource.AllowAutoDisposeOnOutOfSynchProperty(() =>
-                {
-                    assignedCallback?.Invoke(value, oldValue);
+                if (allowAutoDisposeOnOutOfSynchProperty)
+                    Datasource.StartAllowAutoDisposeOnOutOfSynchProperty();
 
-                    PropertyAssigned(this, name, value, oldValue);
-                }, allowAutoDisposeOnOutOfSynchProperty);
+                assignedCallback?.Invoke(value, oldValue);
+
+                PropertyAssigned(this, name, value, oldValue);
+
+                if (allowAutoDisposeOnOutOfSynchProperty)
+                    Datasource.EndAllowAutoDisposeOnOutOfSynchProperty();
 
                 return true;
             }
@@ -164,8 +167,8 @@ namespace DepictionEngine
 
         public Action<IProperty, string, object, object> PropertyAssignedEvent
         {
-            get { return _propertyAssignedEvent; }
-            set { _propertyAssignedEvent = value; }
+            get => _propertyAssignedEvent;
+            set => _propertyAssignedEvent = value;
         }
 
         public void ResetId()
@@ -179,24 +182,19 @@ namespace DepictionEngine
         [Json(conditionalMethod: nameof(IsNotFallbackValues))]
         public SerializableGuid id
         {
-            get { return _id; }
-            set { _id = value; }
+            get => _id;
+            set => _id = value;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         protected void PropertyAssigned<T>(IProperty property, string name, T newValue, T oldValue)
         {
             if (initialized)
             {
 #if UNITY_EDITOR
-                if (SceneManager.IsUserChangeContext() && property is IJson)
-                {
-                    IJson iJson = property as IJson;
-                    if (iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
-                        MarkAsNotPoolable();
-                }
+                if (SceneManager.GetIsUserChangeContext() && property is IJson iJson && iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
+                    MarkAsNotPoolable();
 #endif
-
                 PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
             }
         }
@@ -240,10 +238,11 @@ namespace DepictionEngine
         {
             RegisterCompleteObjectUndo();
 
-            SceneManager.UserContext(() =>
-            {
-                InitializeSerializedFields(InitializationContext.Reset);
-            });
+            SceneManager.StartUserContext();
+
+            InitializeSerializedFields(InitializationContext.Reset);
+
+            SceneManager.EndUserContext();
         }
 #endif
 

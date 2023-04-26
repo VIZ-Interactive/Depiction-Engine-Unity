@@ -77,8 +77,8 @@ namespace DepictionEngine
 		[Json]
 		private float speed
 		{
-			get { return _speed; }
-			set { SetValue(nameof(speed), value, ref _speed); }
+			get => _speed;
+			set => SetValue(nameof(speed), value, ref _speed);
 		}
 
 		/// <summary>
@@ -87,8 +87,8 @@ namespace DepictionEngine
 		[Json]
 		private bool infinity
 		{
-			get { return _infinity; }
-			set { SetValue(nameof(infinity), value, ref _infinity); }
+			get => _infinity;
+			set => SetValue(nameof(infinity), value, ref _infinity);
 		}
 
 		/// <summary>
@@ -97,8 +97,8 @@ namespace DepictionEngine
 		[Json]
 		private int day
 		{
-			get { return _day; }
-			set { SetValue(nameof(day), value, ref _day); }
+			get => _day;
+			set => SetValue(nameof(day), value, ref _day);
 		}
 
         /// <summary>
@@ -107,8 +107,8 @@ namespace DepictionEngine
         [Json]
 		private int hour
 		{
-			get { return _hour; }
-			set { SetValue(nameof(hour), value, ref _hour); }
+			get => _hour;
+			set => SetValue(nameof(hour), value, ref _hour);
 		}
 
         /// <summary>
@@ -117,8 +117,8 @@ namespace DepictionEngine
         [Json]
 		private int minute
 		{
-			get { return _minute; }
-			set { SetValue(nameof(minute), value, ref _minute); }
+			get => _minute;
+			set => SetValue(nameof(minute), value, ref _minute);
 		}
 
         /// <summary>
@@ -127,8 +127,8 @@ namespace DepictionEngine
         [Json]
 		private int second
 		{
-			get { return _second; }
-			set { SetValue(nameof(second), value, ref _second); }
+			get => _second;
+			set => SetValue(nameof(second), value, ref _second);
 		}
 
         /// <summary>
@@ -137,8 +137,8 @@ namespace DepictionEngine
         [Json]
 		private int millisecond
 		{
-			get { return _millisecond; }
-			set { SetValue(nameof(millisecond), value, ref _millisecond); }
+			get => _millisecond;
+			set => SetValue(nameof(millisecond), value, ref _millisecond);
 		}
 
 		public TimeSpan GetDuration()

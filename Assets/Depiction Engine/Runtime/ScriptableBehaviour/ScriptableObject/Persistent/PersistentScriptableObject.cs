@@ -129,8 +129,12 @@ namespace DepictionEngine
         {
             if (base.UpdateHideFlags())
             {
-                if (isFallbackValues && !SceneManager.Debugging())
-                    hideFlags |= HideFlags.HideInHierarchy;
+                if (isFallbackValues)
+                {
+                    hideFlags |= HideFlags.DontSave;
+                    if (!SceneManager.Debugging())
+                        hideFlags |= HideFlags.HideInHierarchy;
+                }
 
                 return true;
             }

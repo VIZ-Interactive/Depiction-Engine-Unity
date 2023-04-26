@@ -1,7 +1,5 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -24,94 +22,6 @@ namespace DepictionEngine
                 position = TransformDouble.AddOrigin(transform.position);
 
             return position;
-        }
-
-        public static T GetSafeComponent<T>(this Transform transform, InitializationContext initializingContext = InitializationContext.Programmatically) where T : Component
-        {
-            return (T)transform.GetSafeComponent(typeof(T), initializingContext);
-        }
-
-        public static Component GetSafeComponent(this Transform transform, Type type, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
-        {
-            return ComponentDisposeCheck(InitializeComponent(transform.GetComponent(type), initializingContext, json, propertyModifiers, isFallbackValues));
-        }
-
-        public static T GetSafeComponentInParent<T>(this Transform transform, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
-        {
-            return (T)transform.GetSafeComponentInParent(typeof(T), includeInactive, initializingContext, json, propertyModifiers);
-        }
-
-        public static Component GetSafeComponentInParent(this Transform transform, Type type, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null)
-        {
-            return ComponentDisposeCheck(InitializeComponent(transform.GetComponentInParent(type, includeInactive), initializingContext, json, propertyModifiers));
-        }
-
-        public static List<T> GetSafeComponents<T>(this Transform transform, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
-        {
-            List<T> safeComponents = new List<T>();
-            GetValidComponents(safeComponents, transform.GetComponents<T>(), initializingContext, json, propertyModifiers);
-            return safeComponents;
-        }
-
-        public static List<Component> GetSafeComponents(this Transform transform, Type type, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null)
-        {
-            List<Component> safeComponents = new List<Component>();
-            GetValidComponents(safeComponents, transform.GetComponents(type), initializingContext, json, propertyModifiers);
-            return safeComponents;
-        }
-
-        public static List<T> GetSafeComponentsInChildren<T>(this Transform transform, bool includeSibling = false, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
-        {
-            List<T> safeComponents = new List<T>();
-
-            if (includeSibling)
-                GetValidComponents(safeComponents, transform.GetComponents<T>(), initializingContext, json, propertyModifiers);
-
-            foreach (Transform childTransform in transform)
-                GetValidComponents(safeComponents, childTransform.GetComponents<T>(), initializingContext, json, propertyModifiers);
-
-            return safeComponents;
-        }
-
-        public static List<Component> GetSafeComponentsInChildren(this Transform transform, Type type, bool includeSibling = false, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null)
-        {
-            List<Component> safeComponents = new List<Component>();
-
-            if (includeSibling)
-                GetValidComponents(safeComponents, transform.GetComponents(type), initializingContext, json, propertyModifiers);
-
-            foreach (Transform childTransform in transform)
-                GetValidComponents(safeComponents, childTransform.GetComponents(type), initializingContext, json, propertyModifiers);
-
-            return safeComponents;
-        }
-
-        private static Component ComponentDisposeCheck(Component component)
-        {
-            return !DisposeManager.IsNullOrDisposing(component) ? component : null;
-        }
-
-        private static void GetValidComponents<T>(List<T> validComponents, T[] components, InitializationContext initializingContext, JSONNode json = null, List<PropertyModifier> propertyModifiers = null) where T : Component
-        {
-            foreach (T component in components)
-            {
-                if (!DisposeManager.IsNullOrDisposing(component))
-                {
-                    InitializeComponent(component, initializingContext, json, propertyModifiers);
-                    validComponents.Add(component);
-                }
-            }
-        }
-
-        public static Component InitializeComponent(Component component, InitializationContext initializingContext, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
-        {
-            //Call Initialize to make sure even if the Object is disabled the script will still be initialized properly
-            if (component is MonoBehaviourDisposable)
-            {
-                MonoBehaviourDisposable monoBehaviourDisposable = component as MonoBehaviourDisposable;
-                InstanceManager.Initialize(monoBehaviourDisposable, initializingContext, json, propertyModifiers, isFallbackValues);
-            }
-            return component;
         }
     }
 }

@@ -8,7 +8,6 @@ using System.Reflection;
 using UnityEditor.AnimatedValues;
 using UnityEngine.Events;
 using System.Collections.Generic;
-using UnityEngine.UIElements;
 
 namespace DepictionEngine.Editor
 {
@@ -115,7 +114,8 @@ namespace DepictionEngine.Editor
                         _rotation = rotation;
                     EditorPrefs.DeleteKey(id + ROTATION_EDITOR_PREFS_NAME);
 
-                    _cameraDistance = Convert.ToDouble(EditorPrefs.GetString(id + CAMERA_DISTANCE_EDITOR_PREFS_NAME));
+                    if (JsonUtility.FromJson(out double cameraDistance, JSONObject.Parse(EditorPrefs.GetString(id + CAMERA_DISTANCE_EDITOR_PREFS_NAME))))
+                        _cameraDistance = cameraDistance;
                     EditorPrefs.DeleteKey(id + CAMERA_DISTANCE_EDITOR_PREFS_NAME);
                 }
             }
@@ -150,7 +150,8 @@ namespace DepictionEngine.Editor
                 SceneViewDouble sceneViewDouble = GetSceneViewDouble(sceneViewDoubles, sceneView);
                 if (sceneViewDouble == Disposable.NULL)
                 {
-                    sceneViewDouble = InstanceManager.Instance().CreateInstance<SceneViewDouble>().InitSceneView(sceneView);
+                    InstanceManager mamnager = InstanceManager.Instance();
+                    sceneViewDouble = mamnager.CreateInstance<SceneViewDouble>().InitSceneView(sceneView);
                     sceneViewDoubles.Add(sceneViewDouble);
                 }
                 sceneViewDouble.InitCamera();
@@ -179,7 +180,7 @@ namespace DepictionEngine.Editor
                 _camera = sceneView.camera.GetComponent<SceneCamera>();
                 if (_camera == Disposable.NULL)
                 {
-                    _camera = sceneView.camera.gameObject.AddSafeComponent(typeof(SceneCamera), InitializationContext.Programmatically) as SceneCamera;
+                    _camera = sceneView.camera.gameObject.AddSafeComponent(typeof(SceneCamera)) as SceneCamera;
                     InitSceneCamera(_camera);
                 }
             }
@@ -448,7 +449,7 @@ namespace DepictionEngine.Editor
         private SceneView _sceneView;
         public SceneView sceneView
         {
-            get { _sceneView ??= GetSceneView(this); return _sceneView; }
+            get { _sceneView = _sceneView != null ? _sceneView : GetSceneView(this); return _sceneView; }
         }
 
         private SceneCamera _camera;
@@ -1625,7 +1626,12 @@ namespace DepictionEngine.Editor
 
         private void PostDefaultHandles()
         {
-            sceneManager.HierarchicalDetectChanges();
+            //Detect user transform change from scene handles
+            SceneManager.StartUserContext();
+
+            sceneManager.DetectTransformChange(Selection.GetTransforms());
+
+            SceneManager.EndUserContext();
 
             if (renderingManager.originShifting)
                 Tools.current = _lastToolCurrent;
@@ -1655,8 +1661,7 @@ namespace DepictionEngine.Editor
                 if (!sceneView.in2DMode && sceneViewComponentDeltas.targetParentGeoAstroObject != Disposable.NULL)
                     sceneView.rotation = Quaternion.identity;
 
-                transform.position = sceneView.pivot;
-                transform.rotation = sceneView.rotation;
+                transform.SetPositionAndRotation(sceneView.pivot, sceneView.rotation);
 
                 float sceneViewCameraDistance = (float)GetCameraDistanceFromSize(sceneView.size);
                 sceneViewComponentDeltas.SetComponents(sceneView.pivot, TargetControllerBase.GetTargetPosition(sceneView.pivot, sceneView.rotation, -sceneViewCameraDistance), sceneView.rotation, sceneViewCameraDistance);
@@ -1664,8 +1669,7 @@ namespace DepictionEngine.Editor
                 sceneViewCameraDistance = (float)GetCameraDistanceFromSize(sceneView.size);
                 sceneViewComponentDeltas.CalculateComponentDeltas(sceneView.pivot, TargetControllerBase.GetTargetPosition(sceneView.pivot, sceneView.rotation, -sceneViewCameraDistance), sceneView.rotation, sceneViewCameraDistance);
 
-                transform.position = unityTransformPosition;
-                transform.rotation = unityTransformRotation;
+                transform.SetPositionAndRotation(unityTransformPosition, unityTransformRotation);
 
                 sceneView.pivot = sceneViewPivot;
                 if (!sceneView.in2DMode)

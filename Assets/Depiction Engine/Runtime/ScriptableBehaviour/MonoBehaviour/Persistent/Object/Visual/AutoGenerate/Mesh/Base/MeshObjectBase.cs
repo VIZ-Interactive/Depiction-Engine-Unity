@@ -70,6 +70,26 @@ namespace DepictionEngine
             InitValue(value => receiveShadows = value,GetDefaultReceiveShadows(), initializingContext);
         }
 
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
+            
+            DetectIfProcessingWasCompromised();
+        }
+
+#if UNITY_EDITOR
+        public override bool AfterAssemblyReload()
+        {
+            if (base.AfterAssemblyReload())
+            {
+                DetectIfProcessingWasCompromised();
+
+                return true;
+            }
+            return false;
+        }
+#endif
+
         protected virtual bool GetDefaultUseCollider()
         {
             return true;
@@ -90,10 +110,8 @@ namespace DepictionEngine
             return true;
         }
 
-        public override void ExplicitOnEnable()
+        private void DetectIfProcessingWasCompromised()
         {
-            base.ExplicitOnEnable();
-
             if (meshDataProcessor != null && meshDataProcessor.ProcessingWasCompromised())
                 meshDataProcessor.Dispose();
 
@@ -176,8 +194,7 @@ namespace DepictionEngine
             {
                 if (Object.ReferenceEquals(_meshDataProcessor, value))
                     return;
-                if (_meshDataProcessor != null)
-                    _meshDataProcessor.Cancel();
+                _meshDataProcessor?.Cancel();
                 _meshDataProcessor = value;
             }
         }
@@ -365,7 +382,9 @@ namespace DepictionEngine
 
                 if (_meshParameters != null)
                 {
-                    meshDataProcessor ??= InstanceManager.Instance(false)?.CreateInstance<Processor>();
+                    InstanceManager instanceManager = InstanceManager.Instance(false);
+                    if (instanceManager != null)
+                        meshDataProcessor ??= instanceManager.CreateInstance<Processor>();
 
                     meshDataProcessor.StartProcessing(MeshProcessingFunctions.ModifyMeshes, typeof(MeshesProcessorOutput), typeof(MeshesParameters), 
                         (parameters) => 
@@ -606,7 +625,7 @@ namespace DepictionEngine
 
         public bool Contains(MeshRendererVisual meshRendererVisual)
         {
-            return _meshes != null ? _meshes.Contains(meshRendererVisual.sharedMesh) : false;
+            return _meshes != null && _meshes.Contains(meshRendererVisual.sharedMesh);
         }
     }
 

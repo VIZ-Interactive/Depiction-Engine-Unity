@@ -186,13 +186,13 @@ namespace DepictionEngine
 
         private bool UpdateGridIndex()
         {
-            return transform != Disposable.NULL ? SetGrid2DIndex(GetGrid2DIndex(grid2DDimensions)) : false;
+            return transform != Disposable.NULL && SetGrid2DIndex(GetGrid2DIndex(grid2DDimensions));
         }
 
         public Vector2Int grid2DIndex
         {
             get => _grid2DIndex;
-            private set { SetGrid2DIndex(value); }
+            private set => SetGrid2DIndex(value);
         }
 
         private bool SetGrid2DIndex(Vector2Int value)
@@ -402,7 +402,7 @@ namespace DepictionEngine
         {
             if (base.TransformObjectCallback(localPositionParam, localRotationParam, localScaleParam, camera))
             {
-                if (localPositionParam.isGeoCoordinate && transform.parentGeoAstroObject != Disposable.NULL)
+                if (!IsDisposing() && localPositionParam.isGeoCoordinate && transform.parentGeoAstroObject != Disposable.NULL)
                 {
                     if (localPositionParam.changed)
                     {
@@ -414,7 +414,7 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
                         bool mouseDown = Editor.SceneViewDouble.lastActiveSceneViewDouble != null && Editor.SceneViewDouble.lastActiveSceneViewDouble.mouseDown;
-                        isBeingMovedByUser = !SceneManager.IsEditorNamespace(GetType()) && (SceneManager.IsUserChangeContext() || mouseDown);
+                        isBeingMovedByUser = !SceneManager.IsEditorNamespace(GetType()) && (SceneManager.GetIsUserChangeContext() || mouseDown);
                         if (isBeingMovedByUser)
                             newGeoCoordinate = geoCoordinate;
 #endif

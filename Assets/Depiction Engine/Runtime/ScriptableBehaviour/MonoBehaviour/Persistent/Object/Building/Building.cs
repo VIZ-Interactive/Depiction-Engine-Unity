@@ -34,9 +34,9 @@ namespace DepictionEngine
             InitValue(value => groundLevelId = value, SerializableGuid.Empty, () => { return GetDuplicateComponentReferenceId(groundLevelId, groundLevel, initializingContext); }, initializingContext);
         }
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             GeoCoordinateController controller = GetComponent<GeoCoordinateController>();
             controller.surfaceSnapOffset = 1.0f;

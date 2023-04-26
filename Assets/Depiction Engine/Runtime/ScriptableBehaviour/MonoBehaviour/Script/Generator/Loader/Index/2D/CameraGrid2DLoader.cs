@@ -86,6 +86,13 @@ namespace DepictionEngine
             InitValue(value => sizeOffsettingDuration = value, 2.0f, initializingContext);
         }
 
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
+
+            QueueAutoUpdate();
+        }
+
         protected override bool UpdateAllDelegates()
         {
             if (base.UpdateAllDelegates())
@@ -149,13 +156,6 @@ namespace DepictionEngine
             QueueAutoUpdate();
         }
 
-        public override void ExplicitOnEnable()
-        {
-            base.ExplicitOnEnable();
-
-            QueueAutoUpdate();
-        }
-
         protected override bool SetParentGeoAstroObject(GeoAstroObject newValue, GeoAstroObject oldValue)
         {
             if (base.SetParentGeoAstroObject(newValue, oldValue))
@@ -174,13 +174,7 @@ namespace DepictionEngine
         public uint minZoom
         {
             get => _minZoom;
-            set
-            {
-                SetValue(nameof(minZoom), (uint)Mathf.Clamp(value, 0, MAX_ZOOM), ref _minZoom, (newValue, oldValue) =>
-                {
-                    QueueAutoUpdate();
-                });
-            }
+            set => SetValue(nameof(minZoom), (uint)Mathf.Clamp(value, 0, MAX_ZOOM), ref _minZoom, (newValue, oldValue) => { QueueAutoUpdate(); });
         }
 
         /// <summary>
@@ -193,13 +187,7 @@ namespace DepictionEngine
         public Vector2Int cascades
         {
             get => _cascades;
-            set
-            {
-                SetValue(nameof(cascades), value, ref _cascades, (newValue, oldValue) =>
-                {
-                    QueueAutoUpdate();
-                });
-            }
+            set => SetValue(nameof(cascades), value, ref _cascades, (newValue, oldValue) => { QueueAutoUpdate(); });
         }
 
         /// <summary>
@@ -209,7 +197,7 @@ namespace DepictionEngine
         public Vector2Int collidersRange
         {
             get => _collidersRange;
-            set { SetValue(nameof(collidersRange), value, ref _collidersRange); }
+            set => SetValue(nameof(collidersRange), value, ref _collidersRange);
         }
 
         /// <summary>
@@ -219,13 +207,7 @@ namespace DepictionEngine
         public CameraCenterOnType centerOn
         {
             get => _centerOn;
-            set
-            {
-                SetValue(nameof(centerOn), value, ref _centerOn, (newValue, oldValue) =>
-                {
-                    QueueAutoUpdate();
-                });
-            }
+            set => SetValue(nameof(centerOn), value, ref _centerOn, (newValue, oldValue) => { QueueAutoUpdate(); });
         }
 
         /// <summary>
@@ -235,13 +217,7 @@ namespace DepictionEngine
         public float sizeMultiplier
         {
             get => _sizeMultiplier;
-            set
-            {
-                SetValue(nameof(sizeMultiplier), value, ref _sizeMultiplier, (newValue, oldValue) =>
-                {
-                    QueueAutoUpdate();
-                });
-            }
+            set => SetValue(nameof(sizeMultiplier), value, ref _sizeMultiplier, (newValue, oldValue) => { QueueAutoUpdate(); });
         }
 
         /// <summary>
@@ -251,13 +227,7 @@ namespace DepictionEngine
         public bool sizeLatitudeCompensation
         {
             get => _sizeLatitudeCompensation;
-            set
-            {
-                SetValue(nameof(sizeLatitudeCompensation), value, ref _sizeLatitudeCompensation, (newValue, oldValue) =>
-                {
-                    QueueAutoUpdate();
-                });
-            }
+            set => SetValue(nameof(sizeLatitudeCompensation), value, ref _sizeLatitudeCompensation, (newValue, oldValue) => { QueueAutoUpdate(); });
         }
 
         /// <summary>
@@ -267,7 +237,7 @@ namespace DepictionEngine
         public float sizeOffsettingMultiplier
         {
             get => _sizeOffsettingMultiplier;
-            set { SetValue(nameof(sizeOffsettingMultiplier), value, ref _sizeOffsettingMultiplier); }
+            set => SetValue(nameof(sizeOffsettingMultiplier), value, ref _sizeOffsettingMultiplier);
         }
 
         /// <summary>
@@ -277,7 +247,7 @@ namespace DepictionEngine
         public float sizeOffsettingMaximum
         {
             get => _sizeOffsettingMaximum;
-            set { SetValue(nameof(sizeOffsettingMaximum), value, ref _sizeOffsettingMaximum); }
+            set => SetValue(nameof(sizeOffsettingMaximum), value, ref _sizeOffsettingMaximum);
         }
 
         /// <summary>
@@ -287,7 +257,7 @@ namespace DepictionEngine
         public float sizeOffsettingDuration
         {
             get => _sizeOffsettingDuration;
-            set { SetValue(nameof(sizeOffsettingDuration), value, ref _sizeOffsettingDuration); }
+            set => SetValue(nameof(sizeOffsettingDuration), value, ref _sizeOffsettingDuration);
         }
 
         private CameraGridLoaderCenterOnLoadTriggerDictionary cameraGridLoaderCenterOnLoadTriggers

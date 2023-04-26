@@ -343,7 +343,7 @@ namespace DepictionEngine
 
             InitValue(value => dynamicSkybox = value, true, initializingContext);
             InitValue(value => originShifting = value, true, initializingContext);
-            InitValue(value => environmentUpdateInterval = value, 0.2f, initializingContext);
+            InitValue(value => environmentUpdateInterval = value, 0.1f, initializingContext);
             InitValue(value => highlightColor = value, new Color(0.0f, 1.0f, 1.0f, 0.75f), initializingContext);
             InitValue(value => labelOutlineColor = value, Color.black, initializingContext);
             InitValue(value => labelOutlineWidth = value, 0.25f, initializingContext);
@@ -358,7 +358,7 @@ namespace DepictionEngine
             UpdateEnvironment();
         }
 
-        protected override void UpdateFields()
+        public override void UpdateFields()
         {
             base.UpdateFields();
 
@@ -385,9 +385,6 @@ namespace DepictionEngine
             if (base.UpdateAllDelegates())
             {
 #if UNITY_EDITOR
-                SceneManager.PlayModeStateChangedEvent -= PlayModeStateChangedHandler;
-                if (!IsDisposing())
-                    SceneManager.PlayModeStateChangedEvent += PlayModeStateChangedHandler;
                 SceneManager.BeforeAssemblyReloadEvent -= BeforeAssemblyReloadHandler;
                 if (!IsDisposing())
                     SceneManager.BeforeAssemblyReloadEvent += BeforeAssemblyReloadHandler;
@@ -413,16 +410,23 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        private void PlayModeStateChangedHandler(UnityEditor.PlayModeStateChange state)
-        {
-            UpdateEnvironment();
-        }
-
         private void BeforeAssemblyReloadHandler()
         {
             DisposeAllComputeBuffers();
         }
+
+        public override bool AfterAssemblyReload()
+        {
+            if (base.AfterAssemblyReload())
+            {
+                UpdateEnvironment();
+
+                return true;
+            }
+            return false;
+        }
 #endif
+
 
         private void RemoveMeshDelegate(Mesh mesh)
         {
@@ -474,13 +478,6 @@ namespace DepictionEngine
             ICustomEffect customEffect = property as ICustomEffect;
             if (!Disposable.IsDisposed(customEffect))
                 AddCustomEffect(customEffect);
-        }
-
-        public override void ExplicitOnEnable()
-        {
-            base.ExplicitOnEnable();
-
-            UpdateEnvironment();
         }
 
         public static bool GetEnableAlphaClip()
@@ -1431,9 +1428,17 @@ namespace DepictionEngine
 
                 _cachedMeshCount = meshCache.Count;
 #endif
+                return true;
+            }
+            return false;
+        }
 
+        public override bool PostHierarchicalUpdate()
+        {
+            if (base.PostHierarchicalUpdate())
+            {
                 instanceManager.IterateOverInstances<Camera>(
-                    (camera) => 
+                    (camera) =>
                     {
                         if (_environmentDirty || camera.environmentCubemap == null)
                             camera.UpdateEnvironmentCubemap(rttCamera);
@@ -1471,8 +1476,7 @@ namespace DepictionEngine
 
         private void DisposeComputeBuffer(ComputeBuffer computeBuffer)
         {
-            if (computeBuffer != null)
-                computeBuffer.Dispose();
+            computeBuffer?.Dispose();
         }
 
         public void DisposeAllCachedMeshes(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)

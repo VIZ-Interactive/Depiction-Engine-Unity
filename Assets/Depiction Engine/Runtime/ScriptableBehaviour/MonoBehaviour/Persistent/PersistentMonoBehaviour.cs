@@ -129,16 +129,20 @@ namespace DepictionEngine
             InitValue(value => createPersistentIfMissing = value, true, initializingContext);
         }
 
-        protected override void DetectUserChanges()
+        public override bool DetectUserGameObjectChanges()
         {
-            base.DetectUserChanges();
-
-            if (_lastName != name)
+            if (base.DetectUserGameObjectChanges())
             {
-                string newValue = name;
-                base.name = _lastName;
-                name = newValue;
+                if (_lastName != name)
+                {
+                    string newValue = name;
+                    base.name = _lastName;
+                    name = newValue;
+                }
+
+                return true;
             }
+            return false;
         }
 
         protected override void Saving(Scene scene, string path)
@@ -155,8 +159,12 @@ namespace DepictionEngine
             {
                 gameObject.hideFlags = hideFlags;
 
-                if (isFallbackValues && !SceneManager.Debugging())
-                    gameObject.hideFlags |= HideFlags.HideInHierarchy;
+                if (isFallbackValues)
+                {
+                    gameObject.hideFlags |= HideFlags.DontSave;
+                    if (!SceneManager.Debugging())
+                        gameObject.hideFlags |= HideFlags.HideInHierarchy;
+                }
 
                 return true;
             }

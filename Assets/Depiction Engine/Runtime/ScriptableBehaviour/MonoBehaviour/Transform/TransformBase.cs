@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -151,9 +152,13 @@ namespace DepictionEngine
             return initializeJSON;
         }
 
-        protected override void DetectChanges()
+        /// <summary>
+        /// Detect changes that happen as a result of an external influence.
+        /// </summary>
+        public bool DetectGameObjectChanges()
         {
-            base.DetectChanges();
+            if (IsDisposing())
+                return false;
 
             if (_lastIndex != index)
             {
@@ -161,6 +166,8 @@ namespace DepictionEngine
                 gameObject.transform.SetSiblingIndex(_lastIndex);
                 index = newValue;
             }
+
+            return true;
         }
 
         protected override bool LateInitialize(InitializationContext initializingContext)
@@ -192,6 +199,24 @@ namespace DepictionEngine
                     Editor.ComponentUtility.MoveComponentRelativeToComponent(this, _componentsList[0], false);
             }
         }
+
+        protected override bool UpdateUndoRedoSerializedFields()
+        {
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                if (!IsDisposing())
+                {
+                    RevertUnityLocalPosition();
+                    RevertUnityLocalRotation();
+                    RevertUnityLocalScale();
+                }
+
+                DetectGameObjectChanges();
+
+                return true;
+            }
+            return false;
+        }
 #endif
 
         protected override bool AddInstanceToManager()
@@ -217,7 +242,7 @@ namespace DepictionEngine
         {
             bool siblingsChanged = base.SiblingsHasChanged();
 
-            if (!siblingsChanged && objectBase == Disposable.NULL && GetSafeComponent<Object>(GetInitializeContext()) != Disposable.NULL)
+            if (!siblingsChanged && objectBase == Disposable.NULL && gameObject.GetSafeComponent<Object>(GetInitializeContext()) != Disposable.NULL)
                 siblingsChanged = true;
 
             return siblingsChanged;
@@ -358,8 +383,8 @@ namespace DepictionEngine
             PropertyMonoBehaviour parent = null;
 
             Type parentType = GetParentType();
-            if (parentType != null)
-                parent = InitializeComponent(transform.parent?.GetComponentInParent(parentType, true));
+            if (parentType != null )
+                parent = (PropertyMonoBehaviour)(transform.parent != null ? transform.parent.gameObject.GetSafeComponentInParent(parentType, true) : null);
 
             return parent;
         }
@@ -560,7 +585,7 @@ namespace DepictionEngine
                     {
                         added = true;
 #if UNITY_EDITOR
-                        if (initialized && SceneManager.IsUserChangeContext())
+                        if (initialized && SceneManager.GetIsUserChangeContext())
                             MarkAsNotPoolable();
 #endif
                     }
@@ -594,7 +619,7 @@ namespace DepictionEngine
                     {
                         removed = true;
 #if UNITY_EDITOR
-                        if (initialized && SceneManager.IsUserChangeContext())
+                        if (initialized && SceneManager.GetIsUserChangeContext())
                             MarkAsNotPoolable();
 #endif
                     }
@@ -684,7 +709,7 @@ namespace DepictionEngine
             {
                 try
                 {
-                    parentObject = transform.parent?.GetComponent<Object>();
+                    parentObject = transform.parent != null ? transform.parent.GetComponent<Object>() : null;
                 }
                 catch(MissingReferenceException)
                 {
@@ -774,7 +799,7 @@ namespace DepictionEngine
                     {
                         bool parentChanged = false;
 #if UNITY_EDITOR
-                        if (SceneManager.IsUserChangeContext())
+                        if (SceneManager.GetIsUserChangeContext())
                         {
                             parentChanged = true;
                             RegisterCompleteObjectUndo();
@@ -854,6 +879,11 @@ namespace DepictionEngine
             transform.localRotation = _lastTransformLocalRotation;
         }
 
+        public void RevertUnityLocalScale()
+        {
+            transform.localScale = _lastTransformLocalScale;
+        }
+
         protected override bool UpdateHideFlags()
         {
             if (base.UpdateHideFlags())
@@ -922,12 +952,11 @@ namespace DepictionEngine
 
             if (changedComponents != Component.None)
             {
-                IterateOverChildrenAndSiblings(
+                IterateOverChildren(
                     (child) =>
                     {
-                        if (child is TransformBase)
+                        if (child is TransformBase transform)
                         {
-                            TransformBase transform = child as TransformBase;
                             if (transform.initialized)
                                 transform.ParentChanged(changedComponents, Component.None, this);
                         }
@@ -953,11 +982,11 @@ namespace DepictionEngine
                 _changedComponents = changedComponents;
                 _capturedComponents = capturedComponents;
                 _originator = originator;
-                IterateOverChildrenAndSiblings(
+                IterateOverChildren(
                     (child) =>
                     {
-                        if (child is TransformBase)
-                            UpdateChild(child as TransformBase);
+                        if (child is TransformBase childTransform)
+                            UpdateChild(childTransform);
                     });
                 _changedComponents = Component.None;
                 _capturedComponents = Component.None;
@@ -1008,6 +1037,7 @@ namespace DepictionEngine
             return updateComponents;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override bool ApplyBeforeChildren(Action<PropertyMonoBehaviour> callback)
         {
             bool containsDisposed = base.ApplyBeforeChildren(callback);
@@ -1081,22 +1111,6 @@ namespace DepictionEngine
 
             return overrideDestroyingContext;
         }
-
-        public T GetSafeComponent<T>(InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component => transform.GetSafeComponent<T>(initializingContext);
-
-        public UnityEngine.Component GetSafeComponent(Type type, InitializationContext initializingContext = InitializationContext.Programmatically) => transform.GetSafeComponent(type, initializingContext);
-
-        public T GetSafeComponentInParent<T>(bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component => transform.GetSafeComponentInParent<T>(includeInactive, initializingContext);
-
-        public UnityEngine.Component GetSafeComponentInParent(Type type, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically) => transform.GetSafeComponentInParent(type, includeInactive, initializingContext);
-
-        public List<T> GetSafeComponents<T>(InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component => transform.GetSafeComponents<T>(initializingContext);
-
-        public List<UnityEngine.Component> GetSafeComponents(Type type, InitializationContext initializingContext = InitializationContext.Programmatically) => transform.GetSafeComponents(type, initializingContext);
-
-        public List<T> GetSafeComponentsInChildren<T>(bool includeSibling = false, InitializationContext initializingContext = InitializationContext.Programmatically) where T : UnityEngine.Component => transform.GetSafeComponentsInChildren<T>(includeSibling, initializingContext);
-
-        public List<UnityEngine.Component> GetSafeComponentsInChildren(Type type, bool includeSibling = false, InitializationContext initializingContext = InitializationContext.Programmatically) => transform.GetSafeComponentsInChildren(type, includeSibling, initializingContext);
     }
 
     [Serializable]

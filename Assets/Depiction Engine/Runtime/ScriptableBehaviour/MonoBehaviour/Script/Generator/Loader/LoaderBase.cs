@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace DepictionEngine
 {
@@ -397,7 +396,7 @@ namespace DepictionEngine
                 referencesDictionary.Clear();
                 foreach (KeyValuePair<T, ReferencesList> objectKeyPair in lastReferencesDictionary)
                 {
-                    ReferencesList references = new ReferencesList();
+                    ReferencesList references = new();
                     foreach (ReferenceBase reference in objectKeyPair.Value)
                         references.Add(reference);
                     referencesDictionary.Add(objectKeyPair.Key, references);
@@ -452,26 +451,10 @@ namespace DepictionEngine
             return false;
         }
 
-#if UNITY_EDITOR
-        private void BeforeAssemblyReloadHandler()
-        {
-            IterateOverLoadScopes((loadScopeKey, loadScope) =>
-            {
-                loadScope.KillLoading();
-                return true;
-            });
-        }
-#endif
-
         protected override bool UpdateAllDelegates()
         {
             if (base.UpdateAllDelegates())
             {
-#if UNITY_EDITOR
-                SceneManager.BeforeAssemblyReloadEvent -= BeforeAssemblyReloadHandler;
-                if (!IsDisposing())
-                    SceneManager.BeforeAssemblyReloadEvent += BeforeAssemblyReloadHandler;
-#endif
                 UpdatePersistentsDelegates();
 
                 IterateOverLoadScopes((loadScopeKey, loadScope) => 
@@ -545,26 +528,27 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        private PropertyMonoBehaviour _lastDatasource;
-
         private PersistentsDictionary _lastPersistentsDictionary;
         private PersistentsDictionary lastPersistentsDictionary
         {
             get { _lastPersistentsDictionary ??= new PersistentsDictionary(); return _lastPersistentsDictionary; }
         }
 
-        protected override void UpdateUndoRedoSerializedFields()
+        private PropertyMonoBehaviour _lastDatasource;
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                SerializationUtility.RecoverLostReferencedObject(ref _datasource);
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { SetDatasource(value); }, ref _datasource, ref _lastDatasource);
 
-            //Undos trigger OnEnable which queues an auto update.
-            _autoUpdate = false;
+                PerformAddRemovePersistentsChange(persistentsDictionary, lastPersistentsDictionary);
 
-            SerializationUtility.RecoverLostReferencedObject(ref _datasource);
+                IterateOverLoadScopes((loadScopeKey, loadScope) => { loadScope.LoaderUndoRedoPerformed(); return true; });
 
-            PerformAddRemovePersistentsChange(persistentsDictionary, lastPersistentsDictionary);
-
-            IterateOverLoadScopes((loadScopeKey, loadScope) => { loadScope.LoaderUndoRedoPerformed(); return true; });
+                return true;
+            }
+            return false;
         }
 #endif
 
@@ -603,11 +587,7 @@ namespace DepictionEngine
         /// </summary>
         public int loadingCount
         {
-            get
-            {
-                UpdateLoadCount();
-                return _loadingCount;
-            }
+            get { UpdateLoadCount(); return _loadingCount; }
         }
 
         /// <summary>
@@ -615,11 +595,7 @@ namespace DepictionEngine
         /// </summary>
         public int loadedCount
         {
-            get
-            {
-                UpdateLoadCount();
-                return _loadedCount;
-            }
+            get { UpdateLoadCount(); return _loadedCount; }
         }
 
         private void UpdateLoadCount()
@@ -650,32 +626,11 @@ namespace DepictionEngine
 
         private bool SetDatasource(PropertyMonoBehaviour value)
         {
-#if UNITY_EDITOR
-            if (SceneManager.IsUserChangeContext())
-                RegisterCompleteObjectUndo();
-#endif
-
-            return SetValue(nameof(datasource), value, ref _datasource, (newValue, oldValue) =>
+            return SetValue(nameof(datasource), value, ref _datasource, (newValue, oldValue) => 
             {
-                if (HasChanged(newValue, oldValue, false))
-                {
 #if UNITY_EDITOR
-                    _lastDatasource = newValue;
+                _lastDatasource = newValue;
 #endif
-                    DisposeContext disposeContext = SceneManager.IsUserChangeContext() ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Pool;
-
-                    RemoveAllPersistents(disposeContext);
-
-                    float loadInterval = 0.5f;
-                    IterateOverLoadScopes((loadScopeKey, loadScope) =>
-                    {
-                        loadScope.DatasourceChanged(disposeContext);
-
-                        Load(loadScope, loadInterval);
-                        loadInterval += 0.01f;
-                        return true;
-                    });
-                }
             }, true);
         }
 
@@ -688,16 +643,40 @@ namespace DepictionEngine
             get => _datasourceId;
             set
             {
+                DisposeContext disposeContext = SceneManager.GetIsUserChangeContext() ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Pool;
+
+#if UNITY_EDITOR
+                RegisterCompleteObjectUndo(disposeContext);
+#endif
+
                 SetValue(nameof(datasourceId), value, ref _datasourceId, (newValue, oldValue) =>
                 {
-                    UpdateDatasource();
+                    if (UpdateDatasourceFromDatasourceId() && initialized && HasChanged(newValue, oldValue, false))
+                    {
+                        RemoveAllPersistents();
+
+                        float loadInterval = 0.5f;
+                        IterateOverLoadScopes((loadScopeKey, loadScope) =>
+                        {
+                            loadScope.DatasourceChanged(disposeContext);
+
+                            Load(loadScope, loadInterval);
+                            loadInterval += 0.01f;
+                            return true;
+                        });
+                    }
                 });
             }
         }
 
         private void UpdateDatasource()
         {
-            SetDatasource(datasourceId != SerializableGuid.Empty ? GetComponentFromId<PropertyMonoBehaviour>(datasourceId) : datasourceManager);
+            UpdateDatasourceFromDatasourceId();
+        }
+
+        private bool UpdateDatasourceFromDatasourceId()
+        {
+            return SetDatasource(datasourceId != SerializableGuid.Empty ? GetComponentFromId<PropertyMonoBehaviour>(datasourceId) : datasourceManager);
         }
 
         /// <summary>
@@ -707,7 +686,7 @@ namespace DepictionEngine
         public string loadEndpoint
         {
             get => _loadEndpoint;
-            set { SetValue(nameof(loadEndpoint), value, ref _loadEndpoint); }
+            set => SetValue(nameof(loadEndpoint), value, ref _loadEndpoint);
         }
 
         /// <summary>
@@ -717,14 +696,14 @@ namespace DepictionEngine
         public DataType dataType
         {
             get => _dataType;
-            set { SetValue(nameof(dataType), value, ref _dataType); }
+            set => SetValue(nameof(dataType), value, ref _dataType);
         }
 
         [Json]
         public int depth
         {
             get => _depth;
-            set { SetValue(nameof(depth), value, ref _depth); }
+            set => SetValue(nameof(depth), value, ref _depth);
         }
 
         /// <summary>
@@ -734,7 +713,7 @@ namespace DepictionEngine
         public int timeout
         {
             get => _timeout;
-            set { SetValue(nameof(timeout), value, ref _timeout); }
+            set => SetValue(nameof(timeout), value, ref _timeout);
         }
 
         /// <summary>
@@ -744,7 +723,7 @@ namespace DepictionEngine
         public List<string> headers
         {
             get => _headers;
-            set { SetValue(nameof(headers), value, ref _headers); }
+            set => SetValue(nameof(headers), value, ref _headers);
         }
 
         /// <summary>
@@ -754,7 +733,7 @@ namespace DepictionEngine
         public bool autoUpdateWhenDisabled
         {
             get => _autoUpdateWhenDisabled;
-            set { SetValue(nameof(autoUpdateWhenDisabled), value, ref _autoUpdateWhenDisabled); }
+            set => SetValue(nameof(autoUpdateWhenDisabled), value, ref _autoUpdateWhenDisabled, (newValue, oldValue) => {  QueueAutoUpdate(); });
         }
 
         /// <summary>
@@ -764,7 +743,7 @@ namespace DepictionEngine
         public float autoUpdateInterval
         {
             get => _autoUpdateInterval;
-            set { SetValue(nameof(autoUpdateInterval), value, ref _autoUpdateInterval); }
+            set => SetValue(nameof(autoUpdateInterval), value, ref _autoUpdateInterval);
         }
 
         /// <summary>
@@ -774,7 +753,7 @@ namespace DepictionEngine
         public float autoUpdateDelay
         {
             get => _autoUpdateDelay;
-            set { SetValue(nameof(autoUpdateDelay), value, ref _autoUpdateDelay); }
+            set => SetValue(nameof(autoUpdateDelay), value, ref _autoUpdateDelay);
         }
 
         /// <summary>
@@ -784,7 +763,7 @@ namespace DepictionEngine
         public bool autoDisposeUnused
         {
             get => _autoDisposeUnused;
-            set { SetValue(nameof(autoDisposeUnused), value, ref _autoDisposeUnused); }
+            set => SetValue(nameof(autoDisposeUnused), value, ref _autoDisposeUnused);
         }
 
         private Tween waitBetweenLoadTimer
@@ -879,6 +858,22 @@ namespace DepictionEngine
             return true;
         }
 
+        protected override void ObjectPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
+        {
+            base.ObjectPropertyAssignedHandler(property, name, newValue, oldValue);
+
+            if (name == nameof(Object.gameObjectActiveSelf) && (bool)newValue)
+                QueueAutoUpdate();
+        }
+
+        protected override void EnabledChanged(bool newValue, bool oldValue)
+        {
+            base.EnabledChanged(newValue, oldValue);
+
+            if (newValue)
+                QueueAutoUpdate();
+        }
+
         /// <summary>
         /// Queue a call to <see cref="DepictionEngine.LoaderBase.UpdateLoadScopes"/> if and when possible.
         /// </summary>
@@ -888,7 +883,7 @@ namespace DepictionEngine
                 _autoUpdate = true;
         }
 
-        private bool CanAutoLoad()
+        protected bool CanAutoLoad()
         {
             return isActiveAndEnabled || autoUpdateWhenDisabled;
         }
@@ -914,7 +909,7 @@ namespace DepictionEngine
                                 {
                                     loadDelayTimer = tweenManager.DelayedCall(autoUpdateDelay, null, () =>
                                     {
-                                        if (!IsDisposing())
+                                        if (!IsDisposing() && CanAutoLoad())
                                             UpdateLoadScopes(true);
                                     }, () => loadDelayTimer = null);
                                 }

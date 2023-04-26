@@ -106,9 +106,9 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             UpdateSkybox();
 
@@ -283,7 +283,7 @@ namespace DepictionEngine
 
         public virtual UnityEngine.Camera unityCamera
         {
-            get { _unityCamera ??= gameObject.GetComponent<UnityEngine.Camera>(); return _unityCamera; }
+            get { _unityCamera = _unityCamera != null ? _unityCamera : gameObject.GetComponent<UnityEngine.Camera>(); return _unityCamera; }
         }
 
         public UniversalAdditionalCameraData additionalData
@@ -311,7 +311,7 @@ namespace DepictionEngine
 
         public Skybox skybox
         {
-            get { _skybox ??= gameObject.GetComponent<Skybox>(); return _skybox; }
+            get { _skybox = _skybox != null ? _skybox : gameObject.GetComponent<Skybox>(); return _skybox; }
         }
 
         private void UpdateSkybox()
@@ -921,13 +921,8 @@ namespace DepictionEngine
             }
         }
 
-        public Vector3Double environmentCubemapPosition { get => _environmentCubemapPosition.HasValue ? _environmentCubemapPosition.Value : Vector3Double.zero; }
-        private Vector3Double? _environmentCubemapPosition;
         public void UpdateEnvironmentCubemap(RTTCamera rttCamera)
         {
-            if (!_environmentCubemapPosition.HasValue || Vector3Double.Distance(_environmentCubemapPosition.Value, transform.position) > 100.0d)
-                _environmentCubemapPosition = transform.position;
-
             float lastAmbientIntensity = RenderSettings.ambientIntensity;
             RenderSettings.ambientIntensity = 0.0f;
             float lastReflectionIntensity = RenderSettings.reflectionIntensity;
@@ -937,10 +932,8 @@ namespace DepictionEngine
             {
                 sceneManager.BeginCameraRendering(this);
 
-                Vector3 lastPosition = gameObject.transform.position;
-                gameObject.transform.position += (Vector3)(_environmentCubemapPosition.Value - transform.position);
                 rttCamera.RenderToCubemap(this, GetEnvironmentCubeMap(), ApplyPropertiesToUnityCamera);
-                gameObject.transform.position = lastPosition;
+                transform.RevertUnityLocalPosition();
 
                 sceneManager.EndCameraRendering(this);
 

@@ -4,7 +4,6 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.SceneManagement;
 
 namespace DepictionEngine
 {
@@ -30,7 +29,9 @@ namespace DepictionEngine
             Mesh
         }
 
+        [SerializeField, HideInInspector]
         private MeshRenderer _meshRenderer;
+        [SerializeField, HideInInspector]
         private MeshFilter _meshFilter;
 
         private ColliderType _colliderType;
@@ -42,45 +43,16 @@ namespace DepictionEngine
 
             sharedMesh = default;
             sharedMaterial = default;
-
-            colliderType = default;
         }
 
-        protected override void InitializeFields(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingContext);
-            
-            InitMeshFilter();
-            InitMeshRenderer();
+            base.CreateAndInitializeDependencies(initializingContext);
+
+            _meshFilter ??= AddComponent<MeshFilter>(initializingContext);
+            _meshRenderer ??= AddComponent<MeshRenderer>(initializingContext);
+
             InitCollider();
-        }
-
-        private bool InitMeshFilter()
-        {
-            if (IsDisposing())
-                return false;
-
-            if (_meshFilter == null)
-            {
-                if (!gameObject.TryGetComponent(out _meshFilter))
-                    _meshFilter = gameObject.AddComponent<MeshFilter>();
-                return true;
-            }
-            return false;
-        }
-
-        private bool InitMeshRenderer()
-        {
-            if (IsDisposing())
-                return false;
-
-            if (_meshRenderer == null)
-            {
-                if (!gameObject.TryGetComponent(out _meshRenderer))
-                    _meshRenderer = gameObject.AddComponent<MeshRenderer>();
-                return true;
-            }
-            return false;
         }
 
         private void InitCollider()
@@ -96,6 +68,13 @@ namespace DepictionEngine
                 _colliderType = ColliderType.None;
         }
 
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
+
+            AddVisualObjectMeshRenderer(visualObject);
+        }
+
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
@@ -108,8 +87,11 @@ namespace DepictionEngine
         {
             if (base.SetVisualObject(oldValue, newValue))
             {
-                RemoveVisualObjectMeshRenderer(oldValue);
-                AddVisualObjectMeshRenderer(newValue);
+                if (initialized)
+                {
+                    RemoveVisualObjectMeshRenderer(oldValue);
+                    AddVisualObjectMeshRenderer(newValue);
+                }
                 return true;
             }
             return false;
@@ -161,11 +143,7 @@ namespace DepictionEngine
 
         public MeshRenderer meshRenderer
         {
-            get 
-            {
-                InitMeshRenderer();
-                return _meshRenderer; 
-            }
+            get => _meshRenderer;
             private set
             {
                 if (Object.ReferenceEquals(_meshRenderer, value))
@@ -176,11 +154,7 @@ namespace DepictionEngine
 
         public MeshFilter meshFilter
         {
-            get 
-            {
-                InitMeshFilter();
-                return _meshFilter; 
-            }
+            get => _meshFilter;
             private set
             {
                 if (Object.ReferenceEquals(_meshFilter, value))
@@ -286,7 +260,7 @@ namespace DepictionEngine
            
             _colliderType = value;
             
-            colliderInternal = _colliderType != ColliderType.None ? gameObject.AddComponent(_colliderType == ColliderType.Box ? typeof(BoxCollider) : typeof(MeshCollider)) as Collider : null;
+            colliderInternal = _colliderType != ColliderType.None ? AddComponent(_colliderType == ColliderType.Box ? typeof(BoxCollider) : typeof(MeshCollider)) as Collider : null;
             
             return true;
         }
@@ -318,8 +292,14 @@ namespace DepictionEngine
 
         public static MeshRendererVisualModifier CreateMeshRendererVisualModifier(string name = null)
         {
-            MeshRendererVisualModifier meshRendererVisualModifier = InstanceManager.Instance(false)?.CreateInstance<MeshRendererVisualModifier>();
-            meshRendererVisualModifier.name = name;
+            MeshRendererVisualModifier meshRendererVisualModifier = null;
+
+            InstanceManager instanceManager = InstanceManager.Instance(false);
+            if (instanceManager != null)
+                meshRendererVisualModifier = instanceManager.CreateInstance<MeshRendererVisualModifier>();
+
+            if (meshRendererVisualModifier != null)
+                meshRendererVisualModifier.name = name;
 
             return meshRendererVisualModifier;
         }
@@ -369,8 +349,8 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                 //When undoing an Add Component(such as Add GeoCoordinateController) on a VisualObject(tested on Markers) the children whose creation was not registered with the UndoManager are disposed automatically for some reason.
                 //If we detect that the visuals were disposed as a result of an Undo Redo we ask the AutoGenerateVisualObject to recreate them. If it was the AutoGenerateVisualObject that was destroyed, and not just its child visuals, then the visualObject will be null and nothing will happen.
-                if (disposeContext == DisposeContext.Editor_UndoRedo)
-                    (visualObject as AutoGenerateVisualObject)?.SetMeshRendererVisualsAllDirty();
+                if (disposeContext == DisposeContext.Editor_UndoRedo && visualObject is AutoGenerateVisualObject autoGenerateVisualObject)
+                    autoGenerateVisualObject.SetMeshRendererVisualsAllDirty();
 #endif
                 return true;
             }
@@ -552,7 +532,9 @@ namespace DepictionEngine
         {
             if (processingFunction != null)
             {
-                meshModifierProcessor ??= InstanceManager.Instance(false)?.CreateInstance<Processor>();
+                InstanceManager instanceManager = InstanceManager.Instance(false);
+                if (instanceManager != null)
+                    meshModifierProcessor ??= instanceManager.CreateInstance<Processor>();
                 
                 meshModifierProcessor.StartProcessing(processingFunction, typeof(MeshRendererVisualProcessorOutput), parametersType, parametersCallback,
                     (data, errorMsg) =>

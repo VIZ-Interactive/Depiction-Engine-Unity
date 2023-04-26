@@ -27,9 +27,7 @@ namespace DepictionEngine
             if (_textMeshWarpPro == null)
             {
                 _textMeshWarpPro = gameObject.GetComponent<TextMeshProWarp>();
-
-                if (_textMeshWarpPro == null)
-                    _textMeshWarpPro = gameObject.AddComponent<TextMeshProWarp>();
+                _textMeshWarpPro ??= AddComponent<TextMeshProWarp>();
             }
 
             if (callback != null && _textMeshWarpPro != null)
@@ -39,8 +37,7 @@ namespace DepictionEngine
         private RectTransform _rectTransform;
         protected RectTransform GetRectTransform()
         {
-            if (_rectTransform == null)
-                _rectTransform = gameObject.GetComponent<RectTransform>();
+            _rectTransform ??= gameObject.GetComponent<RectTransform>();
             return _rectTransform;
         }
 

@@ -301,8 +301,8 @@ namespace DepictionEngine.Editor
                         IProperty properties = null;
                         if (obj is IProperty)
                             properties = obj as IProperty;
-                        else if (obj is GameObject)
-                            properties = (obj as GameObject).GetComponent(typeof(Object)) as IProperty;
+                        else if (obj is GameObject objGameObject)
+                            properties = objGameObject.GetComponent(typeof(Object)) as IProperty;
                         if (properties != null)
                         {
                             if (Event.current.type == EventType.DragUpdated)

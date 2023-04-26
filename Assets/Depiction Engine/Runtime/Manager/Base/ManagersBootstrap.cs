@@ -18,8 +18,6 @@ namespace DepictionEngine
         public void Awake()
         {
             hideFlags = HideFlags.HideInInspector;
-
-            InstanceManager.Initialize(GetComponent<SceneManager>());
         }
     }
 }

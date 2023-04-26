@@ -59,14 +59,6 @@ namespace DepictionEngine
             _loader = default;
         }
 
-        public override void Initialized(InitializationContext initializingContext)
-        {
-            base.Initialized(initializingContext);
-
-            if (loadIntervalTween != null)
-            Debug.Log(datasourceOperation+", "+ datasourceOperation.loadingState);
-        }
-
         public bool InitializeLastFields()
         {
 #if UNITY_EDITOR
@@ -122,7 +114,7 @@ namespace DepictionEngine
 
         public virtual bool AddPersistent(IPersistent persistent)
         {
-            SerializableIPersistent serializableIPersistent = new SerializableIPersistent(persistent);
+            SerializableIPersistent serializableIPersistent = new(persistent);
             if (persistentsDictionary.TryAdd(persistent.id, serializableIPersistent))
             {
 #if UNITY_EDITOR
@@ -362,9 +354,10 @@ namespace DepictionEngine
 
         public virtual JSONObject GetLoadScopeFallbackValuesJson()
         {
-            JSONObject loadScopeFallbackValuesJson = new();
-
-            loadScopeFallbackValuesJson[nameof(Object.name)] = name;
+            JSONObject loadScopeFallbackValuesJson = new()
+            {
+                [nameof(Object.name)] = name
+            };
 
             string transformName = nameof(Object.transform);
             loadScopeFallbackValuesJson[transformName][nameof(TransformDouble.type)] = JsonUtility.ToJson(typeof(TransformDouble));

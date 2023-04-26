@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using UnityEngine;
+using UnityEngine.Timeline;
 
 namespace DepictionEngine
 {
@@ -95,8 +96,8 @@ namespace DepictionEngine
             this.datasourceWrapper = datasourceWrapper;
 
             //When undoing a Destroy the loaders might not be initialized yet therefore we cannot find them in the instanceManager yet, so we use UnityEngine.Object.FindObjectsOfType instead.
-            UnityEngine.Object[] loaders = UnityEngine.Object.FindObjectsOfType(typeof(LoaderBase));
-            foreach (LoaderBase loader in loaders)
+            UnityEngine.Object[] loaders = UnityEngine.Object.FindObjectsOfType(typeof(LoaderBase), true);
+            foreach (LoaderBase loader in loaders.Cast<LoaderBase>())
             {
                 if ((this.datasourceWrapper as IDatasource).IsIdMatching(loader.datasourceId))
                     AddLoader(loader);
@@ -266,7 +267,7 @@ namespace DepictionEngine
 
         private void LoaderChanged()
         {
-            DisposeContext disposeContext = SceneManager.IsUserChangeContext() ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Pool;
+            DisposeContext disposeContext = SceneManager.GetIsUserChangeContext() ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Pool;
             IterateOverPersistents((persistentId, persistent) =>
             {
                 AutoDisposePersistent(persistent, disposeContext);
@@ -342,49 +343,54 @@ namespace DepictionEngine
             RemovePersistent(disposable as IPersistent, disposeContext);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PersistentPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
-            IPersistent persistent = property as IPersistent;
-
-            if (name == nameof(PersistentMonoBehaviour.autoDispose))
-                UpdateCanBeAutoDisposed(persistent);
-
-            SetComponentPropertyOutOfSynch(persistent, persistent, name);
-
-            if (property is IGrid2DIndex)
+            if (property is IPersistent persistent)
             {
-                bool dimensionsChanged = name == nameof(IGrid2DIndex.grid2DDimensions);
-                bool indexChanged = name == nameof(IGrid2DIndex.grid2DIndex);
-                if (dimensionsChanged || indexChanged)
+                if (GetPropertyInfo(persistent, name, out PropertyInfo persistentPropertyInfo))
                 {
-                    IGrid2DIndex gridIndexObject = property as IGrid2DIndex;
+                    if (name == nameof(PersistentMonoBehaviour.autoDispose))
+                        UpdateCanBeAutoDisposed(persistent);
 
-                    IterateOverLoaders((loader) =>
+                    TrySetPropertyOutOfSynch(persistent, persistent, persistentPropertyInfo, GetAllowAutoDispose());
+                }
+
+                if (persistent is IGrid2DIndex)
+                {
+                    bool dimensionsChanged = name == nameof(IGrid2DIndex.grid2DDimensions);
+                    bool indexChanged = name == nameof(IGrid2DIndex.grid2DIndex);
+                    if (dimensionsChanged || indexChanged)
                     {
-                        if (loader is Index2DLoaderBase && loader.ContainsPersistent(persistent))
+                        IGrid2DIndex gridIndexObject = property as IGrid2DIndex;
+
+                        IterateOverLoaders((loader) =>
                         {
-                            Index2DLoaderBase index2DLoader = loader as Index2DLoaderBase;
-
-                            Vector2Int oldDimensions = gridIndexObject.grid2DDimensions;
-                            Vector2Int newDimensions = gridIndexObject.grid2DDimensions;
-                            if (dimensionsChanged)
+                            if (loader is Index2DLoaderBase && loader.ContainsPersistent(persistent))
                             {
-                                oldDimensions = (Vector2Int)oldValue;
-                                newDimensions = (Vector2Int)newValue;
-                            }
+                                Index2DLoaderBase index2DLoader = loader as Index2DLoaderBase;
 
-                            Vector2Int oldIndex = gridIndexObject.grid2DIndex;
-                            Vector2Int newIndex = gridIndexObject.grid2DIndex;
-                            if (indexChanged)
-                            {
-                                oldIndex = (Vector2Int)oldValue;
-                                newIndex = (Vector2Int)newValue;
-                            }
+                                Vector2Int oldDimensions = gridIndexObject.grid2DDimensions;
+                                Vector2Int newDimensions = gridIndexObject.grid2DDimensions;
+                                if (dimensionsChanged)
+                                {
+                                    oldDimensions = (Vector2Int)oldValue;
+                                    newDimensions = (Vector2Int)newValue;
+                                }
 
-                            ChangeLoadScope(persistent, index2DLoader.GetLoadScope(out LoadScope newLoadScope, new Grid2DIndex(newIndex, newDimensions)) ? newLoadScope : null, index2DLoader.GetLoadScope(out LoadScope oldLoadScope, new Grid2DIndex(oldIndex, oldDimensions)) ? oldLoadScope : null);
-                        }
-                        return true;
-                    });
+                                Vector2Int oldIndex = gridIndexObject.grid2DIndex;
+                                Vector2Int newIndex = gridIndexObject.grid2DIndex;
+                                if (indexChanged)
+                                {
+                                    oldIndex = (Vector2Int)oldValue;
+                                    newIndex = (Vector2Int)newValue;
+                                }
+
+                                ChangeLoadScope(persistent, index2DLoader.GetLoadScope(out LoadScope newLoadScope, new Grid2DIndex(newIndex, newDimensions)) ? newLoadScope : null, index2DLoader.GetLoadScope(out LoadScope oldLoadScope, new Grid2DIndex(oldIndex, oldDimensions)) ? oldLoadScope : null);
+                            }
+                            return true;
+                        });
+                    }
                 }
             }
         }
@@ -402,15 +408,46 @@ namespace DepictionEngine
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ObjectComponentPropertyAssignedHandler(Object objectBase, IJson component, string name, object newValue, object oldValue)
         {
-            if (SetComponentPropertyOutOfSynch(objectBase, component, name) && objectBase.GetJsonAttribute(objectBase.GetScriptProperty(component).Item1, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
-                SetPersistentComponentPropertyOutOfSync(objectBase, objectBase, propertyInfo, allowAutoDispose);
+            if (GetPropertyInfo(component, name, out PropertyInfo componentPropertyInfo))
+            {
+                bool allowAutoDispose = Datasource.GetAllowAutoDispose();
+
+                if (!allowAutoDispose && component is TransformBase)
+                {
+                    switch (name)
+                    {
+                        case nameof(TransformDouble.localPosition):
+                            allowAutoDispose = MathPlus.Approximately((Vector3Double)newValue, (Vector3Double)oldValue, 0.0000001d);
+                            break;
+
+                        case nameof(TransformDouble.localRotation):
+                            allowAutoDispose = MathPlus.Approximately((QuaternionDouble)newValue, (QuaternionDouble)oldValue);
+                            break;
+                    }
+                }
+
+                if (TrySetPropertyOutOfSynch(objectBase, component, componentPropertyInfo, allowAutoDispose) && objectBase.GetJsonAttribute(objectBase.GetScriptProperty(component).Item1, out JsonAttribute jsonAttribute, out PropertyInfo objectPropertyInfo))
+                    SetPropertyOutOfSync(objectBase, objectBase, objectPropertyInfo, allowAutoDispose);
+            }
         }
 
-        private bool SetComponentPropertyOutOfSynch(IPersistent persistent, IJson component, string propertyName)
+        private bool GetPropertyInfo(IJson component, string propertyName, out PropertyInfo propertyInfo)
         {
-            if (SceneManager.IsUserChangeContext() && component.GetJsonAttribute(propertyName, out JsonAttribute _, out PropertyInfo propertyInfo) && SetPersistentComponentPropertyOutOfSync(persistent, component, propertyInfo, allowAutoDispose))
+            if (SceneManager.GetIsUserChangeContext() && component.GetJsonAttribute(propertyName, out JsonAttribute _, out PropertyInfo componentPropertyInfo))
+            {
+                propertyInfo = componentPropertyInfo;
+                return true;
+            }
+            propertyInfo = null;
+            return false;
+        }
+
+        private bool TrySetPropertyOutOfSynch(IPersistent persistent, IJson component, PropertyInfo propertyInfo, bool allowAutoDispose)
+        {
+            if (SetPropertyOutOfSync(persistent, component, propertyInfo, allowAutoDispose))
             { 
                 SetPersistentIsOutOfSynch(persistent, true);
                 return true;
@@ -432,13 +469,13 @@ namespace DepictionEngine
 
         private void ObjectScriptRemovedHandler(Object objectBase, Script script)
         {
-            if (SceneManager.IsUserChangeContext())
+            if (SceneManager.GetIsUserChangeContext())
                 SetPersistentAllSync(objectBase, script);
         }
 
         private void ObjectScriptAddedHandler(Object objectBase, Script script)
         {
-            if (SceneManager.IsUserChangeContext())
+            if (SceneManager.GetIsUserChangeContext())
                 SetPersistentAllOutOfSync(objectBase, script);
         }
 
@@ -493,17 +530,23 @@ namespace DepictionEngine
             get { _persistentsDictionary ??= new(); return _persistentsDictionary; }
         }
 
-        private static bool _allowAutoDispose;
-        public static bool allowAutoDispose { get => _allowAutoDispose; }
-        public static void AllowAutoDisposeOnOutOfSynchProperty(Action callback, bool allowAutoDispose = true)
+        private static int _allowAutoDispose;
+        private static bool GetAllowAutoDispose()  => _allowAutoDispose > 0;
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
+        public static void StartAllowAutoDisposeOnOutOfSynchProperty()
         {
-            if (callback != null)
-            {
-                bool lastAllowAutoDispose = _allowAutoDispose;
-                _allowAutoDispose = lastAllowAutoDispose || allowAutoDispose;
-                callback();
-                _allowAutoDispose = lastAllowAutoDispose;
-            }
+            _allowAutoDispose++;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
+        public static void EndAllowAutoDisposeOnOutOfSynchProperty()
+        {
+            _allowAutoDispose--;
+        }
+
+        public static void ResetAllowAutoDispose()
+        {
+            _allowAutoDispose = 0;
         }
 
         public static bool EnablePersistenceOperations()
@@ -713,7 +756,7 @@ namespace DepictionEngine
             if (GetPersistentComponentOutOfSyncDictionary(persistent, out ComponentsOutOfSyncDictionary componentsOutOfSynchDictionary))
             {
 #if UNITY_EDITOR
-                if (SceneManager.IsUserChangeContext())
+                if (SceneManager.GetIsUserChangeContext())
                     RegisterCompleteObjectUndo();
 #endif
                 if (component is null)
@@ -734,7 +777,7 @@ namespace DepictionEngine
 
             MemberUtility.IterateOverJsonAttribute(component, (component, accessor, name, jsonAttribute, propertyInfo) =>
             {
-                if (SetPersistentComponentPropertyOutOfSync(persistent, component, propertyInfo, allowAutoDispose))
+                if (SetPropertyOutOfSync(persistent, component, propertyInfo, allowAutoDispose))
                     outOfSynchChanged = true;
             });
 
@@ -749,7 +792,7 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool SetPersistentComponentPropertyOutOfSync(IPersistent persistent, IJson component, PropertyInfo propertyInfo, bool allowAutoDispose = false)
+        private bool SetPropertyOutOfSync(IPersistent persistent, IJson component, PropertyInfo propertyInfo, bool allowAutoDispose = false)
         {
             bool changed = false;
 
@@ -757,7 +800,7 @@ namespace DepictionEngine
             if (GetPersistentComponentOutOfSyncDictionary(persistent, out ComponentsOutOfSyncDictionary componentsOutOfSynchDictionary))
             {
 #if UNITY_EDITOR
-                if (SceneManager.IsUserChangeContext())
+                if (SceneManager.GetIsUserChangeContext())
                     RegisterCompleteObjectUndo();
 #endif
                 SerializableGuid id = component.id;
@@ -783,11 +826,11 @@ namespace DepictionEngine
             }
 
             if (changed)
-                Debug.Log(key+", "+ allowAutoDispose);
+                Debug.Log(key+", "+ persistent+", "+allowAutoDispose);
 
             return changed;
         }
-
+       
         private void IteratePersistentComponentOverOutOfSync(IPersistent persistent, Func<IJson, int, bool, bool> callback)
         {
             if (GetPersistentComponentOutOfSyncDictionary(persistent, out ComponentsOutOfSyncDictionary componentOutOfSynchDictionary))
@@ -841,7 +884,7 @@ namespace DepictionEngine
         private bool AddPersistent(IPersistent persistent, bool allOutOfSync = false, ComponentsOutOfSyncDictionary outOfSynch = null)
         {
             SerializableGuid persistentId = persistent.id;
-            SerializableIPersistent serializableIPersistent = new SerializableIPersistent(persistent);
+            SerializableIPersistent serializableIPersistent = new(persistent);
             if (persistentsDictionary.TryAdd(persistentId, serializableIPersistent))
             {
                 outOfSynch ??= new();
@@ -1130,9 +1173,8 @@ namespace DepictionEngine
 
             persistents.Add(persistent);
 
-            if (persistent is Object)
+            if (persistent is Object objectBase)
             {
-                Object objectBase = persistent as Object;
                 if (loadResultData.children != null && loadResultData.children.Count > 0)
                 {
                     foreach (LoadResultData childLoadData in loadResultData.children)

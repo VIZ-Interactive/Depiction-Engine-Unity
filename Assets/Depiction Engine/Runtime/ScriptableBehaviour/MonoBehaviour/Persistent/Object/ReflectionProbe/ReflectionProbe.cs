@@ -78,6 +78,13 @@ namespace DepictionEngine
             InitValue(value => farClipPlane = value, 1000.0f, initializingContext);
         }
 
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
+
+            UpdateReflectionProbeEnabled();
+        }
+
         protected override bool UpdateHideFlags()
         {
             if (base.UpdateHideFlags())
@@ -95,21 +102,23 @@ namespace DepictionEngine
             return true;
         }
 
-        public override void ExplicitOnEnable()
+        protected override void OnEnable()
         {
-            base.ExplicitOnEnable();
+            base.OnEnable();
 
-            UpdateReflectionProbeEnabled(true);
+            if (initialized)
+                UpdateReflectionProbeEnabled();
         }
 
-        public override void ExplicitOnDisable()
+        protected override void OnDisable()
         {
-            base.ExplicitOnDisable();
+            base.OnDisable();
 
-            UpdateReflectionProbeEnabled(false);
+            if (initialized)
+                UpdateReflectionProbeEnabled();
         }
 
-        private void UpdateReflectionProbeEnabled(bool enabled)
+        private void UpdateReflectionProbeEnabled()
         {
             if (reflectionProbe != null)
                 reflectionProbe.enabled = enabled;

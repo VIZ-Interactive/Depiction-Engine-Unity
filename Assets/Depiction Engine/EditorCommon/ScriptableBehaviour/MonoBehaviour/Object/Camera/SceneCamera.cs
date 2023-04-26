@@ -19,21 +19,21 @@ namespace DepictionEngine.Editor
         {
         }
 
-        protected override void UpdateFields()
+        public override void UpdateFields()
         {
             base.UpdateFields();
 
-            InitializeSceneCameraController();
+            InitSceneCameraController();
         }
 
-        private void InitializeSceneCameraController()
+        private void InitSceneCameraController()
         {
             if (SceneManager.sceneClosing || IsDisposing())
                 return;
 
             //Recreate the SceneCameraTarget if it was destroyed along with the parent GeoAstroObject
             if (sceneCameraController == Disposable.NULL)
-                gameObject.AddSafeComponent<SceneCameraController>();
+                AddComponent<SceneCameraController>();
         }
 
         protected override void InitializeToTopInInspector()
@@ -41,9 +41,9 @@ namespace DepictionEngine.Editor
             
         }
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             UpdateShowImageEffects();
         }
@@ -96,7 +96,7 @@ namespace DepictionEngine.Editor
         {
             if (base.SetController(value))
             {
-                InitializeSceneCameraController();
+                InitSceneCameraController();
 
                 return true;
             }

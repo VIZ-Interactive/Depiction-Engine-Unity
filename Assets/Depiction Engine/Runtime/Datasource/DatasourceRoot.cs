@@ -55,11 +55,13 @@ namespace DepictionEngine
             {
                 if (ResetTransform())
                 {
-                    if (!_wrongParentError && parentGeoAstroObject != Disposable.NULL && parentGeoAstroObject.transform != transform.parent)
+                    if (parentGeoAstroObject != Disposable.NULL && parentGeoAstroObject.transform != transform.parent)
                     {
-                        _wrongParentError = true;
-
-                        Debug.LogError(nameof(DatasourceRoot) + " can only be added to the root of a " + nameof(GeoAstroObject));
+                        if (!_wrongParentError)
+                        {
+                            _wrongParentError = true;
+                            Debug.LogError(nameof(DatasourceRoot) + " can only be added to the root of a " + nameof(GeoAstroObject));
+                        }
 
                         transform.SetParent(parentGeoAstroObject.transform, false);
                     }

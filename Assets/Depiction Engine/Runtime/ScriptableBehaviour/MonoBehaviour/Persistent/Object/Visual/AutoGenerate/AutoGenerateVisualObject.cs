@@ -56,7 +56,8 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _meshRendererVisualDirtyFlags?.Recycle();
+            if (_meshRendererVisualDirtyFlags != null)
+                _meshRendererVisualDirtyFlags.Recycle();
 
             _popup = default;
             _popupT = default;
@@ -65,6 +66,13 @@ namespace DepictionEngine
         protected override void InitializeFields(InitializationContext initializingContext)
         {
             base.InitializeFields(initializingContext);
+
+            if (initializingContext == InitializationContext.Existing)
+            {
+#if UNITY_EDITOR
+                RecoverMeshRendererVisualDirtyFlags();
+#endif
+            }
 
             bool duplicating = initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate;
 
@@ -83,6 +91,17 @@ namespace DepictionEngine
 
             if (!GetMeshRenderersInitialized())
                 SetMeshRendererVisualsAllDirty();
+        }
+
+        public void SetMeshRendererVisualsAllDirty()
+        {
+            if (meshRendererVisualDirtyFlags != null)
+                meshRendererVisualDirtyFlags.AllDirty();
+        }
+
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
 
             //Dont Popup if the object was duplicated or already exists
             popup = initializingContext == InitializationContext.Editor || initializingContext == InitializationContext.Programmatically;
@@ -91,17 +110,18 @@ namespace DepictionEngine
                 DetectCompromisedPopup();
         }
 
-        public void SetMeshRendererVisualsAllDirty()
+#if UNITY_EDITOR
+        public override bool AfterAssemblyReload()
         {
-            meshRendererVisualDirtyFlags?.AllDirty();
-        }
+            if (base.AfterAssemblyReload())
+            {
+                DetectCompromisedPopup();
 
-        public override void ExplicitOnEnable()
-        {
-            base.ExplicitOnEnable();
-
-            DetectCompromisedPopup();
+                return true;
+            }
+            return false;
         }
+#endif
 
         private void DetectCompromisedPopup()
         {
@@ -120,13 +140,22 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                RecoverMeshRendererVisualDirtyFlags();
 
+                return true;
+            }
+            return false;
+        }
+
+        private void RecoverMeshRendererVisualDirtyFlags()
+        {
             SerializationUtility.RecoverLostReferencedObject(ref _meshRendererVisualDirtyFlags);
-                
-            _meshRendererVisualDirtyFlags?.UndoRedoPerformed();
+            if (_meshRendererVisualDirtyFlags != null)
+                _meshRendererVisualDirtyFlags.UndoRedoPerformed();
         }
 #endif
 
@@ -178,7 +207,7 @@ namespace DepictionEngine
             {
 #if UNITY_EDITOR
                 //Demo the effect if the change was done in the inspector and was not the result of "Paste Component Values".
-                if (SceneManager.IsUserChangeContext() && SceneManager.sceneExecutionState != SceneManager.ExecutionState.PastingComponentValues)
+                if (SceneManager.GetIsUserChangeContext() && SceneManager.sceneExecutionState != SceneManager.ExecutionState.PastingComponentValues)
                     popup = true;
 #endif
                 SetValue(nameof(popupType), value, ref _popupType);
@@ -249,7 +278,7 @@ namespace DepictionEngine
         protected VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags
         {
             get => _meshRendererVisualDirtyFlags;
-            set => _meshRendererVisualDirtyFlags = value;
+            private set => _meshRendererVisualDirtyFlags = value;
         }
 
         protected override void Saving(Scene scene, string path)
@@ -337,7 +366,7 @@ namespace DepictionEngine
                 _visualsChanged = true;
         }
 
-        protected override void PreHierarchicalUpdateBeforeChildrenAndSiblings()
+        public override void PreHierarchicalUpdateBeforeChildrenAndSiblings()
         {
             base.PreHierarchicalUpdateBeforeChildrenAndSiblings();
             

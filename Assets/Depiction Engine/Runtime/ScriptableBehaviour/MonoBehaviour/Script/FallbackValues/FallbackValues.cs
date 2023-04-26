@@ -85,12 +85,16 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
         private string _lastFallbackValuesJsonStr;
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                if (_lastFallbackValuesJsonStr != _fallbackValuesJsonStr)
+                    SetFallbackValuesJson(string.IsNullOrEmpty(_fallbackValuesJsonStr) ? new JSONObject() : (JSONObject)JSONObject.Parse(_fallbackValuesJsonStr));
 
-            if (_lastFallbackValuesJsonStr != _fallbackValuesJsonStr)
-                    SetFallbackValuesJson(string.IsNullOrEmpty(_fallbackValuesJsonStr) ? new JSONObject() : (JSONObject)JSONObject.Parse(_fallbackValuesJsonStr));  
+                return true;
+            }
+            return false;
         }
 #endif
 
@@ -211,7 +215,7 @@ namespace DepictionEngine
 
                 JsonUtility.FromJson(out string jsonStr, newValue);
 
-                if (SceneManager.IsUserChangeContext() && fallbackValuesObject != null)
+                if (SceneManager.GetIsUserChangeContext() && fallbackValuesObject != null)
                     (fallbackValuesObject as IJson).SetJson(newValue);
 
                 UpdateFallbackJsonStr(jsonStr);

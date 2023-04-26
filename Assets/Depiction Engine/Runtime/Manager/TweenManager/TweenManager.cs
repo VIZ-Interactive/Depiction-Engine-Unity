@@ -110,10 +110,10 @@ namespace DepictionEngine
         public Tween To(float from, float to, float duration, Action<float> onUpdate = null, Action onComplete = null, Action onKill = null, EasingType easing = EasingType.Linear)
         {
             Tween tween = CreateTween(from, to, duration, onUpdate, onComplete, onKill, easing);
-            
-            if (!Object.ReferenceEquals(tween, null))
+
+            if (tween is not null)
                 tween.Play();
-      
+
             return tween != Disposable.NULL ? tween : null;
         }
 

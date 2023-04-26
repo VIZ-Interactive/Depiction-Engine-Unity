@@ -115,7 +115,7 @@ namespace DepictionEngine
             axis = axis.normalized;
             angle = angle / 180.0d * Math.PI;
 
-            QuaternionDouble q = new QuaternionDouble();
+            QuaternionDouble q = new();
 
             double halfAngle = angle * 0.5d;
             double s = Math.Sin(halfAngle);
@@ -152,9 +152,9 @@ namespace DepictionEngine
             double cZ = Math.Cos(z * Math.PI / 360.0d);
             double sZ = Math.Sin(z * Math.PI / 360.0d);
 
-            QuaternionDouble qX = new QuaternionDouble(sX, 0.0d, 0.0d, cX);
-            QuaternionDouble qY = new QuaternionDouble(0.0d, sY, 0.0d, cY);
-            QuaternionDouble qZ = new QuaternionDouble(0.0d, 0.0d, sZ, cZ);
+            QuaternionDouble qX = new(sX, 0.0d, 0.0d, cX);
+            QuaternionDouble qY = new(0.0d, sY, 0.0d, cY);
+            QuaternionDouble qZ = new(0.0d, 0.0d, sZ, cZ);
 
             QuaternionDouble q = (qY * qX) * qZ;
 
@@ -182,7 +182,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static QuaternionDouble LerpUnclamped(QuaternionDouble a, QuaternionDouble b, double t)
         {
-            QuaternionDouble tmpQuat = new QuaternionDouble();
+            QuaternionDouble tmpQuat = new();
             if (Dot(a, b) < 0.0d)
             {
                 tmpQuat.Set(a.x + t * (-b.x - a.x),
@@ -218,7 +218,7 @@ namespace DepictionEngine
         public static QuaternionDouble RotateTowards(QuaternionDouble from, QuaternionDouble to, double maxDegreesDelta)
         {
             double num = Angle(from, to);
-            QuaternionDouble result = new QuaternionDouble();
+            QuaternionDouble result;
             if (num == 0.0d)
             {
                 result = to;
@@ -250,7 +250,7 @@ namespace DepictionEngine
         {
             double dot = Dot(q1, q2);
 
-            QuaternionDouble tmpQuat = new QuaternionDouble();
+            QuaternionDouble tmpQuat = new();
             if (dot < 0.0d)
             {
                 dot = -dot;
@@ -349,7 +349,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private Vector3Double MatrixToEuler(Matrix4x4Double m)
         {
-            Vector3Double v = new Vector3Double();
+            Vector3Double v = new();
             if (m[1, 2] < 1.0d)
             {
                 if (m[1, 2] > -1.0d)
@@ -390,7 +390,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4Double QuaternionToMatrix(QuaternionDouble quat)
         {
-            Matrix4x4Double m = new Matrix4x4Double();
+            Matrix4x4Double m = new();
 
             double x = quat.x * 2.0d;
             double y = quat.y * 2.0d;
@@ -431,7 +431,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static QuaternionDouble MatrixToQuaternion(Matrix4x4Double m)
         {
-            QuaternionDouble quat = new QuaternionDouble();
+            QuaternionDouble quat = new();
 
             double fTrace = m[0, 0] + m[1, 1] + m[2, 2];
             double root;
@@ -481,7 +481,7 @@ namespace DepictionEngine
         private static Matrix4x4Double LookRotationToMatrix(Vector3Double viewVec, Vector3Double upVec)
         {
             Vector3Double z = viewVec;
-            Matrix4x4Double m = new Matrix4x4Double();
+            Matrix4x4Double m = new();
 
             double mag = Vector3Double.Magnitude(z);
             if (mag < 0.0d)

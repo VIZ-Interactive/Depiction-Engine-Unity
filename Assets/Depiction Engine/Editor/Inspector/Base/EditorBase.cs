@@ -26,7 +26,7 @@ namespace DepictionEngine.Editor
             if (Event.current.type == EventType.MouseUp && Event.current.button == 0)
                 SceneManager.LeftMouseUpInSceneOrInspectorEvent?.Invoke();
 
-            if (SceneManager.Instance(false) != Disposable.NULL)
+            if (SceneManager.Instance(false) != null)
             {
                 if (serializedObject.targetObject != null)
                 {
@@ -53,7 +53,7 @@ namespace DepictionEngine.Editor
                 float inspectorWidth = GUILayoutUtility.GetRect(0.0f, 0.0f, 0.0f, 0.0f).width;
 
                 RenderingManager renderingManager = RenderingManager.Instance();
-                if (renderingManager != Disposable.NULL)
+                if (renderingManager != null)
                 {
                     Texture2D[] headerTextures = renderingManager.headerTextures;
 
@@ -346,8 +346,8 @@ namespace DepictionEngine.Editor
             if (IsFallbackValues(targetObject))
             {
                 UndoManager.RecordObject(targetObject);
-                if (targetObject is Object)
-                    UndoManager.RecordObject((targetObject as Object).objectAdditionalFallbackValues);
+                if (targetObject is Object objectBase)
+                    UndoManager.RecordObject(objectBase.objectAdditionalFallbackValues);
                 propertyInfo.SetValue(targetObject, value);
             }
             else
@@ -369,7 +369,11 @@ namespace DepictionEngine.Editor
                     if (additionalTargetObjects != null && additionalTargetObjects.Length > 0)
                         UndoManager.RecordObjects(additionalTargetObjects);
 
-                    SceneManager.UserContext(() => { propertyInfo.SetValue(targetObject, value); });
+                    SceneManager.StartUserContext(); 
+                    
+                    propertyInfo.SetValue(targetObject, value);
+
+                    SceneManager.EndUserContext();
                 });
             }
         }
@@ -724,7 +728,7 @@ namespace DepictionEngine.Editor
         }
 
         protected virtual void OnDisable()
-        {
+        { 
             if (_optionalPropertiesEditors != null)
             {
                 foreach (UnityEditor.Editor optionalPropertiesEditor in _optionalPropertiesEditors.Values)
@@ -734,7 +738,6 @@ namespace DepictionEngine.Editor
 
         protected virtual void OnDestroy()
         {
-
         }
     }
 }

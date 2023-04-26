@@ -151,13 +151,10 @@ namespace DepictionEngine
             {
                 foreach (IGrid2D grid in grids)
                 {
-                    if (grid != null)
-                    {
-                        grid.IterateOverIndexes((grid, geoCenter, index, dimensions) =>
-                            {
-                                callback(index, dimensions, MathPlus.GetIndexFromGeoCoordinate(geoCenter, dimensions, false));
-                            });
-                    }
+                    grid?.IterateOverIndexes((grid, geoCenter, index, dimensions) =>
+                        {
+                            callback(index, dimensions, MathPlus.GetIndexFromGeoCoordinate(geoCenter, dimensions, false));
+                        });
                 }
             }
         }

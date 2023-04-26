@@ -47,8 +47,8 @@ namespace DepictionEngine
                         json = new JSONString(Enum.GetName(type, obj));
                     else if (obj is Type type1)
                         json = new JSONString(type1.FullName);
-                    else if (obj is IJson)
-                        json = (obj as IJson).GetJson();
+                    else if (obj is IJson iJson)
+                        json = iJson.GetJson();
                     else if (obj is UnityEngine.Object || obj is Vector2 || obj is Vector2Double || obj is Vector2Int || obj is Vector4 || obj is Vector4Double || obj is Vector3 || obj is Vector3Int || obj is Vector3Double || obj is GeoCoordinate3 || obj is GeoCoordinate3Double || obj is GeoCoordinate2 || obj is GeoCoordinate2Double || obj is Color || obj is Quaternion || obj is QuaternionDouble || obj is Grid2DIndex || obj is GeoCoordinateGeometries || obj is GeoCoordinateGeometry || obj is GeoCoordinatePolygon || obj is Disposable || type.IsSubclassOf(typeof(Disposable)))
                         json = JSONObject.Parse(UnityEngine.JsonUtility.ToJson(obj));
 

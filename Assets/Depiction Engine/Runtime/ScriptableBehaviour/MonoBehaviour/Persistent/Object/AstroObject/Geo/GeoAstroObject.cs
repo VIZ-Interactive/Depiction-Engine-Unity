@@ -130,9 +130,9 @@ namespace DepictionEngine
             InitValue(value => reflectionProbe = value, GetDefaultReflectionProbe(), initializingContext);
         }
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             InitReflectionProbeObject(initializingContext);
         }
@@ -201,12 +201,16 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         private double _lastSize;
         private bool _lastSpherical;
-        protected override void UpdateUndoRedoSerializedFields()
+        protected override bool UpdateUndoRedoSerializedFields()
         {
-            base.UpdateUndoRedoSerializedFields();
-
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { size = value; }, ref _size, ref _lastSize);
-            SerializationUtility.PerformUndoRedoPropertyChange((value) => { spherical = value; }, ref _spherical, ref _lastSpherical);
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { size = value; }, ref _size, ref _lastSize);
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { spherical = value; }, ref _spherical, ref _lastSpherical);
+                
+                return true;
+            }
+            return false;
         }
 #endif
 
@@ -743,22 +747,26 @@ namespace DepictionEngine
             GeoAstroObject closestGeoAstroObject = null;
 
             double closestDistance = double.MaxValue;
-            InstanceManager.Instance()?.IterateOverInstances<AstroObject>(
-                (astroObject) =>
-                {
-                    GeoAstroObject geoAstroObject = astroObject as GeoAstroObject;
-                    if (geoAstroObject != Disposable.NULL && astroObject.isActiveAndEnabled)
+            InstanceManager instanceManager = InstanceManager.Instance(false);
+            if (instanceManager != null)
+            {
+                instanceManager.IterateOverInstances<AstroObject>(
+                    (astroObject) =>
                     {
-                        double distance = geoAstroObject.GetGeoCoordinateFromPoint(point).altitude;
-                        if (distance <= closestDistance)
+                        GeoAstroObject geoAstroObject = astroObject as GeoAstroObject;
+                        if (geoAstroObject != Disposable.NULL && astroObject.isActiveAndEnabled)
                         {
-                            closestDistance = distance;
-                            closestGeoAstroObject = geoAstroObject;
+                            double distance = geoAstroObject.GetGeoCoordinateFromPoint(point).altitude;
+                            if (distance <= closestDistance)
+                            {
+                                closestDistance = distance;
+                                closestGeoAstroObject = geoAstroObject;
+                            }
                         }
-                    }
 
-                    return true;
-                });
+                        return true;
+                    });
+            }
 
             return closestGeoAstroObject;
         }
@@ -790,7 +798,7 @@ namespace DepictionEngine
             {
                 if (reflectionProbe.name == GetReflectionProbeName())
                 {
-                    GeoCoordinate3Double geoCoordinate = GetGeoCoordinateFromPoint(camera.environmentCubemapPosition);
+                    GeoCoordinate3Double geoCoordinate = GetGeoCoordinateFromLocalPoint(camera.transform.position);
 
                     double maxAltitude = GetScaledAtmosphereThickness();
                     if (geoCoordinate.altitude > maxAltitude)
@@ -802,28 +810,22 @@ namespace DepictionEngine
             });
         }
 
-        public override bool HierarchicalUpdateEnvironmentAndReflection(Camera camera, ScriptableRenderContext? context)
+        public void UpdateReflectionProbe(Camera camera, ScriptableRenderContext? context)
         {
-            if (base.HierarchicalUpdateEnvironmentAndReflection(camera, context))
+            transform.IterateOverChildrenObject<ReflectionProbe>((probe) =>
             {
-                transform.IterateOverChildrenObject<ReflectionProbe>((probe) =>
+                if (probe.name == GetReflectionProbeName())
                 {
-                    if (probe.name == GetReflectionProbeName())
-                    {
-                        probe.intensity = IsValidSphericalRatio() && reflectionProbe ? (float)GetAtmosphereAltitudeRatio(GetScaledAtmosphereThickness(), camera.transform.position) : 0.0f;
+                    probe.intensity = IsValidSphericalRatio() && reflectionProbe ? (float)GetAtmosphereAltitudeRatio(GetScaledAtmosphereThickness(), camera.transform.position) : 0.0f;
 
-                        if (probe.boxSize.x != size)
-                            probe.boxSize = Vector3.one * (float)size;
-                        probe.boxOffset = transform.position - probe.transform.position;
+                    if (probe.boxSize.x != size)
+                        probe.boxSize = Vector3.one * (float)size;
+                    probe.boxOffset = transform.position - probe.transform.position;
 
-                        probe.reflectionProbe.customBakedTexture = context.HasValue && reflectionProbe ? camera.GetEnvironmentCubeMap() : null;
-                    }
-                    return true;
-                });
-
+                    probe.reflectionProbe.customBakedTexture = context.HasValue && reflectionProbe ? camera.GetEnvironmentCubeMap() : null;
+                }
                 return true;
-            }
-            return false;
+            });
         }
 
         private int _updateCount;
@@ -1099,8 +1101,7 @@ namespace DepictionEngine
                 _grid2DDimensions = Vector2Int.zero;
                 _grid2DIndex = Vector2Int.zero;
 
-                if (_terrainGridMeshObjects != null)
-                    _terrainGridMeshObjects.Clear();
+                _terrainGridMeshObjects?.Clear();
 
                 TerrainGridMeshObjectPropertyAssignedEvent = null;
                 TerrainGridMeshObjectChildAddedEvent = null;

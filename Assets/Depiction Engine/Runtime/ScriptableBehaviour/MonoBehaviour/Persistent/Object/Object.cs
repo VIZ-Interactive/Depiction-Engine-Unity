@@ -38,6 +38,9 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private VisibleInCamerasDictionary _visibleInCameras;
 
+        [SerializeField, HideInInspector]
+        private Rigidbody _rigidbodyInternal;
+
         private TransformDouble _transform;
         private GeoAstroObject _parentGeoAstroObject;
 
@@ -50,8 +53,6 @@ namespace DepictionEngine
         private List<DatasourceBase> _datasources;
 
         private TargetControllerBase _targetController;
-
-        private Rigidbody _rigidbodyInternal;
 
         /// <summary>
         /// Dispatched when a child such as <see cref="DepictionEngine.TransformDouble"/> or <see cref="DepictionEngine.MeshRendererVisual"/>(for <see cref="DepictionEngine.VisualObject"/>) is added.
@@ -123,6 +124,8 @@ namespace DepictionEngine
         {
             base.Recycle();
 
+            _rigidbodyInternal = null;
+
             gameObject.layer = LayerMask.GetMask("Default");
             gameObject.hideFlags = default;
 
@@ -156,6 +159,9 @@ namespace DepictionEngine
                 _lastGameObjectActiveSelf = gameObjectActiveSelf;
                 _lastLayer = layer;
                 _lastTag = tag;
+#if UNITY_EDITOR
+                _lastUseGravity = useGravity;
+#endif
 
                 return true;
             }
@@ -213,7 +219,19 @@ namespace DepictionEngine
             return optionalProperties as T;
         }
 
-        protected override bool UpdateRelations(Action beforeSiblingsInitializeCallback = null)
+#if UNITY_EDITOR
+        public override bool AfterAssemblyReload()
+        {
+            if (base.AfterAssemblyReload())
+            {
+                RegisterWithPhysicsManager();
+                return true;
+            }
+            return false;
+        }
+#endif
+
+        public override bool UpdateRelations(Action beforeSiblingsInitializeCallback = null)
         {
             if (initializationJson != null)
             {
@@ -229,9 +247,9 @@ namespace DepictionEngine
             return base.UpdateRelations(beforeSiblingsInitializeCallback);
         }
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             Component[] components;
 
@@ -249,10 +267,7 @@ namespace DepictionEngine
                         //We do not register a create Undo here because when the Undo is executed it breaks the dispose process because the id is no longer set.
                         //The problem was found when manually adding TerrainGridMeshObject to a GameObject in the Editor and undoing the Add Component.
                         //Three of the four AssetReference could not be removed from the instanceManager because their id were missing when OnDispose was triggered.
-                        component = gameObject.AddComponent(requiredComponentType);
-#if UNITY_EDITOR
-                        //Editor.UndoManager.QueueRegisterCreatedObjectUndo(component, initializingContext);
-#endif
+                        component = AddComponent(requiredComponentType, false);
                     }
                 }
             }
@@ -384,21 +399,24 @@ namespace DepictionEngine
 
             for (int i = components.Length - 1; i >= 0; i--)
                 InitializeComponent(components[i]);
-
-            InitializeRigidbody(initializingContext);
         }
 
-        protected void InitializeRigidbody(InitializationContext initializingContext)
+        protected void UpdateRigidbody()
         {
-            if (rigidbodyInternal == null)
+            if (!isFallbackValues)
             {
-                rigidbodyInternal = gameObject.GetComponent<Rigidbody>();
-                if (useGravity && rigidbodyInternal == null)
+                if (useGravity)
                 {
-                    rigidbodyInternal = gameObject.AddSafeComponent<Rigidbody>(initializingContext);
-                    rigidbodyInternal.drag = 0.05f;
-                    rigidbodyInternal.useGravity = false;
+                    if (rigidbodyInternal == null)
+                    {
+                        InitializationContext initializingContext = SceneManager.GetIsUserChangeContext() ? InitializationContext.Editor : InitializationContext.Programmatically;
+                        rigidbodyInternal = AddComponent<Rigidbody>(initializingContext);
+                        rigidbodyInternal.drag = 0.05f;
+                        rigidbodyInternal.useGravity = false;
+                    }
                 }
+                else
+                    DisposeManager.Destroy(rigidbodyInternal, SceneManager.GetIsUserChangeContext() ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Destroy);
             }
         }
 
@@ -483,6 +501,19 @@ namespace DepictionEngine
         {
             return new UnityEngine.Object[] { transform };
         }
+
+        private bool _lastUseGravity;
+        protected override bool UpdateUndoRedoSerializedFields()
+        {
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                SerializationUtility.RecoverLostReferencedObject(ref _rigidbodyInternal);
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => useGravity = value, ref _useGravity, ref _lastUseGravity);
+
+                return true;
+            }
+            return false;
+        }
 #endif
 
         protected virtual double GetDefaultMass()
@@ -508,30 +539,34 @@ namespace DepictionEngine
             return true;
         }
 
-        protected override void DetectUserChanges()
+        public override bool DetectUserGameObjectChanges()
         {
-            base.DetectUserChanges();
-
-            if (_lastGameObjectActiveSelf != gameObjectActiveSelf)
+            if (base.DetectUserGameObjectChanges())
             {
-                bool newValue = gameObjectActiveSelf;
-                gameObject.SetActive(_lastGameObjectActiveSelf);
-                gameObjectActiveSelf = newValue;
-            }
+                if (_lastGameObjectActiveSelf != gameObjectActiveSelf)
+                {
+                    bool newValue = gameObjectActiveSelf;
+                    gameObject.SetActive(_lastGameObjectActiveSelf);
+                    gameObjectActiveSelf = newValue;
+                }
 
-            if (_lastLayer != layer)
-            {
-                int newValue = layer;
-                gameObject.layer = _lastLayer;
-                layer = newValue;
-            }
+                if (_lastLayer != layer)
+                {
+                    int newValue = layer;
+                    gameObject.layer = _lastLayer;
+                    layer = newValue;
+                }
 
-            if (_lastTag != tag)
-            {
-                string newValue = tag;
-                gameObject.tag = _lastTag;
-                tag = newValue;
+                if (_lastTag != tag)
+                {
+                    string newValue = tag;
+                    gameObject.tag = _lastTag;
+                    tag = newValue;
+                }
+
+                return true;
             }
+            return false;
         }
 
         protected override bool UpdateAllDelegates()
@@ -552,9 +587,8 @@ namespace DepictionEngine
                 {
                     if (component != Disposable.NULL)
                     {
-                        if (component is TransformBase)
+                        if (component is TransformBase transform)
                         {
-                            TransformBase transform = component as TransformBase;
                             if (Object.ReferenceEquals(component, transform))
                             {
                                 RemoveTransformDelegate(transform);
@@ -562,9 +596,8 @@ namespace DepictionEngine
                             }
                         }
 
-                        if (component is Script)
+                        if (component is Script script)
                         {
-                            Script script = component as Script;
                             RemoveScriptDelegate(script);
                             AddScriptDelegate(script);
                         }
@@ -632,11 +665,8 @@ namespace DepictionEngine
                 transform.ChildAddedEvent -= TransformChildAddedHandler;
                 transform.ChildRemovedEvent -= TransformChildRemovedHandler;
                 transform.ChildPropertyAssignedEvent -= TransformChildPropertyChangedHandler;
-                if (transform is TransformDouble)
-                {
-                    TransformDouble transformDouble = transform as TransformDouble;
+                if (transform is TransformDouble transformDouble)
                     transformDouble.ObjectCallback -= TransformObjectCallbackHandler;
-                }
 
                 if (transform.children != null)
                 {
@@ -660,11 +690,8 @@ namespace DepictionEngine
                 transform.ChildRemovedEvent += TransformChildRemovedHandler;
                 transform.ChildPropertyAssignedEvent += TransformChildPropertyChangedHandler;
 
-                if (transform is TransformDouble)
-                {
-                    TransformDouble transformDouble = transform as TransformDouble;
+                if (transform is TransformDouble transformDouble)
                     transformDouble.ObjectCallback += TransformObjectCallbackHandler;
-                }
 
                 if (transform.children != null)
                 {
@@ -699,7 +726,7 @@ namespace DepictionEngine
 
             ComponentPropertyAssigned(transform, name, newValue, oldValue);
 
-            if (name == nameof(parentGeoAstroObject))
+            if (name == nameof(TransformBase.parentGeoAstroObject))
                 Originator(() => { UpdateParentGeoAstroObject(); }, property);
 
             TransformPropertyAssignedEvent?.Invoke(transform, name, newValue, oldValue);
@@ -913,7 +940,7 @@ namespace DepictionEngine
         /// <returns>The parent Object or null if none exists.</returns>
         public Object GetParentObject()
         {
-            return gameObject.transform?.parent?.GetComponent<Object>();
+            return gameObject.transform != null && gameObject.transform.parent != null ? gameObject.transform.parent.GetComponent<Object>() : null;
         }
 
         /// <summary>
@@ -985,7 +1012,7 @@ namespace DepictionEngine
 
                 instanceManager.IterateOverInstances<Camera>((camera) => 
                 {
-                    if (!(camera is Editor.SceneCamera))
+                    if (camera is not Editor.SceneCamera)
                     {
                         foreach (VisibleCameras visibleInCameras in visibleInCameras.Values)
                         {
@@ -1045,7 +1072,8 @@ namespace DepictionEngine
                 if (HasChanged(value, oldValue))
                 {
                     gameObject.SetActive(value);
-                    _lastGameObjectActiveSelf = gameObject.activeSelf;
+                    _lastGameObjectActiveSelf = gameObjectActiveSelf;
+
                     PropertyAssigned(this, nameof(gameObjectActiveSelf), value, oldValue);
                 }
             }
@@ -1058,7 +1086,7 @@ namespace DepictionEngine
         public string tags
         {
             get => _tags;
-            set { SetValue(nameof(tags), value, ref _tags); }
+            set => SetValue(nameof(tags), value, ref _tags);
         }
 
         /// <summary>
@@ -1070,13 +1098,23 @@ namespace DepictionEngine
             get => _useGravity;
             set
             {
-                if (!IsPhysicsObject())
-                    value = false;
-                SetValue(nameof(useGravity), value, ref _useGravity, (newValue, oldValue) =>
+                SetValue(nameof(useGravity), IsPhysicsObject() && value, ref _useGravity, (newValue, oldValue) =>
                 {
-                    InitializeRigidbody(SceneManager.IsUserChangeContext() ? InitializationContext.Editor : InitializationContext.Programmatically);
+#if UNITY_EDITOR
+                    _lastUseGravity = newValue;
+#endif
+                    UpdateRigidbody();
+                    RegisterWithPhysicsManager();
                 });
             }
+        }
+
+        private void RegisterWithPhysicsManager()
+        {
+            if (rigidbodyInternal != null)
+                PhysicsManager.AddPhysicObject(id, GetComponent<TransformDouble>());
+            else
+                PhysicsManager.RemovePhysicObject(id);
         }
 
         /// <summary>
@@ -1086,7 +1124,7 @@ namespace DepictionEngine
         public double mass
         {
             get => _mass;
-            set { SetValue(nameof(mass), value, ref _mass); }
+            set => SetValue(nameof(mass), value, ref _mass);
         }
 
         private int _lastLayer;
@@ -1427,7 +1465,7 @@ namespace DepictionEngine
         public AnimatorBase animator
         {
             get => _animator;
-            private set { SetValue(nameof(animator), value, ref _animator); }
+            private set => SetValue(nameof(animator), value, ref _animator);
         }
 
         /// <summary>
@@ -1437,7 +1475,7 @@ namespace DepictionEngine
         public ControllerBase controller
         {
             get => _controller;
-            private set { SetController(value); }
+            private set => SetController(value);
         }
 
         protected virtual bool SetController(ControllerBase value)
@@ -1456,7 +1494,7 @@ namespace DepictionEngine
         public List<GeneratorBase> generators
         {
             get { _generators ??= new List<GeneratorBase>(); return _generators; }
-            private set { SetValue(nameof(generators), value, ref _generators); }
+            private set => SetValue(nameof(generators), value, ref _generators);
         }
 
         /// <summary>
@@ -1466,7 +1504,7 @@ namespace DepictionEngine
         public List<ReferenceBase> references
         {
             get { _references ??= new List<ReferenceBase>(); return _references; }
-            private set { SetValue(nameof(references), value, ref _references); }
+            private set => SetValue(nameof(references), value, ref _references);
         }
 
         /// <summary>
@@ -1476,7 +1514,7 @@ namespace DepictionEngine
         public List<EffectBase> effects
         {
             get { _effects ??= new List<EffectBase>(); return _effects; }
-            private set { SetValue(nameof(effects), value, ref _effects); }
+            private set => SetValue(nameof(effects), value, ref _effects);
         }
 
         /// <summary>
@@ -1486,7 +1524,7 @@ namespace DepictionEngine
         public List<FallbackValues> fallbackValues
         {
             get { _fallbackValues ??= new List<FallbackValues>(); return _fallbackValues; }
-            private set { SetValue(nameof(fallbackValues), value, ref _fallbackValues); }
+            private set => SetValue(nameof(fallbackValues), value, ref _fallbackValues);
         }
 
         /// <summary>
@@ -1496,7 +1534,7 @@ namespace DepictionEngine
         public List<DatasourceBase> datasources
         {
             get { _datasources ??= new List<DatasourceBase>(); return _datasources; }
-            private set { SetValue(nameof(datasources), value, ref _datasources); }
+            private set => SetValue(nameof(datasources), value, ref _datasources);
         }
 
         private JSONNode transformJson { get => JsonUtility.ToJson(GetComponent<TransformBase>()); }
@@ -1523,12 +1561,9 @@ namespace DepictionEngine
                 return;
             }
 
-            if (referenceType == null)
-                referenceType = typeof(ReferenceBase);
-
             if (GetFirstReferenceOfType(dataType) == Disposable.NULL)
             {
-                ReferenceBase reference = references.Where(reference => referenceType.IsAssignableFrom(reference.GetType()) && string.IsNullOrEmpty(reference.dataType)).FirstOrDefault();
+                ReferenceBase reference = references.Where(reference => (referenceType != null ? referenceType : typeof(ReferenceBase)).IsAssignableFrom(reference.GetType()) && string.IsNullOrEmpty(reference.dataType)).FirstOrDefault();
                 if (reference != Disposable.NULL)
                     reference.dataType = dataType;
             }
@@ -1559,7 +1594,7 @@ namespace DepictionEngine
         public TargetControllerBase targetController
         {
             get => controller as TargetControllerBase;
-            set { SetTargetController(value); }
+            set => SetTargetController(value);
         }
 
         protected virtual bool SetTargetController(TargetControllerBase value)
@@ -1578,7 +1613,7 @@ namespace DepictionEngine
         public new TransformDouble transform
         {
             get => _transform;
-            protected set { SetTransform(value); }
+            protected set => SetTransform(value);
         }
 
         protected virtual bool SetTransform(TransformDouble value)
@@ -1652,11 +1687,11 @@ namespace DepictionEngine
             //Scripts
             TriggerCallback(animator, callback);
             TriggerCallback(controller, callback);
-            ListTriggerCallback(generators, callback);
-            ListTriggerCallback(references, callback);
-            ListTriggerCallback(effects, callback);
-            ListTriggerCallback(fallbackValues, callback);
-            ListTriggerCallback(datasources, callback);
+            IterateThroughList(generators, callback);
+            IterateThroughList(references, callback);
+            IterateThroughList(effects, callback);
+            IterateThroughList(fallbackValues, callback);
+            IterateThroughList(datasources, callback);
         }
 
         public void IterateOverEffects<T>(Func<T, bool> callback) where T : EffectBase
@@ -1723,7 +1758,7 @@ namespace DepictionEngine
         {
             if (!type.IsSubclassOf(typeof(Script)))
                 return null;
-            return gameObject.AddSafeComponent(type, initializingContext, json, null, isFallbackValues) as Script;
+            return AddComponent(type, initializingContext, json, null, isFallbackValues) as Script;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1754,8 +1789,8 @@ namespace DepictionEngine
 
             Originator(() =>
             {
-                if (child is Script)
-                    added = AddScript(child as Script);
+                if (child is Script script)
+                    added = AddScript(script);
                 else
                 {
                     if (base.AddChild(child))
@@ -2050,6 +2085,7 @@ namespace DepictionEngine
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override bool ApplyBeforeChildren(Action<PropertyMonoBehaviour> callback)
         {
             bool containsDisposed = base.ApplyBeforeChildren(callback);
@@ -2063,7 +2099,7 @@ namespace DepictionEngine
             //Effects such as Atmosphere need to be executed before loaders
             if (effects != null)
             {
-                for (int i = effects.Count - 1; i >= 0 ; i--)
+                for (int i = effects.Count - 1; i >= 0; i--)
                 {
                     if (TriggerCallback(effects[i], callback))
                         containsDisposed = true;
@@ -2109,26 +2145,20 @@ namespace DepictionEngine
             return containsDisposed;
         }
 
-        public override void HierarchicalFixedUpdate()
+        protected override void FixedUpdate()
         {
-            base.HierarchicalFixedUpdate();
+            base.FixedUpdate();
 
-            if (IsPhysicsDriven())
+            if (IsPhysicsDriven() && rigidbodyInternal != null)
             {
-                if (useGravity)
+                instanceManager.IterateOverInstances<AstroObject>((astroObject) =>
                 {
-                    instanceManager.IterateOverInstances<AstroObject>(
-                        (astroObject) =>
-                        {
-                            Vector3 forceVector = astroObject.GetGravitationalForce(this);
-                            if (!forceVector.Equals(Vector3.zero))
-                            {
-                                rigidbodyInternal.AddForce(forceVector, ForceMode.Impulse);
-                            }
+                    Vector3 forceVector = astroObject.GetGravitationalForce(this);
+                    if (!forceVector.Equals(Vector3.zero))
+                        rigidbodyInternal.AddForce(forceVector, ForceMode.Impulse);
 
-                            return true;
-                        });
-                }
+                    return true;
+                });
             }
         }
 
@@ -2225,8 +2255,7 @@ namespace DepictionEngine
 
         protected void DisposeDataProcessor(Processor dataProcessor)
         {
-            if (dataProcessor != null)
-                dataProcessor.Dispose();
+            dataProcessor?.Dispose();
         }
 
         /// <summary>
@@ -2260,6 +2289,9 @@ namespace DepictionEngine
         {
             if (base.OnDispose(disposeContext))
             {
+                DisposeManager.Destroy(rigidbodyInternal, disposeContext);
+                RegisterWithPhysicsManager();
+
                 DisposeManager.Dispose(_objectAdditionalFallbackValues, disposeContext);
 
                 ChildAddedEvent = null;

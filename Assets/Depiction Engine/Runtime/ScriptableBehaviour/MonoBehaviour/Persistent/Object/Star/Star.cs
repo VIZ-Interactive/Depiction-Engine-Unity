@@ -59,9 +59,9 @@ namespace DepictionEngine
         }
 #endif
 
-        protected override void InitializeFields(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.InitializeFields(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             InitLightAndLensFlare(initializingContext);
         }
@@ -248,7 +248,7 @@ namespace DepictionEngine
         public bool useOcclusion
         {
             get => _useOcclusion;
-            set { SetValue(nameof(useOcclusion), value, ref _useOcclusion); }
+            set => SetValue(nameof(useOcclusion), value, ref _useOcclusion);
         }
 
         /// <summary>
@@ -258,7 +258,7 @@ namespace DepictionEngine
         public float occlusionRadius
         {
             get => _occlusionRadius;
-            set { SetValue(nameof(occlusionRadius), Mathf.Clamp(value, 0.0f, 5.0f), ref _occlusionRadius); }
+            set => SetValue(nameof(occlusionRadius), Mathf.Clamp(value, 0.0f, 5.0f), ref _occlusionRadius);
         }
 
         /// <summary>
@@ -268,7 +268,7 @@ namespace DepictionEngine
         public uint occlusionSampleCount
         {
             get => _occlusionSampleCount;
-            set { SetValue(nameof(occlusionSampleCount), Math.Clamp(value, 1, 32), ref _occlusionSampleCount); }
+            set => SetValue(nameof(occlusionSampleCount), Math.Clamp(value, 1, 32), ref _occlusionSampleCount);
         }
 
         private float _lastLensFlareIntensity;

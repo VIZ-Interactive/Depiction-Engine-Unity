@@ -13,9 +13,9 @@ namespace DepictionEngine
 
         private Elevation _elevation;
 
-        protected override void CreateComponents(InitializationContext initializingContext)
+        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
-            base.CreateComponents(initializingContext);
+            base.CreateAndInitializeDependencies(initializingContext);
 
             InitializeReferenceDataType(ELEVATION_REFERENCE_DATATYPE, typeof(AssetReference));
         }
@@ -34,7 +34,7 @@ namespace DepictionEngine
 
         private void RemoveElevationDelgates(Elevation elevation)
         {
-            if (!Object.ReferenceEquals(elevation, null))
+            if (elevation is not null)
                 elevation.PropertyAssignedEvent -= ElevationPropertyAssignedHandler;
         }
 
@@ -88,7 +88,7 @@ namespace DepictionEngine
             {
                 SetValue(nameof(elevation), value, ref _elevation, (newValue, oldValue) => 
                 {
-                    if (HasChanged(newValue, oldValue, false))
+                    if (initialized & HasChanged(newValue, oldValue, false))
                     {
                         RemoveElevationDelgates(oldValue);
                         AddElevationDelegates(newValue);
@@ -102,7 +102,13 @@ namespace DepictionEngine
         private void ElevationChanged()
         {
             if (initialized)
-                Datasource.AllowAutoDisposeOnOutOfSynchProperty(() => { ForceUpdateTransform(true); });
+            {
+                Datasource.StartAllowAutoDisposeOnOutOfSynchProperty();
+
+                ForceUpdateTransform(true);
+
+                Datasource.EndAllowAutoDisposeOnOutOfSynchProperty();
+            }
         }
 
         public bool GetGeoCoordinateElevation(out double elevation, GeoCoordinate3Double geoCoordinate, bool raycast = false)
@@ -153,7 +159,6 @@ namespace DepictionEngine
             if (this.elevation != Disposable.NULL)
             {
                 Vector2 pixel = GetProjectedPixel(this.elevation, x, y);
-
                 elevation = this.elevation.GetElevation(pixel.x, pixel.y) + altitudeOffset;
 
                 return true;

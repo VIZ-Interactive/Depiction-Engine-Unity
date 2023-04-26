@@ -71,15 +71,14 @@ namespace DepictionEngine
 
             IterateOverAllObjects(obj, (obj) =>
             {
-                if (obj is GameObject)
+                if (obj is GameObject go)
                 {
-                    GameObject go = obj as GameObject;
                     DisposeContext goDisposeContext = disposeContext;
 
                     if (goDisposeContext == DisposeContext.Programmatically_Pool)
                     {
                         Component[] components = go.GetComponents<Component>();
-                        IDisposable disposable = go.GetDisposableInComponents(components);
+                        IDisposable disposable = go.GetObjectOrVisualComponent(components);
 
                         if (disposable is not null)
                         {
@@ -87,9 +86,9 @@ namespace DepictionEngine
                             //if some components are not compatible with pooling we destroy the object
                             foreach (Component component in components)
                             {
-                                if (component is MonoBehaviourDisposable)
+                                if (component is MonoBehaviourDisposable componentMonoBehaviourDisposable)
                                 {
-                                    if ((component as MonoBehaviourDisposable).notPoolable)
+                                    if (componentMonoBehaviourDisposable.notPoolable)
                                     {
                                         goDisposeContext = DisposeContext.Programmatically_Destroy;
                                         break;
@@ -98,13 +97,28 @@ namespace DepictionEngine
                             }
 #endif
                             //Destroy components that are not required
-                            if (goDisposeContext == DisposeContext.Programmatically_Pool && disposable is IRequiresComponents)
+                            if (goDisposeContext == DisposeContext.Programmatically_Pool && disposable is IRequiresComponents iRequiresComponents)
                             {
-                                (disposable as IRequiresComponents).GetRequiredComponentTypes(ref _requiredComponentTypes);
+                                iRequiresComponents.GetRequiredComponentTypes(ref _requiredComponentTypes);
                                 foreach (Component component in components)
                                 {
-                                    if (!Object.ReferenceEquals(component,disposable) && component is not Transform && !_requiredComponentTypes.Remove(component.GetType()))
-                                        Destroy(component);
+                                    if (!Object.ReferenceEquals(component, disposable) && component is not Transform)
+                                    {
+                                        bool isRequired = false;
+
+                                        foreach(Type requiredComponentType in _requiredComponentTypes)
+                                        {
+                                            if (requiredComponentType.IsAssignableFrom(component.GetType()))
+                                            {
+                                                _requiredComponentTypes.Remove(requiredComponentType);
+                                                isRequired = true;
+                                                break;
+                                            }
+                                        }
+
+                                        if (!isRequired)
+                                            Destroy(component);
+                                    }
                                 }
                             }
                         }
@@ -131,12 +145,10 @@ namespace DepictionEngine
                     if (monoBehaviourDisposableDisposing)
                         disposingData.Add((go, goDisposeContext));
                 }
-                else if (obj is IDisposable)
+                else if (obj is IDisposable disposable)
                 {
-                    IDisposable disposable = obj as IDisposable;
-
 #if UNITY_EDITOR
-                    if (disposable is IScriptableBehaviour && (disposable as IScriptableBehaviour).notPoolable)
+                    if (disposable is IScriptableBehaviour iScriptableBehaviour && iScriptableBehaviour.notPoolable)
                         disposeContext = disposeContext == DisposeContext.Editor_Destroy ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Destroy;
 #endif
 
@@ -158,16 +170,16 @@ namespace DepictionEngine
                 if (IsNullOrDisposed(obj))
                     return;
 
-                if (disposeContext != DisposeContext.Programmatically_Pool && obj is UnityEngine.Object)
+                if (disposeContext != DisposeContext.Programmatically_Pool && obj is UnityEngine.Object unityObject)
                 {
                     //Destroy
-                    Destroy(obj as UnityEngine.Object, disposeContext);
+                    Destroy(unityObject, disposeContext);
                 }
                 else
                 {
                     IDisposable disposable = null;
-                    if (obj is GameObject)
-                        disposable = (obj as GameObject).GetDisposableInComponents();
+                    if (obj is GameObject go)
+                        disposable = go.GetObjectOrVisualComponent(go.GetComponents<Component>());
                     else if (obj is IDisposable)
                         disposable = obj as IDisposable;
 
@@ -231,61 +243,25 @@ namespace DepictionEngine
 #endif
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         public static bool IsNullOrDisposing(object obj)
         {
-            if (obj is null)
-                return true;
-
-            if (obj is IDisposable)
-            {
-                IDisposable disposable = obj as IDisposable;
-                if (disposable.IsDisposing())
-                    return true;
-#if UNITY_EDITOR
-                //Edge case where an IDisposable might have been Destroyed during an Editor(Undo/Redo) Operation and the OnDestroy() as not been called yet
-                if (IsUnityNull(disposable))
-                    return true;
-#endif
-            }
-
-            if (IsUnityNull(obj))
-                return true;
-
-            return false;
+            return obj is null || (obj is IDisposable disposable && disposable.IsDisposing()) || IsUnityNull(obj);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         private static bool IsNullOrDisposed(object obj)
         {
-            if (obj is null)
-                return true;
-
-            if (obj is IDisposable)
-            {
-                IDisposable disposable = obj as IDisposable;
-                if (disposable.IsDisposed())
-                    return true;
-#if UNITY_EDITOR
-                //Edge case where an IDisposable might have been Destroyed during an Editor(Undo/Redo) Operation and the OnDestroy() as not been called yet
-                if (IsUnityNull(disposable))
-                    return true;
-#endif
-            }
-
-            if (IsUnityNull(obj))
-                return true;
-
-            return false;
+            return obj is null || (obj is IDisposable disposable && disposable.IsDisposed()) || IsUnityNull(obj);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         private static bool IsUnityNull(object obj)
         {
-            return obj is UnityEngine.Object && (obj as UnityEngine.Object) == null;
+            return obj is UnityEngine.Object unityObject && unityObject == null;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         public static void DisposingContext(Action callback, DisposeContext disposingContext)
         {
             DisposeContext lastDestroyingType = DisposeManager.disposingContext;
@@ -294,7 +270,7 @@ namespace DepictionEngine
             DisposeManager.disposingContext = lastDestroyingType;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         public static bool TriggerOnDestroyIfNull(IScriptableBehaviour scriptableBehaviour)
         {
             if (scriptableBehaviour is not null && (scriptableBehaviour as UnityEngine.Object) == null)
