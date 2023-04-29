@@ -898,7 +898,7 @@ namespace DepictionEngine
                 {
                     if (waitBetweenLoadTimer == Disposable.NULL || !waitBetweenLoadTimer.playing)
                     {
-                        //Required if object was Diposed during Undo and we can no longer make calls to accessors
+                        //Required if object was Disposed during Undo and we can no longer make calls to accessors
                         TweenManager tweenManager = this.tweenManager;
                         waitBetweenLoadTimer = tweenManager.DelayedCall(autoUpdateInterval, null, () =>
                         {
@@ -1016,7 +1016,7 @@ namespace DepictionEngine
             return persistentsDictionary.ContainsKey(persistent.id);
         }
 
-        public int GetPersistenCount()
+        public int GetPersistentCount()
         {
             return persistentsDictionary.Count;
         }

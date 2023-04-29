@@ -229,36 +229,34 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void FixedUpdate()
+        private void FixedUpdate()
         {
-            base.FixedUpdate();
-
             SentExternalEventMessage(HIERARCHICAL_FIXED_UPDATE_EVENT);
         }
 
-        private JSONObject _hierarchicalBeginCameraRenderingarameters;
+        private JSONObject _hierarchicalBeginCameraRenderingParameters;
         public override bool HierarchicalBeginCameraRendering(Camera camera)
         {
             if (base.HierarchicalBeginCameraRendering(camera))
             {
-                if (_hierarchicalBeginCameraRenderingarameters == null)
-                    _hierarchicalBeginCameraRenderingarameters = new JSONObject();
-                _hierarchicalBeginCameraRenderingarameters[CAMERA] = camera.id.ToString();
-                SentExternalEventMessage(HIERARCHICAL_BEGIN_CAMERA_RENDERING_EVENT, _hierarchicalBeginCameraRenderingarameters);
+                if (_hierarchicalBeginCameraRenderingParameters == null)
+                    _hierarchicalBeginCameraRenderingParameters = new JSONObject();
+                _hierarchicalBeginCameraRenderingParameters[CAMERA] = camera.id.ToString();
+                SentExternalEventMessage(HIERARCHICAL_BEGIN_CAMERA_RENDERING_EVENT, _hierarchicalBeginCameraRenderingParameters);
                 return true;
             }
             return false;
         }
 
-        private JSONObject _hierarchicalEndCameraRenderingarameters;
+        private JSONObject _hierarchicalEndCameraRenderingParameters;
         public override bool HierarchicalEndCameraRendering(Camera camera)
         {
             if (base.HierarchicalEndCameraRendering(camera))
             {
-                if (_hierarchicalEndCameraRenderingarameters == null)
-                    _hierarchicalEndCameraRenderingarameters = new JSONObject();
-                _hierarchicalEndCameraRenderingarameters[CAMERA] = camera.id.ToString();
-                SentExternalEventMessage(HIERARCHICAL_END_CAMERA_RENDERING_EVENT, _hierarchicalEndCameraRenderingarameters);
+                if (_hierarchicalEndCameraRenderingParameters == null)
+                    _hierarchicalEndCameraRenderingParameters = new JSONObject();
+                _hierarchicalEndCameraRenderingParameters[CAMERA] = camera.id.ToString();
+                SentExternalEventMessage(HIERARCHICAL_END_CAMERA_RENDERING_EVENT, _hierarchicalEndCameraRenderingParameters);
                 return true;
             }
             return false;
@@ -517,11 +515,7 @@ namespace DepictionEngine
 
         private void SentExternalEventMessage(string type, JSONNode parameters = null)
         {
-            JSONNode json = parameters;
-
-            if (json == null)
-                json = new JSONObject();
-
+            JSONNode json = parameters ?? new JSONObject();
             json[EVENT_TYPE] = type;
 
             SendExternalMessage(json);

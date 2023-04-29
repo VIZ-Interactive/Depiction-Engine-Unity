@@ -91,7 +91,7 @@ namespace DepictionEngine.Editor
                 if (SceneManager.Debugging() && property.notPoolable)
                     GUI.Label(new Rect(20, 5, 150, 15), "Not Poolable");
 
-                Rect position = new Rect(inspectorWidth - 27.0f, 3.0f, width, EditorGUIUtility.singleLineHeight);
+                Rect position = new (inspectorWidth - 27.0f, 3.0f, width, EditorGUIUtility.singleLineHeight);
 
                 if (GUI.Button(position, new GUIContent("ID", property.id.ToString())))
                 {
@@ -503,7 +503,7 @@ namespace DepictionEngine.Editor
 
         protected virtual void AddHelpBox()
         {
-            List<(string, MessageType)> helpBoxes = new List<(string, MessageType)>();
+            List<(string, MessageType)> helpBoxes = new();
 
             UnityEngine.Object targetObject = target;
 
@@ -627,7 +627,7 @@ namespace DepictionEngine.Editor
 
         public static bool IsFallbackValues(UnityEngine.Object targetObject)
         {
-            return targetObject is IScriptableBehaviour ? (targetObject as IScriptableBehaviour).isFallbackValues : false;
+            return targetObject is IScriptableBehaviour && (targetObject as IScriptableBehaviour).isFallbackValues;
         }
 
         [Serializable]

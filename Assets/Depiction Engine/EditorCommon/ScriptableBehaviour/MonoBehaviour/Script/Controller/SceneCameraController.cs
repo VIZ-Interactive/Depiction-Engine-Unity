@@ -10,9 +10,9 @@ namespace DepictionEngine.Editor
     {
         public bool wasFirstUpdatedBySceneViewDouble;
 
-        public override void UpdateFields()
+        public override void UpdateDependencies()
         {
-            base.UpdateFields();
+            base.UpdateDependencies();
 
             InitTarget();
         }
@@ -30,10 +30,10 @@ namespace DepictionEngine.Editor
                     if (sceneCameraTargetGO == null)
                         sceneCameraTargetGO = new GameObject(targetName);
 
-                    SceneCameraTarget sceneCameraTarget = sceneCameraTargetGO.GetSafeComponent<SceneCameraTarget>();
+                    SceneCameraTarget sceneCameraTarget = sceneCameraTargetGO.GetComponentInitialized<SceneCameraTarget>();
 
                     if (sceneCameraTarget == Disposable.NULL)
-                        sceneCameraTarget = sceneCameraTargetGO.AddSafeComponent<SceneCameraTarget>();
+                        sceneCameraTarget = sceneCameraTargetGO.AddComponentInitialized<SceneCameraTarget>();
 
                     if (sceneCameraTarget != Disposable.NULL)
                         sceneCameraTarget.isHiddenInHierarchy = true;

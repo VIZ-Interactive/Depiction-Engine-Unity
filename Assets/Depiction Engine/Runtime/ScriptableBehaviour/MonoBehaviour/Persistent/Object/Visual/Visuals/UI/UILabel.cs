@@ -11,8 +11,6 @@ namespace DepictionEngine
     {
         private static readonly int KEYFRAME_PROPERTY_COUNT = 4;
 
-        private static readonly Vector2 HALF_VECTOR2 = new Vector2(0.5f, 0.5f);
-
         private enum KeyframeProperties 
         { 
             Time, 
@@ -35,11 +33,7 @@ namespace DepictionEngine
         }
 
         private RectTransform _rectTransform;
-        protected RectTransform GetRectTransform()
-        {
-            _rectTransform ??= gameObject.GetComponent<RectTransform>();
-            return _rectTransform;
-        }
+        protected RectTransform GetRectTransform() { _rectTransform ??= gameObject.GetComponent<RectTransform>(); return _rectTransform; }
 
         public int maxVisibleLines
         {
@@ -52,22 +46,9 @@ namespace DepictionEngine
             set { GetTextMeshProWarpIfAvailable((textMeshProWarp) => { textMeshProWarp.maxVisibleLines = value; }); }
         }
 
-        private Vector2 pivot
-        {
-            get { return GetRectTransform().pivot; }
-            set
-            {
-                RectTransform rectTransform = GetRectTransform();
-                if (rectTransform.pivot == value)
-                    return;
-                rectTransform.pivot = value;
-                PropertiesChanged();
-            }
-        }
-
         private Vector2 sizeDelta
         {
-            get { return GetRectTransform().sizeDelta; }
+            get => GetRectTransform().sizeDelta;
             set 
             {
                 RectTransform rectTransform = GetRectTransform();
@@ -246,7 +227,7 @@ namespace DepictionEngine
 
                     for (int i = 0; i < keysCount; i++)
                     {
-                        Keyframe key = new Keyframe(GetKeyProperty(keys, i, KeyframeProperties.Time), GetKeyProperty(keys, i, KeyframeProperties.Value), GetKeyProperty(keys, i, KeyframeProperties.InTangent), GetKeyProperty(keys, i, KeyframeProperties.OutTangent));
+                        Keyframe key = new (GetKeyProperty(keys, i, KeyframeProperties.Time), GetKeyProperty(keys, i, KeyframeProperties.Value), GetKeyProperty(keys, i, KeyframeProperties.InTangent), GetKeyProperty(keys, i, KeyframeProperties.OutTangent));
                         key.weightedMode = WeightedMode.None;
                         textMeshProWarp.vertexCurve.AddKey(key);
                     }
@@ -291,7 +272,6 @@ namespace DepictionEngine
 
                         transform.localRotation *= Quaternion.Euler(0.0f, 0.0f, (flipped ? 0.0f : -180.0f) - angle);
 
-                        pivot = new Vector2(flipped ? 1.0f : 0.0f, 0.5f);
                         sizeDelta = new Vector2(localEndCoordinate.magnitude, height);
                
                         if (ForceMeshUpdateIfPropertiesChanged(true))
@@ -390,7 +370,6 @@ namespace DepictionEngine
                 {
                     _keys.Clear();
 
-                    pivot = HALF_VECTOR2;
                     sizeDelta = new Vector2(width, height);
                 }
 

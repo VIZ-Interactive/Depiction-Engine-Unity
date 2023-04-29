@@ -183,7 +183,7 @@ namespace DepictionEngine
         public SerializableGuid id
         {
             get => _id;
-            set => _id = value;
+            private set => _id = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
@@ -221,7 +221,7 @@ namespace DepictionEngine
             if (wasFirstUpdated)
             {
                 if (ResetAllowed())
-                    Editor.InspectorManager.Reseting(this);
+                    Editor.InspectorManager.Resetting(this);
 
                 Editor.UndoManager.RevertAllInCurrentGroup();
 

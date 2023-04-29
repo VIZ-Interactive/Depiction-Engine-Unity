@@ -27,7 +27,7 @@ namespace DepictionEngine
         private string _tags;
 
         [BeginFoldout("Physics")]
-        [SerializeField, ConditionalShow(nameof(IsPhysicsObject)), Tooltip("When enabled the GameObject will automaticaly reacts to '"+nameof(AstroObject)+"' gravitational pull based on 'Object.mass' and 'AstroObject.mass'.")]
+        [SerializeField, ConditionalShow(nameof(IsPhysicsObject)), Tooltip("When enabled the GameObject will automatically reacts to '"+nameof(AstroObject)+"' gravitational pull based on 'Object.mass' and 'AstroObject.mass'.")]
         private bool _useGravity;
         [SerializeField, ConditionalShow(nameof(IsPhysicsObject)), Tooltip("Used to determine the amount of gravitational force to apply when '"+nameof(Object.useGravity)+"' is enabled."), EndFoldout]
         private double _mass;
@@ -219,17 +219,15 @@ namespace DepictionEngine
             return optionalProperties as T;
         }
 
-#if UNITY_EDITOR
-        public override bool AfterAssemblyReload()
+        protected override bool AddToInstanceManager()
         {
-            if (base.AfterAssemblyReload())
+            if (base.AddToInstanceManager())
             {
                 RegisterWithPhysicsManager();
                 return true;
             }
             return false;
         }
-#endif
 
         public override bool UpdateRelations(Action beforeSiblingsInitializeCallback = null)
         {
@@ -417,6 +415,8 @@ namespace DepictionEngine
                 }
                 else
                     DisposeManager.Destroy(rigidbodyInternal, SceneManager.GetIsUserChangeContext() ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Destroy);
+                
+                RegisterWithPhysicsManager();
             }
         }
 
@@ -783,7 +783,7 @@ namespace DepictionEngine
 
         private void ReferencePropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
-            //If the object is Disposed we do not need to update the asset references as this will switch the meshRendererVisualDirtyFlags.isDirty flags to true which will force the AutoGenerateVisualObject to regenerate its mesh if the destroy whas triggered in the Editor(and the dirty state switch were recorded) and it is undone/created later.
+            //If the object is Disposed we do not need to update the asset references as this will switch the meshRendererVisualDirtyFlags.isDirty flags to true which will force the AutoGenerateVisualObject to regenerate its mesh if the destroy was triggered in the Editor(and the dirty state switch were recorded) and it is undone/created later.
             if (IsDisposing())
                 return;
 
@@ -1090,7 +1090,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled, the GameObject will automaticaly reacts to <see cref="DepictionEngine.AstroObject"/> gravitational pull based on <see cref="DepictionEngine.Object.mass"/> and <see cref="DepictionEngine.AstroObject.mass"/>.
+        /// When enabled, the GameObject will automatically reacts to <see cref="DepictionEngine.AstroObject"/> gravitational pull based on <see cref="DepictionEngine.Object.mass"/> and <see cref="DepictionEngine.AstroObject.mass"/>.
         /// </summary>
         [Json(conditionalMethod: nameof(IsPhysicsObject))]
         public bool useGravity
@@ -1104,17 +1104,20 @@ namespace DepictionEngine
                     _lastUseGravity = newValue;
 #endif
                     UpdateRigidbody();
-                    RegisterWithPhysicsManager();
                 });
             }
         }
 
         private void RegisterWithPhysicsManager()
         {
-            if (rigidbodyInternal != null)
-                PhysicsManager.AddPhysicObject(id, GetComponent<TransformDouble>());
-            else
-                PhysicsManager.RemovePhysicObject(id);
+            InstanceManager instanceManager = InstanceManager.Instance(false);
+            if (instanceManager != Disposable.NULL)
+            {
+                if (rigidbodyInternal != null)
+                    instanceManager.AddPhysicTransform(id, GetComponent<TransformDouble>());
+                else
+                    instanceManager.RemovePhysicTransform(id);
+            }
         }
 
         /// <summary>
@@ -2145,11 +2148,9 @@ namespace DepictionEngine
             return containsDisposed;
         }
 
-        protected override void FixedUpdate()
+        private void FixedUpdate()
         {
-            base.FixedUpdate();
-
-            if (IsPhysicsDriven() && rigidbodyInternal != null)
+            if (IsPhysicsDriven())
             {
                 instanceManager.IterateOverInstances<AstroObject>((astroObject) =>
                 {
@@ -2289,7 +2290,8 @@ namespace DepictionEngine
         {
             if (base.OnDispose(disposeContext))
             {
-                DisposeManager.Destroy(rigidbodyInternal, disposeContext);
+                DisposeManager.Dispose(rigidbodyInternal, disposeContext);
+
                 RegisterWithPhysicsManager();
 
                 DisposeManager.Dispose(_objectAdditionalFallbackValues, disposeContext);

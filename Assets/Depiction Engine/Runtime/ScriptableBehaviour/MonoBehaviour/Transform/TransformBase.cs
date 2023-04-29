@@ -242,7 +242,7 @@ namespace DepictionEngine
         {
             bool siblingsChanged = base.SiblingsHasChanged();
 
-            if (!siblingsChanged && objectBase == Disposable.NULL && gameObject.GetSafeComponent<Object>(GetInitializeContext()) != Disposable.NULL)
+            if (!siblingsChanged && objectBase == Disposable.NULL && gameObject.GetComponentInitialized<Object>(GetInitializeContext()) != Disposable.NULL)
                 siblingsChanged = true;
 
             return siblingsChanged;
@@ -384,7 +384,7 @@ namespace DepictionEngine
 
             Type parentType = GetParentType();
             if (parentType != null )
-                parent = (PropertyMonoBehaviour)(transform.parent != null ? transform.parent.gameObject.GetSafeComponentInParent(parentType, true) : null);
+                parent = (PropertyMonoBehaviour)(transform.parent != null ? transform.parent.gameObject.GetComponentInParentInitialized(parentType, true) : null);
 
             return parent;
         }
@@ -451,7 +451,7 @@ namespace DepictionEngine
 
         private int _lastIndex;
         /// <summary>
-        /// An index number representing the order of the childs in relation to their siblings.
+        /// An index number representing the order of the children in relation to their siblings.
         /// </summary>
         [Json]
         public int index
@@ -1048,12 +1048,12 @@ namespace DepictionEngine
             return containsDisposed;
         }
 
-        public void IterateOverChildren<T>(Func<T, bool> callback) where T : PropertyMonoBehaviour
+        public void IterateOverChildren<T>(Func<T, bool> callback, bool includeDontSave = true) where T : PropertyMonoBehaviour
         {
             for (int i = childCount - 1 ; i >= 0 ; i--)
             {
                 PropertyMonoBehaviour propertyMonoBehaviour = children[i];
-                if (propertyMonoBehaviour is T  && propertyMonoBehaviour != Disposable.NULL && !callback(propertyMonoBehaviour as T))
+                if (propertyMonoBehaviour is T  && propertyMonoBehaviour != Disposable.NULL && (includeDontSave || !propertyMonoBehaviour.hideFlags.HasFlag(HideFlags.DontSave)) && !callback(propertyMonoBehaviour as T))
                     return;
             }
         }

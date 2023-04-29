@@ -106,19 +106,19 @@ namespace DepictionEngine
 
                 if (_lightInternal == null)
                 {
-                    GameObject go = new GameObject("Light");
+                    GameObject go = new("Light");
                     go.transform.SetParent(gameObject.transform, false);
 
 #if UNITY_EDITOR
                     Editor.UndoManager.QueueRegisterCreatedObjectUndo(go, initializingContext);
 #endif
 
-                    _lightInternal = go.AddSafeComponent<Light>(initializingContext);
+                    _lightInternal = go.AddComponentInitialized<Light>(initializingContext);
                     _lightInternal.type = LightType.Directional;
 
-                    go.AddSafeComponent<UniversalAdditionalLightData>(initializingContext);
+                    go.AddComponentInitialized<UniversalAdditionalLightData>(initializingContext);
 
-                    _lensFlare = go.AddSafeComponent<LensFlareComponentSRP>(initializingContext);
+                    _lensFlare = go.AddComponentInitialized<LensFlareComponentSRP>(initializingContext);
                     _lensFlare.lensFlareData = Resources.Load("LensFlare/Sun Lens Flare (SRP)") as LensFlareDataSRP;
                 }
             }

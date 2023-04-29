@@ -43,15 +43,6 @@ namespace DepictionEngine.Editor
             CreateObject<InstantiatorVisualObject>(GetContextTransform(menuCommand), name);
         }
 
-        [MenuItem("GameObject/Depiction Engine/Reflection Probe", false, 15)]
-        private static void CreateReflectionProbe(MenuCommand menuCommand)
-        {
-            string name = nameof(ReflectionProbe);
-            UndoManager.CreateNewGroup("Create " + name);
-
-            CreateObject<ReflectionProbe>(GetContextTransform(menuCommand), name);
-        }
-
         [MenuItem("GameObject/Depiction Engine/VolumeMask/Rectangular", false, 16)]
         private static void CreateRectangularVolumeMask(MenuCommand menuCommand)
         {
@@ -462,12 +453,12 @@ namespace DepictionEngine.Editor
             JSONObject earthJson = new();
 
             List<string> mapboxHeaders = new();
-            //Forcing a different Referer spams warnings but it is only ment to be used as an Editor demo, A real development key should be used.
+            //Forcing a different Referer spams warnings but it is only meant to be used as an Editor demo, A real development key should be used.
             if (mapboxKey == MAPBOX_DEMO_KEY)
                 mapboxHeaders.Add("Referer#https://www.mapbox.com/");
 
             List<string> mapTilerHeaders = new();
-            //Forcing a different Referer spams warnings but it is only ment to be used as an Editor demo, A real development key should be used.
+            //Forcing a different Referer spams warnings but it is only meant to be used as an Editor demo, A real development key should be used.
             if (mapTilerKey == MAPTILER_DEMO_KEY)
                 mapTilerHeaders.Add("Referer#https://api.maptiler.com/");
 
@@ -818,10 +809,10 @@ namespace DepictionEngine.Editor
                 throw new System.ArgumentNullException(nameof(menuCommand));
             }
 
-            GeoCoordinatePopup geoCoordiantePopup = ScriptableObject.CreateInstance<GeoCoordinatePopup>();
-            PositionPopup(geoCoordiantePopup);
-            geoCoordiantePopup.ShowPopup();
-            geoCoordiantePopup.FocusOnLatControl();
+            GeoCoordinatePopup geoCoordinatePopup = ScriptableObject.CreateInstance<GeoCoordinatePopup>();
+            PositionPopup(geoCoordinatePopup);
+            geoCoordinatePopup.ShowPopup();
+            geoCoordinatePopup.FocusOnLatControl();
         }
 
         [MenuItem("GameObject/Move View to GeoCoordinate", true)]
@@ -863,7 +854,7 @@ namespace DepictionEngine.Editor
 
         private static T GetSafeComponent<T>(GameObject gameObject) where T : Component
         {
-            return gameObject.GetSafeComponent<T>(InitializationContext.Editor);
+            return gameObject.GetComponentInitialized<T>(InitializationContext.Editor);
         }
 
         private static RestDatasource GetRestDatasource(string baseAddress, string baseAddress2 = "", string baseAddress3 = "", string baseAddress4 = "")

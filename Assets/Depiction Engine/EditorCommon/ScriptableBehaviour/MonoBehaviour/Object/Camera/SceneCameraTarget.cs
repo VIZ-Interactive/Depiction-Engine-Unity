@@ -26,7 +26,7 @@ namespace DepictionEngine.Editor
 
             if (controller == Disposable.NULL)
             {
-                SceneCameraTargetGeoCoordinateController controller = gameObject.GetSafeComponent<SceneCameraTargetGeoCoordinateController>();
+                SceneCameraTargetGeoCoordinateController controller = gameObject.GetComponentInitialized<SceneCameraTargetGeoCoordinateController>();
                 if (controller == Disposable.NULL)
                     controller = CreateScript<SceneCameraTargetGeoCoordinateController>();
                 controller.autoSnapToAltitude = GeoCoordinateController.SnapType.None;

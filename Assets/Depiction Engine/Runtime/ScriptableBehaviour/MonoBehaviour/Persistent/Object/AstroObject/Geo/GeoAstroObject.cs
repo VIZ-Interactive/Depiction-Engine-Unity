@@ -110,24 +110,36 @@ namespace DepictionEngine
         {
             base.InitializeFields(initializingContext);
 
-            InitGrid2DIndexTerrainGridMeshObjects();
-
             UpdateRadius();
-        }
-
-        private void InitGrid2DIndexTerrainGridMeshObjects()
-        {
-            _grid2DIndexTerrainGridMeshObjects ??= new Grid2DIndexTerrainGridMeshObjectDictionary[31];
         }
 
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
+            InitGrid2DIndexTerrainGridMeshObjects();
+
+            if (initializingContext == InitializationContext.Existing)
+            {
+                foreach (Grid2DIndexTerrainGridMeshObjectDictionary grid2DIndexTerrainGridMeshObjectDictionary in _grid2DIndexTerrainGridMeshObjects)
+                {
+                    if (grid2DIndexTerrainGridMeshObjectDictionary != null)
+                    {
+                        foreach (Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObjects in grid2DIndexTerrainGridMeshObjectDictionary.Values)
+                            grid2DIndexTerrainGridMeshObjects.RemoveNullTerrainGridMeshObjects();
+                    }
+                }
+            }
+
             InitValue(value => size = value, DEFAULT_SIZE, initializingContext);
             InitValue(value => sphericalDuration = value, 2.0f, initializingContext);
             InitValue(value => spherical = value, true, initializingContext);
             InitValue(value => reflectionProbe = value, GetDefaultReflectionProbe(), initializingContext);
+        }
+
+        private void InitGrid2DIndexTerrainGridMeshObjects()
+        {
+            _grid2DIndexTerrainGridMeshObjects ??= new Grid2DIndexTerrainGridMeshObjectDictionary[31];
         }
 
         protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
@@ -916,6 +928,16 @@ namespace DepictionEngine
             base.InitializeFields();
 
             _terrainGridMeshObjects ??= new List<TerrainGridMeshObject>();
+        }
+
+        public void RemoveNullTerrainGridMeshObjects()
+        {
+            for (int i = _terrainGridMeshObjects.Count - 1; i >= 0; i--)
+            {
+                TerrainGridMeshObject terrainGridMeshObject = _terrainGridMeshObjects[i];
+                if (terrainGridMeshObject == Disposable.NULL)
+                    _terrainGridMeshObjects.RemoveAt(i);
+            }
         }
 
         public override void UpdateAllDelegates()

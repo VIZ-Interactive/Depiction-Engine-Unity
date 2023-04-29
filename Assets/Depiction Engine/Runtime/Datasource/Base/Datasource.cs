@@ -825,9 +825,6 @@ namespace DepictionEngine
                 }
             }
 
-            if (changed)
-                Debug.Log(key+", "+ persistent+", "+allowAutoDispose);
-
             return changed;
         }
        

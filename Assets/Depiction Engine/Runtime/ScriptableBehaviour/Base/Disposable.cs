@@ -144,7 +144,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsDisposed<T>(T disposable)
         {
-            if (Object.ReferenceEquals(disposable, null))
+            if (disposable is null)
                 return true;
 
             return disposable is IDisposable ? (disposable as IDisposable).Equals(NULL) : disposable.Equals(null);

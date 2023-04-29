@@ -94,7 +94,7 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => defaultColor = value, new Color(0.8627450980392157f, 0.8235294117647058f, 0.7843137254901961f), initializingContext);
+            InitValue(value => defaultColor = value, new Color(0.6352941f, 0.5882353f, 0.5411765f), initializingContext);
             InitValue(value => defaultHeight = value, 10.0f, initializingContext);
             InitValue(value => defaultLevelHeight = value, 3.0f, initializingContext);
             InitValue(value => shaderPath = value, RenderingManager.SHADER_BASE_PATH + "BuildingGrid", initializingContext);
@@ -142,7 +142,7 @@ namespace DepictionEngine
         public Color defaultColor
         {
             get => _defaultColor;
-            set { SetValue(nameof(defaultColor), value, ref _defaultColor); }
+            set => SetValue(nameof(defaultColor), value, ref _defaultColor);
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace DepictionEngine
         public float defaultHeight
         {
             get => _defaultHeight;
-            set { SetValue(nameof(defaultHeight), value, ref _defaultHeight); }
+            set => SetValue(nameof(defaultHeight), value, ref _defaultHeight);
         }
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace DepictionEngine
         public float defaultLevelHeight
         {
             get => _defaultLevelHeight;
-            set { SetValue(nameof(defaultLevelHeight), value, ref _defaultLevelHeight); }
+            set => SetValue(nameof(defaultLevelHeight), value, ref _defaultLevelHeight);
         }
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace DepictionEngine
         public string shaderPath
         {
             get => _shaderPath;
-            set { SetValue(nameof(shaderPath), value, ref _shaderPath); }
+            set => SetValue(nameof(shaderPath), value, ref _shaderPath);
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace DepictionEngine
         public Color color
         {
             get => _color;
-            set { SetValue(nameof(color), value, ref _color); }
+            set => SetValue(nameof(color), value, ref _color); 
         }
 
         protected override Color GetColor()
@@ -198,7 +198,7 @@ namespace DepictionEngine
         public Texture colorMap
         {
             get => _colorMap;
-            private set { SetValue(nameof(colorMap), value, ref _colorMap); }
+            private set => SetValue(nameof(colorMap), value, ref _colorMap);
         }
 
         protected override Texture GetColorMap()
@@ -214,7 +214,7 @@ namespace DepictionEngine
         public Texture additionalMap
         {
             get => _additionalMap;
-            private set { SetValue(nameof(additionalMap), value, ref _additionalMap); }
+            private set => SetValue(nameof(additionalMap), value, ref _additionalMap); 
         }
 
         protected override Texture GetAdditionalMap()

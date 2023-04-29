@@ -315,7 +315,7 @@ namespace DepictionEngine
         {
             if (base.TransformControllerCallback(localPositionParam, localRotationParam, localScaleParam, camera))
             {
-                if (enabled &&  localPositionParam.isGeoCoordinate && parentGeoAstroObject != Disposable.NULL)
+                if (enabled && localPositionParam.isGeoCoordinate && parentGeoAstroObject != Disposable.NULL)
                 {
                     if (localPositionParam.changed)
                     {
@@ -328,10 +328,12 @@ namespace DepictionEngine
                         bool updateElevation = true;
 
 #if UNITY_EDITOR
-                        bool mouseDown = Editor.SceneViewDouble.lastActiveSceneViewDouble != null && Editor.SceneViewDouble.lastActiveSceneViewDouble.mouseDown;
-                        isBeingMovedByUser = !SceneManager.IsEditorNamespace(GetType()) && (SceneManager.GetIsUserChangeContext() || mouseDown);
-                        if (isBeingMovedByUser)
-                            updateElevation = false;
+                        if (!SceneManager.IsEditorNamespace(GetType()))
+                        {
+                            isBeingMovedByUser = Editor.SceneViewDouble.lastActiveSceneViewDouble != null && Editor.SceneViewDouble.lastActiveSceneViewDouble.positionHandleDragging;
+                            if (isBeingMovedByUser)
+                                updateElevation = false;
+                        }
 #endif
 
                         if (updateElevation)

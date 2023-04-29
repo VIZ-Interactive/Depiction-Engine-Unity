@@ -70,7 +70,7 @@ namespace DepictionEngine
             //We initialize right away if the gameObjects are being duplicated to make sure the Undo operations are recorded together as one.
             if (!_initializing && !InstanceManager.preventAutoInitialize && !SceneManager.IsSceneBeingDestroyed())
             {
-                //Even if multiple objects are being duplicated at once we only need to call this once when we detect the first Awake the other transforms will be initialized automatically by traversing the hierarchichy.
+                //Even if multiple objects are being duplicated at once we only need to call this once when we detect the first Awake the other transforms will be initialized automatically by traversing the hierarchy.
                 SceneManager sceneManager = SceneManager.Instance(false);
                 if (sceneManager != null && InstanceManager.initializingContext == InitializationContext.Editor && IsDuplicateInitializing())
                     sceneManager.HierarchicalInitializeEditorCreatedObjects();
@@ -239,7 +239,7 @@ namespace DepictionEngine
 
         public virtual void Initialized(InitializationContext initializingContext)
         {
-            //FallbackValues Component are really only used to diplay properties in the Inspector or to validate property change. By preventing initialized we limit the amount of code the object can execute.
+            //FallbackValues Component are really only used to display properties in the Inspector or to validate property change. By preventing initialized we limit the amount of code the object can execute.
             if (!isFallbackValues)
                 _initialized = true;
 
@@ -310,7 +310,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Trigered right after an undo or redo operation was performed (Editor Only).
+        /// Triggered right after an undo or redo operation was performed (Editor Only).
         /// </summary>
         public void UndoRedoPerformed()
         {
@@ -425,7 +425,7 @@ namespace DepictionEngine
 
         public T AddComponent<T>(bool initialize, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false) where T : Component
         {
-            return gameObject.AddSafeComponent<T>(initializingContext, json, propertyModifiers, isFallbackValues, initialize, initialized);
+            return gameObject.AddComponentInitialized<T>(initializingContext, json, propertyModifiers, isFallbackValues, initialize, initialized);
         }
 
         public Component AddComponent(Type componentType, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
@@ -435,7 +435,7 @@ namespace DepictionEngine
 
         public Component AddComponent(Type componentType, bool initialize, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
-            return gameObject.AddSafeComponent(componentType, initializingContext, json, propertyModifiers, isFallbackValues, initialize, initialized);
+            return gameObject.AddComponentInitialized(componentType, initializingContext, json, propertyModifiers, isFallbackValues, initialize, initialized);
         }
 
         public InitializationContext GetInitializeContext()
@@ -568,15 +568,6 @@ namespace DepictionEngine
                 return true;
             }
             return false;
-        }
-
-        protected virtual void FixedUpdate()
-        {
-           
-        }
-
-        protected virtual void LateUpdate()
-        {
         }
 
         public bool UpdateDisposingContext()

@@ -20,13 +20,13 @@ namespace DepictionEngine
 
         public const string CLEAR_FLAGS_TOOLTIP = "How the camera clears the background.";
         public const string BACKGROUND_COLOR_TOOLTIP = "The color with which the screen will be cleared.";
-        public const string SKYBOX_MATERIAL_PATH_TOOLTIP = "The path of the material within the Resources directory, such as 'Star-Skybox' or Atmopshere-Skybox.";
+        public const string SKYBOX_MATERIAL_PATH_TOOLTIP = "The path of the material within the Resources directory, such as 'Star-Skybox' or Atmosphere-Skybox.";
         public const string ENVIRONMENT_TEXTURE_SIZE_TOOLTIP = "A power of two value used to establish the width/height of the environment cubemap texture.";
 
         [BeginFoldout("Projection")]
         [SerializeField, Tooltip("Is the camera orthographic (true) or perspective (false)?")]
         private bool _orthographic;
-        [SerializeField, Tooltip("Camera's half-szie when in orthographic mode.")]
+        [SerializeField, Tooltip("Camera's half-size when in orthographic mode.")]
         private float _orthographicSize;
         [SerializeField, Tooltip("The vertical field of view of the camera, in degrees.")]
         private float _fieldOfView;
@@ -42,7 +42,7 @@ namespace DepictionEngine
         private DepthTextureMode _depthTextureMode;
         [SerializeField, Tooltip("A mask used to render parts of the Scene selectively."), Mask]
         private int _cullingMask;
-        [SerializeField, Tooltip("Whether or not the Camera will use occlusion culling during redering."), EndFoldout]
+        [SerializeField, Tooltip("Whether or not the Camera will use occlusion culling during rendering."), EndFoldout]
         private bool _useOcclusionCulling;
 
         [BeginFoldout("Environment")]
@@ -148,7 +148,7 @@ namespace DepictionEngine
                 Editor.UndoManager.QueueRegisterCreatedObjectUndo(stackGO, initializingContext);
 #endif
 
-                Stack stack = stackGO.AddSafeComponent<Stack>(initializingContext);
+                Stack stack = stackGO.AddComponentInitialized<Stack>(initializingContext);
                 stack.main = true;
                 stack.synchRenderProperties = true;
                 stack.synchOpticalProperties = true;
@@ -167,7 +167,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                     Editor.UndoManager.QueueRegisterCreatedObjectUndo(distancePassCameraGO, initializingContext);
 #endif
-                    UnityEngine.Camera unityCamera = distancePassCameraGO.AddSafeComponent<UnityEngine.Camera>(initializingContext);
+                    UnityEngine.Camera unityCamera = distancePassCameraGO.AddComponentInitialized<UnityEngine.Camera>(initializingContext);
                     RemoveIgnoreRenderFromUnityCameraCullingMask(unityCamera);
 
                     UniversalAdditionalCameraData distancePassCameraUniversalAdditionalCameraData = unityCamera.GetUniversalAdditionalCameraData();
@@ -283,7 +283,12 @@ namespace DepictionEngine
 
         public virtual UnityEngine.Camera unityCamera
         {
-            get { _unityCamera = _unityCamera != null ? _unityCamera : gameObject.GetComponent<UnityEngine.Camera>(); return _unityCamera; }
+            get 
+            { 
+                if (_unityCamera == null)
+                    _unityCamera = gameObject.GetComponent<UnityEngine.Camera>();
+                return _unityCamera; 
+            }
         }
 
         public UniversalAdditionalCameraData additionalData
@@ -402,17 +407,17 @@ namespace DepictionEngine
         public bool orthographic
         {
             get => _orthographic;
-            set { SetValue(nameof(orthographic), value, ref _orthographic); }
+            set => SetValue(nameof(orthographic), value, ref _orthographic);
         }
 
         /// <summarty>
-        /// Camera's half-szie when in orthographic mode.
+        /// Camera's half-size when in orthographic mode.
         /// </summarty>
         [Json]
         public float orthographicSize
         {
             get => _orthographicSize;
-            set { SetValue(nameof(orthographicSize), value, ref _orthographicSize); }
+            set => SetValue(nameof(orthographicSize), value, ref _orthographicSize);
         }
 
         /// <summary>
@@ -432,7 +437,7 @@ namespace DepictionEngine
         public float nearClipPlane
         {
             get => _nearClipPlane;
-            set { SetValue(nameof(nearClipPlane), value, ref _nearClipPlane); }
+            set => SetValue(nameof(nearClipPlane), value, ref _nearClipPlane);
         }
 
         /// <summary>
@@ -497,7 +502,7 @@ namespace DepictionEngine
         public DepthTextureMode depthTextureMode
         {
             get => _depthTextureMode;
-            set { SetValue(nameof(depthTextureMode), value, ref _depthTextureMode); }
+            set => SetValue(nameof(depthTextureMode), value, ref _depthTextureMode);
         }
 
         /// <summary>
@@ -507,17 +512,17 @@ namespace DepictionEngine
         public int cullingMask
         {
             get => _cullingMask;
-            set { SetValue(nameof(cullingMask), value, ref _cullingMask); }
+            set => SetValue(nameof(cullingMask), value, ref _cullingMask);
         }
 
         /// <summary>
-        /// Whether or not the Camera will use occlusion culling during redering.
+        /// Whether or not the Camera will use occlusion culling during rendering.
         /// </summary>
         [Json]
         public bool useOcclusionCulling
         {
             get => _useOcclusionCulling;
-            set { SetValue(nameof(useOcclusionCulling), value, ref _useOcclusionCulling); }
+            set => SetValue(nameof(useOcclusionCulling), value, ref _useOcclusionCulling);
         }
 
         /// <summary>
@@ -527,7 +532,7 @@ namespace DepictionEngine
         public CameraClearFlags clearFlags
         {
             get => _clearFlags;
-            set { SetValue(nameof(clearFlags), value, ref _clearFlags); }
+            set => SetValue(nameof(clearFlags), value, ref _clearFlags);
         }
 
         /// <summary>
@@ -537,7 +542,7 @@ namespace DepictionEngine
         public Color backgroundColor
         {
             get => _backgroundColor;
-            set { SetValue(nameof(backgroundColor), value, ref _backgroundColor); }
+            set => SetValue(nameof(backgroundColor), value, ref _backgroundColor);
         }
 
 #if UNITY_EDITOR
@@ -550,7 +555,7 @@ namespace DepictionEngine
 #endif
 
         /// <summary>
-        /// The path of the material within the Resources directory, such as 'Star-Skybox' or Atmopshere-Skybox.
+        /// The path of the material within the Resources directory, such as 'Star-Skybox' or Atmosphere-Skybox.
         /// </summary>
         [Json]
 #if UNITY_EDITOR
@@ -590,7 +595,7 @@ namespace DepictionEngine
         public bool allowHDR
         {
             get => _allowHDR;
-            set { SetValue(nameof(allowHDR), value, ref _allowHDR); }
+            set => SetValue(nameof(allowHDR), value, ref _allowHDR);
         }
 
         public float aspect
@@ -619,12 +624,12 @@ namespace DepictionEngine
             }
         }
 
-        protected override void ActiveAndEnabledChanged(bool newValue, bool oldValue)
+        protected override void EnabledChanged(bool newValue, bool oldValue)
         {
-            base.ActiveAndEnabledChanged(newValue, oldValue);
+            base.EnabledChanged(newValue, oldValue);
 
-            IterateOverCameraStack((unityCamera, i, stack) => { unityCamera.enabled = enabled; });
-            unityCamera.enabled = enabled;
+            IterateOverCameraStack((unityCamera, i, stack) => { unityCamera.enabled = newValue; });
+            unityCamera.enabled = newValue;
         }
 
         public virtual int GetCameraInstanceID()

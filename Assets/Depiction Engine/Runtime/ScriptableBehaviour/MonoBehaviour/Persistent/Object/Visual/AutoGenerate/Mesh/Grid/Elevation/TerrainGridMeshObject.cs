@@ -19,7 +19,7 @@ namespace DepictionEngine
         /// <summary>
         /// The different types of normals that can be generated for terrains. <br/><br/>
         /// <b><see cref="DerivedFromElevation"/>:</b> <br/>
-        /// The normal will be derived from neighbouring elevation values <br/><br/>
+        /// The normal will be derived from neighboring elevation values <br/><br/>
         /// <b><see cref="SurfaceUp"/>:</b> <br/>
         /// The planet up vector will be used as a normal irregardless of the terrain elevation <br/><br/>
         /// <b><see cref="Auto"/>:</b> <br/>
@@ -71,7 +71,7 @@ namespace DepictionEngine
 
         private int _cameraCount;
 
-        private bool _generateEdgeInSeperateMesh;
+        private bool _generateEdgeInSeparateMesh;
 
         private TerrainGridCache _terrainGridCache;
 
@@ -84,7 +84,7 @@ namespace DepictionEngine
 
             _cameraCount = default;
 
-            _generateEdgeInSeperateMesh = default;
+            _generateEdgeInSeparateMesh = default;
 
             _terrainGridCache?.Clear();
         }
@@ -199,7 +199,7 @@ namespace DepictionEngine
         ///     newSubdivision *= Mathf.Pow(subdivisionZoomFactor, zoom);
         /// </code>
         /// </summary>
-        /// <remarks>Zoom level 23 or higher will always have the minimum amount of subdivions.</remarks>
+        /// <remarks>Zoom level 23 or higher will always have the minimum amount of subdivisions.</remarks>
         [Json]
         public float subdivisionZoomFactor
         {
@@ -336,10 +336,10 @@ namespace DepictionEngine
             get { _terrainGridCache ??= new TerrainGridCache().Initialize(); return _terrainGridCache; }
         }
 
-        private bool generateEdgeInSeperateMesh
+        private bool generateEdgeInSeparateMesh
         {
-            get => _generateEdgeInSeperateMesh;
-            set => _generateEdgeInSeperateMesh = value;
+            get => _generateEdgeInSeparateMesh;
+            set => _generateEdgeInSeparateMesh = value;
         }
 
         /// <summary>
@@ -435,7 +435,7 @@ namespace DepictionEngine
 
         protected Func<ProcessorOutput, ProcessorParameters, IEnumerator> GetGridProcessingFunction()
         {
-            if (!generateEdgeInSeperateMesh)
+            if (!generateEdgeInSeparateMesh)
                 return TerrainGridMeshObjectProcessingFunctions.InitPopulateEdgeAndGrid;
             else
                 return Grid2DMeshObjectProcessingFunctions.InitPopulateGrid;
@@ -445,7 +445,7 @@ namespace DepictionEngine
         {
             Func<ProcessorOutput, ProcessorParameters, IEnumerator> processingFunction = TerrainGridMeshObjectProcessingFunctions.InitPopulateEdgeAndGrid;
 
-            if (generateEdgeInSeperateMesh)
+            if (generateEdgeInSeparateMesh)
                 processingFunction = Grid2DMeshObjectProcessingFunctions.InitPopulateGrid;
 
             meshRendererVisualModifier.StartProcessing(processingFunction, GetProcessorParametersType(), InitializeProcessorParameters, GetProcessingType(meshRendererVisualDirtyFlags),
@@ -461,7 +461,7 @@ namespace DepictionEngine
         {
             base.UpdateMeshRendererVisualModifiers(completedCallback, meshRendererVisualDirtyFlags);
 
-            if (generateEdgeInSeperateMesh)
+            if (generateEdgeInSeparateMesh)
             {
                 if (meshRendererVisualModifiers.Count < 2)
                     meshRendererVisualModifiers.Add(MeshRendererVisual.CreateMeshRendererVisualModifier());
@@ -487,7 +487,7 @@ namespace DepictionEngine
                 //0 == terrain + edge
                 //1 == terrain
                 //2 == edge
-                hash *= 31 + (!generateEdgeInSeperateMesh ? 0 : !meshRendererVisualModifier.typeNoCollider.IsSubclassOf(typeof(TerrainEdgeMeshRendererVisual)) ? 1 : 2);
+                hash *= 31 + (!generateEdgeInSeparateMesh ? 0 : !meshRendererVisualModifier.typeNoCollider.IsSubclassOf(typeof(TerrainEdgeMeshRendererVisual)) ? 1 : 2);
             }
 
             return hash;
@@ -509,7 +509,7 @@ namespace DepictionEngine
                 terrainMeshRendererVisualDirtyFlags.subdivision = subdivision;
                 terrainMeshRendererVisualDirtyFlags.subdivisionSize = subdivisionSize;
                 terrainMeshRendererVisualDirtyFlags.overlapFactor = overlapFactor;
-                terrainMeshRendererVisualDirtyFlags.generateEdgeInSeperateMesh = generateEdgeInSeperateMesh;
+                terrainMeshRendererVisualDirtyFlags.generateEdgeInSeperateMesh = generateEdgeInSeparateMesh;
                 terrainMeshRendererVisualDirtyFlags.edgeDepth = GetEdgeDepth();
                 terrainMeshRendererVisualDirtyFlags.normalsType = normalsType;
             }
@@ -567,8 +567,8 @@ namespace DepictionEngine
 
                             if (alphaQuadrant != 0.0f)
                             {
-                                for (int collumn = -1; collumn <= 1; collumn++)
-                                    alphaRow[collumn + 1] = 1.0f - Mathf.Min(alphaQuadrant, GetTerrainGridMeshObjectAlpha(terrainGridCache, quadrantIndex, new Vector2Int(collumn, row), camera));
+                                for (int column = -1; column <= 1; column++)
+                                    alphaRow[column + 1] = 1.0f - Mathf.Min(alphaQuadrant, GetTerrainGridMeshObjectAlpha(terrainGridCache, quadrantIndex, new Vector2Int(column, row), camera));
                             }
 
                             SetVectorToMaterial("_AlphaQuadrant" + ((y * 2) + x + 1) + "Row" + (row + 2), alphaRow, material, materialPropertyBlock);
@@ -639,14 +639,14 @@ namespace DepictionEngine
             private float _edgeDepth;
             private NormalsType _normalsType;
 
-            private bool _generateEdgeInSeperateMesh;
+            private bool _generateEdgeInSeparateMesh;
 
             private bool _trianglesDirty;
             private bool _uvsDirty;
             private bool _verticesDirty;
             private bool _normalsDirty;
 
-            public TerrainGridMeshObjectParameters Init(int subdivision, float subdivisionSize, float overlapFactor = 1.0f, float edgeDepth = 0.0f, NormalsType normalsType = NormalsType.DerivedFromElevation, bool trianglesDirty = true, bool uvsDirty = true, bool verticesNormalsDirty = true, bool generateEdgeInSeperateMesh = false)
+            public TerrainGridMeshObjectParameters Init(int subdivision, float subdivisionSize, float overlapFactor = 1.0f, float edgeDepth = 0.0f, NormalsType normalsType = NormalsType.DerivedFromElevation, bool trianglesDirty = true, bool uvsDirty = true, bool verticesNormalsDirty = true, bool generateEdgeInSeparateMesh = false)
             {
                 _subdivision = subdivision;
                 _subdivisionSize = subdivisionSize;
@@ -654,7 +654,7 @@ namespace DepictionEngine
                 _edgeDepth = edgeDepth;
                 _normalsType = normalsType;
 
-                _generateEdgeInSeperateMesh = generateEdgeInSeperateMesh;
+                _generateEdgeInSeparateMesh = generateEdgeInSeparateMesh;
 
                 _trianglesDirty = trianglesDirty;
                 _uvsDirty = uvsDirty;
@@ -664,9 +664,9 @@ namespace DepictionEngine
                 return this;
             }
 
-            public bool generateEdgeInSeperateMesh
+            public bool generateEdgeInSeparateMesh
             {
-                get => _generateEdgeInSeperateMesh;
+                get => _generateEdgeInSeparateMesh;
             }
 
             public int GetSubdivision()
@@ -743,7 +743,7 @@ namespace DepictionEngine
                     _overlapFactor = 0.0f;
                     _edgeDepth = 0.0f;
 
-                    _generateEdgeInSeperateMesh = false;
+                    _generateEdgeInSeparateMesh = false;
 
                     _trianglesDirty = false;
                     _uvsDirty = false;

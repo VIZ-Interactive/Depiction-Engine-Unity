@@ -53,8 +53,8 @@ namespace DepictionEngine
 		[Json]
 		public float duration
         {
-            get { return _duration; }
-            set { SetValue(nameof(duration), value, ref _duration); }
+            get => _duration;
+            set => SetValue(nameof(duration), value, ref _duration);
         }
 
 		/// <summary>

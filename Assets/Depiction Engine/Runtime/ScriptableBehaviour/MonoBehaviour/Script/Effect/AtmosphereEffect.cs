@@ -1,4 +1,4 @@
-// Copyright (C) 2023 by VIZ Interactive Media Inc. <contact@vizinteractive.io> | Licensed under MIT license (see LICENSE.md for details)
+// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,7 +37,7 @@ namespace DepictionEngine
             Transform atmosphereLoaderTransform = gameObject.transform.Find(atmosphereLoadersName);
 
             if (atmosphereLoaderTransform != null)
-                atmosphereGlobalLoader = atmosphereLoaderTransform.gameObject.GetSafeComponent<GlobalLoader>(initializingContext);
+                atmosphereGlobalLoader = atmosphereLoaderTransform.gameObject.GetComponentInitialized<GlobalLoader>(initializingContext);
             else
             {
                 DatasourceRoot datasourceRoot = objectBase.CreateChild<DatasourceRoot>(atmosphereLoadersName, null, initializingContext);
@@ -84,7 +84,7 @@ namespace DepictionEngine
 
         private GlobalLoader atmosphereGlobalLoader
         {
-            get { return _atmosphereGlobalLoader; }
+            get => _atmosphereGlobalLoader;
             set
             {
                 if (Object.ReferenceEquals(_atmosphereGlobalLoader, value))
@@ -100,8 +100,8 @@ namespace DepictionEngine
         [Json]
         public float sunBrightness
         {
-            get { return _sunBrightness; }
-            set { SetValue(nameof(sunBrightness), value, ref _sunBrightness); }
+            get => _sunBrightness;
+            set => SetValue(nameof(sunBrightness), value, ref _sunBrightness);
         }
 
         /// <summary>
@@ -110,8 +110,8 @@ namespace DepictionEngine
         [Json]
         public float rayleighScattering
         {
-            get { return _rayleighScattering; }
-            set { SetValue(nameof(rayleighScattering), value, ref _rayleighScattering); }
+            get => _rayleighScattering;
+            set => SetValue(nameof(rayleighScattering), value, ref _rayleighScattering);
         }
 
         /// <summary>
@@ -120,8 +120,8 @@ namespace DepictionEngine
         [Json]
         public float mieScattering
         {
-            get { return _mieScattering; }
-            set { SetValue(nameof(mieScattering), value, ref _mieScattering); }
+            get => _mieScattering;
+            set => SetValue(nameof(mieScattering), value, ref _mieScattering);
         }
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace DepictionEngine
         [Json]
         public float miePhaseAsymmetryFactor
         {
-            get { return _miePhaseAsymmetryFactor; }
+            get => _miePhaseAsymmetryFactor;
             set 
             {
                 if (value < -0.999f)
@@ -147,8 +147,8 @@ namespace DepictionEngine
         [Json]
         public float scaleDepth
         {
-            get { return _scaleDepth; }
-            set { SetValue(nameof(scaleDepth), value, ref _scaleDepth); }
+            get => _scaleDepth;
+            set => SetValue(nameof(scaleDepth), value, ref _scaleDepth);
         }
 
         /// <summary>
@@ -157,8 +157,8 @@ namespace DepictionEngine
         [Json]
         public Color waveLength
         {
-            get { return _waveLength; }
-            set { SetValue(nameof(waveLength), value, ref _waveLength); }
+            get => _waveLength;
+            set => SetValue(nameof(waveLength), value, ref _waveLength);
         }
 
         public double GetAtmosphereAltitude()

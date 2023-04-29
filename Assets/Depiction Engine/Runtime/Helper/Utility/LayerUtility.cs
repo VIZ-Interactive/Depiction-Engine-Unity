@@ -90,7 +90,7 @@ namespace DepictionEngine
 
             Type uiType = typeof(UIBase);
             if (uiType.IsAssignableFrom(type))
-                name = typeof(UIBase).Name;
+                name = "UI";
             else if (type == typeof(TerrainGridMeshObject))
                 name = typeof(TerrainGridMeshObject).Name;
             else if (type == typeof(BuildingGridMeshObject))

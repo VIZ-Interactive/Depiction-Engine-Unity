@@ -9,7 +9,7 @@ namespace DepictionEngine
     {
         int maskedLayers { get; set; }
 
-        int GetCusomtEffectComputeBufferDataSize();
+        int GetCustomEffectComputeBufferDataSize();
         int AddToComputeBufferData(int startIndex, float[] computeBufferData);
     }
 }

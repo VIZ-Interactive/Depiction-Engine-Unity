@@ -33,7 +33,7 @@ namespace DepictionEngine
 #endif
 		public bool autoSnapToGround
 		{
-			get { return _autoSnapToGround; }
+			get => _autoSnapToGround;
 			set 
 			{
 				SetValue(nameof(autoSnapToGround), value, ref _autoSnapToGround, (newValue, oldValue) =>
@@ -52,7 +52,7 @@ namespace DepictionEngine
 #endif
 		public double groundOffset
 		{
-			get { return _groundOffset; }
+			get => _groundOffset;
 			set
 			{
 				SetValue(nameof(groundOffset), value, ref _groundOffset, (newValue, oldValue) =>

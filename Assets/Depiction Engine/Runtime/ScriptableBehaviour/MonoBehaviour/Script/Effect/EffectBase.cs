@@ -34,7 +34,7 @@ namespace DepictionEngine
         [Json]
         public float alpha
         {
-            get { return _alpha; }
+            get => _alpha;
             set 
             {
                 if (value < 0.0f)
@@ -45,7 +45,7 @@ namespace DepictionEngine
 
         public GeoAstroObject geoAstroObject
         {
-            get { return objectBase as GeoAstroObject; }
+            get => objectBase as GeoAstroObject;
         }
 
         public virtual float GetAlpha()

@@ -11,9 +11,9 @@ namespace DepictionEngine
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/VolumeMask/" + nameof(RectangularVolumeMask))]
     public class RectangularVolumeMask : VolumeMaskBase
     {
-        public override int GetCusomtEffectComputeBufferDataSize()
+        public override int GetCustomEffectComputeBufferDataSize()
         {
-            return base.GetCusomtEffectComputeBufferDataSize() + 13;
+            return base.GetCustomEffectComputeBufferDataSize() + 13;
         }
 
         public override int AddToComputeBufferData(int startIndex, float[] computeBufferData)

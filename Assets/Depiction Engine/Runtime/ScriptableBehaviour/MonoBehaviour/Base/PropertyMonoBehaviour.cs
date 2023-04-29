@@ -172,7 +172,7 @@ namespace DepictionEngine
 
             UpdateActiveAndEnabled();
 
-            UpdateFields();
+            UpdateDependencies();
         }
 
 #if UNITY_EDITOR
@@ -209,7 +209,7 @@ namespace DepictionEngine
             return false;
         }
 
-        public virtual void UpdateFields()
+        public virtual void UpdateDependencies()
         {
         }
 
@@ -329,7 +329,7 @@ namespace DepictionEngine
 
             Type parentType = GetParentType();
             if (parentType != null)
-                parent = (PropertyMonoBehaviour)gameObject.GetSafeComponentInParent(parentType, true, InitializationContext.Programmatically, null, null, isFallbackValues);
+                parent = (PropertyMonoBehaviour)gameObject.GetComponentInParentInitialized(parentType, true, InitializationContext.Programmatically, null, null, isFallbackValues);
 
             return parent;
         }
@@ -605,7 +605,7 @@ namespace DepictionEngine
         public SerializableGuid id
         {
             get => _id;
-            set => _id = value;
+            private set => _id = value;
         }
 
         protected override void OnDisable()
@@ -795,7 +795,7 @@ namespace DepictionEngine
         {
             if (initialized)
             {
-                UpdateFields();
+                UpdateDependencies();
 
                 PreHierarchicalUpdateBeforeChildrenAndSiblings();
             }
@@ -845,45 +845,6 @@ namespace DepictionEngine
 
             return true;
         }
-
-        //private Stack<PropertyMonoBehaviour> _hierarchyTraversalPropertyStack;
-        //private Stack<bool> _hierarchyTraversalBeforeFlagStack;
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //public void TraverseHierarchy(Action<PropertyMonoBehaviour> beforeChildrenCallback = null, Action<PropertyMonoBehaviour> afterChildrenCallback = null)
-        //{
-        //    if (afterChildrenCallback != null)
-        //    {
-        //        _hierarchyTraversalPropertyStack ??= new();
-        //        _hierarchyTraversalPropertyStack.Clear();
-        //        _hierarchyTraversalBeforeFlagStack ??= new();
-        //        _hierarchyTraversalBeforeFlagStack.Clear();
-
-        //        _hierarchyTraversalPropertyStack.Push(this);
-        //        _hierarchyTraversalBeforeFlagStack.Push(true);
-
-        //        while (_hierarchyTraversalPropertyStack.Any())
-        //        {
-        //            PropertyMonoBehaviour current = _hierarchyTraversalPropertyStack.Pop();
-        //            bool before = _hierarchyTraversalBeforeFlagStack.Pop();
-
-        //            if (before)
-        //            {
-        //                beforeChildrenCallback?.Invoke(current);
-
-        //                _hierarchyTraversalPropertyStack.Push(current);
-        //                _hierarchyTraversalBeforeFlagStack.Push(false);
-
-        //                current.IterateOverChildrenAndSiblings((child) =>
-        //                {
-        //                    _hierarchyTraversalPropertyStack.Push(child);
-        //                    _hierarchyTraversalBeforeFlagStack.Push(true);
-        //                });
-        //            }
-        //            else
-        //                afterChildrenCallback.Invoke(current);
-        //        }
-        //    }
-        //}
 
         protected virtual bool AddChild(PropertyMonoBehaviour child)
         {
@@ -1008,7 +969,7 @@ namespace DepictionEngine
             if (wasFirstUpdated)
             {
                 if (ResetAllowed())
-                    Editor.InspectorManager.Reseting(this);
+                    Editor.InspectorManager.Resetting(this);
 
                 Editor.UndoManager.RevertAllInCurrentGroup();
 

@@ -69,14 +69,14 @@ namespace DepictionEngine
         {
 			if (isFallbackValues)
 				return true;
-			return transform != Disposable.NULL ? !transform.isGeoCoordinateTransform : true;
+			return transform == Disposable.NULL || !transform.isGeoCoordinateTransform;
 		}
 
 		private bool GetShowGeoCoordinate()
 		{
 			if (isFallbackValues)
 				return true;
-			return transform != Disposable.NULL ? transform.isGeoCoordinateTransform : false;
+			return transform != Disposable.NULL && transform.isGeoCoordinateTransform;
 		}
 #endif
 

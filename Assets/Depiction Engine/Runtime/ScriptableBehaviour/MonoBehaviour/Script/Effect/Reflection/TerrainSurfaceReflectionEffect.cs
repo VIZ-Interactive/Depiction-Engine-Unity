@@ -196,7 +196,7 @@ namespace DepictionEngine
 
         private double GetSmoothAltitude(Camera camera, GeoAstroObject geoAstroObject)
         {
-            //Ugly approximation, SSR is really the way to go when elevation is actived
+            //Ugly approximation, SSR is really the way to go when elevation is activated
 
             int instanceId = camera.GetInstanceID();
 

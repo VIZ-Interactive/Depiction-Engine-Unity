@@ -15,7 +15,7 @@ namespace DepictionEngine
         /// </summary>
         /// <param name="color">A color value.</param>
         /// <param name="colorStr">A string representing a color.</param>
-        /// <returns>True if the conversion was successfull.</returns>
+        /// <returns>True if the conversion was successful.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ColorFromString(out Color color, string colorStr)
         {

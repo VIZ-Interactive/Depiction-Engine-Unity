@@ -57,10 +57,10 @@ namespace DepictionEngine
         void Recycle();
 
         /// <summary>
-        /// Needs to be called before the object can be used. Objects created throught the <see cref="DepictionEngine.InstanceManager"/> should automatically Initialize the object.
+        /// Needs to be called before the object can be used. Objects created through the <see cref="DepictionEngine.InstanceManager"/> should automatically Initialize the object.
         /// </summary>
         /// <returns>False if the object is already initializing or initialized.</returns>
-        /// <remarks>In some edge cases, in the editor, the Initialize may not be called immediately aftet the object is instantiated.</remarks>
+        /// <remarks>In some edge cases, in the editor, the Initialize may not be called immediately after the object is instantiated.</remarks>
         bool Initialize();
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace DepictionEngine
         void OnDisposeInternal(DisposeContext disposeContext);
 
         /// <summary>
-        /// This is where you clear or dipose any remaining references. It will be called automatically by <see cref="DepictionEngine.DisposeManager"/> immediately after <see cref="DepictionEngine.IDisposable.OnDisposing"/> unless the object was Destroyed as a result of an Editor action.
+        /// This is where you clear or dispose any remaining references. It will be called automatically by <see cref="DepictionEngine.DisposeManager"/> immediately after <see cref="DepictionEngine.IDisposable.OnDisposing"/> unless the object was Destroyed as a result of an Editor action.
         /// </summary>
         /// <returns>True if disposing, False if the object is already disposing or was disposed.</returns>
         bool UpdateDisposingContext();

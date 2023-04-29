@@ -229,7 +229,7 @@ namespace DepictionEngine
         public RaycastHitDouble(Vector3Double point, Transform transform, int triangleIndex)
         {
             this.point = point;
-            this.meshRendererVisual = transform.gameObject.GetSafeComponent<MeshRendererVisual>();
+            this.meshRendererVisual = transform.gameObject.GetComponentInitialized<MeshRendererVisual>();
             if (meshRendererVisual != Disposable.NULL && meshRendererVisual.visualObject != Disposable.NULL && meshRendererVisual.visualObject.transform != Disposable.NULL)
                 this.transform = meshRendererVisual.visualObject.transform;
             else

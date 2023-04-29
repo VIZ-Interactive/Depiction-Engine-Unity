@@ -60,7 +60,7 @@ namespace DepictionEngine
         [BeginFoldout("Editor")]
         [SerializeField, Tooltip("When enabled some hidden properties and objects will be exposed to help with debugging.")]
         private bool _debug;
-        [SerializeField, Tooltip("When enabled the framerate will be shown in the scene view windows.")]
+        [SerializeField, Tooltip("When enabled an approximate Editor framerate will be shown in the scene view windows.")]
         private bool _showFrameRateInSceneViews;
         [SerializeField, Tooltip("When enabled some log entries will be disable such as 'Child GameObject ... became dangling during undo'."), EndFoldout]
         private bool _logConsoleFiltering;
@@ -68,7 +68,7 @@ namespace DepictionEngine
         [BeginFoldout("Performance")]
         [SerializeField, Tooltip("Should the player be running when the application is in the background?")]
         private bool _runInBackground;
-        [SerializeField, Tooltip("When enabled some "+nameof(Processor)+"'s will perform their work on seperate threads."), EndFoldout]
+        [SerializeField, Tooltip("When enabled some "+nameof(Processor)+"'s will perform their work on separate threads."), EndFoldout]
         private bool _enableMultithreading;
 
 #if UNITY_EDITOR
@@ -235,9 +235,9 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        public override void UpdateFields()
+        public override void UpdateDependencies()
         {
-            base.UpdateFields();
+            base.UpdateDependencies();
 
             Editor.SceneViewDouble.InitSceneViewDoubles(ref _sceneViewDoubles);
         }
@@ -300,18 +300,26 @@ namespace DepictionEngine
         {
             if (showFrameRateInSceneViews)
             {
-                GUILayout.BeginArea(new Rect(43, 2, 65, 50));
+                Editor.SceneViewDouble sceneViewDouble = Editor.SceneViewDouble.GetSceneViewDouble(sceneview);
+                if (sceneViewDouble != null)
+                {
+                    UnityEditor.Handles.BeginGUI();
 
-                var rect = UnityEditor.EditorGUILayout.BeginVertical();
-                UnityEditor.EditorGUI.DrawRect(rect, UnityEditor.EditorGUIUtility.isProSkin ? new Color32(56, 56, 56, 200) : new Color32(194, 194, 194, 200));
+                    GUILayout.BeginArea(new Rect(43, 2, 65, 50));
 
-                GUILayout.BeginHorizontal();
-                GUILayout.Label("FPS: " + Editor.GameViewGUIUtility.GetFrameRate().ToString("F1"));
-                GUILayout.EndHorizontal();
+                    var rect = UnityEditor.EditorGUILayout.BeginVertical();
+                    UnityEditor.EditorGUI.DrawRect(rect, UnityEditor.EditorGUIUtility.isProSkin ? new Color32(56, 56, 56, 200) : new Color32(194, 194, 194, 200));
 
-                UnityEditor.EditorGUILayout.EndVertical();
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("FPS: " + sceneViewDouble.GetFrameRate().ToString("F1"));
+                    GUILayout.EndHorizontal();
 
-                GUILayout.EndArea();
+                    UnityEditor.EditorGUILayout.EndVertical();
+
+                    GUILayout.EndArea();
+
+                    UnityEditor.Handles.EndGUI();
+                }
             }
         }
 
@@ -551,7 +559,7 @@ namespace DepictionEngine
 
                     //Fix for a Unity Bug where a null item is sent to the DoItemGUI method in TreeViewController causing it to spam NullReferenceException.
                     //The bug usually occurs when a GameObject foldout is opened in the SceneHierarchy while new child objects are being added/created quickly by a loader or anything else. 
-                    //The spaming, once triggered, will usually stop after the GameObject is deselected 
+                    //The spamming, once triggered, will usually stop after the GameObject is deselected 
                     //TODO: File a bug report with Unity to fix the problem in the source code directly
                     MethodInfo unityDoItemGUI = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.IMGUI.Controls.TreeViewController").GetMethod("DoItemGUI", BindingFlags.Instance | BindingFlags.NonPublic);
                     MethodInfo preDoItemGUI = GetType().GetMethod(nameof(PatchedPreDoItemGUI), BindingFlags.Static | BindingFlags.NonPublic);
@@ -665,6 +673,64 @@ namespace DepictionEngine
         {
             return type.Namespace == typeof(Editor.SceneCamera).Namespace;
         }
+
+        private List<TransformBase> sceneCameraTransforms
+        {
+            get => _sceneCameraTransforms;
+        }
+        [SerializeField, HideInInspector]
+        private List<Editor.SceneViewDouble> _sceneViewDoubles;
+        public List<Editor.SceneViewDouble> sceneViewDoubles
+        {
+            get => _sceneViewDoubles;
+        }
+
+        public void SceneViewDoubleDisposed(Editor.SceneViewDouble sceneViewDouble)
+        {
+            _sceneViewDoubles.Remove(sceneViewDouble);
+        }
+
+        public string buildOutputPath
+        {
+            get => _buildOutputPath;
+            set => SetValue(nameof(buildOutputPath), value, ref _buildOutputPath);
+        }
+
+        public UnityEditor.BuildAssetBundleOptions buildOptions
+        {
+            get => _buildOptions;
+            set => SetValue(nameof(buildOptions), value, ref _buildOptions);
+        }
+
+        public UnityEditor.BuildTarget buildTarget
+        {
+            get => _buildTarget;
+            set => SetValue(nameof(buildTarget), value, ref _buildTarget);
+        }
+
+        public static void MarkSceneDirty()
+        {
+            if (!Application.isPlaying)
+                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+        }
+
+        private bool AddSceneCameraTransform(TransformBase sceneCameraTransform)
+        {
+            InitSceneCameraTransforms();
+            if (!_sceneCameraTransforms.Contains(sceneCameraTransform))
+            {
+                _sceneCameraTransforms.Add(sceneCameraTransform);
+                return true;
+            }
+            return false;
+        }
+
+        private bool RemoveSceneCameraTransform(TransformBase sceneCameraTransform)
+        {
+            if (_sceneCameraTransforms.Remove(sceneCameraTransform))
+                return true;
+            return false;
+        }
 #endif
 
         private static int _isUserChange;
@@ -763,11 +829,11 @@ namespace DepictionEngine
             get => sceneChildren.Count;
         }
 
-        public void IterateOverChildren<T>(Func<T, bool> callback) where T : PropertyMonoBehaviour
+        public void IterateOverChildren<T>(Func<T, bool> callback, bool includeDontSave = true) where T : PropertyMonoBehaviour
         {
-            foreach (PropertyMonoBehaviour propertyMonoBehaviour in sceneChildren)
+            foreach (TransformBase transform in sceneChildren)
             {
-                if (propertyMonoBehaviour is T && propertyMonoBehaviour != Disposable.NULL && !callback(propertyMonoBehaviour as T))
+                if (transform is T && transform != Disposable.NULL && (includeDontSave || !transform.gameObject.hideFlags.HasFlag(HideFlags.DontSave)) && !callback(transform as T))
                     return;
             }
         }
@@ -783,38 +849,25 @@ namespace DepictionEngine
 
             if (!childrenChanged)
             {
-                List<GameObject> rootGameObjects = GetRootGameObjects();
-                if (rootGameObjects != null)
+                Scene scene = gameObject.scene;
+                if (scene != null && scene.isLoaded)
                 {
-                    //Subtract one for the SceneManager which is not present in the SceneChildren list
-                    int unityVisibleRootGameObjectsCount = rootGameObjects.Count;
-                    foreach (GameObject go in rootGameObjects)
-                    {
-                        if (go.name == SCENE_MANAGER_NAME || IsGameObjectHiddenOrDontSave(go))
-                            unityVisibleRootGameObjectsCount--;
-                    }
+                    int visibleRootGameObjectsCount = 0;
 
-                    int visibleRootGameObjectsCount = childCount;
-                    //Subtract the gameObject which are not present in the GetRootGameObjects()
+                    //Count only the gameObjects which do not have DontSave hideFlags as they are not included in the scene.rootCount
                     IterateOverChildren<TransformBase>((propertyMonoBehaviour) =>
                     {
-                        if (IsGameObjectHiddenOrDontSave(propertyMonoBehaviour.gameObject))
-                            visibleRootGameObjectsCount--;
+                        visibleRootGameObjectsCount++;
                         return true;
-                    });
+                    }, false);
 
-                    if (visibleRootGameObjectsCount != unityVisibleRootGameObjectsCount)
+                    //Subtract one for the SceneManager which is not present in the SceneChildren list
+                    if (visibleRootGameObjectsCount != scene.rootCount - 1)
                         childrenChanged = true;
                 }
             }
 
             return childrenChanged;
-        }
-
-        private bool IsGameObjectHiddenOrDontSave(GameObject go)
-        {
-            HideFlags hideFlags = go.hideFlags;
-            return hideFlags.HasFlag(HideFlags.HideAndDontSave) || hideFlags.HasFlag(HideFlags.DontSave) || hideFlags.HasFlag(HideFlags.HideInHierarchy);
         }
 
         protected override void UpdateChildren()
@@ -824,13 +877,8 @@ namespace DepictionEngine
             foreach (UnityEditor.SceneView sceneView in UnityEditor.SceneView.sceneViews)
                 SetGameObjectParent(sceneView.camera.gameObject);
 #endif
-
-            List<GameObject> rootGameObjects = GetRootGameObjects();
-            if (rootGameObjects != null)
-            {
-                foreach (GameObject rootGameObject in rootGameObjects)
-                    SetGameObjectParent(rootGameObject);
-            }
+            foreach (GameObject rootGameObject in GetRootGameObjects())
+                SetGameObjectParent(rootGameObject);
         }
 
         private void SetGameObjectParent(GameObject go)
@@ -849,35 +897,23 @@ namespace DepictionEngine
         private List<GameObject> _rootGameObjects;
         public List<GameObject> GetRootGameObjects()
         {
+            _rootGameObjects ??= new List<GameObject>();
+            _rootGameObjects.Clear();
+
             Scene scene = gameObject.scene;
             if (scene != null && scene.isLoaded)
-            {
-                _rootGameObjects ??= new List<GameObject>();
-                //GetRootGameObjects does not include HideAndDontSave gameObjects
                 scene.GetRootGameObjects(_rootGameObjects);
-
-                return _rootGameObjects;
+            else
+            {
+                foreach (GameObject go in Object.FindObjectsOfType<GameObject>(true))
+                {
+                    if (go.transform.parent == null && !go.hideFlags.HasFlag(HideFlags.DontSave))
+                        _rootGameObjects.Add(go);
+                }
             }
-            return null;
-        }
 
-#if UNITY_EDITOR
-        private List<TransformBase> sceneCameraTransforms
-        {
-            get => _sceneCameraTransforms;
+            return _rootGameObjects;
         }
-        [SerializeField, HideInInspector]
-        private List<Editor.SceneViewDouble> _sceneViewDoubles;
-        public List<Editor.SceneViewDouble> sceneViewDoubles
-        {
-            get => _sceneViewDoubles;
-        }
-
-        public void SceneViewDoubleDisposed(Editor.SceneViewDouble sceneViewDouble)
-        {
-            _sceneViewDoubles.Remove(sceneViewDouble);
-        }
-#endif
 
         public static bool IsSceneBeingDestroyed()
         {
@@ -920,6 +956,7 @@ namespace DepictionEngine
                 {
 #if UNITY_EDITOR
                     _lastDebug = newValue;
+                    DebugChangedEvent?.Invoke(newValue);
 #endif
                 });
             }
@@ -970,7 +1007,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled some <see cref="DepictionEngine.Processor"/>'s will perform their work on seperate threads.
+        /// When enabled some <see cref="DepictionEngine.Processor"/>'s will perform their work on separate threads.
         /// </summary>
         [Json]
         public bool enableMultithreading
@@ -978,50 +1015,6 @@ namespace DepictionEngine
             get => _enableMultithreading;
             set => SetValue(nameof(enableMultithreading), value, ref _enableMultithreading);
         }
-
-#if UNITY_EDITOR
-        public string buildOutputPath
-        {
-            get => _buildOutputPath;
-            set => SetValue(nameof(buildOutputPath), value, ref _buildOutputPath);
-        }
-
-        public UnityEditor.BuildAssetBundleOptions buildOptions
-        {
-            get => _buildOptions;
-            set => SetValue(nameof(buildOptions), value, ref _buildOptions);
-        }
-
-        public UnityEditor.BuildTarget buildTarget
-        {
-            get => _buildTarget;
-            set => SetValue(nameof(buildTarget), value, ref _buildTarget);
-        }
-
-        public static void MarkSceneDirty()
-        {
-            if (!Application.isPlaying)
-                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
-        }
-
-        private bool AddSceneCameraTransform(TransformBase sceneCameraTransform)
-        {
-            InitSceneCameraTransforms();
-            if (!_sceneCameraTransforms.Contains(sceneCameraTransform))
-            {
-                _sceneCameraTransforms.Add(sceneCameraTransform);
-                return true;
-            }
-            return false;
-        }
-
-        private bool RemoveSceneCameraTransform(TransformBase sceneCameraTransform)
-        {
-            if (_sceneCameraTransforms.Remove(sceneCameraTransform))
-                return true;
-            return false;
-        }
-#endif
 
         public static bool Debugging()
         {
@@ -1163,7 +1156,7 @@ namespace DepictionEngine
 #endif
 
                 //Capture physics driven transform change
-                DetectTransformChange(PhysicsManager.physicTransforms);
+                DetectTransformChange(instanceManager.physicTransforms);
 
                 if (!_updated)
                 {
@@ -1173,50 +1166,23 @@ namespace DepictionEngine
                     PreHierarchicalUpdate();
                     HierarchicalUpdate();
                     PostHierarchicalUpdate();
-                    //TraverseHierarchy( 
-                    //    (property) => 
-                    //    {
-                    //        if (property.initialized)
-                    //        {
-                    //            property.UpdateFields();
-
-                    //            property.PreHierarchicalUpdateBeforeChildrenAndSiblings();
-                    //        }
-                    //    }, 
-                    //    (property) => 
-                    //    { 
-                    //        property.PreHierarchicalUpdate(); 
-                    //    });
-                    //TraverseHierarchy(null, (property) => { property.HierarchicalUpdate(); });
-                    //TraverseHierarchy(null, (property) => { property.PostHierarchicalUpdate(); });
                     sceneExecutionState = ExecutionState.None;
                 }
             }
         }
 
+#if UNITY_EDITOR
         public void HierarchicalInitializeEditorCreatedObjects()
         {
-#if UNITY_EDITOR
             if (Editor.UndoManager.DetectEditorUndoRedoRegistered())
             {
                 InstanceManager.InitializingContext(() =>
                 {
                     HierarchicalInitialize();
-                    //TraverseHierarchy(
-                    //    (property) =>
-                    //    {
-                    //        property.UpdateRelations();
-                    //    },
-                    //    (property) =>
-                    //    {
-                    //        property.HierarchicalInitialize();
-                    //    });
                 }, InitializationContext.Editor);
             }
-#endif
         }
 
-#if UNITY_EDITOR
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool HierarchicalInitialize()
         {
@@ -1270,71 +1236,78 @@ namespace DepictionEngine
 #endif
         }
 
-        protected override void FixedUpdate()
+        private void FixedUpdate()
         {
-            base.FixedUpdate();
-
             //Capture physics driven transform change
-            DetectTransformChange(PhysicsManager.physicTransforms);
+            DetectTransformChange(instanceManager.physicTransforms);
 
-            Camera physicsCamera = Camera.main;
-
-            if (physicsCamera == Disposable.NULL)
+            RenderingManager renderingManager = RenderingManager.Instance(false);
+            if (renderingManager != Disposable.NULL && renderingManager.originShifting)
             {
-                instanceManager.IterateOverInstances<Camera>(
-                    (camera) =>
-                    {
-#if UNITY_EDITOR
-                        if (camera is Editor.SceneCamera)
-                            camera = null;
-#endif
-                        if (camera != Disposable.NULL)
+                //The physics camera is the camera relative to which we render physics when origin shifting is enabled.
+                //The physics camera will be the main camera, if there is one, otherwise it will be any other camera.
+                Camera physicsCamera = Camera.main;
+
+                if (physicsCamera == Disposable.NULL)
+                {
+                    instanceManager.IterateOverInstances<Camera>(
+                        (camera) =>
                         {
-                            physicsCamera = camera;
-                            return false;
-                        }
+#if UNITY_EDITOR
+                            if (camera is Editor.SceneCamera)
+                                camera = null;
+#endif
+                            if (camera != Disposable.NULL)
+                            {
+                                physicsCamera = camera;
+                                return false;
+                            }
 
-                        return true;
-                    });
-            }
+                            return true;
+                        });
+                }
 
 #if UNITY_EDITOR
-            if (physicsCamera == Disposable.NULL)
-            {
-                instanceManager.IterateOverInstances<Camera>(
-                    (camera) =>
-                    {
-                        if (camera is Editor.SceneCamera && camera != Disposable.NULL)
+                //If we do not have a physicsCamera and we are in the Editor we use the first SceneCamera.
+                if (physicsCamera == Disposable.NULL)
+                {
+                    instanceManager.IterateOverInstances<Camera>(
+                        (camera) =>
                         {
-                            physicsCamera = camera;
-                            return false;
-                        }
+                            if (camera is Editor.SceneCamera && camera != Disposable.NULL)
+                            {
+                                physicsCamera = camera;
+                                return false;
+                            }
 
-                        return true;
-                    });
-            }
+                            return true;
+                        });
+                }
 #endif
 
-            if (physicsCamera != Disposable.NULL && physicsCamera.transform != Disposable.NULL)
-                TransformDouble.ApplyOriginShifting(physicsCamera.GetOrigin());
+                if (physicsCamera != Disposable.NULL && physicsCamera.transform != Disposable.NULL)
+                    TransformDouble.ApplyOriginShifting(physicsCamera.GetOrigin());
+            }
         }
 
-        public void DetectTransformChange(IEnumerable<TransformDouble> transforms)
+        public void DetectTransformChange(IEnumerable<TransformBase> transforms)
         {
-            IterateThroughList(transforms, (transform) => { transform.DetectTransformChanged(); });
+            IterateThroughList(transforms, (transform) => 
+            { 
+                if (transform is TransformDouble transformDouble)
+                    transformDouble.DetectTransformChanges(); 
+            });
         }
 
-        protected override void LateUpdate()
+        private void LateUpdate()
         {
-            base.LateUpdate();
-
             InvokeAction(ref LateUpdateEvent, "LateUpdate", ExecutionState.LateUpdate);
 
             DisposeManager.DisposingContext(() => { InvokeAction(ref DelayedOnDestroyEvent, "DelayedOnDestroy", ExecutionState.DelayedOnDestroy); }, DisposeContext.Editor_Destroy);
 
 #if UNITY_EDITOR
             //Unsubscribe and Subscribe again to stay at the bottom of the invocation list. 
-            //Could be replaced with [DefaultExecutionOrder(-3)] potentialy?
+            //Could be replaced with [DefaultExecutionOrder(-3)] potentially?
             UpdateUpdateDelegate();
 #endif
             Datasource.ResetAllowAutoDispose();
@@ -1403,7 +1376,7 @@ namespace DepictionEngine
             //Preemptively apply origin shifting for proper camera relative raycasting
             TransformDouble.ApplyOriginShifting(camera.GetOrigin());
 
-            //Apply Ignore Render layerMask so that viusal objects are property excluded from raycasting
+            //Apply Ignore Render layerMask so that visual objects are property excluded from raycasting
             instanceManager.IterateOverInstances<TransformBase>(
                 (transform) =>
                 {
@@ -1437,10 +1410,9 @@ namespace DepictionEngine
 
             //Update Shaders and UnityTransform
             HierarchicalBeginCameraRendering(camera);
-            //TraverseHierarchy(null, (property) => { property.HierarchicalBeginCameraRendering(camera); });
-
+       
             //Update the Star before the Reflection/ReflectionProbe renders are generated
-            //Note: The Star LensFlare might require a Raycast so we make sure final Orgin shifting as been performed before we get it ready for render
+            //Note: The Star LensFlare might require a raycast so we make sure final Origin shifting as been performed before we get it ready for render
             Star star = instanceManager.GetStar();
             if (star != Disposable.NULL)
                 star.UpdateStar(camera);
@@ -1508,7 +1480,6 @@ namespace DepictionEngine
         public void EndCameraRendering(Camera camera)
         {
             HierarchicalEndCameraRendering(camera);
-            //TraverseHierarchy(null, (property) => { property.HierarchicalEndCameraRendering(camera); });
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -200,7 +200,7 @@ namespace DepictionEngine
 
         public virtual void Initialized(InitializationContext initializingContext)
         {
-            //FallbackValues Component are really only used to diplay properties in the Inspector or to validate property change. By preventing initialized we limit the amount of code the object can execute.
+            //FallbackValues Component are really only used to display properties in the Inspector or to validate property change. By preventing initialized we limit the amount of code the object can execute.
             if (!isFallbackValues)
                 _initialized = true;
 
@@ -261,7 +261,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Trigered right after an undo or redo operation was performed (Editor Only).
+        /// Triggered right after an undo or redo operation was performed (Editor Only).
         /// </summary>
         public void UndoRedoPerformed()
         {

@@ -7,7 +7,7 @@ namespace DepictionEngine
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Script/Controller/" + nameof(TargetController))]
     public class TargetController : TargetControllerBase
     {
-        public static readonly Vector3Double DEFAULT_FORWARD_VECTOR_VALUE = new Vector3Double(25.0d, 0.0d, 0.0d);
+        public static readonly Vector3Double DEFAULT_FORWARD_VECTOR_VALUE = new (25.0d, 0.0d, 0.0d);
 
         private const float MIN_FORWARD_VECTOR_X = -90.0f;
         private const float MAX_FORWARD_VECTOR_X = 90.0f;
@@ -104,7 +104,7 @@ namespace DepictionEngine
 
                     geoCoordinate.altitude = target.transform.parentGeoAstroObject.radius / 10.0d;
 
-                    RayDouble ray = new RayDouble(target.transform.parentGeoAstroObject.GetPointFromGeoCoordinate(geoCoordinate), target.transform.parentGeoAstroObject.GetUpVectorFromGeoCoordinate(geoCoordinate) * Vector3Double.down);
+                    RayDouble ray = new (target.transform.parentGeoAstroObject.GetPointFromGeoCoordinate(geoCoordinate), target.transform.parentGeoAstroObject.GetUpVectorFromGeoCoordinate(geoCoordinate) * Vector3Double.down);
                     RaycastHitDouble[] terrainFilteredHit = PhysicsDouble.TerrainFiltered(PhysicsDouble.RaycastAll(ray, (float)(geoCoordinate.altitude * 20.0d)));
                     if (terrainFilteredHit.Length > 0)
                     {

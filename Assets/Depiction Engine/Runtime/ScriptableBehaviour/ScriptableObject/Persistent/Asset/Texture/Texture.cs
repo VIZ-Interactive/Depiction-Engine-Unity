@@ -316,8 +316,11 @@ namespace DepictionEngine
         {
             TextureModifier textureModifier = ProcessingFunctions.CreatePropertyModifier<TextureModifier>();
 
-            int textureSize = 256;
-            textureModifier.Init(PopulateProceduralPixels(parameters, textureSize, textureSize, GetPixel), true, textureSize, textureSize, TextureFormat.RGBA32, false);
+            if (textureModifier != Disposable.NULL)
+            {
+                int textureSize = 256;
+                textureModifier.Init(PopulateProceduralPixels(parameters, textureSize, textureSize, GetPixel), true, textureSize, textureSize, TextureFormat.RGBA32, false);
+            }
 
             return textureModifier;
         }

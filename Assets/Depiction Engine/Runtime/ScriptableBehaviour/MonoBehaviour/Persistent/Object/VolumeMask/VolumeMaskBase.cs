@@ -35,14 +35,14 @@ namespace DepictionEngine
             return true;
         }
 
-        public virtual int GetCusomtEffectComputeBufferDataSize()
+        public virtual int GetCustomEffectComputeBufferDataSize()
         {
             return 0;
         }
 
         public virtual int AddToComputeBufferData(int startIndex, float[] computeBufferData)
         {
-            return GetCusomtEffectComputeBufferDataSize();
+            return GetCustomEffectComputeBufferDataSize();
         }
 
         public virtual bool IsInsideVolume(Vector3Double point)

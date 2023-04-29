@@ -147,7 +147,7 @@ namespace DepictionEngine
 
         private static List<Type> _requiredComponentTypes;
         /// <summary>
-        /// Creates a <see cref="DepictionEngine.JSONArray"/> containing the initialization values for a <see cref="DepictionEngine.LoaderBase"/>, <see cref="DepictionEngine.FallbackValues"/> and coresponding <see cref="DepictionEngine.AssetReference"/> that can be passed on to the json parameter of <see cref="DepictionEngine.InstanceManager.Initialize"/> or some other instancing derivative methods.
+        /// Creates a <see cref="DepictionEngine.JSONArray"/> containing the initialization values for a <see cref="DepictionEngine.LoaderBase"/>, <see cref="DepictionEngine.FallbackValues"/> and corresponding <see cref="DepictionEngine.AssetReference"/> that can be passed on to the json parameter of <see cref="DepictionEngine.InstanceManager.Initialize"/> or some other instancing derivative methods.
         /// </summary>
         /// <param name="loaderType">The <see cref="DepictionEngine.LoaderBase"/> type.</param>
         /// <param name="fallbackType">The <see cref="DepictionEngine.FallbackValues"/> type.</param>
@@ -201,7 +201,7 @@ namespace DepictionEngine
         /// Creates a <see cref="DepictionEngine.JSONObject"/> of specified type so it can be passed on to the json parameter of <see cref="DepictionEngine.InstanceManager.Initialize"/> or some other instancing derivative methods.
         /// </summary>
         /// <param name="type">The component type.</param>
-        /// <param name="id">An Optional component id. If ommited a new guid will be generated.</param>
+        /// <param name="id">An Optional component id. If omitted a new guid will be generated.</param>
         /// <returns>The newly create <see cref="DepictionEngine.JSONObject"/> containing the component initialization values.</returns>
         public static JSONObject GetComponentJson(Type type, SerializableGuid id = default)
         {

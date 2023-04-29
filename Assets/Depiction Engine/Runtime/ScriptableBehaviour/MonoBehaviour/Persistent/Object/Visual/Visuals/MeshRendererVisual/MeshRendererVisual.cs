@@ -397,12 +397,12 @@ namespace DepictionEngine
     public class MeshRendererVisualModifier : PropertyModifier
     {
         [SerializeField]
-        private string _name;
-
-        private Mesh _sharedMesh;
+        public string name;
 
         [SerializeField]
         private MeshModifier _meshModifier;
+
+        public Mesh sharedMesh;
 
         private Type _typeNoCollider;
         private Type _typeBoxCollider;
@@ -412,7 +412,7 @@ namespace DepictionEngine
         {
             base.Recycle();
 
-            _name = default;
+            name = default;
 
             _typeNoCollider = default;
             _typeBoxCollider = default;
@@ -446,12 +446,6 @@ namespace DepictionEngine
             _typeMeshCollider = meshCollider;
         }
 
-        public string name
-        {
-            get => _name;
-            set => _name = value;
-        }
-
         public MeshModifier CreateMeshModifier()
         {
             return CreateMeshModifier<MeshModifier>();
@@ -474,18 +468,6 @@ namespace DepictionEngine
                 DisposeManager.Dispose(_meshModifier);
 
                 _meshModifier = value;
-            }
-        }
-
-        public Mesh sharedMesh
-        {
-            get => _sharedMesh;
-            set 
-            {
-                if (_sharedMesh == value)
-                    return;
-
-                _sharedMesh = value;
             }
         }
 

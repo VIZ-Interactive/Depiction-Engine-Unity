@@ -11,6 +11,6 @@ namespace DepictionEngine
     {
         int childCount { get; }
 
-        void IterateOverChildren<T>(Func<T, bool> callback) where T : PropertyMonoBehaviour;
+        void IterateOverChildren<T>(Func<T, bool> callback, bool includeDontSave = true) where T : PropertyMonoBehaviour;
     }
 }

@@ -112,7 +112,7 @@ namespace DepictionEngine
         /// <returns>A collection of the custom attributes that are applied to element and that match T, or an empty collection if no such attributes exist.</returns>
         public static IEnumerable<T> GetAllAttributes<T>(Type classType, bool inherit = true) where T : Attribute
         {
-            List<T> attributes = new List<T>();
+            List<T> attributes = new();
 
             while (classType != null)
             {

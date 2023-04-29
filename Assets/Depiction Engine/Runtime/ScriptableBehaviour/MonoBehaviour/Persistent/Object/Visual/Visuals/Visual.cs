@@ -21,8 +21,7 @@ namespace DepictionEngine
             gameObject.layer = LayerMask.GetMask("Default");
             gameObject.hideFlags = default;
 
-            transform.localPosition = default;
-            transform.localRotation = default;
+            transform.SetLocalPositionAndRotation(default, default);
             transform.localScale = Vector3.one;
 
             _visualObject = default;
@@ -40,7 +39,7 @@ namespace DepictionEngine
             if (!IsDisposing())
             {
                 if (parent == Disposable.NULL || parent.gameObject.transform != transform.parent)
-                    parent = transform.parent.gameObject.GetSafeComponentInParent(typeof(Visual), true, GetInitializeContext()) as Visual;
+                    parent = transform.parent.gameObject.GetComponentInParentInitialized(typeof(Visual), true, GetInitializeContext()) as Visual;
             }
 
             return parent;
@@ -50,7 +49,7 @@ namespace DepictionEngine
         {
             if (base.SetParent(value))
             {
-                visualObject = !IsDisposing() && transform.parent != null ? transform.parent.gameObject.GetSafeComponentInParent(typeof(VisualObject), true, GetInitializeContext()) as VisualObject : null;
+                visualObject = !IsDisposing() && transform.parent != null ? transform.parent.gameObject.GetComponentInParentInitialized(typeof(VisualObject), true, GetInitializeContext()) as VisualObject : null;
                 
                 return true;
             }

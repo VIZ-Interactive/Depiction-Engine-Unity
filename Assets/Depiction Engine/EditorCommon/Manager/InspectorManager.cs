@@ -1,17 +1,16 @@
-﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. <contact@vizinteractive.io> | Licensed under MIT license (see LICENSE.md for details)
+﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 #if UNITY_EDITOR
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace DepictionEngine.Editor
 {
     public class InspectorManager
     {
-        private static List<UnityEngine.Object> _resetingObjects = new();
-        public static void Reseting(UnityEngine.Object scriptableBehaviour)
+        private static List<UnityEngine.Object> _resettingObjects = new();
+        public static void Resetting(UnityEngine.Object scriptableBehaviour)
         {
-            _resetingObjects.Add(scriptableBehaviour);
+            _resettingObjects.Add(scriptableBehaviour);
         }
 
         private static List<(IJson, JSONObject)> _pastingComponentValuesToObjects = new();
@@ -32,22 +31,22 @@ namespace DepictionEngine.Editor
 
         private static void DetectReset()
         {
-            if (_resetingObjects != null && _resetingObjects.Count > 0)
+            if (_resettingObjects != null && _resettingObjects.Count > 0)
             {
                 //We assume that all the objects are of the same type
-                IScriptableBehaviour firstUnityObject = _resetingObjects[0] as IScriptableBehaviour;
-                string groupName = "Reset " + (_resetingObjects.Count == 1 ? firstUnityObject.name : "Object") + " " + firstUnityObject.GetType().Name;
+                IScriptableBehaviour firstUnityObject = _resettingObjects[0] as IScriptableBehaviour;
+                string groupName = "Reset " + (_resettingObjects.Count == 1 ? firstUnityObject.name : "Object") + " " + firstUnityObject.GetType().Name;
 
                 UndoManager.SetCurrentGroupName(groupName);
-                UndoManager.RecordObjects(_resetingObjects.ToArray());
+                UndoManager.RecordObjects(_resettingObjects.ToArray());
 
-                foreach (UnityEngine.Object unityObject in _resetingObjects)
+                foreach (UnityEngine.Object unityObject in _resettingObjects)
                 {
                     if (unityObject is IProperty)
                         (unityObject as IProperty).InspectorReset();
                 }
 
-                _resetingObjects.Clear();
+                _resettingObjects.Clear();
             }
         }
 

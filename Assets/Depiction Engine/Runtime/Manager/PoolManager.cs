@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. <contact@vizinteractive.io> | Licensed under MIT license (see LICENSE.md for details)
+﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
 using System.Collections.Generic;
@@ -454,12 +454,12 @@ namespace DepictionEngine
 
         private static UnityEngine.Object GetUnityObject(IDisposable disposable)
         {
-            if (disposable is UnityEngine.Object unityOject)
+            if (disposable is UnityEngine.Object unityObject)
             {
-                if (unityOject is Component component)
-                    unityOject = component.gameObject;
+                if (unityObject is Component component)
+                    unityObject = component.gameObject;
 
-                return unityOject;
+                return unityObject;
             }
             return null;
         }

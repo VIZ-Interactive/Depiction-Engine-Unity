@@ -363,7 +363,7 @@ namespace DepictionEngine
             }
         }
 
-        private bool SetLocalPosition(Vector3Double value, bool deriveGeoordinate = true)
+        private bool SetLocalPosition(Vector3Double value, bool deriveGeoCoordinate = true)
         {
             return SetValue(nameof(localPosition), ValidateVector3Double(value), ref _localPosition,
                 (newValue, oldValue) =>
@@ -372,7 +372,7 @@ namespace DepictionEngine
                     _lastLocalPosition = newValue;
 #endif
                     SetComponentDirtyFlag(true);
-                    if (deriveGeoordinate)
+                    if (deriveGeoCoordinate)
                         SetGeoCoordinate(GetGeoCoordinateFromLocalPoint(_localPosition), false);
 
                     OriginShiftDirty(this);
@@ -651,15 +651,15 @@ namespace DepictionEngine
             PropertyAssigned(this, nameof(geoCoordinate), geoCoordinate, geoCoordinate);
         }
 
-        public void DetectTransformChanged()
+        public void DetectTransformChanges()
         {
             if (DetectDirectTransformLocalPositionManipulation() || DetectDirectTransformLocalRotationManipulation() || DetectDirectTransformLocalScaleManipulation())
             {
 #if UNITY_EDITOR
                 if (SceneManager.GetIsUserChangeContext())
-                    RegisterCompleteObjectUndo();
+                    Editor.UndoManager.RecordObject(this);
 #endif
-     
+
                 SetTransformComponents(CaptureLocalPosition(), CaptureLocalRotation(), CaptureLocalScale());
            
                 InitLastTransformFields();
@@ -847,7 +847,6 @@ namespace DepictionEngine
                     {
                         if (transformDouble != Disposable.NULL)
                             transformDouble.HierarchicalApplyOriginShifting(origin, forceOriginShiftSelected);
-                        //transformDouble.TraverseHierarchy(null, (property) => { property.HierarchicalApplyOriginShifting(origin, forceOriginShiftSelected); });
                     }
                 }
                 else
@@ -855,7 +854,6 @@ namespace DepictionEngine
                     SceneManager sceneManager = SceneManager.Instance(false);
                     if (sceneManager != Disposable.NULL)
                         sceneManager.HierarchicalApplyOriginShifting(origin, forceOriginShiftSelected);
-                    //sceneManager.TraverseHierarchy(null, (property) => { property.HierarchicalApplyOriginShifting(origin, forceOriginShiftSelected); });
                 }
             }
         }

@@ -156,7 +156,7 @@ namespace DepictionEngine
                         if (packageInfo.resolvedPath.Contains("com.unity.render-pipelines.universal"))
                         {
                             if (packageInfo.resolvedPath.Contains("Packages\\"))
-                                PatchEmbededURPFiles(packageInfo.resolvedPath);
+                                PatchEmbeddedURPFiles(packageInfo.resolvedPath);
                             else
                                 _embedRequest = UnityEditor.PackageManager.Client.Embed(packageInfo.name);
                             break;
@@ -171,18 +171,18 @@ namespace DepictionEngine
                 if (_embedRequest.Error == null && _embedRequest.Result != null)
                 {
                     UnityEditor.AssetDatabase.Refresh();
-                    PatchEmbededURPFiles(_embedRequest.Result.resolvedPath);
+                    PatchEmbeddedURPFiles(_embedRequest.Result.resolvedPath);
                 }
 
                 _embedRequest = null;
             }
         }
 
-        private void PatchEmbededURPFiles(string embededURPPackageResolvedPath)
+        private void PatchEmbeddedURPFiles(string embeddedURPPackageResolvedPath)
         {
             PatchResult patchedResult = PatchResult.Failed;
 
-            string path = embededURPPackageResolvedPath + "/ShaderLibrary/Lighting.hlsl";
+            string path = embeddedURPPackageResolvedPath + "/ShaderLibrary/Lighting.hlsl";
 
             string lightingContent;
             using (StreamReader reader = new(path))
@@ -358,9 +358,9 @@ namespace DepictionEngine
             UpdateEnvironment();
         }
 
-        public override void UpdateFields()
+        public override void UpdateDependencies()
         {
-            base.UpdateFields();
+            base.UpdateDependencies();
 
 #if UNITY_EDITOR
             UpdateComputeBufferSupported();
@@ -545,7 +545,8 @@ namespace DepictionEngine
         {
             get
             {
-                _layersCustomEffects ??= new SerializableIPersistentList[32];
+                if (_layersCustomEffects == null || _layersCustomEffects.Length != 32)
+                    _layersCustomEffects = new SerializableIPersistentList[32];
                 return _layersCustomEffects;
             }
         }
@@ -683,7 +684,7 @@ namespace DepictionEngine
             get { return _rendererData; }
             set
             {
-                SetValue(nameof(rendererData), value, ref _rendererData, (newvalue, oldValue) =>
+                SetValue(nameof(rendererData), value, ref _rendererData, (newValue, oldValue) =>
                 {
                     InitRendererFeatures();
                 });
@@ -698,7 +699,7 @@ namespace DepictionEngine
             get { return _postProcessVolume; }
             set
             {
-                SetValue(nameof(postProcessVolume), value, ref _postProcessVolume, (newvalue, oldValue) =>
+                SetValue(nameof(postProcessVolume), value, ref _postProcessVolume, (newValue, oldValue) =>
                 {
                     InitPostProcessEffects();
                 });
@@ -752,7 +753,7 @@ namespace DepictionEngine
                 string rttCameraName = nameof(RTTCamera);
                 GameObject reflectionCameraGO = GameObject.Find(rttCameraName);
                 if (reflectionCameraGO != null)
-                    _rttCamera = reflectionCameraGO.GetSafeComponent<RTTCamera>();
+                    _rttCamera = reflectionCameraGO.GetComponentInitialized<RTTCamera>();
                 if (_rttCamera == Disposable.NULL)
                     _rttCamera = instanceManager.CreateInstance<RTTCamera>(null, rttCameraName);
             }
@@ -1343,7 +1344,7 @@ namespace DepictionEngine
                     int size = 0;
 
                     foreach (ICustomEffect layerCustomEffect in layerCustomEffects)
-                        size += layerCustomEffect.GetCusomtEffectComputeBufferDataSize();
+                        size += layerCustomEffect.GetCustomEffectComputeBufferDataSize();
 
                     if (layerCustomEffectComputeBufferData == null || layerCustomEffectComputeBufferData.Length != size)
                         layerCustomEffectComputeBufferData = new float[size];

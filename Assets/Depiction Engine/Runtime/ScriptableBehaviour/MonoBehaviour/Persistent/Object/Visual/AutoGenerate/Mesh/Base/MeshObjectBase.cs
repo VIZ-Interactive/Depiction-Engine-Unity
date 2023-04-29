@@ -372,7 +372,7 @@ namespace DepictionEngine
                 transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
                 {
                     Mesh mesh = GetMeshFromUnityMesh(meshRendererVisual.sharedMesh, false);
-                    if (mesh != Disposable.NULL && mesh.PhysicsBakedMeshDirty(physicsBakeMesh))
+                    if (mesh != Disposable.NULL && mesh.PhysicsBakedMeshDirty(physicsBakeMesh) && mesh.vertexCount > 0)
                     {
                         _meshParameters ??= new List<MeshParameters>();
                         _meshParameters.Add(new MeshParameters(mesh, physicsBakeMesh));
@@ -386,7 +386,7 @@ namespace DepictionEngine
                     if (instanceManager != null)
                         meshDataProcessor ??= instanceManager.CreateInstance<Processor>();
 
-                    meshDataProcessor.StartProcessing(MeshProcessingFunctions.ModifyMeshes, typeof(MeshesProcessorOutput), typeof(MeshesParameters), 
+                    meshDataProcessor.StartProcessing(MeshProcessingFunctions.ApplyPhysicsBakeMesh, typeof(MeshesProcessorOutput), typeof(MeshesParameters), 
                         (parameters) => 
                         { 
                             (parameters as MeshesParameters).Init(_meshParameters); 
@@ -588,7 +588,7 @@ namespace DepictionEngine
 
         public List<MeshParameters> meshesParameters
         {
-            get { return _meshesParameters; }
+            get => _meshesParameters;
         }
 
         public IEnumerable ApplyPhysicsBakeMeshToMesh(MeshesProcessorOutput meshesProcessorOutput)
@@ -646,13 +646,13 @@ namespace DepictionEngine
 
     public class MeshProcessingFunctions : ProcessingFunctions
     {
-        public static IEnumerator ModifyMeshes(object data, ProcessorParameters parameters)
+        public static IEnumerator ApplyPhysicsBakeMesh(object data, ProcessorParameters parameters)
         {
-            foreach (object enumeration in ModifyMeshes(data, parameters as MeshesParameters))
+            foreach (object enumeration in ApplyPhysicsBakeMesh(data, parameters as MeshesParameters))
                 yield return enumeration;
         }
 
-        protected static IEnumerable ModifyMeshes(object data, MeshesParameters parameters)
+        protected static IEnumerable ApplyPhysicsBakeMesh(object data, MeshesParameters parameters)
         {
             foreach (object enumeration in parameters.ApplyPhysicsBakeMeshToMesh(data as MeshesProcessorOutput))
                 yield return enumeration;

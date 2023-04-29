@@ -113,7 +113,7 @@ namespace DepictionEngine
             bool rotationChanged = SetRotation(rotation);
             bool targetPositionChanged = SetTargetPosition(targetPosition, false);
 
-            //If target transform changes it will automaticaly trigger a forceUpdateTransform so there is no need to call it twice
+            //If target transform changes it will automatically trigger a forceUpdateTransform so there is no need to call it twice
             if (targetPositionChanged || rotationChanged || cameraDistanceChanged)
                 return ForceUpdateTransform(true, true);
 

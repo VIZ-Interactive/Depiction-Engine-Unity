@@ -69,7 +69,7 @@ namespace DepictionEngine.Editor
         private bool _forceHandleVisibility;
 
         private bool _deleted;
-        private InitializationContext _sceneViewinitializingContext;
+        private InitializationContext _sceneViewInitializingContext;
 
         private TargetControllerComponents _sceneViewDoubleComponents;
         private SceneViewDoubleComponentsDelta _sceneViewDoubleComponentsDelta;
@@ -90,7 +90,7 @@ namespace DepictionEngine.Editor
         {
             base.InitializeFields(initializingContext);
 
-            _sceneViewinitializingContext = initializingContext;
+            _sceneViewInitializingContext = initializingContext;
 
             if (initializingContext == InitializationContext.Existing)
             {
@@ -125,7 +125,7 @@ namespace DepictionEngine.Editor
         {
             _sceneViewInstanceId = sceneView.GetInstanceID();
 
-            if (_sceneViewinitializingContext == InitializationContext.Programmatically)
+            if (_sceneViewInitializingContext == InitializationContext.Programmatically)
             {
                 pivot = sceneView.pivot;
                 rotation = sceneView.rotation;
@@ -150,8 +150,7 @@ namespace DepictionEngine.Editor
                 SceneViewDouble sceneViewDouble = GetSceneViewDouble(sceneViewDoubles, sceneView);
                 if (sceneViewDouble == Disposable.NULL)
                 {
-                    InstanceManager mamnager = InstanceManager.Instance();
-                    sceneViewDouble = mamnager.CreateInstance<SceneViewDouble>().InitSceneView(sceneView);
+                    sceneViewDouble = InstanceManager.Instance().CreateInstance<SceneViewDouble>().InitSceneView(sceneView);
                     sceneViewDoubles.Add(sceneViewDouble);
                 }
                 sceneViewDouble.InitCamera();
@@ -176,11 +175,11 @@ namespace DepictionEngine.Editor
 
             if (_camera == Disposable.NULL && sceneView != null)
             {
-                //Dont Initialize Camera here by calling GetSafeComponent<Camera>(), let them initialize in the Update loop
+                //Don't Initialize Camera here by calling GetSafeComponent<Camera>(), let them initialize in the Update loop
                 _camera = sceneView.camera.GetComponent<SceneCamera>();
                 if (_camera == Disposable.NULL)
                 {
-                    _camera = sceneView.camera.gameObject.AddSafeComponent(typeof(SceneCamera)) as SceneCamera;
+                    _camera = sceneView.camera.gameObject.AddComponentInitialized(typeof(SceneCamera)) as SceneCamera;
                     InitSceneCamera(_camera);
                 }
             }
@@ -229,18 +228,18 @@ namespace DepictionEngine.Editor
             if (state == PlayModeStateChange.ExitingPlayMode)
             {
                 EditorPrefs.SetBool(id + AUTO_SNAP_VIEW_TO_TERRAIN_EDITOR_PREFS_NAME, _autoSnapViewToSurface);
-                
+
                 EditorPrefs.SetInt(id + ALIGN_VIEW_TO_GEOASTROOBJECT_EDITOR_PREFS_NAME, _alignViewToGeoAstroObject != Disposable.NULL ? _alignViewToGeoAstroObject.GetInstanceID() : 0);
-                
+
                 if (JsonUtility.FromJson(out string pivotGeoCoordinateJsonStr, JsonUtility.ToJson(_pivotGeoCoordinate)))
                     EditorPrefs.SetString(id + PIVOT_GEOCOORDINATE_EDITOR_PREFS_NAME, pivotGeoCoordinateJsonStr);
-                
+
                 if (JsonUtility.FromJson(out string pivotJsonStr, JsonUtility.ToJson(_pivot)))
                     EditorPrefs.SetString(id + PIVOT_EDITOR_PREFS_NAME, pivotJsonStr);
-                
+
                 if (JsonUtility.FromJson(out string rotationJsonStr, JsonUtility.ToJson(_rotation)))
                     EditorPrefs.SetString(id + ROTATION_EDITOR_PREFS_NAME, rotationJsonStr);
-                
+
                 if (JsonUtility.FromJson(out string cameraDistanceJsonStr, JsonUtility.ToJson(_cameraDistance)))
                     EditorPrefs.SetString(id + CAMERA_DISTANCE_EDITOR_PREFS_NAME, cameraDistanceJsonStr);
             }
@@ -317,6 +316,32 @@ namespace DepictionEngine.Editor
             UpdateOnGUIDelegates(true);
         }
 
+        private float updateInterval = 0.5f; //How often should the number update
+        private float accum = 0.0f;
+        private int frames = 0;
+        private float timeleft;
+        private float fps;
+        public float GetFrameRate()
+        {
+            if (Event.current.type == EventType.Repaint)
+            {
+                timeleft -= Time.deltaTime;
+                accum += Time.timeScale / Time.deltaTime;
+                ++frames;
+
+                // Interval ended - update GUI text and start new interval
+                if (timeleft <= 0.0)
+                {
+                    // display two fractional digits (f2 format)
+                    fps = (accum / frames);
+                    timeleft = updateInterval;
+                    accum = 0.0f;
+                    frames = 0;
+                }
+            }
+            return fps;
+        }
+
         public bool deleted
         {
             get => _deleted;
@@ -352,7 +377,7 @@ namespace DepictionEngine.Editor
 
         public static SceneViewDouble lastActiveOrMouseOverSceneViewDouble
         {
-            get 
+            get
             {
                 SceneViewDouble lastActiveOrMouseOverSceneViewDouble = GetSceneViewDouble(EditorWindow.mouseOverWindow as SceneView);
                 if (lastActiveOrMouseOverSceneViewDouble == Disposable.NULL)
@@ -363,7 +388,7 @@ namespace DepictionEngine.Editor
 
         public static List<SceneViewDouble> sceneViewDoubles
         {
-            get 
+            get
             {
                 SceneManager sceneManager = SceneManager.Instance(false);
                 return sceneManager != Disposable.NULL ? sceneManager.sceneViewDoubles : null;
@@ -377,7 +402,7 @@ namespace DepictionEngine.Editor
 
         public int handleCount
         {
-            get => _handleCount; 
+            get => _handleCount;
             set => _handleCount = value;
         }
 
@@ -455,7 +480,7 @@ namespace DepictionEngine.Editor
         private SceneCamera _camera;
         public SceneCamera camera
         {
-            get 
+            get
             {
                 InitCamera();
                 return _camera;
@@ -565,7 +590,7 @@ namespace DepictionEngine.Editor
 
         public Vector3Double pivot
         {
-            get { return _pivot; }
+            get => _pivot;
             set
             {
                 if (SetPivot(value))
@@ -593,7 +618,7 @@ namespace DepictionEngine.Editor
         private GeoCoordinate3Double _lastPivotGeoCoordinate;
         private GeoCoordinate3Double pivotGeoCoordinate
         {
-            get { return _pivotGeoCoordinate; }
+            get => _pivotGeoCoordinate;
             set
             {
                 if (_pivotGeoCoordinate == value)
@@ -618,13 +643,13 @@ namespace DepictionEngine.Editor
                 _animPivot.valueChanged.AddListener(AnimPivotChanged);
             }
             _animPivot.speed = speed;
-            
+
             _fromPivot = pivot;
             _fromPivotGeoCoordinate = alignViewToGeoAstroObject != Disposable.NULL ? alignViewToGeoAstroObject.GetGeoCoordinateFromPoint(_fromPivot) : GeoCoordinate3Double.zero;
-            
+
             _toPivot = value;
             _toPivotGeoCoordinate = alignViewToGeoAstroObject != Disposable.NULL ? alignViewToGeoAstroObject.GetGeoCoordinateFromPoint(_toPivot) : GeoCoordinate3Double.zero;
-            
+
             _animPivot.value = 0.0f;
             _animPivot.target = 1.0f;
             if (_animPivot.speed == 0.0f)
@@ -633,7 +658,7 @@ namespace DepictionEngine.Editor
 
         private Vector3Double GetPivotTarget()
         {
-            return _animPivot != null &&  _animPivot.isAnimating ? _toPivot : pivot;
+            return _animPivot != null && _animPivot.isAnimating ? _toPivot : pivot;
         }
 
         private void AnimPivotChanged()
@@ -689,7 +714,7 @@ namespace DepictionEngine.Editor
 
         public QuaternionDouble rotation
         {
-            get { return _rotation; }
+            get => _rotation;
             set
             {
                 if (SetRotation(value))
@@ -740,7 +765,7 @@ namespace DepictionEngine.Editor
 
         public void StopRotationAnimation()
         {
-            if(_sceneViewRotation != null)
+            if (_sceneViewRotation != null)
                 _sceneViewRotation.value = _sceneViewRotation.value;
             if (_animRotation != null)
                 _animRotation.value = _animRotation.value;
@@ -798,7 +823,7 @@ namespace DepictionEngine.Editor
 
         public double size
         {
-            get { return GetSizeFromCameraDistance(cameraDistance); }
+            get => GetSizeFromCameraDistance(cameraDistance);
             set { cameraDistance = GetCameraDistanceFromSize(value); }
         }
 
@@ -876,7 +901,7 @@ namespace DepictionEngine.Editor
             double res;
 
             //sceneView.camera.orthographic is usually updated in the SetupCamera() which is called during onGuiStarted.
-            //Since this code is execuded before the SetupCamera we make sure the fov is above threshold otherwise we treat it as if it was orthographic
+            //Since this code is executed before the SetupCamera we make sure the fov is above threshold otherwise we treat it as if it was orthographic
             float fov = m_Ortho.Fade(sceneView.cameraSettings.fieldOfView, 0);
             if (!sceneView.camera.orthographic && fov > kOrthoThresholdAngle)
                 res = GetPerspectiveCameraDistance(size, fov);
@@ -910,7 +935,7 @@ namespace DepictionEngine.Editor
             double size;
 
             //sceneView.camera.orthographic is usually updated in the SetupCamera() which is called during onGuiStarted.
-            //Since this code is execuded before the SetupCamera we make sure the fov is above threshold otherwise we treat it as if it was orthographic
+            //Since this code is executed before the SetupCamera we make sure the fov is above threshold otherwise we treat it as if it was orthographic
             float fov = m_Ortho.Fade(sceneView.cameraSettings.fieldOfView, 0);
             if (!sceneView.camera.orthographic && fov > kOrthoThresholdAngle)
                 size = GetSizeFromCameraDistance(cameraDistance, fov);
@@ -954,19 +979,18 @@ namespace DepictionEngine.Editor
 
         private DraggingLockedState draggingLocked
         {
-            get { return (DraggingLockedState)GetDraggingLockedStateField().GetValue(sceneView); }
-            set { GetDraggingLockedStateField().SetValue(sceneView, (int)value); }
+            get => (DraggingLockedState)GetDraggingLockedStateField().GetValue(sceneView);
+            set => GetDraggingLockedStateField().SetValue(sceneView, (int)value);
         }
 
+        private MethodInfo _sceneOrientationGizmoMethodInfo;
+        private FieldInfo _m_OrientationGizmo;
         private void UpdateGizmoLabel(SceneView sceneView, Vector3Double direction, bool ortho)
         {
-            Assembly assembly = Assembly.GetAssembly(typeof(SceneView));
-            
-            MethodInfo methodInfo = assembly.GetType("SceneOrientationGizmo").GetMethod("UpdateGizmoLabel", BindingFlags.NonPublic | BindingFlags.Instance);
-            
-            FieldInfo fieldInfo = typeof(SceneView).GetField("m_OrientationGizmo", BindingFlags.NonPublic | BindingFlags.Instance);
-            
-            methodInfo.Invoke(fieldInfo.GetValue(sceneView), new object[] { sceneView, (Vector3)direction, ortho });
+            _sceneOrientationGizmoMethodInfo ??= Assembly.GetAssembly(typeof(SceneView)).GetType("SceneOrientationGizmo").GetMethod("UpdateGizmoLabel", BindingFlags.NonPublic | BindingFlags.Instance);
+            _m_OrientationGizmo ??= typeof(SceneView).GetField("m_OrientationGizmo", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            _sceneOrientationGizmoMethodInfo.Invoke(_m_OrientationGizmo.GetValue(sceneView), new object[] { sceneView, (Vector3)direction, ortho });
         }
 
         public void SetComponents(Vector3Double pivot, QuaternionDouble rotation, double cameraDistance)
@@ -1034,7 +1058,7 @@ namespace DepictionEngine.Editor
             }
 
             MovingToTransform(UnityEditor.Selection.activeTransform.transform);
-            
+
             // We snap instantly into target on playmode, because things might be moving fast and lerping lags behind
             LookAt(TransformDouble.AddOrigin(bounds.center), GetRotationTarget(), newSize, m_Ortho.value, instant);
 
@@ -1048,7 +1072,7 @@ namespace DepictionEngine.Editor
             {
                 if (UnityEditor.Selection.transforms.Length > 0)
                 {
-                    GeoAstroObject selectionParentAstroObject = GetParentGeoAstrObject(UnityEditor.Selection.transforms[0]);
+                    GeoAstroObject selectionParentAstroObject = GetParentGeoAstroObject(UnityEditor.Selection.transforms[0]);
 
                     foreach (Transform transform in UnityEditor.Selection.transforms)
                     {
@@ -1059,7 +1083,7 @@ namespace DepictionEngine.Editor
                                 m_WasFocused = true;
                         }
 
-                        if (selectionParentAstroObject != GetParentGeoAstrObject(transform))
+                        if (selectionParentAstroObject != GetParentGeoAstroObject(transform))
                         {
                             selectionParentAstroObject = null;
                             break;
@@ -1091,7 +1115,7 @@ namespace DepictionEngine.Editor
                         isValidBounds = true;
                     }
                 }
-                
+
                 if (!isValidBounds)
                     Debug.LogWarning("FrameSelected Failed: Object too far.");
 
@@ -1104,13 +1128,13 @@ namespace DepictionEngine.Editor
                 return true;
         }
 
-        private GeoAstroObject GetParentGeoAstrObject(Transform transform) 
+        private GeoAstroObject GetParentGeoAstroObject(Transform transform)
         {
             GeoAstroObject parentGeoAstroObject = transform.GetComponent<GeoAstroObject>();
 
             if (parentGeoAstroObject == Disposable.NULL)
                 parentGeoAstroObject = transform.GetComponentInParent<GeoAstroObject>(true);
-            
+
             return parentGeoAstroObject;
         }
 
@@ -1151,7 +1175,7 @@ namespace DepictionEngine.Editor
                 FixNegativeSize();
 
                 Vector3Double dif = camera.transform.position - handlePosition;
-                
+
                 QuaternionDouble delta = QuaternionDouble.Inverse(UnityEditor.Selection.activeTransform.rotation) * camera.transform.rotation;
 
                 delta.ToAngleAxis(out double angle, out Vector3Double axis);
@@ -1370,9 +1394,9 @@ namespace DepictionEngine.Editor
                 if (evt.type == EventType.Repaint)
                     handleCount = 0;
             }
-            
+
             bool isNotCenterOfOrbitController = false;
-            
+
             if (alignViewToGeoAstroObject != Disposable.NULL && alignViewToGeoAstroObject.controller != Disposable.NULL && alignViewToGeoAstroObject.controller is OrbitController)
             {
                 StarSystem starSystem = (alignViewToGeoAstroObject.controller as OrbitController).GetStarSystem();
@@ -1443,7 +1467,7 @@ namespace DepictionEngine.Editor
 
         private void PostHandleSelectionAndOnSceneGUI()
         {
-           if (renderingManager.originShifting)
+            if (renderingManager.originShifting)
             {
                 if (Camera.current != null)
                 {
@@ -1453,21 +1477,47 @@ namespace DepictionEngine.Editor
             }
         }
 
-        private bool _mouseDown;
-        public bool mouseDown { get => _mouseDown; }
+        [NonSerialized]
+        private int _mouseDownNearestControl = int.MinValue;
+
+        [NonSerialized]
+        private bool _positionHandleDragging;
+        public bool positionHandleDragging { get => _positionHandleDragging; }
+
         private Tool _lastToolCurrent;
         private static List<TransformDouble> _lastActiveSceneCameraTransforms;
         private void PreDefaultHandles(SceneView sceneView)
         {
             Event evt = Event.current;
-            if (evt != null && evt.isMouse)
+
+            if (evt.isMouse)
             {
-                if (evt.type == EventType.MouseDown)
-                    _mouseDown = true;
-                if (evt.type == EventType.MouseUp)
-                    _mouseDown = false;
+                if ((Tools.current == Tool.Move || Tools.current == Tool.Transform) && evt.type == EventType.MouseDown && evt.button == 0)
+                    _mouseDownNearestControl = HandleUtility.nearestControl;
+
+                if (_mouseDownNearestControl == GUIUtility.hotControl && evt.type == EventType.MouseDrag)
+                {
+                    if (!_positionHandleDragging)
+                    {
+                        Debug.Log("Down");
+                        _positionHandleDragging = true;
+                    }
+                }
+
+                if (evt.type == EventType.MouseUp || (evt.type == EventType.Used && evt.pointerType == PointerType.Mouse))
+                {
+                    _mouseDownNearestControl = int.MinValue;
+
+                    if (_positionHandleDragging)
+                    {
+                        Debug.Log("Up");
+                        _positionHandleDragging = false;
+                        SceneManager.LeftMouseUpInSceneOrInspectorEvent?.Invoke();
+                    }
+                }
             }
-         
+
+
             sceneManager.UpdateAstroObjects(camera);
 
             UpdatePivotRotationDistance();
@@ -1485,7 +1535,7 @@ namespace DepictionEngine.Editor
                     if (UnityEditor.Selection.transforms.Length > 0)
                     {
                         bool rayDrag = Tools.vertexDragging || (evt.GetTypeForControl(GUIUtility.GetControlID(Handles.s_FreeMoveHandleHash, FocusType.Passive)) == EventType.MouseDrag && EditorGUI.actionKey && evt.shift);
-                        // If we are mouse dragging because of 'vertext snapping' or 'Ctrl + Shift in windows' we need to apply origin shifting to all the transforms because the Handles will perform ray casting against the scene.
+                        // If we are mouse dragging because of 'vertex snapping' or 'Ctrl + Shift in windows' we need to apply origin shifting to all the transforms because the Handles will perform ray casting against the scene.
                         // Otherwise we only need to apply origin shifting to the selected transforms and the camera + target transforms.
                         if (rayDrag)
                             TransformDouble.ApplyOriginShifting(origin);
@@ -1525,7 +1575,7 @@ namespace DepictionEngine.Editor
             }
 
             if (alignViewToGeoAstroObject != Disposable.NULL)
-                SetPivot(alignViewToGeoAstroObject.gameObject.GetSafeComponent<TransformDouble>().TransformPoint(alignViewToGeoAstroObject.GetLocalPointFromGeoCoordinate(pivotGeoCoordinate)));
+                SetPivot(alignViewToGeoAstroObject.gameObject.GetComponentInitialized<TransformDouble>().TransformPoint(alignViewToGeoAstroObject.GetLocalPointFromGeoCoordinate(pivotGeoCoordinate)));
       
             _sceneViewDoubleComponents.SetComponents(pivot, rotation, cameraDistance);
            
@@ -1614,7 +1664,7 @@ namespace DepictionEngine.Editor
                 if (sceneCameraTarget != Disposable.NULL)
                 {
                     sceneCameraTarget.SetTargetAutoSnapToAltitude(autoSnapViewToSurface);
-                    sceneCameraTarget.SetTargetParent(alignViewToGeoAstroObject != Disposable.NULL ? alignViewToGeoAstroObject.gameObject.GetSafeComponent<TransformDouble>() : null);
+                    sceneCameraTarget.SetTargetParent(alignViewToGeoAstroObject != Disposable.NULL ? alignViewToGeoAstroObject.gameObject.GetComponentInitialized<TransformDouble>() : null);
                 }
 
                 if (sceneViewDoubleComponents != null)
@@ -1828,9 +1878,9 @@ namespace DepictionEngine.Editor
 
         private class TargetControllerComponents
         {
-            private Vector3Double _targetPosition;
-            private QuaternionDouble _rotation;
-            private double _cameraDistance;
+            public Vector3Double targetPosition;
+            public QuaternionDouble rotation;
+            public double cameraDistance;
 
             public TargetControllerComponents()
             {
@@ -1846,40 +1896,6 @@ namespace DepictionEngine.Editor
                 this.targetPosition = targetPosition;
                 this.rotation = rotation;
                 this.cameraDistance = cameraDistance;
-            }
-
-            public Vector3Double targetPosition
-            {
-                get { return _targetPosition; }
-                set
-                {
-                    if (_targetPosition == value)
-                        return;
-                    _targetPosition = value;
-                }
-            }
-
-            public QuaternionDouble rotation
-            {
-                get { return _rotation; }
-                set
-                {
-                    if (_rotation == value)
-                        return;
-                    _rotation = value;
-                }
-            }
-
-            public double cameraDistance
-            {
-                get { return _cameraDistance; }
-                set
-                {
-                    if (_cameraDistance == value)
-                        return;
-
-                    _cameraDistance = value;
-                }
             }
 
             public void Reset()

@@ -6,7 +6,8 @@ namespace DepictionEngine
     {
         protected static T GetInstance<T>() where T : IDisposable
         {
-            return InstanceManager.Instance(false).CreateInstance<T>();
+            InstanceManager instanceManager = InstanceManager.Instance(false);
+            return instanceManager != Disposable.NULL ? instanceManager.CreateInstance<T>() : default(T);
         }
 
         public static T CreatePropertyModifier<T>() where T : PropertyModifier

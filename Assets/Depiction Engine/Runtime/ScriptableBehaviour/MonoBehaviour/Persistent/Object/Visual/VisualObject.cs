@@ -408,9 +408,9 @@ namespace DepictionEngine
             return typeof(MeshRendererVisual).IsAssignableFrom(type) ? CreateVisual(type, name, parent) as MeshRendererVisual : null;
         }
 
-        protected Visual CreateVisual(Type type, string name = null, Transform parent = null, List<PropertyModifier> propertyModifers = null)
+        protected Visual CreateVisual(Type type, string name = null, Transform parent = null, List<PropertyModifier> propertyModifiers = null)
         {
-            return typeof(Visual).IsAssignableFrom(type) ? CreateChild(type, name, parent, InitializationContext.Programmatically, propertyModifers) as Visual : null;
+            return typeof(Visual).IsAssignableFrom(type) ? CreateChild(type, name, parent, InitializationContext.Programmatically, propertyModifiers) as Visual : null;
         }
 
         protected Visual GetVisual(string name)
@@ -580,7 +580,7 @@ namespace DepictionEngine
                     {
                         //Lowest land depression on Earth: 413m below sea level
                         //Lowest underwater point on Earth: 10971m below sea level
-                        //Problem: If the camera dips below the geoAstroObjectRadius the atmopshere goes all white
+                        //Problem: If the camera dips below the geoAstroObjectRadius the atmosphere goes all white
                         //Fix: We add an offset to the geoAstroObjectRadius consisting of the lowest point we think the camera will have to go below sea level
                         //In this case we use a variable offset which goes from 0.0f to 10000.0d as we get closer to sea level
                         double geoAstroObjectRadius = closestGeoAstroObject.GetScaledRadius();

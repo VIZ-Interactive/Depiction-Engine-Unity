@@ -227,7 +227,13 @@ namespace DepictionEngine
                 //MonoBehaviourDisposable who have not been activated yet will not trigger OnDestroy so we do it manually
                 //We call OnDestroy before we trigger the Destroy because OnDestroy will not be triggered if the Destroy happens within the Object Awake() call.
                 //Features such as Object.CanBeDuplicated() will Invalidate the initialization and delete the object within Awake().
-                IterateOverAllObjects(unityObject, (obj) => { IterateOverAllMonoBehaviourDisposable(obj as UnityEngine.Object, (monoBehaviourDisposable) => { monoBehaviourDisposable.OnDestroy(); }); });
+                IterateOverAllObjects(unityObject, (obj) => 
+                {
+                    if (obj is GameObject go)
+                        IterateOverAllMonoBehaviourDisposable(go, (monoBehaviourDisposable) => { monoBehaviourDisposable.OnDestroy(); });
+                    else if (obj is IScriptableBehaviour scriptableBehaviour)
+                        scriptableBehaviour.OnDestroy();
+                });
 
 #if UNITY_EDITOR
                 if (disposeContext != DisposeContext.Editor_Destroy || !Editor.UndoManager.DestroyObjectImmediate(unityObject))
@@ -299,14 +305,6 @@ namespace DepictionEngine
                 if (obj != null)
                     callback(obj);
             }
-        }
-
-        private static void IterateOverAllMonoBehaviourDisposable(UnityEngine.Object obj, Action<MonoBehaviourDisposable> callback)
-        {
-            if (obj is GameObject)
-                IterateOverAllMonoBehaviourDisposable(obj as GameObject, callback);
-            else if (obj is MonoBehaviourDisposable)
-                callback(obj as MonoBehaviourDisposable);
         }
 
         private static void IterateOverAllMonoBehaviourDisposable(GameObject go, Action<MonoBehaviourDisposable> callback)

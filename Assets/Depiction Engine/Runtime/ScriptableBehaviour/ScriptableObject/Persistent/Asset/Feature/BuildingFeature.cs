@@ -88,13 +88,13 @@ namespace DepictionEngine
 
         public override void SetData(JSONNode json)
         {
-            BuildingFeatureModifier buildingfeatureModifier = BuildingFeatureProcessingFunctions.CreatePropertyModifier<BuildingFeatureModifier>();
-            if (buildingfeatureModifier != Disposable.NULL)
+            BuildingFeatureModifier buildingFeatureModifier = BuildingFeatureProcessingFunctions.CreatePropertyModifier<BuildingFeatureModifier>();
+            if (buildingFeatureModifier != Disposable.NULL)
             {
-                if (BuildingFeatureProcessingFunctions.ParseJSON(json, buildingfeatureModifier))
-                    buildingfeatureModifier.ModifyProperties(this);
+                if (BuildingFeatureProcessingFunctions.ParseJSON(json, buildingFeatureModifier))
+                    buildingFeatureModifier.ModifyProperties(this);
 
-                DisposeManager.Dispose(buildingfeatureModifier);
+                DisposeManager.Dispose(buildingFeatureModifier);
             }
         }
 

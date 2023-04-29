@@ -31,8 +31,8 @@ namespace DepictionEngine
         [Json]
 		public AstroObject.PlanetType orbit
 		{
-			get { return _orbit; }
-			set { SetValue(nameof(orbit), value, ref _orbit); }
+			get => _orbit;
+			set => SetValue(nameof(orbit), value, ref _orbit);
 		}
 
         /// <summary>
@@ -41,8 +41,8 @@ namespace DepictionEngine
         [Json]
 		public double sizeMultiplier
 		{
-			get { return _sizeMultiplier; }
-			set { SetValue(nameof(sizeMultiplier), value, ref _sizeMultiplier); }
+			get => _sizeMultiplier;
+			set => SetValue(nameof(sizeMultiplier), value, ref _sizeMultiplier);
 		}
 
 		public StarSystem GetStarSystem()

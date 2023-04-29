@@ -19,9 +19,9 @@ namespace DepictionEngine.Editor
         {
         }
 
-        public override void UpdateFields()
+        public override void UpdateDependencies()
         {
-            base.UpdateFields();
+            base.UpdateDependencies();
 
             InitSceneCameraController();
         }
@@ -89,7 +89,7 @@ namespace DepictionEngine.Editor
 
         public SceneCameraController sceneCameraController
         {
-            get { return controller as SceneCameraController; }
+            get => controller as SceneCameraController;
         }
 
         protected override bool SetController(ControllerBase value)

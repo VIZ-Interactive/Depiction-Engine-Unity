@@ -255,10 +255,10 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                 Editor.UndoManager.QueueRegisterCreatedObjectUndo(datasourcesGo, initializingContext);
 #endif
-                datasourcesGo.AddSafeComponent<Object>(initializingContext);
+                datasourcesGo.AddComponentInitialized<Object>(initializingContext);
             }
 
-            datasource = datasourcesGo.AddSafeComponent<T>(initializingContext);
+            datasource = datasourcesGo.AddComponentInitialized<T>(initializingContext);
 
             return datasource;
         }

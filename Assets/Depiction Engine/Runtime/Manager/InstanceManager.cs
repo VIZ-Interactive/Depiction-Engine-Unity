@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace DepictionEngine
 {
-    //Editor_Duplicate can be a Copy Paste / Duplicate Menu Item / Draging Droping Component
+    //Editor_Duplicate can be a Copy Paste / Duplicate Menu Item / Dragging Dropping Component
     /// <summary>
     /// The different types of initialization context. <br/><br/>
     /// <b><see cref="Unknown"/>:</b> <br/>
@@ -20,11 +20,11 @@ namespace DepictionEngine
     /// <b><see cref="Editor"/>:</b> <br/>
     /// The initialization was triggered in the editor. <br/><br/>
     /// <b><see cref="Editor_Duplicate"/>:</b> <br/>
-    /// The initialization was triggered in the editor and the object is a duplicate. Duplication can come from a copy paste / duplicate menu item or draging droping of a component. <br/><br/>
+    /// The initialization was triggered in the editor and the object is a duplicate. Duplication can come from a copy paste / duplicate menu item or dragging dropping of a component. <br/><br/>
     /// <b><see cref="Existing"/>:</b> <br/>
     /// The initialization was triggered by a loading scene or was triggered in the editor as a result of an undo or redo action. <br/><br/>
     /// <b><see cref="Reset"/>:</b> <br/>
-    /// The object properties are reseted to their default values.
+    /// The object properties are reset to their default values.
     /// </summary> 
     public enum InitializationContext
     {
@@ -37,6 +37,9 @@ namespace DepictionEngine
         Reset
     };
 
+    [Serializable]
+    public class TransformDictionary : SerializableDictionary<SerializableGuid, TransformBase> { };
+
     /// <summary>
     /// Singleton managing instances.
     /// </summary>
@@ -45,8 +48,6 @@ namespace DepictionEngine
     [DisallowMultipleComponent]
     public class InstanceManager : ManagerBase
     {
-        [Serializable]
-        private class TransformDictionary : SerializableDictionary<SerializableGuid, TransformBase> { };
         [Serializable]
         private class PersistentMonoBehaviourDictionary : SerializableDictionary<SerializableGuid, PersistentMonoBehaviour> { };
         [Serializable]
@@ -101,6 +102,9 @@ namespace DepictionEngine
         private EffectDictionary _effects;
         private FallbackValuesDictionary _fallbackValues;
         private DatasourceDictionary _datasources;
+
+        //Physics
+        private TransformDictionary _physicObjects;
 
         //Manager
         private ManagerDictionary _managers;
@@ -316,6 +320,22 @@ namespace DepictionEngine
         private ManagerDictionary managers
         {
             get { _managers ??= new ManagerDictionary(); return _managers; }
+        }
+
+        public IEnumerable<TransformBase> physicTransforms => _physicObjects != null ? _physicObjects.Values : null;
+
+        public void RemovePhysicTransform(SerializableGuid id)
+        {
+            _physicObjects?.Remove(id);
+        }
+
+        public void AddPhysicTransform(SerializableGuid id, TransformBase transform)
+        {
+            if (transform != Disposable.NULL)
+            {
+                _physicObjects ??= new();
+                _physicObjects.TryAdd(id, transform);
+            }
         }
 
         private static Dictionary<SerializableGuid, SerializableGuid> duplicatingIdMapping
@@ -719,7 +739,7 @@ namespace DepictionEngine
                                             added = true;
                                         }
                                         else
-                                            errorMsg = GetMutlipleInstanceErrorMsg(star);
+                                            errorMsg = GetMultipleInstanceErrorMsg(star);
                                     }
                                 }
                                 else
@@ -865,7 +885,7 @@ namespace DepictionEngine
                     if (string.IsNullOrEmpty(errorMsg))
                     {
                         //Problem: Sometimes performing Undo will recreate an Object with an already existing id
-                        //Fix: If the Object already exsists we Dispose it
+                        //Fix: If the Object already exists we Dispose it
                         errorMsg = "'" + property + "' will be destroyed: ID already exist";
                     }
 
@@ -879,7 +899,7 @@ namespace DepictionEngine
             return added;
         }
 
-        private static string GetMutlipleInstanceErrorMsg(IProperty property)
+        private static string GetMultipleInstanceErrorMsg(IProperty property)
         {
             return GetMultipleInstanceErrorMsg(property.GetType().Name);
         }
@@ -1052,7 +1072,7 @@ namespace DepictionEngine
                 {
                     GameObject go = InitializeGameObject(monoBehaviourDisposable.gameObject, GetParentFromJson(parent, json), setParentAndAlign, moveToView);
 
-                    disposable = go.GetSafeComponent(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
+                    disposable = go.GetComponentInitialized(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
                 }
                 else
                     Initialize(disposable, initializingContext, json, propertyModifiers, isFallbackValues);
@@ -1066,7 +1086,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                     Editor.UndoManager.QueueRegisterCreatedObjectUndo(go, initializingContext);
 #endif
-                    disposable = go.AddSafeComponent(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
+                    disposable = go.AddComponentInitialized(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
                 }
                 else if (typeof(IDisposable).IsAssignableFrom(type))
                 {
@@ -1178,9 +1198,9 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
         public static void InitializingContext(Action callback, InitializationContext initializingContext, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
-            InitializationContext lastinitializingContext = InstanceManager.initializingContext;
+            InitializationContext lastInitializingContext = InstanceManager.initializingContext;
             JSONNode lastInitializeJSON = InstanceManager.initializeJSON;
-            List<PropertyModifier> lastInitializePropertyModifers = InstanceManager.initializePropertyModifiers;
+            List<PropertyModifier> lastInitializePropertyModifiers = InstanceManager.initializePropertyModifiers;
             bool lastIsFallbackValues = InstanceManager.initializeIsFallbackValues;
 
             InstanceManager.initializingContext = initializingContext;
@@ -1190,9 +1210,9 @@ namespace DepictionEngine
 
             callback();
 
-            InstanceManager.initializingContext = lastinitializingContext;
+            InstanceManager.initializingContext = lastInitializingContext;
             InstanceManager.initializeJSON = lastInitializeJSON;
-            InstanceManager.initializePropertyModifiers = lastInitializePropertyModifers;
+            InstanceManager.initializePropertyModifiers = lastInitializePropertyModifiers;
             InstanceManager.initializeIsFallbackValues = lastIsFallbackValues;
         }
 
@@ -1202,10 +1222,8 @@ namespace DepictionEngine
             SceneManager.InvokeAction(ref PostLateInitializeEvent, "PostLateInitialize", SceneManager.ExecutionState.PostLateInitialize);
         }
 
-        protected override void LateUpdate()
+        private void LateUpdate()
         {
-            base.LateUpdate();
-
             _duplicatingIdMapping?.Clear();
         }
     }

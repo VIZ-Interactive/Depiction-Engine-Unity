@@ -168,6 +168,8 @@ namespace DepictionEngine
 
                 if (type != null)
                 {
+                    loadOperationResultParameters.cancellationTokenSource?.ThrowIfCancellationRequested();
+
                     JSONObject jsonFallback = loadOperationResultParameters.jsonFallback;
 
                     List<PropertyModifier> propertyModifiers = null;
@@ -203,11 +205,11 @@ namespace DepictionEngine
                     }
                     else if (typeof(BuildingFeature).IsAssignableFrom(type))
                     {
-                        BuildingFeatureModifier buildingfeatureModifier = CreatePropertyModifier<BuildingFeatureModifier>();
-                        if (buildingfeatureModifier != Disposable.NULL && BuildingFeatureProcessingFunctions.ParseJSON(json, buildingfeatureModifier, loadOperationResultParameters.cancellationTokenSource))
+                        BuildingFeatureModifier buildingFeatureModifier = CreatePropertyModifier<BuildingFeatureModifier>();
+                        if (buildingFeatureModifier != Disposable.NULL && BuildingFeatureProcessingFunctions.ParseJSON(json, buildingFeatureModifier, loadOperationResultParameters.cancellationTokenSource))
                         {
                             propertyModifiers ??= new();
-                            propertyModifiers.Add(buildingfeatureModifier);
+                            propertyModifiers.Add(buildingFeatureModifier);
                         }
                     }
 

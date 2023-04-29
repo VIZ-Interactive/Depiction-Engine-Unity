@@ -889,8 +889,7 @@ namespace DepictionEngine.Editor
                                 }
                                 else
                                 {
-                                    List<GameObject> rootGameObjects = SceneManager.Instance().GetRootGameObjects();
-                                    foreach (GameObject sibling in rootGameObjects)
+                                    foreach (GameObject sibling in SceneManager.Instance().GetRootGameObjects())
                                         AddSibling(ref affectedSiblings, sibling.transform);
                                 }
 

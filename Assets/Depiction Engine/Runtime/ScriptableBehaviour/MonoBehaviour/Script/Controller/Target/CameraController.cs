@@ -20,7 +20,7 @@ namespace DepictionEngine
         private bool _snapDistanceToZoom;
         [SerializeField, Tooltip("When enabled the target motion will progressively slow down over a period of time depending on velocity.")]
         private bool _useInertia;
-        [SerializeField, Tooltip("When enabled the near and far clipping plane of the "+nameof(Camera)+" will be change automaticaly based on calculations involving the distance between the camera and the target.")]
+        [SerializeField, Tooltip("When enabled the near and far clipping plane of the "+nameof(Camera)+" will be change automatically based on calculations involving the distance between the camera and the target.")]
         private bool _dynamicClippingPlanes;
         [SerializeField, Tooltip("A factor by which the distance between the "+nameof(Camera)+ " and target distance is multiplied for the "+nameof(dynamicClippingPlanes)+" calculations.")]
 #if UNITY_EDITOR
@@ -171,7 +171,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled the near and far clipping plane of the <see cref="DepictionEngine.Camera"/> will be change automaticaly based on calculations involving the distance between the camera and the target. 
+        /// When enabled the near and far clipping plane of the <see cref="DepictionEngine.Camera"/> will be change automatically based on calculations involving the distance between the camera and the target. 
         /// </summary>
         [Json]
         public bool dynamicClippingPlanes

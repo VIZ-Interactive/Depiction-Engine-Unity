@@ -99,7 +99,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The path of the material within the Resources directory, such as 'Star-Skybox' or Atmopshere-Skybox.
+        /// The path of the material within the Resources directory, such as 'Star-Skybox' or Atmosphere-Skybox.
         /// </summary>
         public string skyboxMaterialPath
         {

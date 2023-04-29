@@ -52,13 +52,13 @@ namespace DepictionEngine
                 if (go == null && createIfMissing)
                 {
                     go = new GameObject(SceneManager.SCENE_MANAGER_NAME);
-                    go.AddSafeComponent<ManagersBootstrap>();
+                    go.AddComponentInitialized<ManagersBootstrap>();
                     //Initialize SceneManager
-                    go.GetSafeComponent<SceneManager>();
+                    go.GetComponentInitialized<SceneManager>();
                 }
                 
                 if (go != null)
-                    manager = go.GetSafeComponent<T>();
+                    manager = go.GetComponentInitialized<T>();
             }
 
             return manager;
