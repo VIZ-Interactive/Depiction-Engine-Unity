@@ -22,7 +22,7 @@ namespace DepictionEngine
         /// <param name="registerCreatedUndo"></param>
         /// <returns>The created Component.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T AddComponentInitialized<T>(this GameObject go, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false, bool initialize = true, bool registerCreatedUndo = false) where T : Component
+        public static T AddComponentInitialized<T>(this GameObject go, InitializationContext initializingContext = InitializationContext.Programmatically, JSONObject json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false, bool initialize = true, bool registerCreatedUndo = false) where T : Component
         {
             T component;
 
@@ -46,7 +46,7 @@ namespace DepictionEngine
         /// <param name="registerCreatedUndo"></param>
         /// <returns>The created Component.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Component AddComponentInitialized(this GameObject go, Type type, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false, bool initialize = true, bool registerCreatedUndo = false)
+        public static Component AddComponentInitialized(this GameObject go, Type type, InitializationContext initializingContext = InitializationContext.Programmatically, JSONObject json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false, bool initialize = true, bool registerCreatedUndo = false)
         {
             Component component;
 
@@ -58,7 +58,7 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
-        private static T ComponentAdded<T>(T component, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false, bool initialize = true, bool registerCreatedUndo = false) where T : Component
+        private static T ComponentAdded<T>(T component, InitializationContext initializingContext = InitializationContext.Programmatically, JSONObject json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false, bool initialize = true, bool registerCreatedUndo = false) where T : Component
         {
 #if UNITY_EDITOR
             if (registerCreatedUndo)
@@ -79,7 +79,7 @@ namespace DepictionEngine
         /// <param name="isFallbackValues"></param>
         /// <returns>The initialized Component, if one was found.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T GetComponentInitialized<T>(this GameObject go, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false) where T : Component
+        public static T GetComponentInitialized<T>(this GameObject go, InitializationContext initializingContext = InitializationContext.Programmatically, JSONObject json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false) where T : Component
         {
             return Initialize(go.GetComponent<T>(), initializingContext, json, propertyModifiers, isFallbackValues);
         }
@@ -95,7 +95,7 @@ namespace DepictionEngine
         /// <param name="isFallbackValues"></param>
         /// <returns>The initialized Component, if one was found.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Component GetComponentInitialized(this GameObject go, Type type, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
+        public static Component GetComponentInitialized(this GameObject go, Type type, InitializationContext initializingContext = InitializationContext.Programmatically, JSONObject json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
             return Initialize(go.GetComponent(type), initializingContext, json, propertyModifiers, isFallbackValues);
         }
@@ -112,7 +112,7 @@ namespace DepictionEngine
         /// <param name="isFallbackValues"></param>
         /// <returns>The initialized Component, if one was found.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T GetComponentInParentInitialized<T>(this GameObject go, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false) where T : Component
+        public static T GetComponentInParentInitialized<T>(this GameObject go, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically, JSONObject json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false) where T : Component
         {
             return Initialize(go.GetComponentInParent<T>(includeInactive), initializingContext, json, propertyModifiers, isFallbackValues);
         }
@@ -129,13 +129,13 @@ namespace DepictionEngine
         /// <param name="isFallbackValues"></param>
         /// <returns>The initialized Component, if one was found.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Component GetComponentInParentInitialized(this GameObject go, Type type, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
+        public static Component GetComponentInParentInitialized(this GameObject go, Type type, bool includeInactive, InitializationContext initializingContext = InitializationContext.Programmatically, JSONObject json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
             return Initialize(go.GetComponentInParent(type, includeInactive), initializingContext, json, propertyModifiers, isFallbackValues);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
-        private static T Initialize<T>(T component, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false) where T : Component
+        private static T Initialize<T>(T component, InitializationContext initializingContext = InitializationContext.Programmatically, JSONObject json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false) where T : Component
         {
             return InstanceManager.Initialize(component, initializingContext, json, propertyModifiers, isFallbackValues);
         }

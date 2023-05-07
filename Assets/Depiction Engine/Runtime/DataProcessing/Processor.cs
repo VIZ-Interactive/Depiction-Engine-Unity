@@ -266,12 +266,12 @@ namespace DepictionEngine
 
         public System.Threading.CancellationToken Token
         {
-            get { return _cancellationTokenSource.Token; }
+            get => _cancellationTokenSource.Token;
         }
 
         public bool IsCancellationRequested
         {
-            get { return _cancellationTokenSource.IsCancellationRequested; }
+            get => _cancellationTokenSource.IsCancellationRequested;
         }
 
         public void Cancel(MonoBehaviour monoBehaviour, Coroutine coroutine)

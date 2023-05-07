@@ -35,7 +35,6 @@ namespace DepictionEngine
         private InitializationContext _initializingContext;
 
         private Action<IDisposable> _initializedEvent;
-        private Action<IDisposable> _disposingEvent;
         private Action<IDisposable, DisposeContext> _disposedEvent;
 
 #if UNITY_EDITOR
@@ -329,7 +328,7 @@ namespace DepictionEngine
 
         public bool initialized { get => _initialized; }
 
-        protected bool instanceAdded { get => _instanceAdded; }
+        protected bool instanceAdded { get => _instanceAdded; set => _instanceAdded = value; }
 
         public bool isFallbackValues { get => _isFallbackValues; }
 
@@ -412,12 +411,6 @@ namespace DepictionEngine
             set => _initializedEvent = value;
         }
 
-        public Action<IDisposable> DisposingEvent
-        {
-            get => _disposingEvent;
-            set => _disposingEvent = value;
-        }
-
         public Action<IDisposable, DisposeContext> DisposedEvent
         {
             get => _disposedEvent;
@@ -463,24 +456,19 @@ namespace DepictionEngine
             }
         }
 
-        public virtual bool OnDisposing()
+        public bool OnDisposing()
         {
             if (!_disposing)
             {
                 _disposing = true;
-
-                DisposingEvent?.Invoke(this);
-
-                DisposingEvent = null;
-
                 return true;
             }
             return false;
         }
 
-        public bool UpdateDisposingContext()
+        public bool UpdateDisposingContext(bool forceUpdate = false)
         {
-            if (!_disposingContextUpdated)
+            if (!_disposingContextUpdated || forceUpdate)
             {
                 _disposingContextUpdated = true;
 
@@ -508,7 +496,7 @@ namespace DepictionEngine
 
         public virtual bool OnDispose(DisposeContext disposeContext)
         {
-            if (!_disposed)
+            if (!_disposed || ((disposeContext == DisposeContext.Programmatically_Destroy || disposeContext == DisposeContext.Editor_Destroy) && !DisposeManager.IsUnityNull(this)))
             {
                 _disposed = true;
 
@@ -517,7 +505,6 @@ namespace DepictionEngine
                 UpdateAllDelegates();
 
                 InitializedEvent = null;
-                DisposingEvent = null;
                 DisposedEvent = null;
 
                 return initialized;
@@ -530,7 +517,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
             Editor.UndoManager.UndoRedoPerformedEvent -= UndoRedoPerformed;
 #endif
-            UpdateDisposingContext();
+            UpdateDisposingContext(true);
             OnDisposeInternal(_disposingContext);
         }
 

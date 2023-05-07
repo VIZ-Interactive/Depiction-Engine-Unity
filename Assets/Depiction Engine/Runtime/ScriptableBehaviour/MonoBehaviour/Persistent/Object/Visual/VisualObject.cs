@@ -459,7 +459,6 @@ namespace DepictionEngine
                 DisposeManager.Dispose(material);
                 material = InstantiateMaterial(shader);
             }
-
             return material;
         }
 

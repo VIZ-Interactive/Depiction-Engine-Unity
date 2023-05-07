@@ -201,14 +201,31 @@ namespace DepictionEngine
             get { _localScaleParam ??= new LocalScaleParam(); return _localScaleParam; }
         }
 
+        [Json]
+        public SerializableGuid parentId
+        {
+            get => parent != Disposable.NULL ? parent.id : SerializableGuid.Empty;
+            set 
+            {
+                if (HasChanged(value, parentId, false))
+                {
+                    TransformBase parent = null;
+
+                    InstanceManager instanceManager = InstanceManager.Instance(false);
+                    if (instanceManager != null)
+                        parent = instanceManager.GetTransform(value);
+
+                    SetParent(parent);
+                }
+            }
+        }
+
         /// <summary>
         /// The parent of the Transform.
         /// </summary>
-        [Json(propertyName: nameof(parentJson))]
         public new TransformDouble parent
         {
             get => base.parent as TransformDouble;
-            set => SetParent(value);
         }
 
         public Vector3Double forward { get { return rotation * Vector3Double.forward; } }
@@ -329,19 +346,6 @@ namespace DepictionEngine
             return parent != Disposable.NULL ? parent.TransformPoint(localPosition) : localPosition;
         }
 
-        /// <summary>
-        /// Position of the transform relative to the parent transform, in Json format.
-        /// </summary>
-        public JSONNode localPositionJson
-        {
-            get => !isGeoCoordinateTransform ? JsonUtility.ToJson(localPosition) : null;
-            set
-            {
-                if (JsonUtility.FromJson(out Vector3Double parsedLocalPosition, value))
-                    localPosition = parsedLocalPosition;
-            }
-        }
-
         private bool IncludeLocalPosition()
         {
             return !isGeoCoordinateTransform;
@@ -350,7 +354,7 @@ namespace DepictionEngine
         /// <summary>
         /// Position of the transform relative to the parent transform.
         /// </summary>
-        [Json(conditionalMethod: nameof(IncludeLocalPosition), propertyName: nameof(localPositionJson))]
+        [Json(conditionalGetMethod: nameof(IncludeLocalPosition))]
         public Vector3Double localPosition
         {
             get => _localPosition;
@@ -379,19 +383,6 @@ namespace DepictionEngine
                 });
         }
 
-        /// <summary>
-        /// Geo Coordinate of the transform relative to the parent <see cref="DepictionEngine.GeoAstroObject"/>, in Json format.
-        /// </summary>
-        public JSONNode geoCoordinateJson
-        {
-            get => isGeoCoordinateTransform ? JsonUtility.ToJson(geoCoordinate) : null;
-            set
-            {
-                if (JsonUtility.FromJson(out GeoCoordinate3Double parsedGeoCoordinate, value))
-                    geoCoordinate = parsedGeoCoordinate;
-            }
-        }
-
         private bool IncludeGeoCoordinate()
         {
             return isGeoCoordinateTransform;
@@ -400,7 +391,7 @@ namespace DepictionEngine
         /// <summary>
         /// Geo Coordinate of the transform relative to the parent <see cref="DepictionEngine.GeoAstroObject"/>.
         /// </summary>
-        [Json(conditionalMethod: nameof(IncludeGeoCoordinate), propertyName: nameof(geoCoordinateJson))]
+        [Json(conditionalGetMethod: nameof(IncludeGeoCoordinate))]
         public GeoCoordinate3Double geoCoordinate
         {
             get => _geoCoordinate;
@@ -509,22 +500,9 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The rotation of the transform relative to the transform rotation of the parent, in Json format.
-        /// </summary>
-        public JSONNode localRotationJson
-        {
-            get => JsonUtility.ToJson(localRotation);
-            set
-            {
-                if (JsonUtility.FromJson(out QuaternionDouble parsedLocalRotation, value))
-                    localRotation = parsedLocalRotation;
-            }
-        }
-
-        /// <summary>
         /// The rotation of the transform relative to the transform rotation of the parent.
         /// </summary>
-        [Json(propertyName: nameof(localRotationJson))]
+        [Json]
         public QuaternionDouble localRotation
         {
             get => _localRotation;
@@ -570,22 +548,9 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The scale of the transform relative to the GameObjects parent, in Json format.
-        /// </summary>
-        public JSONNode localScaleJson
-        {
-            get => JsonUtility.ToJson(localScale);
-            set
-            {
-                if (JsonUtility.FromJson(out Vector3Double parsedLocalScale, value))
-                    localScale = parsedLocalScale;
-            }
-        }
-
-        /// <summary>
         /// The scale of the transform relative to the GameObjects parent.
         /// </summary>
-        [Json(propertyName: nameof(localScaleJson))]
+        [Json]
         public Vector3Double localScale
         {
             get => _localScale;
@@ -1007,6 +972,13 @@ namespace DepictionEngine
                 return true;
             }
             return false;
+        }
+
+        protected override void ParentChanged(PropertyMonoBehaviour newValue, PropertyMonoBehaviour oldValue)
+        {
+            base.ParentChanged(newValue, oldValue);
+
+            PropertyAssigned(this, nameof(parentId), newValue != Disposable.NULL ? newValue.id : SerializableGuid.Empty, oldValue != Disposable.NULL ? oldValue.id : SerializableGuid.Empty);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

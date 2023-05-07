@@ -38,7 +38,7 @@ namespace DepictionEngine
     };
 
     [Serializable]
-    public class TransformDictionary : SerializableDictionary<SerializableGuid, TransformBase> { };
+    public class TransformDictionary : SerializableDictionary<SerializableGuid, TransformDouble> { };
 
     /// <summary>
     /// Singleton managing instances.
@@ -104,7 +104,8 @@ namespace DepictionEngine
         private DatasourceDictionary _datasources;
 
         //Physics
-        private TransformDictionary _physicObjects;
+        private List<SerializableGuid> _physicObjectsId;
+        private List<TransformDouble> _physicObjects;
 
         //Manager
         private ManagerDictionary _managers;
@@ -122,7 +123,7 @@ namespace DepictionEngine
         [ThreadStatic]
         public static InitializationContext initializingContext = InitializationContext.Editor;
         [ThreadStatic]
-        public static JSONNode initializeJSON;
+        public static JSONObject initializeJSON;
         [ThreadStatic]
         public static List<PropertyModifier> initializePropertyModifiers;
         [ThreadStatic]
@@ -159,6 +160,14 @@ namespace DepictionEngine
             if (_instance == Disposable.NULL)
                 _instance = GetManagerComponent<InstanceManager>(createIfMissing);
             return _instance;
+        }
+
+        protected override void InitializeSerializedFields(InitializationContext initializingContext)
+        {
+            base.InitializeSerializedFields(initializingContext);
+
+            _physicObjectsId ??= new();
+            _physicObjects ??= new();
         }
 
         /// <summary>
@@ -322,19 +331,27 @@ namespace DepictionEngine
             get { _managers ??= new ManagerDictionary(); return _managers; }
         }
 
-        public IEnumerable<TransformBase> physicTransforms => _physicObjects != null ? _physicObjects.Values : null;
+        public List<TransformDouble> physicTransforms => _physicObjects;
 
         public void RemovePhysicTransform(SerializableGuid id)
         {
-            _physicObjects?.Remove(id);
+            int index = _physicObjectsId.IndexOf(id);
+            if (index != -1)
+            {
+                _physicObjectsId.RemoveAt(index);
+                _physicObjects.RemoveAt(index);
+            }
         }
 
-        public void AddPhysicTransform(SerializableGuid id, TransformBase transform)
+        public void AddPhysicTransform(SerializableGuid id, TransformDouble transform)
         {
             if (transform != Disposable.NULL)
             {
-                _physicObjects ??= new();
-                _physicObjects.TryAdd(id, transform);
+                if (!_physicObjectsId.Contains(id))
+                {
+                    _physicObjectsId.Add(id);
+                    _physicObjects.Add(transform);
+                }
             }
         }
 
@@ -479,7 +496,7 @@ namespace DepictionEngine
         {
             if (id != SerializableGuid.Empty)
             {
-                if (transforms.TryGetValue(id, out TransformBase transform) && transform != Disposable.NULL)
+                if (transforms.TryGetValue(id, out TransformDouble transform) && transform != Disposable.NULL)
                     return transform;
 
                 if (persistentMonoBehaviours.TryGetValue(id, out PersistentMonoBehaviour persistentMonoBehaviour))
@@ -701,7 +718,7 @@ namespace DepictionEngine
             SerializableGuid id = property.id;
 
             bool added = false;
-            if (property is TransformBase transform)
+            if (property is TransformDouble transform)
             {
                 if (!transforms.ContainsKey(id))
                 {
@@ -1018,7 +1035,7 @@ namespace DepictionEngine
         /// <param name="isFallbackValues">If true a <see cref="DepictionEngine.FallbackValues"/> will be created and the instance type will be passed to the <see cref="DepictionEngine.FallbackValues.SetFallbackJsonFromType"/> function.</param>
         /// <returns>The newly created instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
-        public T CreateInstance<T>(Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false) where T : IDisposable
+        public T CreateInstance<T>(Transform parent = null, JSONObject json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false) where T : IDisposable
         {
             return (T)CreateInstance(typeof(T), parent, json, propertyModifiers, initializingContext, setParentAndAlign, moveToView, isFallbackValues);
         }
@@ -1036,7 +1053,7 @@ namespace DepictionEngine
         /// <param name="isFallbackValues">If true a <see cref="DepictionEngine.FallbackValues"/> will be created and the instance type will be passed to the <see cref="DepictionEngine.FallbackValues.SetFallbackJsonFromType"/> function.</param>
         /// <returns>The newly created instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IDisposable CreateInstance(Type type, Transform parent = null, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false)
+        public IDisposable CreateInstance(Type type, Transform parent = null, JSONObject json = null, List<PropertyModifier> propertyModifiers = null, InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false, bool isFallbackValues = false)
         {
             if (SceneManager.sceneClosing || type == null)
                 return null;
@@ -1051,18 +1068,6 @@ namespace DepictionEngine
                 PoolManager poolManager = PoolManager.Instance();
                 if (poolManager != Disposable.NULL)
                     disposable = poolManager.GetFromPool(type);
-            }
-
-            if (json != null)
-            {
-                if (json is JSONString)
-                {
-                    string name = json;
-                    json = new JSONObject
-                    {
-                        [nameof(IPersistent.name)] = name
-                    };
-                }
             }
 
             if (disposable is not null)
@@ -1082,7 +1087,7 @@ namespace DepictionEngine
                 //New Instance Created
                 if (type.IsSubclassOf(typeof(MonoBehaviour)))
                 {
-                    GameObject go = InitializeGameObject(new(), GetParentFromJson(parent, json), setParentAndAlign, moveToView);
+                    GameObject go = InitializeGameObject(new(""), GetParentFromJson(parent, json), setParentAndAlign, moveToView);
 #if UNITY_EDITOR
                     Editor.UndoManager.QueueRegisterCreatedObjectUndo(go, initializingContext);
 #endif
@@ -1110,12 +1115,16 @@ namespace DepictionEngine
 
         private Transform GetParentFromJson(Transform parent, JSONNode json)
         {
-            if (json != null && json[nameof(Object.transform)] != null && !string.IsNullOrEmpty(json[nameof(Object.transform)][nameof(TransformBase.parent)]))
+            if (json != null && json[nameof(Object.transform)] != null && !string.IsNullOrEmpty(json[nameof(Object.transform)][nameof(TransformDouble.parentId)]))
             {
-                TransformBase parentTransform = GetTransform(SerializableGuid.Parse(json[nameof(Object.transform)][nameof(TransformBase.parent)]));
-                json[nameof(Object.transform)].Remove(nameof(TransformBase.parent));
-                if (parentTransform != Disposable.NULL)
-                    parent = parentTransform.transform;
+                if (JsonUtility.FromJson(out SerializableGuid parentId, json[nameof(Object.transform)][nameof(TransformDouble.parentId)]))
+                {
+                    json[nameof(Object.transform)].Remove(nameof(TransformDouble.parentId));
+
+                    TransformBase parentTransform = GetTransform(parentId);
+                    if (parentTransform != Disposable.NULL)
+                        parent = parentTransform.transform;
+                }
             }
             return parent;
         }
@@ -1177,7 +1186,7 @@ namespace DepictionEngine
         /// <param name="isFallbackValues">If true a <see cref="DepictionEngine.FallbackValues"/> will be created and the instance type will be passed to the <see cref="DepictionEngine.FallbackValues.SetFallbackJsonFromType"/> function.</param>
         /// <returns>The object that was initialized.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Initialize<T>(T obj, InitializationContext initializingContext = InitializationContext.Programmatically, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
+        public static T Initialize<T>(T obj, InitializationContext initializingContext = InitializationContext.Programmatically, JSONObject json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
             if (obj is IDisposable disposable)
             {
@@ -1196,10 +1205,10 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
-        public static void InitializingContext(Action callback, InitializationContext initializingContext, JSONNode json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
+        public static void InitializingContext(Action callback, InitializationContext initializingContext, JSONObject json = null, List<PropertyModifier> propertyModifiers = null, bool isFallbackValues = false)
         {
             InitializationContext lastInitializingContext = InstanceManager.initializingContext;
-            JSONNode lastInitializeJSON = InstanceManager.initializeJSON;
+            JSONObject lastInitializeJSON = InstanceManager.initializeJSON;
             List<PropertyModifier> lastInitializePropertyModifiers = InstanceManager.initializePropertyModifiers;
             bool lastIsFallbackValues = InstanceManager.initializeIsFallbackValues;
 

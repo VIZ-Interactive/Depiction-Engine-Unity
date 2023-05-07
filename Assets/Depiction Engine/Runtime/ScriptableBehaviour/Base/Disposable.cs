@@ -24,7 +24,6 @@ namespace DepictionEngine
         private DisposeContext _disposingContext;
 
         private Action<IDisposable> _initializedEvent;
-        private Action<IDisposable> _disposingEvent;
         private Action<IDisposable, DisposeContext> _disposedEvent;
 
         public virtual void Recycle()
@@ -123,12 +122,6 @@ namespace DepictionEngine
             set { _initializedEvent = value; }
         }
 
-        public Action<IDisposable> DisposingEvent
-        {
-            get { return _disposingEvent; }
-            set { _disposingEvent = value; }
-        }
-
         public Action<IDisposable, DisposeContext> DisposedEvent
         {
             get { return _disposedEvent; }
@@ -165,18 +158,14 @@ namespace DepictionEngine
             if (!_disposing)
             {
                 _disposing = true;
-
-                DisposingEvent?.Invoke(this);
-                DisposingEvent = null;
-
                 return true;
             }
             return false;
         }
 
-        public bool UpdateDisposingContext()
+        public bool UpdateDisposingContext(bool forceUpdate = false)
         {
-            if (!_disposingContextUpdated)
+            if (!_disposingContextUpdated || forceUpdate)
             {
                 _disposingContextUpdated = true;
 
@@ -204,7 +193,6 @@ namespace DepictionEngine
                 UpdateAllDelegates();
 
                 InitializedEvent = null;
-                DisposingEvent = null;
                 DisposedEvent = null;
 
                 return true;

@@ -1092,7 +1092,7 @@ namespace DepictionEngine
         /// <summary>
         /// When enabled, the GameObject will automatically reacts to <see cref="DepictionEngine.AstroObject"/> gravitational pull based on <see cref="DepictionEngine.Object.mass"/> and <see cref="DepictionEngine.AstroObject.mass"/>.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsPhysicsObject))]
+        [Json(conditionalGetMethod: nameof(IsPhysicsObject))]
         public bool useGravity
         {
             get => _useGravity;
@@ -1123,7 +1123,7 @@ namespace DepictionEngine
         /// <summary>
         /// Used to determine the amount of gravitational force to apply when <see cref="DepictionEngine.Object.useGravity"/> is enabled. 
         /// </summary>
-        [Json(conditionalMethod: nameof(IsPhysicsObject))]
+        [Json(conditionalGetMethod: nameof(IsPhysicsObject))]
         public double mass
         {
             get => _mass;
@@ -1198,7 +1198,7 @@ namespace DepictionEngine
         /// <summary>
         /// When enabled, a new <see cref="DepictionEngine.AnimatorBase"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public bool createAnimatorIfMissing
         {
             get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createAnimatorIfMissing;
@@ -1212,7 +1212,7 @@ namespace DepictionEngine
         /// <summary>
         /// The Id of the animator.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public SerializableGuid animatorId
         {
             get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.animatorId : SerializableGuid.Empty;
@@ -1236,7 +1236,7 @@ namespace DepictionEngine
         /// <summary>
         /// When enabled, a new <see cref="DepictionEngine.ControllerBase"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public bool createControllerIfMissing
         {
             get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createControllerIfMissing;
@@ -1250,7 +1250,7 @@ namespace DepictionEngine
         /// <summary>
         /// The Id of the controller.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public SerializableGuid controllerId
         {
             get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.controllerId : SerializableGuid.Empty;
@@ -1274,7 +1274,7 @@ namespace DepictionEngine
         /// <summary>
         /// When enabled, a new <see cref="DepictionEngine.GeneratorBase"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public bool createGeneratorIfMissing
         {
             get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createGeneratorIfMissing;
@@ -1288,7 +1288,7 @@ namespace DepictionEngine
         /// <summary>
         /// The Id of the generators.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public List<SerializableGuid> generatorsId
         {
             get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.generatorsId : null;
@@ -1312,7 +1312,7 @@ namespace DepictionEngine
         /// <summary>
         /// When enabled, a new <see cref="DepictionEngine.ReferenceBase"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public bool createReferenceIfMissing
         {
             get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createReferenceIfMissing;
@@ -1326,7 +1326,7 @@ namespace DepictionEngine
         /// <summary>
         /// The Id of the references.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public List<SerializableGuid> referencesId
         {
             get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.referencesId : null;
@@ -1350,7 +1350,7 @@ namespace DepictionEngine
         /// <summary>
         /// When enabled, a new <see cref="DepictionEngine.EffectBase"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public bool createEffectIfMissing
         {
             get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createEffectIfMissing;
@@ -1364,7 +1364,7 @@ namespace DepictionEngine
         /// <summary>
         /// The Id of the effects.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public List<SerializableGuid> effectsId
         {
             get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.effectsId : null;
@@ -1388,7 +1388,7 @@ namespace DepictionEngine
         /// <summary>
         /// When enabled, a new <see cref="DepictionEngine.FallbackValues"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public bool createFallbackValuesIfMissing
         {
             get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createFallbackValuesIfMissing;
@@ -1402,7 +1402,7 @@ namespace DepictionEngine
         /// <summary>
         /// The Id of the fallbackValues.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public List<SerializableGuid> fallbackValuesId
         {
             get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.fallbackValuesId : null;
@@ -1426,7 +1426,7 @@ namespace DepictionEngine
         /// <summary>
         /// When enabled, a new <see cref="DepictionEngine.DatasourceBase"/> will be created if none is present in the <see cref="DepictionEngine.IPersistent"/> returned from the datasource.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public bool createDatasourceIfMissing
         {
             get => objectAdditionalFallbackValues != null && objectAdditionalFallbackValues.createDatasourceIfMissing;
@@ -1440,7 +1440,7 @@ namespace DepictionEngine
         /// <summary>
         /// The Id of the datasources.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public List<SerializableGuid> datasourcesId
         {
             get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.datasourcesId : null;
@@ -1464,7 +1464,7 @@ namespace DepictionEngine
         /// <summary>
         /// The <see cref="DepictionEngine.AnimatorBase"/> used by this object.
         /// </summary>
-        [Json(propertyName: nameof(animatorJson), conditionalMethod: nameof(IsNotFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsNotFallbackValues))]
         public AnimatorBase animator
         {
             get => _animator;
@@ -1474,7 +1474,7 @@ namespace DepictionEngine
         /// <summary>
         /// The <see cref="DepictionEngine.ControllerBase"/> used by this object.
         /// </summary>
-        [Json(propertyName: nameof(controllerJson), conditionalMethod: nameof(IsNotFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsNotFallbackValues))]
         public ControllerBase controller
         {
             get => _controller;
@@ -1493,7 +1493,7 @@ namespace DepictionEngine
         /// <summary>
         /// A list of <see cref="DepictionEngine.GeneratorBase"/> used by this object.
         /// </summary>
-        [Json(propertyName: nameof(generatorsJson), conditionalMethod: nameof(IsNotFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsNotFallbackValues))]
         public List<GeneratorBase> generators
         {
             get { _generators ??= new List<GeneratorBase>(); return _generators; }
@@ -1503,7 +1503,7 @@ namespace DepictionEngine
         /// <summary>
         /// A list of <see cref="DepictionEngine.ReferenceBase"/> used by this object.
         /// </summary>
-        [Json(propertyName: nameof(referencesJson), conditionalMethod: nameof(IsNotFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsNotFallbackValues))]
         public List<ReferenceBase> references
         {
             get { _references ??= new List<ReferenceBase>(); return _references; }
@@ -1513,7 +1513,7 @@ namespace DepictionEngine
         /// <summary>
         /// A list of <see cref="DepictionEngine.EffectBase"/> used by this object.
         /// </summary>
-        [Json(propertyName: nameof(effectsJson), conditionalMethod: nameof(IsNotFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsNotFallbackValues))]
         public List<EffectBase> effects
         {
             get { _effects ??= new List<EffectBase>(); return _effects; }
@@ -1523,7 +1523,7 @@ namespace DepictionEngine
         /// <summary>
         /// A list of <see cref="DepictionEngine.FallbackValues"/> used by this object.
         /// </summary>
-        [Json(propertyName: nameof(fallbackValuesJson), conditionalMethod: nameof(IsNotFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsNotFallbackValues))]
         public List<FallbackValues> fallbackValues
         {
             get { _fallbackValues ??= new List<FallbackValues>(); return _fallbackValues; }
@@ -1533,28 +1533,12 @@ namespace DepictionEngine
         /// <summary>
         /// A list of <see cref="DepictionEngine.DatasourceBase"/> used by this object.
         /// </summary>
-        [Json(propertyName: nameof(datasourcesJson), conditionalMethod: nameof(IsNotFallbackValues))]
+        [Json( conditionalGetMethod: nameof(IsNotFallbackValues))]
         public List<DatasourceBase> datasources
         {
             get { _datasources ??= new List<DatasourceBase>(); return _datasources; }
             private set => SetValue(nameof(datasources), value, ref _datasources);
         }
-
-        private JSONNode transformJson { get => JsonUtility.ToJson(GetComponent<TransformBase>()); }
-
-        private JSONNode animatorJson { get => JsonUtility.ToJson(GetComponent<AnimatorBase>()); }
-
-        private JSONNode controllerJson { get => JsonUtility.ToJson(GetComponent<ControllerBase>()); }
-
-        private JSONNode generatorsJson { get => JsonUtility.ToJson(GetComponents<GeneratorBase>()); }
-
-        private JSONNode referencesJson { get => JsonUtility.ToJson(GetComponents<ReferenceBase>()); }
-
-        private JSONNode effectsJson { get => JsonUtility.ToJson(GetComponents<EffectBase>()); }
-
-        private JSONNode fallbackValuesJson { get => JsonUtility.ToJson(GetComponents<FallbackValues>()); }
-
-        private JSONNode datasourcesJson { get => JsonUtility.ToJson(GetComponents<DatasourceBase>()); }
 
         protected void InitializeReferenceDataType(string dataType, Type referenceType = null)
         {
@@ -1612,7 +1596,7 @@ namespace DepictionEngine
             return true;
         }
 
-        [Json(propertyName: nameof(transformJson), conditionalMethod: nameof(IsNotFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsNotFallbackValues))]
         public new TransformDouble transform
         {
             get => _transform;
@@ -1747,7 +1731,7 @@ namespace DepictionEngine
             return CreateScript(typeof(T), null, initializingContext) as T;
         }
 
-        public T CreateScript<T>(JSONNode json, InitializationContext initializingContext = InitializationContext.Programmatically) where T : Script
+        public T CreateScript<T>(JSONObject json, InitializationContext initializingContext = InitializationContext.Programmatically) where T : Script
         {
             return CreateScript(typeof(T), json, initializingContext) as T;
         }
@@ -1757,7 +1741,7 @@ namespace DepictionEngine
             return CreateScript(type, null, initializingContext, isFallbackValues);
         }
 
-        public Script CreateScript(Type type, JSONNode json, InitializationContext initializingContext = InitializationContext.Programmatically, bool isFallbackValues = false)
+        public Script CreateScript(Type type, JSONObject json, InitializationContext initializingContext = InitializationContext.Programmatically, bool isFallbackValues = false)
         {
             if (!type.IsSubclassOf(typeof(Script)))
                 return null;
@@ -2093,10 +2077,10 @@ namespace DepictionEngine
         {
             bool containsDisposed = base.ApplyBeforeChildren(callback);
 
-            if (animator is not null && TriggerCallback(animator, callback))
+            if (animator is not null && !TriggerCallback(animator, callback))
                 containsDisposed = true;
 
-            if (controller is not null && TriggerCallback(controller, callback))
+            if (controller is not null && !TriggerCallback(controller, callback))
                 containsDisposed = true;
 
             //Effects such as Atmosphere need to be executed before loaders
@@ -2104,7 +2088,7 @@ namespace DepictionEngine
             {
                 for (int i = effects.Count - 1; i >= 0; i--)
                 {
-                    if (TriggerCallback(effects[i], callback))
+                    if (!TriggerCallback(effects[i], callback))
                         containsDisposed = true;
                 }
             }
@@ -2113,7 +2097,7 @@ namespace DepictionEngine
             {
                 for (int i = generators.Count - 1; i >= 0; i--)
                 {
-                    if (TriggerCallback(generators[i], callback))
+                    if (!TriggerCallback(generators[i], callback))
                         containsDisposed = true;
                 }
             }
@@ -2122,7 +2106,7 @@ namespace DepictionEngine
             {
                 for (int i = references.Count - 1; i >= 0; i--)
                 {
-                    if (TriggerCallback(references[i], callback))
+                    if (!TriggerCallback(references[i], callback))
                         containsDisposed = true;
                 }
             }
@@ -2131,7 +2115,7 @@ namespace DepictionEngine
             {
                 for (int i = fallbackValues.Count - 1; i >= 0; i--)
                 {
-                    if (TriggerCallback(fallbackValues[i], callback))
+                    if (!TriggerCallback(fallbackValues[i], callback))
                         containsDisposed = true;
                 }
             }
@@ -2140,7 +2124,7 @@ namespace DepictionEngine
             {
                 for (int i = datasources.Count - 1; i >= 0; i--)
                 {
-                    if (TriggerCallback(datasources[i], callback))
+                    if (!TriggerCallback(datasources[i], callback))
                         containsDisposed = true;
                 }
             }

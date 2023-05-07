@@ -303,14 +303,21 @@ namespace DepictionEngine
                                 else if (loadOperationResultParameters.data != null && loadOperationResultParameters.data.Length != 0)
                                 {
                                     byte[] textureData = loadOperationResultParameters.data;
+
+                                    bool isRawData = false;
+
                                     int width = 0;
                                     int height = 0;
 
-                                    if (loadOperationResultParameters.dataType == LoaderBase.DataType.TextureWebP)
-                                        textureData = LoadRGBAFromWebP(out width, out height, textureData);
+                                    int mipmapCount = 1;
 
-                                    if (width != 0 && height != 0)
-                                        textureModifier = CreatePropertyModifier<TextureModifier>().Init(textureData, true, width, height);
+                                    if (loadOperationResultParameters.dataType == LoaderBase.DataType.TextureWebP)
+                                    {
+                                        textureData = LoadRGBAFromWebP(out width, out height, textureData);
+                                        isRawData = true;
+                                    }
+
+                                    textureModifier = CreatePropertyModifier<TextureModifier>().Init(textureData, isRawData, width, height, TextureFormat.RGB24, mipmapCount);
                                 }
                             }
 

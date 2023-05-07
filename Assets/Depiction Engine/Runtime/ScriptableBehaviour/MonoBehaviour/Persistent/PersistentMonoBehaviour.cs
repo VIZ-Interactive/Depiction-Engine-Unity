@@ -198,7 +198,7 @@ namespace DepictionEngine
         /// <summary>
         /// The name of the object.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsNotFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsNotFallbackValues))]
         public new string name
         {
             get { return base.name; }
@@ -266,7 +266,7 @@ namespace DepictionEngine
         /// <summary>
         /// When enabled, a new <see cref="DepictionEngine.IPersistent"/> will be created if none is present in the datasource.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsFallbackValues))]
         public bool createPersistentIfMissing
         {
             get { return _createPersistentIfMissing; }

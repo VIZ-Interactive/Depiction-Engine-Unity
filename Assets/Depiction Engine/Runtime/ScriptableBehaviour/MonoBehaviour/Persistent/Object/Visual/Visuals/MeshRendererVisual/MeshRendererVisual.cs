@@ -186,21 +186,18 @@ namespace DepictionEngine
             get => meshFilter.sharedMesh;
             set 
             {
-                UnityEngine.Mesh oldValue = sharedMesh;
-                UnityEngine.Mesh newValue = value;
+                if (value != null && value.vertices.Length == 0)
+                    value = null;
 
-                if (newValue != null && newValue.vertices.Length == 0)
-                    newValue = null;
-
-                if (HasChanged(newValue, oldValue, false))
+                if (HasChanged(value, sharedMesh, false))
                 {
-                    meshFilter.sharedMesh = newValue;
+                    meshFilter.sharedMesh = value;
 
                     Collider collider = colliderInternal;
                     if (collider != null)
                     {
-                        if (collider is MeshCollider)
-                            (collider as MeshCollider).sharedMesh = newValue;
+                        if (collider is MeshCollider meshCollider)
+                            meshCollider.sharedMesh = value;
                         UpdateCollider();
                     }
                 }

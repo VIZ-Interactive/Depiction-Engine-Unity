@@ -388,8 +388,7 @@ namespace DepictionEngine.Editor
                     foreach (UnityEngine.Object targetObject in serializedProperty.serializedObject.targetObjects)
                     {
                         string methodName = buttonAttribute.methodName;
-                        MethodInfo eventMethodInfo = MemberUtility.GetMethodInfoFromMethodName(targetObject, methodName);
-                        if (eventMethodInfo != null)
+                        if (MemberUtility.GetMethodInfoFromMethodName(targetObject, methodName, out MethodInfo eventMethodInfo))
                             eventMethodInfo.Invoke(targetObject, null);
                         else
                             Debug.LogWarning(string.Format("InspectorButton: Unable to find method {0} in {1}", methodName, targetObject.GetType()));

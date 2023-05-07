@@ -368,7 +368,7 @@ namespace DepictionEngine
                         bool isInDatasource = datasource.GetPersistent(id, out persistent);
                         if (!isInDatasource || datasource.IsPersistentOutOfSync(persistent))
                         {
-                            JSONObject json = persistent.GetJson(isInDatasource ? datasource : null);
+                            JSONObject json = JsonUtility.GetObjectJson(persistent, isInDatasource ? datasource : null) as JSONObject;
                             if (json != null)
                             {
                                 json.Remove(nameof(IPersistent.dontSaveToScene));

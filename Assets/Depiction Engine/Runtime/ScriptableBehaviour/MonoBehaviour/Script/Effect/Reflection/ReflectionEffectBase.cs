@@ -16,6 +16,7 @@ namespace DepictionEngine
         [SerializeField, Mask, Tooltip("The objects within the ignoreLayers will be excluded from the reflection render."), EndFoldout]
         private int _ignoreLayers;
 
+        [SerializeField, HideInInspector]
         private RenderTexture _reflectionTexture;
 
         private bool _reflectionTextureDirty;
@@ -23,6 +24,9 @@ namespace DepictionEngine
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
+
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+                _reflectionTexture = null;
 
             InitValue(value => reflectionTextureSize = value, new Vector2Int(512, 512), initializingContext);
             InitValue(value => renderShadows = value, false, initializingContext);
@@ -149,7 +153,8 @@ namespace DepictionEngine
         {
             if (base.OnDispose(disposeContext))
             {
-                DisposeManager.Dispose(_reflectionTexture);
+                if (disposeContext != DisposeContext.Programmatically_Pool)
+                    DisposeManager.Dispose(_reflectionTexture, disposeContext);
 
                 return true;
             }

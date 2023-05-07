@@ -33,7 +33,7 @@ namespace DepictionEngine.Editor
                         PropertyInfo endCoordinatePropertyInfo = null;
                         Vector3Double endCoordinate = TransformDouble.AddOrigin(Handles.PositionHandle(TransformDouble.SubtractOrigin(label.endCoordinate), uiVisualRotation));
                         if (EditorGUI.EndChangeCheck())
-                            endCoordinatePropertyInfo = MemberUtility.GetMemberInfoFromMemberName<PropertyInfo>(typeof(Label), nameof(Label.endCoordinate));
+                            MemberUtility.GetMemberInfoFromMemberName(typeof(Label), nameof(Label.endCoordinate), out endCoordinatePropertyInfo);
 
                         PropertyInfo textCurvePropertyInfo = null;
                         List<Vector3Double> textCurve = new List<Vector3Double>();
@@ -42,7 +42,7 @@ namespace DepictionEngine.Editor
                             EditorGUI.BeginChangeCheck();
                             textCurve.Add(TransformDouble.AddOrigin(Handles.PositionHandle(TransformDouble.SubtractOrigin(point), uiVisualRotation)));
                             if (EditorGUI.EndChangeCheck())
-                                textCurvePropertyInfo = MemberUtility.GetMemberInfoFromMemberName<PropertyInfo>(typeof(Label), nameof(Label.textCurve));
+                                MemberUtility.GetMemberInfoFromMemberName(typeof(Label), nameof(Label.textCurve), out textCurvePropertyInfo);
                         }
 
                         if (endCoordinatePropertyInfo != null || textCurvePropertyInfo != null)

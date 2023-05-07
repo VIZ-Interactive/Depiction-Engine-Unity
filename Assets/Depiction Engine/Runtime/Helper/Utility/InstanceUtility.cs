@@ -14,26 +14,55 @@ namespace DepictionEngine
         /// <summary>
         /// Create a new <see cref="DepictionEngine.Camera"/> equipped with a <see cref="DepictionEngine.CameraController"/> and target.
         /// </summary>
+        /// <param name="parentId">The parent <see cref="DepictionEngine.SerializableGuid"/> under which we will create the <see cref="DepictionEngine.Camera"/>.</param>
+        /// <param name="initializingContext"></param>
+        /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
+        /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
+        /// <returns>The newly created <see cref="DepictionEngine.Camera"/> instance.</returns>
+        public static Camera CreateTargetCamera(SerializableGuid parentId, string name = "Camera", double distance = 1000.0d, string skyboxMaterialPath = RenderingManager.MATERIAL_BASE_PATH + "Skybox/Star-Skybox", InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false)
+        {
+            TransformBase transform = null;
+
+            InstanceManager instanceManager = InstanceManager.Instance(false);
+            if (instanceManager != null)
+                transform = instanceManager.GetTransform(parentId);
+
+            return CreateTargetCamera(transform != Disposable.NULL ? transform.gameObject.transform : null, name, distance, skyboxMaterialPath, initializingContext, setParentAndAlign, moveToView);
+        }
+
+        /// <summary>
+        /// Create a new <see cref="DepictionEngine.Camera"/> equipped with a <see cref="DepictionEngine.CameraController"/> and target.
+        /// </summary>
         /// <param name="parent">The parent <see cref="UnityEngine.Transform"/> under which we will create the <see cref="DepictionEngine.Camera"/>.</param>
         /// <param name="initializingContext"></param>
         /// <param name="setParentAndAlign">Sets the parent and gives the child the same layer and position (Editor Only).</param>
         /// <param name="moveToView">Instantiates the GameObject at the scene pivot  (Editor Only).</param>
         /// <returns>The newly created <see cref="DepictionEngine.Camera"/> instance.</returns>
-        public static Camera CreateTargetCamera(Transform parent, InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false)
+        public static Camera CreateTargetCamera(Transform parent, string name = "Camera", double distance = 1000.0d, string skyboxMaterialPath = RenderingManager.MATERIAL_BASE_PATH + "Skybox/Star-Skybox", InitializationContext initializingContext = InitializationContext.Programmatically, bool setParentAndAlign = false, bool moveToView = false)
         {
             Camera camera = null;
 
             InstanceManager instanceManager = InstanceManager.Instance();
             if (instanceManager != Disposable.NULL)
             {
-                Object target = instanceManager.CreateInstance<VisualObject>(parent, json: "Target", initializingContext: initializingContext, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
+                Object target = instanceManager.CreateInstance<VisualObject>(parent, json: new JSONObject() { [nameof(Object.name)] = "Target" }, initializingContext: initializingContext, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
                 target.CreateScript<GeoCoordinateController>(initializingContext);
                 target.CreateScript<TransformAnimator>(initializingContext);
 
-                camera = instanceManager.CreateInstance<Camera>(parent, json: "Camera", initializingContext: initializingContext);
+                JSONObject jsonCamera = new()
+                {
+                    [nameof(Camera.name)] = name,
+                    [nameof(Camera.tag)] = "MainCamera",
+                    [nameof(Camera.skyboxMaterialPath)] = skyboxMaterialPath
+                };
+                camera = instanceManager.CreateInstance<Camera>(parent, jsonCamera, initializingContext: initializingContext);
 
-                CameraController cameraController = camera.CreateScript<CameraController>(initializingContext);
-                cameraController.targetId = target.id;
+                JSONObject jsonCameraController = new()
+                {
+                    [nameof(CameraController.targetId)] = JsonUtility.ToJson(target.id),
+                    [nameof(CameraController.distance)] = distance
+                };
+                camera.CreateScript<CameraController>(jsonCameraController, initializingContext);
 
                 camera.CreateScript<TargetControllerAnimator>(initializingContext);
             }
@@ -60,7 +89,7 @@ namespace DepictionEngine
             bool spherical,
             double size,
             double mass,
-            JSONNode json = null,
+            JSONObject json = null,
             InitializationContext initializingContext = InitializationContext.Programmatically,
             bool setParentAndAlign = false,
             bool moveToView = false)
@@ -92,13 +121,12 @@ namespace DepictionEngine
         bool spherical,
         double size,
         double mass,
-        JSONNode json = null,
+        JSONObject json = null,
         InitializationContext initializingContext = InitializationContext.Programmatically,
         bool setParentAndAlign = false,
         bool moveToView = false)
         {
-            if (json == null)
-                json = new JSONObject();
+            json ??= new JSONObject();
             json[nameof(Object.name)] = name;
 
             Planet planet = InstanceManager.Instance().CreateInstance<Planet>(parent, json: json, initializingContext: initializingContext, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
@@ -120,7 +148,7 @@ namespace DepictionEngine
         /// <param name="json">Optional initialization values.</param>
         /// <param name="initializingContext">.</param>
         /// <returns>The newly created <see cref="DepictionEngine.DatasourceRoot"/> instance.</returns>
-        public static DatasourceRoot CreateLayer(SerializableGuid planetId, string name, JSONNode json = null, InitializationContext initializingContext = InitializationContext.Programmatically)
+        public static DatasourceRoot CreateLayer(SerializableGuid planetId, string name, JSONObject json = null, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             return CreateLayer(InstanceManager.Instance().GetAstroObject(planetId) as Planet, name, json, initializingContext);
         }
@@ -133,13 +161,12 @@ namespace DepictionEngine
         /// <param name="json">Optional initialization values.</param>
         /// <param name="initializingContext">.</param>
         /// <returns>The newly created <see cref="DepictionEngine.DatasourceRoot"/> instance.</returns>
-        public static DatasourceRoot CreateLayer(Planet planet, string name, JSONNode json = null, InitializationContext initializingContext = InitializationContext.Programmatically)
+        public static DatasourceRoot CreateLayer(Planet planet, string name, JSONObject json = null, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             if (planet == Disposable.NULL)
                 return null;
 
-            if (json == null)
-                json = new JSONObject();
+            json ??= new JSONObject();
             json[nameof(DatasourceRoot.name)] = name;
 
             return InstanceManager.Instance().CreateInstance<DatasourceRoot>(planet.gameObject.transform, json: json, initializingContext: initializingContext);

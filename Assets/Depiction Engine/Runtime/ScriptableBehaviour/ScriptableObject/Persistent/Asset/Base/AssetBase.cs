@@ -201,7 +201,7 @@ namespace DepictionEngine
         /// <summary>
         /// The horizontal and vertical size of the grid.
         /// </summary>
-        [Json(conditionalMethod: nameof(IncludeIndex2D))]
+        [Json(conditionalGetMethod: nameof(IncludeIndex2D))]
         public Vector2Int grid2DDimensions
         {
             get => _grid2DDimensions;
@@ -218,7 +218,7 @@ namespace DepictionEngine
         /// <summary>
         /// The horizontal and vertical index of this asset on the grid.
         /// </summary>
-        [Json(conditionalMethod: nameof(IncludeIndex2D))]
+        [Json(conditionalGetMethod: nameof(IncludeIndex2D))]
         public Vector2Int grid2DIndex
         {
             get => _grid2DIndex;

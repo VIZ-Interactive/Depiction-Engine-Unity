@@ -73,11 +73,6 @@ namespace DepictionEngine
             InitValue(value => distancePass = value, Camera.DEFAULT_DISTANCE_PASS, initializingContext);
             InitValue(value => environmentTextureSize = value, Camera.DEFAULT_ENVIRONMENT_TEXTURE_SIZE, initializingContext);
             InitValue(value => minMaxCameraDistance = value, new Vector2Double(0.01d, MAX_CAMERA_DISTANCE), initializingContext);
-
-#if !UNITY_EDITOR
-            if (Camera.main == null)
-                Debug.LogError("No MainCamera found in the Scene!");
-#endif
         }
 
         /// <summary>
@@ -85,8 +80,8 @@ namespace DepictionEngine
         /// </summary>
         public CameraClearFlags clearFlags
         {
-            get { return _clearFlags; }
-            set { SetValue(nameof(clearFlags), value, ref _clearFlags); }
+            get => _clearFlags;
+            set => SetValue(nameof(clearFlags), value, ref _clearFlags);
         }
 
         /// <summary>
@@ -94,8 +89,8 @@ namespace DepictionEngine
         /// </summary>
         public Color backgroundColor
         {
-            get { return _backgroundColor; }
-            set { SetValue(nameof(backgroundColor), value, ref _backgroundColor); }
+            get => _backgroundColor;
+            set => SetValue(nameof(backgroundColor), value, ref _backgroundColor);
         }
 
         /// <summary>
@@ -103,8 +98,8 @@ namespace DepictionEngine
         /// </summary>
         public string skyboxMaterialPath
         {
-            get { return _skyboxMaterialPath; }
-            set { SetValue(nameof(skyboxMaterialPath), value, ref _skyboxMaterialPath); }
+            get => _skyboxMaterialPath;
+            set => SetValue(nameof(skyboxMaterialPath), value, ref _skyboxMaterialPath);
         }
 
         /// <summary>
@@ -112,8 +107,8 @@ namespace DepictionEngine
         /// </summary>
         public int distancePass
         {
-            get { return _distancePass; }
-            set { SetValue(nameof(distancePass), (int)Mathf.Clamp(value, 0.0f, MAX_DISTANCE_PASS), ref _distancePass); }
+            get => _distancePass;
+            set => SetValue(nameof(distancePass), (int)Mathf.Clamp(value, 0.0f, MAX_DISTANCE_PASS), ref _distancePass);
         }
 
         /// <summary>
@@ -121,7 +116,7 @@ namespace DepictionEngine
         /// </summary>
         public int environmentTextureSize
         {
-            get { return _environmentTextureSize; }
+            get => _environmentTextureSize;
             set 
             {
                 if (value < 2)
@@ -135,7 +130,7 @@ namespace DepictionEngine
         /// </summary>
         public Vector2Double minMaxCameraDistance
         {
-            get { return _minMaxCameraDistance; }
+            get => _minMaxCameraDistance;
             set 
             {
                 if (value.y > MAX_CAMERA_DISTANCE)

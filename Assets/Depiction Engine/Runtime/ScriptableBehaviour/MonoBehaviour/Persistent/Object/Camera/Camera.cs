@@ -12,7 +12,7 @@ namespace DepictionEngine
     /// Wrapper class for 'UnityEngine.Camera' introducing better integrated functionality.
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/" + nameof(Camera))]
-    [CreateComponent(typeof(Skybox), typeof(UniversalAdditionalCameraData))]
+    [CreateComponent(typeof(Skybox), typeof(UnityEngine.Camera), typeof(UniversalAdditionalCameraData))]
     public class Camera : Object
     {
         public const int DEFAULT_ENVIRONMENT_TEXTURE_SIZE = 512;
@@ -67,6 +67,16 @@ namespace DepictionEngine
         private UniversalAdditionalCameraData _additionalData;
 
         private List<Stack> _stacks;
+
+        public override void Recycle()
+        {
+            base.Recycle();
+
+            UniversalAdditionalCameraData universalAdditionalCameraData = GetUniversalAdditionalCameraData();
+
+            if (universalAdditionalCameraData != null)
+                universalAdditionalCameraData.cameraStack.RemoveRange(0, universalAdditionalCameraData.cameraStack.Count);
+        }
 
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
@@ -184,6 +194,8 @@ namespace DepictionEngine
                         universalAdditionalCameraData.cameraStack.Add(unityCamera);
                 }
 
+                UpdateStacks(ref _stacks);
+
                 return true;
             }
             return false;
@@ -212,7 +224,7 @@ namespace DepictionEngine
         {
             stacks ??= new List<Stack>();
             stacks.Clear();
-            gameObject.transform.GetComponentsInChildren(stacks);
+            gameObject.transform.GetComponentsInChildren(true, stacks);
             return stacks.Count;
         }
 
@@ -346,6 +358,7 @@ namespace DepictionEngine
             {
                 environmentCubemap = new(textureSize, textureSize, 0, RenderTextureFormat.ARGB32, 0)
                 {
+                    filterMode = FilterMode.Point,
                     dimension = TextureDimension.Cube,
                     name = name + "_Dynamic_Skybox_Cubemap"
                 };
@@ -353,9 +366,36 @@ namespace DepictionEngine
             return environmentCubemap;
         }
 
+        private static Camera _main;
         public static Camera main
         {
-            get => UnityEngine.Camera.main != null ? UnityEngine.Camera.main.GetComponent<Camera>() : null;
+            get
+            {
+                string mainCameraName = "MainCamera";
+
+                if (_main == Disposable.NULL ||_main.tag != mainCameraName)
+                {
+                    InstanceManager instanceManager = InstanceManager.Instance(false);
+                    if (instanceManager != null)
+                    {
+                        instanceManager.IterateOverInstances<Camera>((camera) =>
+                        {
+#if UNITY_EDITOR
+                            if (camera is Editor.SceneCamera)
+                                return true;
+#endif
+                            if (camera is not RTTCamera && camera.tag == mainCameraName)
+                            {
+                                _main = camera;
+                                return false;
+                            }
+                            return true;
+                        });
+                    }
+                }
+
+                return _main;
+            }
         }
 
         public Matrix4x4 GetViewToWorldMatrix()
@@ -427,7 +467,7 @@ namespace DepictionEngine
         public float fieldOfView
         {
             get => _fieldOfView;
-            set { SetValue(nameof(fieldOfView), value, ref _fieldOfView); }
+            set => SetValue(nameof(fieldOfView), value, ref _fieldOfView);
         }
 
         /// <summary>
@@ -936,12 +976,10 @@ namespace DepictionEngine
             try
             {
                 sceneManager.BeginCameraRendering(this);
-
                 rttCamera.RenderToCubemap(this, GetEnvironmentCubeMap(), ApplyPropertiesToUnityCamera);
+    
                 transform.RevertUnityLocalPosition();
-
                 sceneManager.EndCameraRendering(this);
-
             }
             catch (Exception e)
             {
@@ -951,6 +989,7 @@ namespace DepictionEngine
             RenderSettings.ambientIntensity = lastAmbientIntensity;
             RenderSettings.reflectionIntensity = lastReflectionIntensity;
         }
+
 
         private void ApplyPropertiesToUnityCamera(UnityEngine.Camera unityCamera, Camera copyFromCamera)
         {

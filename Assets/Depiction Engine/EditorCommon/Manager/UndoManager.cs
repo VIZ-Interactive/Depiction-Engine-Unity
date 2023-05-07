@@ -278,7 +278,7 @@ namespace DepictionEngine.Editor
         /// <param name="objectToUndo"></param>
         public static bool RegisterCreatedObjectUndo(UnityEngine.Object objectToUndo)
         {
-            if (IsValidUnityObject(objectToUndo))
+            if (!SceneManager.IsSceneBeingDestroyed() && IsValidUnityObject(objectToUndo))
             {
                 if (IsInitialized(objectToUndo))
                 {
@@ -368,7 +368,7 @@ namespace DepictionEngine.Editor
         /// <param name="objectToUndo"></param>
         public static bool RegisterCompleteObjectUndo(UnityEngine.Object objectToUndo)
         {
-            if (IsValidUnityObject(objectToUndo))
+            if (!SceneManager.IsSceneBeingDestroyed() && IsValidUnityObject(objectToUndo))
             {
                 if (IsInitialized(objectToUndo))
                 {
@@ -419,7 +419,7 @@ namespace DepictionEngine.Editor
         /// <param name="objectToUndo"></param>
         public static bool RegisterFullObjectHierarchyUndo(UnityEngine.Object objectToUndo)
         {
-            if (IsValidUnityObject(objectToUndo))
+            if (!SceneManager.IsSceneBeingDestroyed() && IsValidUnityObject(objectToUndo))
             {
                 if (IsInitialized(objectToUndo))
                 {
@@ -495,7 +495,7 @@ namespace DepictionEngine.Editor
         /// <param name="worldPositionStays"></param>
         public static void SetTransformParent(TransformBase transform, TransformBase newParent, bool worldPositionStays = false)
         {
-            if (IsValidUnityObject(transform) && IsValidUnityObject(newParent))
+            if (!SceneManager.IsSceneBeingDestroyed() && IsValidUnityObject(transform) && IsValidUnityObject(newParent))
             {
                 if (IsInitialized(transform))
                 {
@@ -569,7 +569,7 @@ namespace DepictionEngine.Editor
         /// <param name="worldPositionStays"></param>
         public static void SetTransformParent(Transform transform, Transform newParent, bool worldPositionStays = false)
         {
-            if (IsValidUnityObject(transform) && IsValidUnityObject(newParent))
+            if (!SceneManager.IsSceneBeingDestroyed() && IsValidUnityObject(transform) && IsValidUnityObject(newParent))
             {
                 Undo.SetTransformParent(transform, newParent, worldPositionStays, Undo.GetCurrentGroupName());
                 UndoRedoPerformed(transform);
@@ -652,7 +652,7 @@ namespace DepictionEngine.Editor
         /// <param name="objectToUndo"></param>
         public static bool RecordObject(UnityEngine.Object objectToUndo)
         {
-            if (IsValidUnityObject(objectToUndo) && IsInitialized(objectToUndo))
+            if (!SceneManager.IsSceneBeingDestroyed() && IsValidUnityObject(objectToUndo) && IsInitialized(objectToUndo))
             {
                 Undo.RecordObject(objectToUndo, Undo.GetCurrentGroupName());
                 UndoRedoPerformed(objectToUndo, UndoOperationType.RecordObject);
@@ -676,7 +676,6 @@ namespace DepictionEngine.Editor
                 AddComponent(gameObject, type, ref component);
                 return true;
             }
-
             return false;
         }
 
@@ -689,7 +688,7 @@ namespace DepictionEngine.Editor
         /// <returns></returns>
         public static bool AddComponent(GameObject gameObject, Type type, ref Component component)
         {
-            if (IsValidUnityObject(gameObject) && !SceneManager.IsEditorNamespace(type))
+            if (!SceneManager.IsSceneBeingDestroyed() && IsValidUnityObject(gameObject) && !SceneManager.IsEditorNamespace(type))
             {
                 component = Undo.AddComponent(gameObject, type);
                 UndoRedoPerformed(component);
@@ -706,7 +705,7 @@ namespace DepictionEngine.Editor
         /// <returns></returns>
         public static bool DestroyObjectImmediate(UnityEngine.Object objectToUndo)
         {
-            if (IsValidUnityObject(objectToUndo))
+            if (!SceneManager.IsSceneBeingDestroyed() && IsValidUnityObject(objectToUndo))
             {
                 Undo.DestroyObjectImmediate(objectToUndo);
                 UndoRedoPerformed(objectToUndo);
@@ -855,7 +854,7 @@ namespace DepictionEngine.Editor
                                     if (validatedObject.PasteComponentAllowed())
                                     {
                                         pastingComponentValues = true;
-                                        InspectorManager.PastingComponentValues(validatedObject, validatedObject.GetJson());
+                                        InspectorManager.PastingComponentValues(validatedObject, JsonUtility.GetObjectJson(validatedObject) as JSONObject);
                                     }
                                 }
 

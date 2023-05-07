@@ -22,6 +22,7 @@ namespace DepictionEngine
         /// <summary>
         /// Acts as a reliable constructor and will always by called unlike Awake which is sometimes skipped during Undo / Redo operations.
         /// </summary>
+        /// <param name="initializingContext"></param>
         void Initialized(InitializationContext initializingContext);
 
 #if UNITY_EDITOR
@@ -88,8 +89,9 @@ namespace DepictionEngine
         /// <summary>
         /// This is where you clear or dispose any remaining references. It will be called automatically by <see cref="DepictionEngine.DisposeManager"/> immediately after <see cref="DepictionEngine.IDisposable.OnDisposing"/> unless the object was Destroyed as a result of an Editor action.
         /// </summary>
+        /// <param name="forceUpdate"></param>
         /// <returns>True if disposing, False if the object is already disposing or was disposed.</returns>
-        bool UpdateDisposingContext();
+        bool UpdateDisposingContext(bool forceUpdate = false);
 
         bool Equals(Disposable.Null value);
     }

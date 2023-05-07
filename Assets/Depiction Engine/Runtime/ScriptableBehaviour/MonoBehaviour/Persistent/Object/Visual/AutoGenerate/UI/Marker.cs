@@ -226,10 +226,8 @@ namespace DepictionEngine
 
         [SerializeField, HideInInspector]
         private Material _markerBadgeMaterial;
-        [SerializeField, HideInInspector]
-        private Material _markerLineMaterial;
-        [SerializeField, HideInInspector]
-        private Material _markerShadowMaterial;
+        private static Material _markerLineMaterial;
+        private static Material _markerShadowMaterial;
 
         [SerializeField, HideInInspector]
         private Mesh _badgeMesh;
@@ -648,8 +646,6 @@ namespace DepictionEngine
                 if (disposeContext != DisposeContext.Programmatically_Pool)
                 {
                     DisposeManager.Dispose(_markerBadgeMaterial, disposeContext);
-                    DisposeManager.Dispose(_markerLineMaterial, disposeContext);
-                    DisposeManager.Dispose(_markerShadowMaterial, disposeContext);
                     DisposeManager.Dispose(_badgeMesh, disposeContext);
                 }
 

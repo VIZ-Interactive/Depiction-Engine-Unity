@@ -18,29 +18,10 @@ namespace DepictionEngine
         public Vector2Int index;
         public Vector2Int dimensions;
 
-        [SerializeField, HideInInspector]
-        private int _hashCode;
-
         public Grid2DIndex(Vector2Int index, Vector2Int dimensions)
         {
             this.index = index;
             this.dimensions = dimensions;
-            
-            IEnumerable<int> hashCodes = new int[] { index.x, index.y, dimensions.x, dimensions.y };
-            int hash1 = (5381 << 16) + 5381;
-            int hash2 = hash1;
-
-            int i = 0;
-            foreach (var hashCode in hashCodes)
-            {
-                if (i % 2 == 0)
-                    hash1 = ((hash1 << 5) + hash1 + (hash1 >> 27)) ^ hashCode;
-                else
-                    hash2 = ((hash2 << 5) + hash2 + (hash2 >> 27)) ^ hashCode;
-
-                ++i;
-            }
-            _hashCode = hash1 + (hash2 * 1566083941);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,7 +53,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-            return _hashCode;
+            return HashCode.Combine(index.x, index.y, dimensions.x, dimensions.y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

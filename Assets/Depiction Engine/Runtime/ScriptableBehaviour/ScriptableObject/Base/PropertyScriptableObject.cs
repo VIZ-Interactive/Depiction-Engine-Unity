@@ -179,7 +179,7 @@ namespace DepictionEngine
         /// <summary>
         /// Global unique identifier.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsNotFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsNotFallbackValues))]
         public SerializableGuid id
         {
             get => _id;
@@ -192,7 +192,7 @@ namespace DepictionEngine
             if (initialized)
             {
 #if UNITY_EDITOR
-                if (SceneManager.GetIsUserChangeContext() && property is IJson iJson && iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
+                if (SceneManager.GetIsUserChangeContext() && property is IJson iJson && JsonUtility.GetJsonAttribute(iJson, name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
                     MarkAsNotPoolable();
 #endif
                 PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
@@ -252,6 +252,8 @@ namespace DepictionEngine
             {
                 if (instanceAdded && AddInstanceToManager())
                 {
+                    instanceAdded = false;
+
                     InstanceManager instanceManager = InstanceManager.Instance(false);
                     if (instanceManager != Disposable.NULL)
                     {

@@ -145,12 +145,12 @@ class Instance
 
     getRestDatasource(baseAddress, baseAddress2, baseAddress3, baseAddress4)
     {
-        return this.callStaticMethod($NAMESPACE + ".DatasourceManager", "GetRestDatasource", [{ type: "System.String", value: baseAddress }, { type: "System.String", value: baseAddress2 }, { type: "System.String", value: baseAddress3 }, { type: "System.String", value: baseAddress4 }, { type: $NAMESPACE + ".InstanceManager+InitializationContext", value: "Programmatically"}])[0];
+        return this.callStaticMethod($NAMESPACE + ".DatasourceManager", "GetRestDatasource", [{ type: "System.String", value: baseAddress }, { type: "System.String", value: baseAddress2 }, { type: "System.String", value: baseAddress3 }, { type: "System.String", value: baseAddress4 }, { type: $NAMESPACE + ".InitializationContext", value: "Programmatically"}])[0];
     }
 
     getFileSystemDatasource(baseAddress, baseAddress2, baseAddress3, baseAddress4)
     {
-        return this.callStaticMethod($NAMESPACE + ".DatasourceManager", "GetFileSystemDatasource", [{ type: "System.String", value: baseAddress }, { type: "System.String", value: baseAddress2 }, { type: "System.String", value: baseAddress3 }, { type: "System.String", value: baseAddress4 }, { type: $NAMESPACE + ".InstanceManager+InitializationContext", value: "Programmatically" }])[0];
+        return this.callStaticMethod($NAMESPACE + ".DatasourceManager", "GetFileSystemDatasource", [{ type: "System.String", value: baseAddress }, { type: "System.String", value: baseAddress2 }, { type: "System.String", value: baseAddress3 }, { type: "System.String", value: baseAddress4 }, { type: $NAMESPACE + ".InitializationContext", value: "Programmatically" }])[0];
     }
 
     bindElementToTransformPosition(element, transform)
@@ -305,14 +305,15 @@ class Instance
     }
 
     //Dispose Operations
-    dispose(id, gameObject = true) { return this.sendMessage(this.disposeOperation(id, gameObject)); }
-    disposeOperation(id, gameObject)
+    dispose(id, gameObject = true, disposeContext = "Programmatically_Pool") { return this.sendMessage(this.disposeOperation(id, gameObject, disposeContext)); }
+    disposeOperation(id, gameObject, disposeContext)
     {
         var operation = {};
 
         operation[$OPERATION_TYPE_NAME] = "dispose";
         operation.id = id;
         operation.gameObject = gameObject;
+        operation.disposeContext = disposeContext;
 
         return operation;
     }
@@ -326,6 +327,7 @@ class Instance
                 operations = [operations];
 
             this.unityInstance.SendMessage("Managers (Required)", "ReceiveExternalMessage", JSON.stringify(operations));
+
             return this.returnResults;
         }
         return "Not Initialized";

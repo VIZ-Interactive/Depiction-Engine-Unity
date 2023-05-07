@@ -352,7 +352,8 @@ namespace DepictionEngine
                     //Problem: Sometimes mouse events are not registered on MeshRendererVisuals that are far away from the origin
                     //Fix: We use Raycasting and call the mouseDown/mouseUp if we identify a mouse event
                     //TODO: Consider perhaps origin shifting will fix this naturally?
-                    RaycastHitDouble[] hits = PhysicsDouble.TerrainFiltered(PhysicsDouble.CameraRaycastAll(camera, GetScreenCenter(), camera.GetFarDistanceClipPlane()), camera);
+                    RaycastHitDouble[]  hits = PhysicsDouble.TerrainFiltered(PhysicsDouble.CameraRaycastAll(camera, GetScreenCenter(), camera.GetFarDistanceClipPlane()), camera);
+         
                     if (hits.Length != 0)
                     {
                         closestHit = PhysicsDouble.GetClosestHit(camera, hits);

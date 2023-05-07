@@ -1,14 +1,12 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 using UnityEngine;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace DepictionEngine
 {
     public class JsonMonoBehaviour : PropertyMonoBehaviour, IJson
     {
-        private JSONNode _initializationJson;
+        private JSONObject _initializationJson;
 
         protected override void Initializing()
         {
@@ -17,7 +15,7 @@ namespace DepictionEngine
             _initializationJson = GetInitializationJson(InstanceManager.initializeJSON);
         }
 
-        protected virtual JSONNode GetInitializationJson(JSONNode initializeJSON)
+        protected virtual JSONObject GetInitializationJson(JSONObject initializeJSON)
         {
             return initializeJSON;
         }
@@ -45,7 +43,7 @@ namespace DepictionEngine
             if (base.Initialize(initializingContext))
             {
                 if (_initializationJson != null)
-                    SetJson(_initializationJson);
+                    JsonUtility.ApplyJsonToObject(this, _initializationJson);
 
                 return true;
             }
@@ -105,15 +103,11 @@ namespace DepictionEngine
 
         protected JSONNode initializationJson { get => _initializationJson; }
 
-        public void SetJson(JSONNode json) { JsonUtility.SetJSON(json, this); }
-
-        public JSONObject GetJson(Datasource outOfSynchDatasource = null, JSONNode filter = null) { return JsonUtility.GetJson(this, this, outOfSynchDatasource, filter) as JSONObject; }
-
         private bool _lastEnabled;
         /// <summary>
         /// Enabled Behaviours are Updated, disable Behaviours are not.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsNotFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsNotFallbackValues))]
         public new bool enabled
         {
             get => (this as MonoBehaviour).enabled;
@@ -137,25 +131,6 @@ namespace DepictionEngine
         protected virtual void EnabledChanged(bool newValue, bool oldValue)
         {
 
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool GetJsonAttribute(string name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo)
-        {
-            if (!SceneManager.IsSceneBeingDestroyed() && this != Disposable.NULL)
-            {
-                propertyInfo = MemberUtility.GetMemberInfoFromMemberName<PropertyInfo>(GetType(), name);
-                if (propertyInfo != null)
-                {
-                    jsonAttribute = propertyInfo.GetCustomAttribute<JsonAttribute>();
-                    if (jsonAttribute != null)
-                        return true;
-                }
-            }
-
-            jsonAttribute = null;
-            propertyInfo = null;
-            return false;
         }
     }
 }

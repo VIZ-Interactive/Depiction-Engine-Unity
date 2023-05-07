@@ -218,7 +218,7 @@ namespace DepictionEngine.Editor
         {
             UndoManager.CreateNewGroup("Create Camera Target");
 
-            Camera camera = InstanceUtility.CreateTargetCamera(GetContextTransform(menuCommand), InitializationContext.Editor, true, true);
+            Camera camera = InstanceUtility.CreateTargetCamera(GetContextTransform(menuCommand), "Camera", 1000.0d, RenderingManager.MATERIAL_BASE_PATH + "Skybox/Star-Skybox", InitializationContext.Editor, true, true);
 
             InitMainCamera(camera);
 
@@ -603,6 +603,7 @@ namespace DepictionEngine.Editor
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 7));
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.sphericalSubdivision)] = 2;
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.flatSubdivision)] = 2;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.shaderPath)] = "Shader/MoonTerrainGrid";
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = ElevationGridMeshObjectBase.ELEVATION_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = TerrainGridMeshObject.COLORMAP_REFERENCE_DATATYPE;
@@ -654,7 +655,7 @@ namespace DepictionEngine.Editor
             bool spherical, 
             double size, 
             double mass, 
-            JSONNode scriptsJson, 
+            JSONObject scriptsJson, 
             bool setParentAndAlign = true, 
             bool moveToView = true, 
             bool selectGameObject = true)
@@ -676,14 +677,14 @@ namespace DepictionEngine.Editor
             return planet;
         }
 
-        private static DatasourceRoot CreateLayer(Planet planet, string name, JSONNode json)
+        private static DatasourceRoot CreateLayer(Planet planet, string name, JSONObject json)
         {
             return InstanceUtility.CreateLayer(planet, name, json, InitializationContext.Editor);
         }
 
         private static T CreateObject<T>(Transform parent, string name = "", bool setParentAndAlign = true, bool moveToView = true, bool selectGameObject = true) where T : Object
         {
-            T objectBase = InstanceManager.Instance().CreateInstance<T>(parent, name, initializingContext: InitializationContext.Editor, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
+            T objectBase = InstanceManager.Instance().CreateInstance<T>(parent, new JSONObject() { [nameof(Object.name)] = name }, initializingContext: InitializationContext.Editor, setParentAndAlign: setParentAndAlign, moveToView: moveToView);
 
             if (selectGameObject)
                 SelectObject(objectBase);

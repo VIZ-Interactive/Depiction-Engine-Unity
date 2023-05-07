@@ -190,12 +190,12 @@ namespace DepictionEngine
 
         public override void SetData(object value, LoaderBase.DataType dataType, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
-            SetData(value as byte[], false, width, height, format, mipmapCount != 0, false, initializingContext);
+            SetData(value as byte[], false, width, height, format, mipmapCount, false, initializingContext);
         }
 
-        public void SetData(byte[] textureBytes, bool isRawTextureBytes, int width, int height, TextureFormat format, bool mipChain, bool linear, InitializationContext initializingContext = InitializationContext.Programmatically)
+        public void SetData(byte[] textureBytes, bool isRawTextureBytes, int width, int height, TextureFormat format, int mipmapCount, bool linear, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
-            CreateTextureIfRequired(isRawTextureBytes, width, height, format, mipChain, linear, initializingContext);
+            CreateTextureIfRequired(isRawTextureBytes, width, height, format, mipmapCount, linear, initializingContext);
 
             if (isRawTextureBytes)
             {
@@ -211,22 +211,21 @@ namespace DepictionEngine
             DataPropertyAssigned();
         }
 
-        private void CreateTextureIfRequired(bool isRawTextureBytes, int width, int height, TextureFormat format, bool mipChain, bool linear, InitializationContext initializingContext = InitializationContext.Programmatically)
+        private void CreateTextureIfRequired(bool isRawTextureBytes, int width, int height, TextureFormat format, int mipmapCount, bool linear, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
-            bool requiresNewTexture2D = unityTexture == null || this.mipmapCount != (mipChain ? this.mipmapCount : 1);
+            bool requiresNewTexture2D = unityTexture == null || this.mipmapCount != mipmapCount;
 
 #if UNITY_EDITOR
             if (initializingContext == InitializationContext.Editor)
                 requiresNewTexture2D = true;
 #endif
-
             if (requiresNewTexture2D || (isRawTextureBytes && (this.width != width || this.height != height || this.format != format)))
             {
                 if (width == 0)
                     width = 2;
                 if (height == 0)
                     height = 2;
-                SetData(new Texture2D(width, height, format, mipChain, linear), initializingContext);
+                SetData(new Texture2D(width, height, format, mipmapCount, linear, true), initializingContext);
             }
         }
 
@@ -260,7 +259,8 @@ namespace DepictionEngine
             Texture2D oldUnityTexture = unityTexture;
 
             unityTexture = texture;
-            
+
+
             DisposeOldDataAndRegisterNewData(oldUnityTexture, unityTexture, initializingContext);
         }
 
@@ -319,7 +319,7 @@ namespace DepictionEngine
             if (textureModifier != Disposable.NULL)
             {
                 int textureSize = 256;
-                textureModifier.Init(PopulateProceduralPixels(parameters, textureSize, textureSize, GetPixel), true, textureSize, textureSize, TextureFormat.RGBA32, false);
+                textureModifier.Init(PopulateProceduralPixels(parameters, textureSize, textureSize, GetPixel), true, textureSize, textureSize, TextureFormat.RGBA32, 1);
             }
 
             return textureModifier;
@@ -389,12 +389,12 @@ namespace DepictionEngine
 
         public Vector2Int grid2DIndex
         {
-            get { return _grid2DIndex; }
+            get => _grid2DIndex;
         }
 
         public Vector2Int grid2DDimensions
         {
-            get { return _grid2DDimensions; }
+            get => _grid2DDimensions;
         }
     }
 
@@ -416,7 +416,7 @@ namespace DepictionEngine
 
         public TextureModifier textureModifier
         {
-            get { return _textureModifier; }
+            get => _textureModifier;
             private set
             {
                 if (_textureModifier == value)
@@ -447,7 +447,7 @@ namespace DepictionEngine
         private int _width;
         private int _height;
         private TextureFormat _format;
-        private bool _mipChain;
+        private int _mipmapCount;
         private bool _linear;
 
         public override void Recycle()
@@ -460,7 +460,7 @@ namespace DepictionEngine
             _width = default;
             _height = default;
             _format = default;
-            _mipChain = default;
+            _mipmapCount = default;
             _linear = default;
         }
 
@@ -470,19 +470,18 @@ namespace DepictionEngine
             return this;
         }
 
-        public TextureModifier Init(byte[] textureBytes, bool isRawTextureBytes = false, int width = 0, int height = 0, TextureFormat format = TextureFormat.RGB24, bool mipChain = true, bool linear = false)
+        public TextureModifier Init(byte[] textureBytes, bool isRawTextureBytes = false, int width = 0, int height = 0, TextureFormat format = TextureFormat.RGB24, int mipmapCount = 1, bool linear = false)
         {
             _textureBytes = textureBytes;
             _isRawTextureBytes = isRawTextureBytes;
             _width = width;
             _height = height;
             _format = format;
-            _mipChain = mipChain;
+            _mipmapCount = mipmapCount;
             _linear = linear;
 
             return this;
         }
-
 
         public override void ModifyProperties(IScriptableBehaviour scriptableBehaviour)
         {
@@ -496,7 +495,7 @@ namespace DepictionEngine
                 _texture2D = null;
             }
             else
-                texture.SetData(_textureBytes, _isRawTextureBytes, _width, _height, _format, _mipChain, _linear);
+                texture.SetData(_textureBytes, _isRawTextureBytes, _width, _height, _format, _mipmapCount, _linear);
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

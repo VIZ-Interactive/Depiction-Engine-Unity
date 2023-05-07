@@ -429,14 +429,14 @@ namespace DepictionEngine
                     }
                 }
 
-                if (TrySetPropertyOutOfSynch(objectBase, component, componentPropertyInfo, allowAutoDispose) && objectBase.GetJsonAttribute(objectBase.GetScriptProperty(component).Item1, out JsonAttribute jsonAttribute, out PropertyInfo objectPropertyInfo))
+                if (TrySetPropertyOutOfSynch(objectBase, component, componentPropertyInfo, allowAutoDispose) && JsonUtility.GetJsonAttribute(objectBase, objectBase.GetScriptProperty(component).Item1, out JsonAttribute jsonAttribute, out PropertyInfo objectPropertyInfo))
                     SetPropertyOutOfSync(objectBase, objectBase, objectPropertyInfo, allowAutoDispose);
             }
         }
 
         private bool GetPropertyInfo(IJson component, string propertyName, out PropertyInfo propertyInfo)
         {
-            if (SceneManager.GetIsUserChangeContext() && component.GetJsonAttribute(propertyName, out JsonAttribute _, out PropertyInfo componentPropertyInfo))
+            if (SceneManager.GetIsUserChangeContext() && JsonUtility.GetJsonAttribute(component, propertyName, out JsonAttribute _, out PropertyInfo componentPropertyInfo))
             {
                 propertyInfo = componentPropertyInfo;
                 return true;
@@ -775,7 +775,7 @@ namespace DepictionEngine
         {
             bool outOfSynchChanged = false;
 
-            MemberUtility.IterateOverJsonAttribute(component, (component, accessor, name, jsonAttribute, propertyInfo) =>
+            JsonUtility.IterateOverJsonAttribute(component, (component, accessor, jsonAttribute, propertyInfo) =>
             {
                 if (SetPropertyOutOfSync(persistent, component, propertyInfo, allowAutoDispose))
                     outOfSynchChanged = true;
@@ -1088,7 +1088,7 @@ namespace DepictionEngine
                             operationResult.IterateOverResultsData<SynchronizeResultData>((synchronizeResultData, persistent) =>
                             {
                                 if (!Disposable.IsDisposed(persistent))
-                                    persistent.SetJson(synchronizeResultData.json);
+                                    JsonUtility.ApplyJsonToObject(persistent, synchronizeResultData.json != null ? synchronizeResultData.json.AsObject : null);
                             });
 
                             successCount = SyncOperationResult(operationResult);
@@ -1187,7 +1187,7 @@ namespace DepictionEngine
             return persistents;
         }
 
-        private IPersistent CreatePersistent(LoaderBase loader, Type type, JSONNode json, List<PropertyModifier> propertyModifiers = null)
+        private IPersistent CreatePersistent(LoaderBase loader, Type type, JSONObject json, List<PropertyModifier> propertyModifiers = null)
         {
             IPersistent persistent;
 
@@ -1200,10 +1200,10 @@ namespace DepictionEngine
                 }
             }
 
-            bool isNewPersitent = loader.GeneratePersistent(out persistent, type, json, propertyModifiers);
+            bool isNewPersistent = loader.GeneratePersistent(out persistent, type, json, propertyModifiers);
 
             if (!Disposable.IsDisposed(persistent))
-                AddPersistent(persistent, !isNewPersitent);
+                AddPersistent(persistent, !isNewPersistent);
 
             return persistent;
         }

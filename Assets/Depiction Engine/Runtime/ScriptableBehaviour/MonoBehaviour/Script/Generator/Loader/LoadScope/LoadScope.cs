@@ -361,7 +361,7 @@ namespace DepictionEngine
 
             string transformName = nameof(Object.transform);
             loadScopeFallbackValuesJson[transformName][nameof(TransformDouble.type)] = JsonUtility.ToJson(typeof(TransformDouble));
-            loadScopeFallbackValuesJson[transformName][nameof(TransformDouble.parent)] = JsonUtility.ToJson(loader.transform.id);
+            loadScopeFallbackValuesJson[transformName][nameof(TransformDouble.parentId)] = JsonUtility.ToJson(loader.transform.id);
 
             RestDatasource restDatasource = loader.datasource as RestDatasource;
             if (restDatasource != Disposable.NULL && restDatasource.containsCopyrightedMaterial)

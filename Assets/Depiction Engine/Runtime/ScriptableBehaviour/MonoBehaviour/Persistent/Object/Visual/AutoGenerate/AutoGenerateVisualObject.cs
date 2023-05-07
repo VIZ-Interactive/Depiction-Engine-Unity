@@ -165,7 +165,7 @@ namespace DepictionEngine
         [Json]
         public bool autoInstantiate
         {
-            get { return _autoInstantiate; }
+            get => _autoInstantiate;
             set
             {
                 SetValue(nameof(autoInstantiate), value, ref _autoInstantiate, (newValue, oldValue) =>
@@ -182,7 +182,7 @@ namespace DepictionEngine
         [Json]
         public bool dontSaveVisualsToScene
         {
-            get { return _dontSaveVisualsToScene; }
+            get => _dontSaveVisualsToScene;
             set
             {
                 SetValue(nameof(dontSaveVisualsToScene), value, ref _dontSaveVisualsToScene, (newValue, oldValue) =>
@@ -202,7 +202,7 @@ namespace DepictionEngine
         [Json]
         public PopupType popupType
         {
-            get { return _popupType; }
+            get => _popupType;
             set
             {
 #if UNITY_EDITOR
@@ -221,7 +221,7 @@ namespace DepictionEngine
         public float popupDuration
         {
             get => _popupDuration;
-            set { SetValue(nameof(popupDuration), value, ref _popupDuration); }
+            set => SetValue(nameof(popupDuration), value, ref _popupDuration);
         }
 
         public Tween popupTween
@@ -485,9 +485,9 @@ namespace DepictionEngine
                 if (disposeContext != DisposeContext.Programmatically_Pool)
                     DisposeManager.Dispose(_meshRendererVisualDirtyFlags, disposeContext);
 
-                //We dispose the visuals manualy in case only the Component is disposed and not the entire GameObject and its children
-                //The delay is required during a Dispose of the Object since we do not know wether it is only the Component being disposed or the entire GameObject. 
-                //If the Entire GameObject is being disposed in the Editor then some Destroy Undo operations will be registered by the Editor automaticaly. By the time the delayed dispose will be performed the children will already be Destroyed and we will not register additional Undo Operations
+                //We dispose the visuals manually in case only the Component is disposed and not the entire GameObject and its children
+                //The delay is required during a Dispose of the Object since we do not know whether it is only the Component being disposed or the entire GameObject. 
+                //If the Entire GameObject is being disposed in the Editor then some Destroy Undo operations will be registered by the Editor automatically. By the time the delayed dispose will be performed the children will already be Destroyed and we will not register additional Undo Operations
                 DisposeAllChildren(disposeContext);
 
                 return true;

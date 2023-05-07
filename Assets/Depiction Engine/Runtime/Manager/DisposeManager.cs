@@ -54,12 +54,12 @@ namespace DepictionEngine
         /// <param name="disposeContext">The context under which the object is being destroyed.</param>
         public static void Dispose(object obj, DisposeContext disposeContext)
         {
-            if (obj is null || obj.Equals(null) || SceneManager.IsSceneBeingDestroyed())
+            if (obj is null || obj.Equals(null))
                 return;
 
             //Force Destroy if object is MonoBehaviour or Pooling is not enabled
             PoolManager poolManager = PoolManager.Instance(false);
-            if (SceneManager.sceneClosing || obj is MonoBehaviour || poolManager == Disposable.NULL || !poolManager.enablePooling)
+            if (SceneManager.IsSceneBeingDestroyed() || obj is MonoBehaviour || poolManager == Disposable.NULL || !poolManager.enablePooling)
                 disposeContext = disposeContext == DisposeContext.Editor_Destroy ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Destroy;
             else
             {
@@ -84,17 +84,17 @@ namespace DepictionEngine
                         {
 #if UNITY_EDITOR
                             //if some components are not compatible with pooling we destroy the object
-                            foreach (Component component in components)
-                            {
-                                if (component is MonoBehaviourDisposable componentMonoBehaviourDisposable)
-                                {
-                                    if (componentMonoBehaviourDisposable.notPoolable)
-                                    {
-                                        goDisposeContext = DisposeContext.Programmatically_Destroy;
-                                        break;
-                                    }
-                                }
-                            }
+                            //foreach (Component component in components)
+                            //{
+                            //    if (component is MonoBehaviourDisposable componentMonoBehaviourDisposable)
+                            //    {
+                            //        if (componentMonoBehaviourDisposable.notPoolable)
+                            //        {
+                            //            goDisposeContext = DisposeContext.Programmatically_Destroy;
+                            //            break;
+                            //        }
+                            //    }
+                            //}
 #endif
                             //Destroy components that are not required
                             if (goDisposeContext == DisposeContext.Programmatically_Pool && disposable is IRequiresComponents iRequiresComponents)
@@ -230,7 +230,10 @@ namespace DepictionEngine
                 IterateOverAllObjects(unityObject, (obj) => 
                 {
                     if (obj is GameObject go)
+                    {
                         IterateOverAllMonoBehaviourDisposable(go, (monoBehaviourDisposable) => { monoBehaviourDisposable.OnDestroy(); });
+                        go.transform.parent = null;
+                    }
                     else if (obj is IScriptableBehaviour scriptableBehaviour)
                         scriptableBehaviour.OnDestroy();
                 });
@@ -242,9 +245,9 @@ namespace DepictionEngine
                 GameObject.Destroy(unityObject);
 #endif
             }, disposeContext);
-
+        
 #if UNITY_EDITOR
-            //Force refresh the hierarchy window to remove the Destroyed objects
+                //Force refresh the hierarchy window to remove the Destroyed objects
             UnityEditor.EditorApplication.DirtyHierarchyWindowSorting();
 #endif
         }
@@ -262,7 +265,7 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining), HideInCallstack]
-        private static bool IsUnityNull(object obj)
+        public static bool IsUnityNull(object obj)
         {
             return obj is UnityEngine.Object unityObject && unityObject == null;
         }

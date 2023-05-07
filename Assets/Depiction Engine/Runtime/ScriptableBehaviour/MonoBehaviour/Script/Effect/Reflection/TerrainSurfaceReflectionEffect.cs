@@ -53,13 +53,13 @@ namespace DepictionEngine
         private void RemoveCameraSmoothElevationDelegates(CameraSmoothElevation cameraSmoothElevation)
         {
             if (cameraSmoothElevation is not null)
-                cameraSmoothElevation.CameraDisposingEvent -= CameraSmoothElevationCameraDisposingHandler;
+                cameraSmoothElevation.CameraDisposedEvent -= CameraSmoothElevationCameraDisposingHandler;
         }
 
         private void AddCameraSmoothElevationDelegates(CameraSmoothElevation cameraSmoothElevation)
         {
             if (!IsDisposing() && cameraSmoothElevation != Disposable.NULL)
-                cameraSmoothElevation.CameraDisposingEvent += CameraSmoothElevationCameraDisposingHandler;
+                cameraSmoothElevation.CameraDisposedEvent += CameraSmoothElevationCameraDisposingHandler;
         }
 
         private void CameraSmoothElevationCameraDisposingHandler(CameraSmoothElevation cameraSmoothElevation)
@@ -245,7 +245,7 @@ namespace DepictionEngine
             /// <summary>
             /// Dispatched when the <see cref="DepictionEngine.Camera"/> <see cref="DepictionEngine.IDisposable.UpdateDisposingContext"/> is triggered.
             /// </summary>
-            public Action<CameraSmoothElevation> CameraDisposingEvent;
+            public Action<CameraSmoothElevation> CameraDisposedEvent;
 
             public CameraSmoothElevation Init(Camera camera, GeoAstroObject parentGeoAstroObject)
             {
@@ -272,7 +272,7 @@ namespace DepictionEngine
             {
                 if (camera is not null)
                 {
-                    camera.DisposingEvent -= CameraDisposingHandler;
+                    camera.DisposedEvent -= CameraDisposingHandler;
                     if (camera.transform is not null)
                         camera.transform.PropertyAssignedEvent -= CameraTransformPropertyAssigned;
                 }
@@ -282,14 +282,14 @@ namespace DepictionEngine
             {
                 if (!IsDisposing() && camera != Disposable.NULL)
                 {
-                    camera.DisposingEvent += CameraDisposingHandler;
+                    camera.DisposedEvent += CameraDisposingHandler;
                     camera.transform.PropertyAssignedEvent += CameraTransformPropertyAssigned;
                 }
             }
 
-            private void CameraDisposingHandler(IDisposable disposable)
+            private void CameraDisposingHandler(IDisposable disposable, DisposeContext disposeContext)
             {
-                CameraDisposingEvent?.Invoke(this);
+                CameraDisposedEvent?.Invoke(this);
             }
 
             private void CameraTransformPropertyAssigned(IProperty property, string name, object newValue, object oldValue)

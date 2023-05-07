@@ -393,7 +393,7 @@ namespace DepictionEngine
             }
         }
 
-        protected T InitializeComponent<T>(T component, JSONNode json = null, bool isFallbackValues = false)
+        protected T InitializeComponent<T>(T component, JSONObject json = null, bool isFallbackValues = false)
         {
             return InstanceManager.Initialize(component, GetInitializeContext(), json, null, isFallbackValues);
         }
@@ -533,7 +533,7 @@ namespace DepictionEngine
             if (initialized)
             {
 #if UNITY_EDITOR
-                if (SceneManager.GetIsUserChangeContext() && property is IJson iJson && iJson.GetJsonAttribute(name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
+                if (SceneManager.GetIsUserChangeContext() && property is IJson iJson && JsonUtility.GetJsonAttribute(iJson, name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo))
                     MarkAsNotPoolable();
 #endif
                 PropertyAssignedEvent?.Invoke(property, name, newValue, oldValue);
@@ -601,7 +601,7 @@ namespace DepictionEngine
         /// <summary>
         /// Global unique identifier.
         /// </summary>
-        [Json(conditionalMethod: nameof(IsNotFallbackValues))]
+        [Json(conditionalGetMethod: nameof(IsNotFallbackValues))]
         public SerializableGuid id
         {
             get => _id;
@@ -703,12 +703,19 @@ namespace DepictionEngine
 
                         if (oldValue is not null)
                             oldValue.RemoveChild(this);
+
+                        ParentChanged(newValue, oldValue);
                     }
 
                     //Children are not serialized so while the value might be the same in this class it does not mean the parent has a proper reference to it, so we always add it just in case.
                     if (newValue != Disposable.NULL)
                         newValue.AddChild(this);
                 });
+        }
+
+        protected virtual void ParentChanged(PropertyMonoBehaviour newValue, PropertyMonoBehaviour oldValue)
+        {
+
         }
 
         private Vector3Double _originParam;
@@ -895,32 +902,16 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected bool RemoveListItem<T>(List<T> list, T property)
         {
-            if (list != null)
-            {
-                int removeIndex = list.IndexOf(property);
-                if (removeIndex != -1)
-                {
-                    list.RemoveAt(removeIndex);
-
-                    return true;
-                }
-            }
-            return false;
+            return list != null && list.Remove(property);
         }
 
-        protected void IterateThroughList<T>(IEnumerable<T> list, Action<T> callback) where T : PropertyMonoBehaviour
+        protected void IterateThroughList<T>(IList<T> list, Action<T> callback) where T : PropertyMonoBehaviour
         {
-            if (list != null)
+            for (int i = list.Count - 1; i >= 0; i--)
             {
-                for (int i = list.Count() - 1; i >= 0; i--)
-                {
-                    if (list.Count() > 0)
-                    {
-                        if (i >= list.Count())
-                            i = list.Count() - 1;
-                        TriggerCallback(list.ElementAt(i), callback);
-                    }
-                }
+                int count = list.Count;
+                if (count > 0)
+                    TriggerCallback(list[i >= count ? count - 1 : i], callback);
             }
         }
 
@@ -935,14 +926,14 @@ namespace DepictionEngine
             try
             {
                 if (child != Disposable.NULL)
+                {
                     callback?.Invoke(child);
-                else
                     return true;
+                }
             }
             catch (MissingReferenceException e)
             {
                 Debug.LogError(e.StackTrace);
-                return true;
             }
             return false;
         }
@@ -1000,6 +991,8 @@ namespace DepictionEngine
             {
                 if (instanceAdded && AddInstanceToManager())
                 {
+                    instanceAdded = false;
+
                     InstanceManager instanceManager = InstanceManager.Instance(false);
                     if (instanceManager != Disposable.NULL)
                     {

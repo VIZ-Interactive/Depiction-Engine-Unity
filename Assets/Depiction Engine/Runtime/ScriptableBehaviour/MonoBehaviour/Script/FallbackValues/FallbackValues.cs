@@ -61,12 +61,12 @@ namespace DepictionEngine
         {
             if (base.LateInitialize(initializingContext))
             {
-                if (initializingContext == InitializationContext.Programmatically_Duplicate || initializingContext == InitializationContext.Editor_Duplicate)
+                if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
                 {
                     if (fallbackValuesJson != null)
                     {
                         Type type = GetFallbackValuesType();
-                        MemberUtility.IterateOverJsonProperty(type, (jsonAttribute, propertyInfo) => 
+                        JsonUtility.IterateOverJsonProperty(type, (jsonAttribute, propertyInfo) => 
                         {
                             Type propertyType = propertyInfo.PropertyType;
                             string propertyName = propertyInfo.Name;
@@ -111,7 +111,7 @@ namespace DepictionEngine
                 {
                     UnityEngine.Object fallbackValuesObject = GetFallbackValuesObject(type);
 
-                    fallbackValuesJson = fallbackValuesObject != null && fallbackValuesObject is IJson ? (fallbackValuesObject as IJson).GetJson() : new JSONObject();
+                    fallbackValuesJson = fallbackValuesObject != null && fallbackValuesObject is IJson ? JsonUtility.GetObjectJson(fallbackValuesObject as IJson) as JSONObject : new JSONObject();
                     
                     ReleaseFallbackValuesObject(fallbackValuesObject);
                     _jsonCache.Add(type, fallbackValuesJson);
@@ -216,7 +216,7 @@ namespace DepictionEngine
                 JsonUtility.FromJson(out string jsonStr, newValue);
 
                 if (SceneManager.GetIsUserChangeContext() && fallbackValuesObject != null)
-                    (fallbackValuesObject as IJson).SetJson(newValue);
+                    JsonUtility.ApplyJsonToObject(fallbackValuesObject as IJson, newValue);
 
                 UpdateFallbackJsonStr(jsonStr);
 
@@ -279,7 +279,7 @@ namespace DepictionEngine
             return false;
         }
 
-        public UnityEngine.Object GetFallbackValuesObject(Type type, JSONNode json = null, InitializationContext initializingContext = InitializationContext.Programmatically)
+        public UnityEngine.Object GetFallbackValuesObject(Type type, JSONObject json = null, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             if (Disposable.IsDisposed(fallbackValuesObject) || fallbackValuesObject.GetType() != type)
             {

@@ -21,9 +21,9 @@ namespace DepictionEngine
         /// <b><see cref="TextureWebP"/>:</b> <br/>
         /// A .webp texture.<br/><br/>
         /// <b><see cref="ElevationTerrainRGBPngRaw"/>:</b> <br/>
-        /// A .pngraw texture containing elevation in Mapbox TerrainRGB format.<br/><br/>
+        /// A .pngraw texture containing elevation in TerrainRGB format.<br/><br/>
         /// <b><see cref="ElevationTerrainRGBWebP"/>:</b> <br/>
-        /// A .webp texture containing elevation in Mapbox TerrainRGB format.<br/><br/>
+        /// A .webp texture containing elevation in TerrainRGB format.<br/><br/>
         /// <b><see cref="ElevationEsriLimitedErrorRasterCompression"/>:</b> <br/>
         /// Elevation data in Esri LimitedErrorRasterCompression (LERC) format.
         /// </summary>
@@ -841,7 +841,7 @@ namespace DepictionEngine
 
         public virtual bool IterateOverLoadScopes(Func<object, LoadScope, bool> callback)
         {
-            return true;
+            return callback != null;
         }
 
         protected virtual void IterateOverLoadScopeKeys(Action<int, object, ReferencesList> callback)
@@ -968,8 +968,10 @@ namespace DepictionEngine
         {
             if (base.PostHierarchicalUpdate())
             {
+#if UNITY_EDITOR
+                //Update the loadCount so we can display them in the Inspector
                 UpdateLoadCount();
-
+#endif
                 return true;
             }
             return false;

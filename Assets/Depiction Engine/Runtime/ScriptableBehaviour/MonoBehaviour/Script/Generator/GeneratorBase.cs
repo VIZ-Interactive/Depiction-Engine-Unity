@@ -159,26 +159,19 @@ namespace DepictionEngine
             }
         }
 
-        protected bool GeneratePersistent(Type type, JSONNode json, List<PropertyModifier> propertyModifiers = null)
+        protected bool GeneratePersistent(Type type, JSONObject json, List<PropertyModifier> propertyModifiers = null)
         {
             return GeneratePersistent(out _, type, json, propertyModifiers);
         }
 
-        public bool GeneratePersistent(out IPersistent persistent, Type type, JSONNode json, List<PropertyModifier> propertyModifiers = null)
+        public bool GeneratePersistent(out IPersistent persistent, Type type, JSONObject json, List<PropertyModifier> propertyModifiers = null)
         {
             persistent = instanceManager.GetPersistent(json);
             if (!Disposable.IsDisposed(persistent))
                 return false;
 
             persistent = (IPersistent)instanceManager.CreateInstance(type, null, json, propertyModifiers, InitializationContext.Programmatically);
-            try
-            {
-                if (persistent is Object && (persistent as Object).gameObject == null)
-                    Debug.Log("tttttt");
-            }catch(Exception)
-            { 
-                Debug.Log("tttttt"); 
-            }
+
             if (!Disposable.IsDisposed(persistent))
                 return true;
 

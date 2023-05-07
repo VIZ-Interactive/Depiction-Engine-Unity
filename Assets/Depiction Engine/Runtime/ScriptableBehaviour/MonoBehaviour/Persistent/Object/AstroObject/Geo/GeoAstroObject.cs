@@ -834,7 +834,9 @@ namespace DepictionEngine
                         probe.boxSize = Vector3.one * (float)size;
                     probe.boxOffset = transform.position - probe.transform.position;
 
-                    probe.reflectionProbe.customBakedTexture = context.HasValue && reflectionProbe ? camera.GetEnvironmentCubeMap() : null;
+                    RenderTexture environmentCubeMap = context.HasValue && reflectionProbe ? camera.GetEnvironmentCubeMap() : null;
+                    if (probe.reflectionProbe.customBakedTexture != environmentCubeMap)
+                        probe.reflectionProbe.customBakedTexture = environmentCubeMap;
                 }
                 return true;
             });

@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
@@ -16,53 +17,6 @@ namespace DepictionEngine
     /// </summary>
     public class JsonUtility
     {
-        public static JSONNode ToJson(object obj)
-        {
-            JSONNode json = null;
-
-            try
-            {
-                if (obj != null)
-                {
-                    Type type = obj.GetType();
-
-                    if (obj is ICollection)
-                    {
-                        json = new JSONArray();
-
-                        foreach (object item in obj as ICollection)
-                        {
-                            JSONNode itemJson = ToJson(item);
-                            if (itemJson != null)
-                                json.Add(itemJson);
-                        }
-                    }
-                    else if (obj is bool boolean)
-                        json = new JSONBool(boolean);
-                    else if (obj is uint || obj is int || obj is double || obj is float)
-                        json = new JSONNumber(Convert.ToDouble(obj));
-                    else if (obj is string || obj is SerializableGuid || obj is Guid)
-                        json = new JSONString(obj.ToString());
-                    else if (obj is Enum)
-                        json = new JSONString(Enum.GetName(type, obj));
-                    else if (obj is Type type1)
-                        json = new JSONString(type1.FullName);
-                    else if (obj is IJson iJson)
-                        json = iJson.GetJson();
-                    else if (obj is UnityEngine.Object || obj is Vector2 || obj is Vector2Double || obj is Vector2Int || obj is Vector4 || obj is Vector4Double || obj is Vector3 || obj is Vector3Int || obj is Vector3Double || obj is GeoCoordinate3 || obj is GeoCoordinate3Double || obj is GeoCoordinate2 || obj is GeoCoordinate2Double || obj is Color || obj is Quaternion || obj is QuaternionDouble || obj is Grid2DIndex || obj is GeoCoordinateGeometries || obj is GeoCoordinateGeometry || obj is GeoCoordinatePolygon || obj is Disposable || type.IsSubclassOf(typeof(Disposable)))
-                        json = JSONObject.Parse(UnityEngine.JsonUtility.ToJson(obj));
-
-                    if (json == null)
-                        Debug.LogError("Object of type '" + (type != null ? type.Name : "Null") + "' is not supported");
-                }
-            }
-            catch (Exception)
-            {
-            }
-
-            return json;
-        }
-
         public static bool FromJson<T>(out T value, JSONNode json)
         {
             if (FromJson(out object parsedValue, json, typeof(T)))
@@ -256,159 +210,264 @@ namespace DepictionEngine
             return success;
         }
 
-        public static void FromJsonOverwrite(string json, object objectToOverwrite)
+        public static void ApplyJsonToObject(IJson iJson, JSONObject json)
         {
-            UnityEngine.JsonUtility.FromJsonOverwrite(json, objectToOverwrite);
+            if (iJson != null && json != null)
+            {
+                Type type = iJson.GetType();
+
+                TypeAccessor accessor = MemberUtility.GetTypeAccessor(type);
+
+                foreach (KeyValuePair<string, JSONNode> jsonProperty in json.AsObject)
+                {
+                    if (MemberUtility.GetMemberInfoFromMemberName(type, jsonProperty.Key, out PropertyInfo propertyInfo) && GetJsonAttributeFromPropertyInfo(out JsonAttribute jsonAttribute, propertyInfo))
+                    {
+                        if (propertyInfo.CanWrite && propertyInfo.GetSetMethod() != null)
+                        {
+                            if (FromJson(out object value, jsonProperty.Value, propertyInfo.PropertyType))
+                                MemberUtility.SetPropertyValue(iJson, accessor, propertyInfo, value);
+                        }
+                        else
+                        {
+                            if (jsonProperty.Value.IsObject && typeof(IJson).IsAssignableFrom(propertyInfo.PropertyType))
+                                ApplyJsonToObject(propertyInfo.GetValue(iJson) as IJson, jsonProperty.Value.AsObject);
+                        }
+                    }
+                }
+            }
         }
 
-        public static JSONNode GetJson(IJson iJson, object property, Datasource outOfSynchDatasource = null, JSONNode filter = null)
+        public static JSONNode ToJson(object obj)
         {
-            if (property is JSONNode)
-                return property as JSONNode;
+            JSONNode json = null;
 
+            try
+            {
+                if (obj != null)
+                {
+                    Type type = obj.GetType();
+
+                    if (obj is JSONNode)
+                        json = obj as JSONNode;
+                    else if (obj is ICollection)
+                    {
+                        json = new JSONArray();
+
+                        foreach (object item in obj as ICollection)
+                        {
+                            JSONNode itemJson = ToJson(item);
+                            if (itemJson != null)
+                                json.Add(itemJson);
+                        }
+                    }
+                    else if (obj is bool boolean)
+                        json = new JSONBool(boolean);
+                    else if (obj is uint || obj is int || obj is double || obj is float)
+                        json = new JSONNumber(Convert.ToDouble(obj));
+                    else if (obj is string || obj is SerializableGuid || obj is Guid)
+                        json = new JSONString(obj.ToString());
+                    else if (obj is Enum)
+                        json = new JSONString(Enum.GetName(type, obj));
+                    else if (obj is Type type1)
+                        json = new JSONString(type1.FullName);
+                    else if (obj is IJson iJson)
+                        json = GetObjectJson(iJson);
+                    else if (obj is UnityEngine.Object || obj is Vector2 || obj is Vector2Double || obj is Vector2Int || obj is Vector4 || obj is Vector4Double || obj is Vector3 || obj is Vector3Int || obj is Vector3Double || obj is GeoCoordinate3 || obj is GeoCoordinate3Double || obj is GeoCoordinate2 || obj is GeoCoordinate2Double || obj is Color || obj is Quaternion || obj is QuaternionDouble || obj is Grid2DIndex || obj is GeoCoordinateGeometries || obj is GeoCoordinateGeometry || obj is GeoCoordinatePolygon || obj is Disposable || type.IsSubclassOf(typeof(Disposable)))
+                        json = JSONObject.Parse(UnityEngine.JsonUtility.ToJson(obj));
+
+                    if (json == null)
+                        Debug.LogError("Object of type '" + (type != null ? type.Name : "Null") + "' is not supported");
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return json;
+        }
+
+        public static JSONNode GetObjectJson(IJson iJson, Datasource outOfSynchDatasource = null, JSONNode filter = null)
+        {
             JSONNode json = null;
 
             if (!Disposable.IsDisposed(iJson))
             {
-                bool isEditorObject = false;
+                Type type = iJson.GetType();
 
+                bool isEditorObject = false;
 #if UNITY_EDITOR
-                isEditorObject = iJson.GetType().Namespace.Length != nameof(DepictionEngine).Length;
+                isEditorObject = type.Namespace.Length != nameof(DepictionEngine).Length;
 #endif
 
                 if (!isEditorObject)
                 {
-                    if (property is IJson)
+                    if (filter != null && filter.Count == 0)
+                        filter = null;
+
+                    json = new JSONObject();
+
+                    if (filter == null || filter.Count == 0)
                     {
-                        IJson jsonPropertyObject = property as IJson;
-                        Type type = jsonPropertyObject.GetType();
-
-                        if (filter != null && filter.Count == 0)
-                            filter = null;
-
-                        json = new JSONObject();
-
-                        MemberUtility.IterateOverJsonAttribute(jsonPropertyObject,
-                            (iJson, accessor, name, jsonAttribute, propertyInfo) =>
+                        IterateOverJsonAttribute(iJson,
+                            (iJson, accessor, jsonAttribute, propertyInfo) =>
                             {
-                                bool addJson = jsonAttribute.get;
-
-                                if (addJson && !string.IsNullOrEmpty(jsonAttribute.conditionalMethod))
-                                {
-                                    MethodInfo conditionalJsonMethodInfo = MemberUtility.GetMethodInfoFromMethodName(iJson, jsonAttribute.conditionalMethod);
-                                    if (conditionalJsonMethodInfo != null)
-                                        addJson = (bool)conditionalJsonMethodInfo.Invoke(iJson, null);
-                                    else
-                                        Debug.LogWarning("Json ConditionalMethod '" + jsonAttribute.conditionalMethod + "' was not found on '" + type.Name + "'");
-                                }
-
-                                if (addJson)
-                                {
-                                    if (!string.IsNullOrEmpty(name))
-                                    {
-                                        if (propertyInfo != null)
-                                            property = accessor != null ? accessor[jsonPropertyObject, propertyInfo.Name] : propertyInfo.GetValue(jsonPropertyObject);
-                                        else
-                                            property = null;
-
-                                        if (outOfSynchDatasource == null || !outOfSynchDatasource.GetPersistent(iJson.id, out IPersistent persistent) || outOfSynchDatasource.IsPersistentComponentPropertyOutOfSync(persistent, iJson, name))
-                                        {
-                                            JSONNode filterNode = GetFilterNode(filter, name);
-                                            if (property is ICollection)
-                                            {
-                                                JSONArray jsonArray = new();
-                                                ICollection collection = property as ICollection;
-                                                foreach (object propertyItem in collection)
-                                                    jsonArray.Add(GetJson(iJson, propertyItem, outOfSynchDatasource, filterNode));
-
-                                                AddPropertyToJSON(json, name, jsonArray, filter);
-                                            }
-                                            else
-                                                AddPropertyToJSON(json, name, GetJson(iJson, property, outOfSynchDatasource, filterNode), filter);
-                                        }
-                                    }
-                                }
-                            });
+                                AddPropertyValueToJson(json, propertyInfo.Name, accessor, jsonAttribute, propertyInfo);
+                            }, false);
                     }
                     else
-                        json = ToJson(property);
+                    {
+                        TypeAccessor accessor = MemberUtility.GetTypeAccessor(type);
+
+                        foreach (KeyValuePair<string, JSONNode> filteredProperty in filter.AsObject)
+                        {
+                            string name = filteredProperty.Key;
+
+                            if (MemberUtility.GetMemberInfoFromMemberName(type, name, out PropertyInfo propertyInfo) && GetJsonAttributeFromPropertyInfo(out JsonAttribute jsonAttribute, propertyInfo))
+                                AddPropertyValueToJson(json, name, accessor, jsonAttribute, propertyInfo, filteredProperty.Value);
+                        }
+                    }
+
+                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    void AddPropertyValueToJson(JSONNode json, string name, TypeAccessor accessor, JsonAttribute jsonAttribute, PropertyInfo propertyInfo, JSONNode filter = null)
+                    {
+                        bool getAllowed = jsonAttribute.get;
+
+                        if (getAllowed && !string.IsNullOrEmpty(jsonAttribute.conditionalGetMethod))
+                        {
+                            if (MemberUtility.GetMethodInfoFromMethodName(iJson, jsonAttribute.conditionalGetMethod, out MethodInfo conditionalJsonMethodInfo))
+                                getAllowed = (bool)conditionalJsonMethodInfo.Invoke(iJson, null);
+                            else
+                                Debug.LogWarning("Json ConditionalMethod '" + jsonAttribute.conditionalGetMethod + "' was not found on '" + iJson.GetType().Name + "'");
+                        }
+
+                        if (getAllowed && (outOfSynchDatasource == null || !outOfSynchDatasource.GetPersistent(iJson.id, out IPersistent persistent) || outOfSynchDatasource.IsPersistentComponentPropertyOutOfSync(persistent, iJson, name)))
+                        {
+                            object value = MemberUtility.GetPropertyValue(iJson, accessor, propertyInfo);
+
+                            JSONNode jsonValue = null;
+
+                            if (typeof(ICollection).IsAssignableFrom(propertyInfo.PropertyType))
+                            {
+                                JSONArray jsonValueArray = new JSONArray();
+
+                                foreach (var item in value as ICollection)
+                                    jsonValueArray.Add(GetJsonFromValue(item, outOfSynchDatasource, filter));
+
+                                jsonValue = jsonValueArray;
+                            }
+                            else
+                                jsonValue = GetJsonFromValue(value, outOfSynchDatasource, filter);
+
+                            json[name] = jsonValue;
+                        }
+
+                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                        JSONNode GetJsonFromValue(object value, Datasource outOfSynchDatasource = null, JSONNode filter = null)
+                        {
+                            JSONNode valueJson;
+
+                            if (value != null && typeof(IJson).IsAssignableFrom(value.GetType()))
+                                valueJson = GetObjectJson(value as IJson, outOfSynchDatasource, filter);
+                            else
+                                valueJson = ToJson(value);
+
+                            return valueJson;
+                        }
+                    }
+
                 }
             }
 
             return json;
         }
 
-        private static JSONObject GetFilterNode(JSONNode filter, string propertyName)
+        private static Dictionary<string, Tuple<List<JsonAttribute>, List<PropertyInfo>>> _typeProperties;
+        public static void IterateOverJsonAttribute(IJson iJson, Action<IJson, TypeAccessor, JsonAttribute, PropertyInfo> callback, bool deepTraversal = true)
         {
-            if (filter != null)
+            if (iJson != null)
             {
-                filter = filter[propertyName];
-                if (filter.IsArray)
-                {
-                    JSONObject mergedFilter = new();
+                Type type = iJson.GetType();
 
-                    foreach (JSONNode filterChild in filter.AsArray)
+                if (type != null)
+                {
+                    string typeName = type.FullName;
+                    if (iJson.isFallbackValues)
+                        typeName += "(" + String.Join(", ", typeof(FallbackValues).Name) + ")";
+
+                    _typeProperties ??= new Dictionary<string, Tuple<List<JsonAttribute>, List<PropertyInfo>>>();
+                    if (!_typeProperties.TryGetValue(typeName, out Tuple<List<JsonAttribute>, List<PropertyInfo>> properties))
                     {
-                        if (filterChild.IsObject)
+                        List<JsonAttribute> jsonAttributes = new();
+                        List<PropertyInfo> propertyInfos = new();
+                        properties = new(jsonAttributes, propertyInfos);
+                        _typeProperties.Add(typeName, properties);
+
+                        IterateOverJsonProperty(type, (jsonAttribute, propertyInfo) =>
                         {
-                            JSONObject filterChildObject = filterChild.AsObject;
-                            foreach (KeyValuePair<string, JSONNode> keyValuePair in filterChildObject)
-                                mergedFilter[keyValuePair.Key] = keyValuePair.Value;
-                        }
+                            jsonAttributes.Add(jsonAttribute);
+                            propertyInfos.Add(propertyInfo);
+                        });
                     }
 
-                    filter = mergedFilter;
+                    TypeAccessor accessor = MemberUtility.GetTypeAccessor(type);
+
+                    for (int i = 0; i < properties.Item1.Count; i++)
+                    {
+                        JsonAttribute jsonAttribute = properties.Item1[i];
+                        PropertyInfo propertyInfo = properties.Item2[i];
+
+                        callback(iJson, accessor, jsonAttribute, propertyInfo);
+
+                        if (deepTraversal && propertyInfo.CanRead && propertyInfo.GetValue(iJson) is IJson iJsonProperty)
+                            IterateOverJsonAttribute(iJsonProperty, callback);
+                    }
                 }
             }
-            return filter != null && filter.IsObject ? filter as JSONObject : null;
         }
 
-        private static void AddPropertyToJSON(JSONNode json, string propertyName, JSONNode value, JSONNode filter)
+        public static void IterateOverJsonProperty(Type type, Action<JsonAttribute, PropertyInfo> callback)
         {
-            bool addProperty = filter == null;
-
-            if (!addProperty && filter is JSONObject)
-                addProperty = (filter as JSONObject).m_Dict.ContainsKey(propertyName);
-
-            if (addProperty)
-                json[propertyName] = value;
-        }
-
-        public static void SetJSON(JSONNode json, IJson iJson)
-        {
-            if (iJson != null && json != null)
+            while (type != null)
             {
-                MemberUtility.IterateOverJsonAttribute(iJson,
-                     (iJson, accessor, name, jsonAttribute, propertyInfo) =>
-                     {
-                         if (propertyInfo.CanWrite)
-                         {
-                             JSONNode jsonValue = json[name];
-                             if (jsonValue != null)
-                             {
-                                 Type propertyType = propertyInfo.PropertyType;
+                foreach (PropertyInfo propertyInfo in type.GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                {
+                    if (GetJsonAttributeFromPropertyInfo(out JsonAttribute jsonAttribute, propertyInfo))
+                        callback(jsonAttribute, propertyInfo);
+                }
 
-                                 if (FromJson(out object value, jsonValue, propertyType))
-                                     AssignValue(accessor, propertyInfo, iJson, propertyInfo.Name, value);
-                             }
-                         }
-                     });
+                type = type.BaseType;
+                if (type == typeof(MonoBehaviour) || type == typeof(ScriptableObject))
+                    type = null;
             }
         }
 
-        private static void AssignValue(TypeAccessor accessor, PropertyInfo propertyInfo, IJson iJson, string name, object value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GetJsonAttribute(IJson iJson, string name, out JsonAttribute jsonAttribute, out PropertyInfo propertyInfo)
         {
-            try
+            if (!SceneManager.IsSceneBeingDestroyed() && !Disposable.IsDisposed(iJson))
             {
-                if (accessor != null)
-                    accessor[iJson, name] = value;
-                else
-                    propertyInfo.SetValue(iJson, value);
+                if (MemberUtility.GetMemberInfoFromMemberName(iJson.GetType(), name, out propertyInfo))
+                {
+                    if (GetJsonAttributeFromPropertyInfo(out jsonAttribute, propertyInfo))
+                        return true;
+                }
             }
-            catch (Exception e)
-            {
-                Debug.LogError(e);
-            }
+
+            jsonAttribute = null;
+            propertyInfo = null;
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GetJsonAttributeFromPropertyInfo(out JsonAttribute jsonAttribute, PropertyInfo propertyInfo)
+        {
+            jsonAttribute = propertyInfo.GetCustomAttribute<JsonAttribute>();
+            return jsonAttribute != null;
+        }
+
+        public static void FromJsonOverwrite(string json, object objectToOverwrite)
+        {
+            UnityEngine.JsonUtility.FromJsonOverwrite(json, objectToOverwrite);
         }
     }
 }

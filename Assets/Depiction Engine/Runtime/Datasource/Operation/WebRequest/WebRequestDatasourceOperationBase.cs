@@ -172,7 +172,6 @@ namespace DepictionEngine
             return typeof(WebRequestProcessorParameters);
         }
 
-
         protected virtual void InitWebRequestProcessorParameters(ProcessorParameters parameters)
         {
             WebRequestProcessorParameters webRequestProcessorParameters = parameters as WebRequestProcessorParameters;

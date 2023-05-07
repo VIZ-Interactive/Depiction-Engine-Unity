@@ -107,7 +107,26 @@ namespace DepictionEngine
             StartDynamicResizing();
         }
 
+        protected override bool UpdateAllDelegates()
+        {
+            if (base.UpdateAllDelegates())
+            {
 #if UNITY_EDITOR
+                SceneManager.BeforeAssemblyReloadEvent -= BeforeAssemblyReloadHandler;
+                if (!IsDisposing())
+                    SceneManager.BeforeAssemblyReloadEvent += BeforeAssemblyReloadHandler;
+#endif
+                return true;
+            }
+            return false;
+        }
+
+#if UNITY_EDITOR
+        private void BeforeAssemblyReloadHandler()
+        {
+            DestroyAllDisposables();
+        }
+
         public override bool AfterAssemblyReload()
         {
             if (base.AfterAssemblyReload())
@@ -315,6 +334,11 @@ namespace DepictionEngine
                                     if (disposable is MonoBehaviour)
                                     {
                                         GameObject go = (disposable as MonoBehaviour).gameObject;
+                                        
+                                        MonoBehaviourDisposable[] monoBehaviourDisposables = go.GetComponents<MonoBehaviourDisposable>();
+                                        foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
+                                            monoBehaviourDisposable.Recycle();
+
                                         go.SetActive(true);
 #if UNITY_EDITOR
                                         //Make sure GameObject is visible
@@ -325,10 +349,6 @@ namespace DepictionEngine
                                         if (UnityEditor.SceneVisibilityManager.instance.IsPickingDisabled(go, true))
                                             UnityEditor.SceneVisibilityManager.instance.EnablePicking(go, true);
 #endif
-
-                                        MonoBehaviourDisposable[] monoBehaviourDisposables = go.GetComponents<MonoBehaviourDisposable>();
-                                        foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
-                                            monoBehaviourDisposable.Recycle();
                                     }
                                     else
                                         disposable.Recycle();

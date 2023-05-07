@@ -1498,10 +1498,7 @@ namespace DepictionEngine.Editor
                 if (_mouseDownNearestControl == GUIUtility.hotControl && evt.type == EventType.MouseDrag)
                 {
                     if (!_positionHandleDragging)
-                    {
-                        Debug.Log("Down");
                         _positionHandleDragging = true;
-                    }
                 }
 
                 if (evt.type == EventType.MouseUp || (evt.type == EventType.Used && evt.pointerType == PointerType.Mouse))
@@ -1509,14 +1506,12 @@ namespace DepictionEngine.Editor
                     _mouseDownNearestControl = int.MinValue;
 
                     if (_positionHandleDragging)
-                    {
-                        Debug.Log("Up");
+                    { 
                         _positionHandleDragging = false;
                         SceneManager.LeftMouseUpInSceneOrInspectorEvent?.Invoke();
                     }
                 }
             }
-
 
             sceneManager.UpdateAstroObjects(camera);
 
@@ -1594,20 +1589,17 @@ namespace DepictionEngine.Editor
             _sceneViewDoubleComponentsDelta.targetParentGeoAstroObject = alignViewToGeoAstroObject;
 
             SceneCamera sceneCamera = GetSceneCamera(sceneView);
-            if (sceneCamera != Disposable.NULL)
+            if (sceneCamera != Disposable.NULL && GetSceneViewComponentsUserDelta(sceneView, ref _sceneViewDoubleComponentsDelta, sceneCamera.gameObject.transform))
             {
-                if (GetSceneViewComponentsUserDelta(sceneView, ref _sceneViewDoubleComponentsDelta, sceneCamera.gameObject.transform))
-                {
-                    //Stop Animations
-                    if (_sceneViewDoubleComponentsDelta.TargetPositionChanged())
-                        StopPivotAnimation();
-                    if (_sceneViewDoubleComponentsDelta.RotationChanged())
-                        StopRotationAnimation();
-                    if (_sceneViewDoubleComponentsDelta.CameraDistanceChanged())
-                        StopSizeAnimation();
+                //Stop Animations
+                if (_sceneViewDoubleComponentsDelta.TargetPositionChanged())
+                    StopPivotAnimation();
+                if (_sceneViewDoubleComponentsDelta.RotationChanged())
+                    StopRotationAnimation();
+                if (_sceneViewDoubleComponentsDelta.CameraDistanceChanged())
+                    StopSizeAnimation();
 
-                    AddUserDeltasToSceneViewDoubleComponents(sceneView, sceneCamera, _sceneViewDoubleComponents, _sceneViewDoubleComponentsDelta);
-                }
+                AddUserDeltasToSceneViewDoubleComponents(sceneView, sceneCamera, _sceneViewDoubleComponents, _sceneViewDoubleComponentsDelta);
             }
 
             if (GetSceneViewComponentsEditorDelta(ref _sceneViewDoubleComponentsDelta))

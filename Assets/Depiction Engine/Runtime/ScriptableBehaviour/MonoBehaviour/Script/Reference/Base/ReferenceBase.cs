@@ -41,9 +41,9 @@ namespace DepictionEngine
 #endif
 
         [SerializeField, HideInInspector]
-        private SerializableGuid _loadedOrfailedIdLoadScope;
+        private SerializableGuid _loadedOrFailedIdLoadScope;
         [SerializeField, HideInInspector]
-        private Grid2DIndex _loadedOrfailedIndexLoadScope;
+        private Grid2DIndex _loadedOrFailedIndexLoadScope;
 
         [SerializeField, HideInInspector]
         private LoaderBase _loader;
@@ -118,8 +118,8 @@ namespace DepictionEngine
                 _loadScope = default;
                 _data = default;
                 _loadingState = default;
-                _loadedOrfailedIdLoadScope = default;
-                _loadedOrfailedIndexLoadScope = default;
+                _loadedOrFailedIdLoadScope = default;
+                _loadedOrFailedIndexLoadScope = default;
             }
 
             if (initializingContext == InitializationContext.Existing)
@@ -393,8 +393,8 @@ namespace DepictionEngine
 
         private void ForceUpdateLoadScope()
         {
-            _loadedOrfailedIdLoadScope = SerializableGuid.Empty;
-            _loadedOrfailedIndexLoadScope = Grid2DIndex.Empty;
+            _loadedOrFailedIdLoadScope = SerializableGuid.Empty;
+            _loadedOrFailedIndexLoadScope = Grid2DIndex.Empty;
 
             UpdateLoadScope();
         }
@@ -466,12 +466,12 @@ namespace DepictionEngine
                     if (newValue is IdLoadScope)
                     {
                         IdLoadScope index2DLoadScope = newValue as IdLoadScope;
-                        _loadedOrfailedIdLoadScope = index2DLoadScope.scopeId;
+                        _loadedOrFailedIdLoadScope = index2DLoadScope.scopeId;
                     }
                     if (newValue is Index2DLoadScope)
                     {
                         Index2DLoadScope index2DLoadScope = newValue as Index2DLoadScope;
-                        _loadedOrfailedIndexLoadScope = new Grid2DIndex(index2DLoadScope.scopeIndex, index2DLoadScope.scopeDimensions);
+                        _loadedOrFailedIndexLoadScope = new Grid2DIndex(index2DLoadScope.scopeIndex, index2DLoadScope.scopeDimensions);
                     }
 
                     UpdateData();
@@ -554,9 +554,9 @@ namespace DepictionEngine
         private bool LoadingWasAttempted()
         {
             if (loader is IdLoader)
-                return _loadedOrfailedIdLoadScope != SerializableGuid.Empty && dataId == _loadedOrfailedIdLoadScope;
+                return _loadedOrFailedIdLoadScope != SerializableGuid.Empty && dataId == _loadedOrFailedIdLoadScope;
             if (loader is Index2DLoaderBase)
-                return _loadedOrfailedIndexLoadScope != Grid2DIndex.Empty && dataIndex2D == _loadedOrfailedIndexLoadScope;
+                return _loadedOrFailedIndexLoadScope != Grid2DIndex.Empty && dataIndex2D == _loadedOrFailedIndexLoadScope;
             
             return false;
         }

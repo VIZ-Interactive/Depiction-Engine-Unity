@@ -520,47 +520,47 @@ namespace DepictionEngine
 
         public static BuildingFeature.RoofShape ParseRoofShape(string str)
         {
-            BuildingFeature.RoofShape roofshape = BuildingFeature.RoofShape.None;
+            BuildingFeature.RoofShape roofShape = BuildingFeature.RoofShape.None;
             switch (str)
             {
                 case "cone":
-                    roofshape = BuildingFeature.RoofShape.Cone;
+                    roofShape = BuildingFeature.RoofShape.Cone;
                     break;
                 case "pyramid":
-                    roofshape = BuildingFeature.RoofShape.Pyramid;
+                    roofShape = BuildingFeature.RoofShape.Pyramid;
                     break;
                 case "dome":
-                    roofshape = BuildingFeature.RoofShape.Dome;
+                    roofShape = BuildingFeature.RoofShape.Dome;
                     break;
                 case "onion":
-                    roofshape = BuildingFeature.RoofShape.Onion;
+                    roofShape = BuildingFeature.RoofShape.Onion;
                     break;
                 case "gabled":
-                    roofshape = BuildingFeature.RoofShape.Gabled;
+                    roofShape = BuildingFeature.RoofShape.Gabled;
                     break;
                 case "hipped":
-                    roofshape = BuildingFeature.RoofShape.Hipped;
+                    roofShape = BuildingFeature.RoofShape.Hipped;
                     break;
                 case "half-hipped":
-                    roofshape = BuildingFeature.RoofShape.HalfHipped;
+                    roofShape = BuildingFeature.RoofShape.HalfHipped;
                     break;
                 case "skillion":
-                    roofshape = BuildingFeature.RoofShape.Skillion;
+                    roofShape = BuildingFeature.RoofShape.Skillion;
                     break;
                 case "gambrel":
-                    roofshape = BuildingFeature.RoofShape.Gambrel;
+                    roofShape = BuildingFeature.RoofShape.Gambrel;
                     break;
                 case "mansard":
-                    roofshape = BuildingFeature.RoofShape.Mansard;
+                    roofShape = BuildingFeature.RoofShape.Mansard;
                     break;
                 case "round":
-                    roofshape = BuildingFeature.RoofShape.Round;
+                    roofShape = BuildingFeature.RoofShape.Round;
                     break;
                 case "flat":
-                    roofshape = BuildingFeature.RoofShape.Flat;
+                    roofShape = BuildingFeature.RoofShape.Flat;
                     break;
             }
-            return roofshape;
+            return roofShape;
         }
     }
 

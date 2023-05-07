@@ -133,7 +133,8 @@ namespace DepictionEngine.Editor
                     {
                         FallbackValues fallbackValues = serializedProperty.serializedObject.targetObject as FallbackValues;
 
-                        SetPropertyValue(fallbackValues, MemberUtility.GetMemberInfoFromMemberName<PropertyInfo>(fallbackValues.GetType(), nameof(FallbackValues.fallbackValuesJson)), (fallbackValuesObject as IJson).GetJson());
+                        if (MemberUtility.GetMemberInfoFromMemberName(fallbackValues.GetType(), nameof(FallbackValues.fallbackValuesJson), out PropertyInfo propertyInfo))
+                            SetPropertyValue(fallbackValues, propertyInfo, JsonUtility.GetObjectJson(fallbackValuesObject as IJson));
                     }
 
                     _fallbackValuesObjectEditorChanged = false;

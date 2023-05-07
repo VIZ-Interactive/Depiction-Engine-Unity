@@ -90,9 +90,11 @@ body {
     width: 150px;
     height: 150px;
     background-color: red;
+    opacity: 0.5;
 }
 .popup2 {
     width: 100px;
     height: 100px;
     background-color: blue;
+    opacity: 0.5;
 }

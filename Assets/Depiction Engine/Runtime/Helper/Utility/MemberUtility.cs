@@ -4,9 +4,10 @@ using FastMember;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI;
 
 namespace DepictionEngine
 {
@@ -32,8 +33,7 @@ namespace DepictionEngine
                 }
                 else
                 {
-                    memberInfo = GetMemberInfoFromMemberName<T>(targetObject.GetType(), property);
-                    if (memberInfo != null)
+                    if (GetMemberInfoFromMemberName(targetObject.GetType(), property, out memberInfo))
                     {
                         if (memberInfo is FieldInfo fieldInfo)
                             targetObject = fieldInfo.GetValue(targetObject);
@@ -46,24 +46,24 @@ namespace DepictionEngine
             return (memberInfo, targetObject);
         }
 
-        public static MethodInfo GetMethodInfoFromMethodName(object targetObject, string methodName)
+        public static bool GetMethodInfoFromMethodName(object targetObject, string methodName, out MethodInfo member)
         {
-            return GetMemberInfoFromMemberName<MethodInfo>(targetObject.GetType(), methodName);
+            return GetMemberInfoFromMemberName(targetObject.GetType(), methodName, out member);
         }
 
-        public static T GetMemberInfoFromMemberName<T>(Type targetObjectType, string memberName) where T : MemberInfo
+        public static bool GetMemberInfoFromMemberName<T>(Type targetObjectType, string memberName, out T member) where T : MemberInfo
         {
-            if (_memberInfoCache == null)
-                _memberInfoCache = new Dictionary<int, MemberInfo>();
-
             int key = (targetObjectType.FullName + memberName).GetHashCode();
+
+            _memberInfoCache ??= new Dictionary<int, MemberInfo>();
             if (!_memberInfoCache.TryGetValue(key, out MemberInfo memberInfo) || memberInfo == null)
             {
                 memberInfo = GetMemberInfoFromMemberNameInternal<T>(targetObjectType, memberName);
                 _memberInfoCache[key] = memberInfo;
             }
 
-            return memberInfo as T;
+            member = memberInfo as T;
+            return member != null;
         }
 
         private static T GetMemberInfoFromMemberNameInternal<T>(Type targetObjectType, string memberName) where T : MemberInfo
@@ -123,6 +123,7 @@ namespace DepictionEngine
             return attributes;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IEnumerable<T> GetMemberAttributes<T>(object targetObject, string propertyPath) where T : Attribute
         {
             (MemberInfo, object) memberInfoTargetObject = GetMemberInfoFromPropertyPath<MemberInfo>(targetObject, propertyPath);
@@ -131,6 +132,41 @@ namespace DepictionEngine
                 return memberInfoTargetObject.Item1.GetCustomAttributes<T>();
 
             return null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static object GetPropertyValue(IJson iJson, TypeAccessor accessor, PropertyInfo propertyInfo)
+        {
+            return accessor != null ? accessor[iJson, propertyInfo.Name] : propertyInfo.GetValue(iJson);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SetPropertyValue(IJson iJson, TypeAccessor accessor, PropertyInfo propertyInfo, object value)
+        {
+            try
+            {
+                if (accessor != null)
+                    accessor[iJson, propertyInfo.Name] = value;
+                else
+                    propertyInfo.SetValue(iJson, value);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TypeAccessor GetTypeAccessor(Type type)
+        {
+            TypeAccessor accessor = null;
+
+#if ENABLE_MONO
+            //Emit is not supported in IL2CPP
+            accessor = TypeAccessor.Create(type, true);
+#endif
+
+            return accessor;
         }
 
         /// <summary>
@@ -167,111 +203,7 @@ namespace DepictionEngine
                     if (createComponent.createComponent3 != null)
                         types.Add(createComponent.createComponent3);
                 }
-            }            
-        }
-
-        private static Dictionary<string, Tuple<List<JsonAttribute>, List<PropertyInfo>>> _typeProperties;
-        public static void IterateOverJsonAttribute(IJson iJson, Action<IJson, TypeAccessor, string, JsonAttribute, PropertyInfo> callback)
-        {
-            if (iJson != null)
-            {
-                Type type = iJson.GetType();
-
-                if (type != null)
-                {
-                    if (_typeProperties == null)
-                        _typeProperties = new Dictionary<string, Tuple<List<JsonAttribute>, List<PropertyInfo>>>();
-
-                    TypeAccessor accessor = null;
-
-#if ENABLE_MONO
-                    //Emit is not supported in IL2CPP
-                    accessor = TypeAccessor.Create(type, true);
-#endif
-                    string typeName = type.FullName;
-
-                    List<string> category = new();
-                    if (iJson.isFallbackValues)
-                        category.Add(typeof(FallbackValues).Name);
-
-                    if (category.Count > 0)
-                        typeName += "("+ String.Join(", ", category)+ ")";
-
-                    if (!_typeProperties.TryGetValue(typeName, out Tuple<List<JsonAttribute>, List<PropertyInfo>> properties))
-                    {
-                        List<JsonAttribute> jsonAttributes = new List<JsonAttribute>();
-                        List<PropertyInfo> propertyInfos = new List<PropertyInfo>();
-                        properties = new Tuple<List<JsonAttribute>, List<PropertyInfo>>(jsonAttributes, propertyInfos);
-                        _typeProperties.Add(typeName, properties);
-
-                        IterateOverJsonProperty(type, (jsonAttribute, propertyInfo) => 
-                        {
-                            jsonAttributes.Add(jsonAttribute);
-                            propertyInfos.Add(propertyInfo);
-                        });
-                    }
-
-                    for (int i = 0; i < properties.Item1.Count; i++)
-                    {
-                        JsonAttribute jsonAttribute = properties.Item1[i];
-                        PropertyInfo propertyInfo = properties.Item2[i];
-
-                        string name = propertyInfo.Name;
-
-                        if (!string.IsNullOrEmpty(jsonAttribute.propertyName))
-                            propertyInfo = GetMemberInfoFromMemberName<PropertyInfo>(iJson.GetType(), jsonAttribute.propertyName);
-
-                        callback(iJson, accessor, name, jsonAttribute, propertyInfo);
-
-                        if (propertyInfo.CanRead)
-                        {
-                            object value = propertyInfo.GetValue(iJson);
-                            if (value is IJson)
-                                IterateOverJsonAttribute(value as IJson, callback);
-                        }
-                    }
-                }
             }
-        }
-
-        public static void IterateOverJsonProperty<T>(Action<JsonAttribute, PropertyInfo> callback)
-        {
-            IterateOverJsonProperty(typeof(T), callback);
-        }
-
-        public static void IterateOverJsonProperty(Type type, Action<JsonAttribute, PropertyInfo> callback)
-        {
-            while (type != null)
-            {
-                foreach (PropertyInfo propertyInfo in type.GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-                {
-                    JsonAttribute jsonAttribute = propertyInfo.GetCustomAttribute<JsonAttribute>();
-                    if (jsonAttribute != null)
-                        callback(jsonAttribute, propertyInfo);
-                }
-
-                type = type.BaseType;
-                if (type == typeof(MonoBehaviour) || type == typeof(ScriptableObject))
-                    type = null;
-            }
-        }
-
-        public static Type GetEnumerableType(Type type)
-        {
-            if (type == null)
-                throw new ArgumentNullException("type");
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                return type.GetGenericArguments()[0];
-
-            var iface = (from i in type.GetInterfaces()
-                         where i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)
-                         select i).FirstOrDefault();
-
-            if (iface == null)
-                throw new ArgumentException("Does not represent an enumerable type.", "type");
-
-            return GetEnumerableType(iface);
         }
     }
 }

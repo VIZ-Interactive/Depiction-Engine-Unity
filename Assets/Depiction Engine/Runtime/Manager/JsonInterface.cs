@@ -75,10 +75,18 @@ namespace DepictionEngine
         private const string FIND_IN_CHILDREN = "findInChildren";
         private const string PARAMETERS = "parameters";
         private const string GAME_OBJECT = "gameObject";
+        private const string DISPOSE_CONTEXT = "disposeContext";
         private const string OBJECT_ID = "objectId";
         private const string EVENT_TYPE = "eventType";
 
         private string _instanceId;
+
+        //public override void Initialized(InitializationContext initializingContext)
+        //{
+        //    base.Initialized(initializingContext);
+
+        //    ReceiveExternalMessage("[{\"operationType\":\"create\",\"parameters\":{\"id\":\"5e77bbda-daf5-4a1a-9986-7015dbb27a9c\",\"type\":\"DepictionEngine.VisualObject\",\"name\":\"Target\",\"transform\":{\"parent\":\"111f5494-d4b0-4cd0-bc8e-8b844818ed35\"}}},{\"operationType\":\"create\",\"objectId\":\"5e77bbda-daf5-4a1a-9986-7015dbb27a9c\",\"parameters\":{\"type\":\"DepictionEngine.GeoCoordinateController\"}},{\"operationType\":\"create\",\"objectId\":\"5e77bbda-daf5-4a1a-9986-7015dbb27a9c\",\"parameters\":{\"type\":\"DepictionEngine.TransformAnimator\"}},{\"operationType\":\"create\",\"parameters\":{\"id\":\"fbf6c59d-803b-4260-8b46-7cf583ee5c84\",\"type\":\"DepictionEngine.Camera\",\"name\":\"Camera\",\"tag\":\"MainCamera\",\"skyboxMaterialPath\":\"Material/Skybox/Atmosphere-Skybox\",\"transform\":{\"parent\":\"111f5494-d4b0-4cd0-bc8e-8b844818ed35\"}}},{\"operationType\":\"create\",\"objectId\":\"fbf6c59d-803b-4260-8b46-7cf583ee5c84\",\"parameters\":{\"type\":\"DepictionEngine.CameraController\",\"targetId\":\"5e77bbda-daf5-4a1a-9986-7015dbb27a9c\",\"distance\":10000}},{\"operationType\":\"create\",\"objectId\":\"fbf6c59d-803b-4260-8b46-7cf583ee5c84\",\"parameters\":{\"type\":\"DepictionEngine.TargetControllerAnimator\",\"targetId\":\"5e77bbda-daf5-4a1a-9986-7015dbb27a9c\"}}]");
+        //}
 
         protected override bool UpdateAllDelegates()
         {
@@ -99,7 +107,7 @@ namespace DepictionEngine
                     InputManager.OnMouseDownEvent += InputManagerOnMouseDownHandler;
                     InputManager.OnMouseClickedEvent += InputManagerOnMouseClickedHandler;
                 }
-                
+
                 return true;
             }
             return false;
@@ -296,12 +304,12 @@ namespace DepictionEngine
                     result = new JSONString(_instanceId);
                     break;
                 case SET_OPERATION:
-                    JSONNode jsonValues = operation[VALUES];
+                    JSONObject jsonValues = operation[VALUES].AsObject;
                     iJson = GetIJSONFromId(jsonValues[ID]);
                     if (!Disposable.IsDisposed(iJson))
                     {
                         jsonValues.Remove(ID);
-                        iJson.SetJson(jsonValues);
+                        JsonUtility.ApplyJsonToObject(iJson, jsonValues);
                         result = iJson.id.ToString();
                     }
                     else
@@ -314,7 +322,7 @@ namespace DepictionEngine
                         string id = operation[GET_ID];
                         iJson = GetIJSONFromId(id);
                         if (!Disposable.IsDisposed(iJson))
-                            result = iJson.GetJson(null, operationFields);
+                            result = JsonUtility.GetObjectJson(iJson, null, operationFields);
                         else
                             result = ID_NOT_FOUND_ERROR_MSG;
                     }
@@ -326,7 +334,7 @@ namespace DepictionEngine
                         {
                             iJson = go.GetComponent<Object>();
                             if (!Disposable.IsDisposed(iJson))
-                                result = iJson.GetJson(null, operationFields);
+                                result = JsonUtility.GetObjectJson(iJson, null, operationFields);
                             else
                                 result = NAME_NOT_FOUND_ERROR_MSG;
                         }
@@ -356,7 +364,7 @@ namespace DepictionEngine
                                         foreach (Component component in components)
                                         {
                                             if (component is IJson)
-                                                result.Add((component as IJson).GetJson(null, operationFields));
+                                                result.Add(JsonUtility.GetObjectJson(component as IJson, null, operationFields));
                                         }
                                     }
                                 }
@@ -375,13 +383,13 @@ namespace DepictionEngine
                                         {
                                             bool validIJson = true;
 #if UNITY_EDITOR
-                                                validIJson = !SceneManager.IsEditorNamespace(iJson.GetType());
+                                            validIJson = !SceneManager.IsEditorNamespace(iJson.GetType());
 #endif
-                                                if (validIJson)
+                                            if (validIJson)
                                             {
                                                 if (result == null)
                                                     result = new JSONArray();
-                                                result.Add(iJson.GetJson(null, operationFields));
+                                                result.Add(JsonUtility.GetObjectJson(iJson, null, operationFields));
                                             }
                                         }
                                         return true;
@@ -457,7 +465,7 @@ namespace DepictionEngine
                             if (reflectionResult != null)
                             {
                                 if (reflectionResult is IJson)
-                                    result = (reflectionResult as IJson).GetJson();
+                                    result = JsonUtility.GetObjectJson(reflectionResult as IJson);
                                 else
                                 {
                                     if (reflectionResult is JSONNode)
@@ -487,12 +495,12 @@ namespace DepictionEngine
                             {
                                 Object objectBase = GetIJSONFromId(operation[OBJECT_ID]) as Object;
                                 if (objectBase != Disposable.NULL)
-                                    iJson = objectBase.CreateScript(instanceType, jsonParameters);
+                                    iJson = objectBase.CreateScript(instanceType, jsonParameters.AsObject);
                             }
                             else
-                                iJson = instanceManager.CreateInstance(instanceType, json: jsonParameters) as IJson;
+                                iJson = instanceManager.CreateInstance(instanceType, json: jsonParameters.AsObject) as IJson;
                             if (!Disposable.IsDisposed(iJson))
-                                result = iJson.GetJson();
+                                result = JsonUtility.GetObjectJson(iJson);
                             else
                                 result = CREATION_FAILED_ERROR_MSG;
                         }
@@ -504,9 +512,12 @@ namespace DepictionEngine
                     break;
                 case DISPOSE_OPERATION:
                     object obj = GetIJSONFromId(operation[ID]);
-                    if (obj is MonoBehaviour && operation[GAME_OBJECT] != null && operation[GAME_OBJECT].AsBool)
-                        obj = (obj as MonoBehaviour).gameObject;
-                    DisposeManager.Dispose(obj);
+                    if (obj is MonoBehaviour monoBehaviour && operation[GAME_OBJECT] != null && operation[GAME_OBJECT].AsBool)
+                        obj = monoBehaviour.gameObject;
+                    if (operation[DISPOSE_CONTEXT] != null && JsonUtility.FromJson(out DisposeContext disposeContext, operation[DISPOSE_CONTEXT]))
+                        DisposeManager.Dispose(obj, disposeContext);
+                    else
+                        DisposeManager.Dispose(obj);
                     result = obj is not null ? operation[ID] : ID_NOT_FOUND_ERROR_MSG;
                     break;
             }
@@ -524,7 +535,7 @@ namespace DepictionEngine
 #if UNITY_WEBGL
         [DllImport("__Internal")]
         private static extern void SendExternalMessageInternal(string instanceId, string parameters);
-        
+
 #endif
         private void SendExternalMessage(JSONNode json)
         {

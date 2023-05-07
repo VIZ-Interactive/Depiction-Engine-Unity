@@ -138,7 +138,7 @@ namespace DepictionEngine
                 _lastTransformLocalScale = transformLocalScale;
         }
 
-        protected override JSONNode GetInitializationJson(JSONNode initializeJSON)
+        protected override JSONObject GetInitializationJson(JSONObject initializeJSON)
         {
             initializeJSON = base.GetInitializationJson(initializeJSON);
 
@@ -146,7 +146,7 @@ namespace DepictionEngine
             {
                 string transformName = nameof(Object.transform);
                 if (initializeJSON[transformName] != null)
-                    initializeJSON = initializeJSON[transformName];
+                    initializeJSON = initializeJSON[transformName].AsObject;
             }
 
             return initializeJSON;
@@ -252,11 +252,14 @@ namespace DepictionEngine
         {
             bool childrenChanged = base.ChildrenHasChanged();
 
-            if (this != null)
+            if (!childrenChanged)
             {
-                int childCount = transform.childCount + (objectBase != Disposable.NULL ? objectBase.GetAdditionalChildCount() : 0);
-                if (!childrenChanged && children.Count != childCount)
-                    childrenChanged = true;
+                if (this != null)
+                {
+                    int childCount = children.Count + (objectBase != Disposable.NULL ? objectBase.GetAdditionalChildCount() : 0);
+                    if (transform.childCount != childCount)
+                        childrenChanged = true;
+                }
             }
 
             return childrenChanged;
@@ -645,7 +648,7 @@ namespace DepictionEngine
         public Object objectBase
         {
             get => _objectBase;
-            protected set { SetObjectBase(value); }
+            protected set => SetObjectBase(value);
         }
 
         private bool SetObjectBase(Object value)
@@ -768,16 +771,6 @@ namespace DepictionEngine
                 worldToLocalMatrixDirty = false;
             if (localToWorldMatrix)
                 localToWorldMatrixDirty = false;
-        }
-
-        protected override JSONNode parentJson
-        {
-            get => parent != Disposable.NULL ? JsonUtility.ToJson(parent.id) : null;
-            set 
-            {
-                if (JsonUtility.FromJson(out SerializableGuid parsedParentId, value))
-                    SetParent(parsedParentId); 
-            }
         }
 
         public bool SetParent(Guid id, bool worldPositionStays = true)
@@ -1042,7 +1035,7 @@ namespace DepictionEngine
         {
             bool containsDisposed = base.ApplyBeforeChildren(callback);
 
-            if (_objectBase is not null && TriggerCallback(_objectBase, callback))
+            if (_objectBase is not null && !TriggerCallback(_objectBase, callback))
                 containsDisposed = true;
 
             return containsDisposed;

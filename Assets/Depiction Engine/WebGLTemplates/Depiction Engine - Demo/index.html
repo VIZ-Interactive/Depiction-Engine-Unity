@@ -53,75 +53,33 @@
                     return config;
                 }
 
-                function createCamera(
-                    instance,
-                    parent,
-                    name = "Camera",
-                    targetCamera = true,
-                    distance = 1000.0,
-                    skyboxMaterialPath = $MATERIAL_BASE_PATH + "Skybox/Star-Skybox")
+                function createTargetCamera(instance, parentId, name = "Camera", distance = 1000.0, skyboxMaterialPath = $MATERIAL_BASE_PATH + "Skybox/Star-Skybox")
                 {
-                    var operations = [];
-
-                    var targetId = instance.newGuid();
-                    if (targetCamera) {
-                        operations.push(instance.createOperation({ id: targetId, type: $NAMESPACE + ".VisualObject", name: "Target", transform: { parent: parent } }));
-                        operations.push(instance.createOperation({ type: $NAMESPACE + ".GeoCoordinateController" }, targetId));
-                        operations.push(instance.createOperation({ type: $NAMESPACE + ".TransformAnimator" }, targetId));
-                    }
-
-                    var cameraId = instance.newGuid();
-                    operations.push(instance.createOperation({ id: cameraId, type: $NAMESPACE + ".Camera", name: name, tag: "MainCamera", skyboxMaterialPath: skyboxMaterialPath, transform: { parent: parent } }));
-                    if (targetCamera) {
-                        operations.push(instance.createOperation({ type: $NAMESPACE + ".CameraController", targetId: targetId, distance: distance }, cameraId));
-                        operations.push(instance.createOperation({ type: $NAMESPACE + ".TargetControllerAnimator", targetId: targetId }, cameraId));
-                    }
-
-                    return instance.sendMessage(operations);
+                    return instance.callStaticMethod($NAMESPACE + ".InstanceUtility", "CreateTargetCamera", [{ type: $NAMESPACE + ".SerializableGuid", value: parentId }, { type: "System.String", value: name }, { type: "System.Double", value: distance }, { type: "System.String", value: skyboxMaterialPath }, { type: $NAMESPACE + ".InitializationContext", value: "Programmatically" }, { type: "System.Boolean", value: false }, { type: "System.Boolean", value: false }]);
                 }
 
-                function createMarker(
-                    instance,
-                    parent,
-                    name = "Marker",
-                    color = "#faa855",
-                    icon = 0,
-                    screenSpace = true,
-                    iconOffset = 10.0)
+                function createMarker(instance, parentId, name = "Marker", color = "#faa855", icon = 0, screenSpace = true, iconOffset = 10.0)
                 {
-                    return instance.create({
-                        type: $NAMESPACE + ".Marker",
-                        name: name,
-                        color: color,
-                        icon: icon,
-                        screenSpace: screenSpace,
-                        iconOffset: iconOffset,
-                        transform: { parent: parent }
-                    });
+                    return instance.create({ type: $NAMESPACE + ".Marker", name: name, color: color, icon: icon, screenSpace: screenSpace, iconOffset: iconOffset, transform: { parentId: parentId } });
                 }
 
-                function createLabel(instance, parent, name = "Label", text = "My text")
+                function createLabel(instance, parentId, name = "Label", text = "My text")
                 {
-                    return instance.create({
-                        type: $NAMESPACE + ".Marker",
-                        name: name,
-                        text: text,
-                        transform: { parent: parent }
-                    });
+                    return instance.create({ type: $NAMESPACE + ".Marker", name: name, text: text, transform: { parentId: parentId } });
                 }
 
-                function createStarSystem(instance, parent, name = "StarSystem")
+                function createStarSystem(instance, parentId, name = "StarSystem")
                 {
                     var operations = [];
 
                     var starSystemId = instance.newGuid();
-                    operations.push(instance.createOperation({ id: starSystemId, type: $NAMESPACE + ".StarSystem", name: name, transform: { parent: parent } }));
+                    operations.push(instance.createOperation({ id: starSystemId, type: $NAMESPACE + ".StarSystem", name: name, transform: { parentId: parentId } }));
                     operations.push(instance.createOperation({ type: $NAMESPACE + ".StarSystemAnimator" }, starSystemId));
 
                     return instance.sendMessage(operations);
                 }
 
-                function createStar(instance, parent, name = "Star")
+                function createStar(instance, parentId, name = "Star")
                 {
                     if (instance.starExists())
                         return $STAR_EXIST_ERROR_MSG;
@@ -132,8 +90,8 @@
                         transform:
                         {
                             localRotation: { x: -0.707106781186548, y: 0.0, z: 0.0, w: -0.707106781186548 },
-                            localPosition: { x: -100000000000.0, y: 100000000000.0, z: 0.0 },
-                            parent: parent
+                            localPosition: { x: -20000000000.0, y: 100000000000.0, z: -20000000000.0 },
+                            parentId: parentId
                         }
                     });
 
@@ -143,21 +101,14 @@
                     return createdComponents;
                 }
 
-                function createPlanet(
-                    instance,
-                    parentId,
-                    name,
-                    spherical,
-                    size,
-                    mass,
-                    scriptsJson)
+                function createPlanet(instance, parentId, name, spherical, size, mass, scriptsJson)
                 {
-                    return instance.callStaticMethod($NAMESPACE + ".InstanceUtility", "CreatePlanet", [{ type: $NAMESPACE + ".SerializableGuid", value: parentId }, { type: "System.String", value: name }, { type: "System.Boolean", value: spherical }, { type: "System.Double", value: size }, { type: "System.Double", value: mass }, { type: $NAMESPACE + ".JSONNode", value: scriptsJson }, { type: $NAMESPACE + ".InstanceManager+InitializationContext", value: "Programmatically" }, { type: "System.Boolean", value: false }, { type: "System.Boolean", value: false }])[0];
+                    return instance.callStaticMethod($NAMESPACE + ".InstanceUtility", "CreatePlanet", [{ type: $NAMESPACE + ".SerializableGuid", value: parentId }, { type: "System.String", value: name }, { type: "System.Boolean", value: spherical }, { type: "System.Double", value: size }, { type: "System.Double", value: mass }, { type: $NAMESPACE + ".JSONObject", value: scriptsJson }, { type: $NAMESPACE + ".InitializationContext", value: "Programmatically" }, { type: "System.Boolean", value: false }, { type: "System.Boolean", value: false }])[0];
                 }
 
                 function createLayer(instance, planetId, name, json)
                 {
-                    return instance.callStaticMethod($NAMESPACE + ".InstanceUtility", "CreateLayer", [{ type: $NAMESPACE + ".SerializableGuid", value: planetId }, { type: "System.String", value: name }, { type: $NAMESPACE + ".JSONNode", value: json }, { type: $NAMESPACE + ".InstanceManager+InitializationContext", value: "Programmatically" }])[0];
+                    return instance.callStaticMethod($NAMESPACE + ".InstanceUtility", "CreateLayer", [{ type: $NAMESPACE + ".SerializableGuid", value: planetId }, { type: "System.String", value: name }, { type: $NAMESPACE + ".JSONObject", value: json }, { type: $NAMESPACE + ".InitializationContext", value: "Programmatically" }])[0];
                 }
 
                 function getComponentJson(instance, type, id)
@@ -172,10 +123,11 @@
 
                 function mergeComponentsToObjectInitializationJson(instance, componentsJson, objectInitializationJson)
                 {
-                    return instance.callStaticMethod($NAMESPACE + ".InstanceUtility", "MergeComponentsToObjectInitializationJson", [{ type: $NAMESPACE + ".JSONNode", value: componentsJson }, { type: $NAMESPACE + ".JSONObject", value: objectInitializationJson }])[0];
+                    return instance.callStaticMethod($NAMESPACE + ".InstanceUtility", "MergeComponentsToObjectInitializationJson", [{ type: $NAMESPACE + ".JSONObject", value: componentsJson }, { type: $NAMESPACE + ".JSONObject", value: objectInitializationJson }])[0];
                 }
 
-                function wait(ms) {
+                function wait(ms)
+                {
                     return new Promise(resolve => setTimeout(resolve, ms));
                 }
             </script>
@@ -189,7 +141,8 @@
 
                     container.addEventListener("initialized", containerInitialized);
 
-                    function containerInitialized() {
+                    function containerInitialized()
+                    {
                         container.removeEventListener("initialized", containerInitialized);
 
                         let spherical = true;
@@ -238,7 +191,7 @@
                         //Add Earth -> Color Texture Index2DLoader
                         var colorTextureLoaderJson = getLoaderJson(instance, $NAMESPACE + ".Index2DLoader", $NAMESPACE + ".Texture");
                         var colorTextureLoaderId = colorTextureLoaderJson[0]["id"];
-                        colorTextureLoaderJson[0]["datasourceId"] = mapboxDatasource.id;
+                        //colorTextureLoaderJson[0]["datasourceId"] = mapboxDatasource.id;
                         colorTextureLoaderJson[0]["minMaxZoom"] = { x: 0, y: 15 };
                         colorTextureLoaderJson[0]["dataType"] = "TexturePngJpg";
                         colorTextureLoaderJson[0]["loadEndpoint"] = "v4/mapbox.satellite/{0}/{1}/{2}@2x.jpg90?access_token=" + $MAPBOX_KEY;
@@ -248,9 +201,9 @@
                         //Add Earth -> Elevation Index2DLoader
                         var elevationLoaderJson = getLoaderJson(instance, $NAMESPACE + ".Index2DLoader", $NAMESPACE + ".Elevation");
                         var elevationLoaderId = elevationLoaderJson[0]["id"];
-                        elevationLoaderJson[0]["datasourceId"] = mapboxDatasource.id;
+                        //elevationLoaderJson[0]["datasourceId"] = mapboxDatasource.id;
                         elevationLoaderJson[0]["minMaxZoom"] = { x: 0, y: 15 };
-                        elevationLoaderJson[0]["dataType"] = "ElevationMapboxTerrainRGBPngRaw";
+                        elevationLoaderJson[0]["dataType"] = "ElevationTerrainRGBPngRaw";
                         //"raster/v1/mapbox.mapbox-terrain-dem-v1/{0}/{1}/{2}.webp?sku=101WQxhVS07ft&access_token=" + $MAPBOX_KEY,
                         elevationLoaderJson[0]["loadEndpoint"] = "v4/mapbox.terrain-rgb/{0}/{1}/{2}.pngraw?access_token=" + $MAPBOX_KEY;
 
@@ -295,8 +248,11 @@
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["sphericalSubdivision"] = 2;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["flatSubdivision"] = 2;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["normalsType"] = "SurfaceUp";
+                        terrainGridMeshObjectCameraGrid2DLoaderJson[2]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("ElevationGridMeshObjectBase", "ELEVATION_REFERENCE_DATATYPE")[0];
                         terrainGridMeshObjectCameraGrid2DLoaderJson[2]["fallbackValuesJson"]["loaderId"] = elevationLoaderId;
+                        terrainGridMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("TerrainGridMeshObject", "COLORMAP_REFERENCE_DATATYPE")[0];
                         terrainGridMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["loaderId"] = colorTextureLoaderId;
+                        terrainGridMeshObjectCameraGrid2DLoaderJson[5]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("TerrainGridMeshObject", "SURFACETYPEMAP_REFERENCE_DATATYPE")[0];
                         terrainGridMeshObjectCameraGrid2DLoaderJson[5]["fallbackValuesJson"]["loaderId"] = surfaceLoaderId;
 
                         terrainJson = mergeComponentsToObjectInitializationJson(instance, terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
@@ -311,8 +267,11 @@
                         buildingMeshObjectCameraGrid2DLoaderJson[0]["minMaxZoom"] = { x: 14, y: 14 };
                         buildingMeshObjectCameraGrid2DLoaderJson[0]["cascades"] = { x: 0, y: 0 };
                         buildingMeshObjectCameraGrid2DLoaderJson[0]["loadInterval"] = 0.0;
+                        buildingMeshObjectCameraGrid2DLoaderJson[2]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("ElevationGridMeshObjectBase", "ELEVATION_REFERENCE_DATATYPE")[0];
                         buildingMeshObjectCameraGrid2DLoaderJson[2]["fallbackValuesJson"]["loaderId"] = elevationLoaderId;
+                        buildingMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("FeatureGridMeshObjectBase", "FEATURE_REFERENCE_DATATYPE")[0];
                         buildingMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["loaderId"] = buildingFeatureDataLoaderId;
+                        buildingMeshObjectCameraGrid2DLoaderJson[4]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("BuildingGridMeshObject", "COLORMAP_REFERENCE_DATATYPE")[0];
                         buildingMeshObjectCameraGrid2DLoaderJson[4]["fallbackValuesJson"]["loaderId"] = colorTextureLoaderId;
 
                         buildingsJson = mergeComponentsToObjectInitializationJson(instance, buildingMeshObjectCameraGrid2DLoaderJson, buildingsJson);
@@ -357,6 +316,7 @@
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["sphericalSubdivision"] = 1;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["flatSubdivision"] = 1;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["normalsType"] = "SurfaceUp";
+                        terrainGridMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("TerrainGridMeshObject", "COLORMAP_REFERENCE_DATATYPE")[0];
                         terrainGridMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["loaderId"] = colorTextureLoaderId;
 
                         terrainJson = mergeComponentsToObjectInitializationJson(instance, terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
@@ -367,9 +327,10 @@
 
                         //Create Camera---------------------------------------------------------
 
-                        camera = createCamera(instance, earth.transform.id, "Camera", true, 10000000.0);
-                        instance.set({ id: camera[0].transform.id, geoCoordinate: { latitude: 40.71030760095461, longitude: -74.00914355419624 } });
-                        instance.set({ id: camera[4].id, preventMeshPenetration: true });
+                        camera = createTargetCamera(instance, earth.transform.id, "Camera", 10000000.0)[0];
+                        var target = instance.getId(camera.controller.targetId, { transform: { id: "true" } })[0];
+                        instance.set({ id: target.transform.id, geoCoordinate: { latitude: 40.71030760095461, longitude: -74.00914355419624 } });
+                        instance.set({ id: camera.controller.id, preventMeshPenetration: true });
 
                         //Force Start Loading---------------------------------------------------
 
@@ -480,7 +441,7 @@
    
                         //Create Map----------------------------------------------------------
 
-                        var mapboxDatasource = instance2.getRestDatasource("https://api.mapbox.com/");
+                        var openstreetmapDatasource = instance2.getRestDatasource("https://tile.openstreetmap.org/");
 
                         var buildingFeatureDatasource = instance2.getRestDatasource(
                             "https://a-data.3dbuildings.com/",
@@ -493,10 +454,10 @@
                         //Add Earth -> Color Texture Index2DLoader
                         var colorTextureLoaderJson = getLoaderJson(instance2, $NAMESPACE + ".Index2DLoader", $NAMESPACE + ".Texture");
                         var colorTextureLoaderId = colorTextureLoaderJson[0]["id"];
-                        colorTextureLoaderJson[0]["datasourceId"] = mapboxDatasource.id;
-                        colorTextureLoaderJson[0]["minMaxZoom"] = { x: 0, y: 15 };
+                        colorTextureLoaderJson[0]["datasourceId"] = openstreetmapDatasource.id;
+                        colorTextureLoaderJson[0]["minMaxZoom"] = { x: 0, y: 30 };
                         colorTextureLoaderJson[0]["dataType"] = "TexturePngJpg";
-                        colorTextureLoaderJson[0]["loadEndpoint"] = "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token=" + $MAPBOX_KEY;
+                        colorTextureLoaderJson[0]["loadEndpoint"] = "{0}/{1}/{2}.png";
 
                         mapJson = mergeComponentsToObjectInitializationJson(instance2, colorTextureLoaderJson, mapJson);
 
@@ -517,13 +478,14 @@
                         var terrainJson = {};
 
                         var terrainGridMeshObjectCameraGrid2DLoaderJson = getLoaderJson(instance2, $NAMESPACE + ".CameraGrid2DLoader", $NAMESPACE + ".TerrainGridMeshObject");
-                        terrainGridMeshObjectCameraGrid2DLoaderJson[0]["sizeMultiplier"] = 2.0;
+                        terrainGridMeshObjectCameraGrid2DLoaderJson[0]["sizeMultiplier"] = 2.5;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[0]["minMaxZoom"] = { x: 0, y: 19 };
                         terrainGridMeshObjectCameraGrid2DLoaderJson[0]["loadInterval"] = 0.0;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["subdivisionZoomFactor"] = 1.0;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["sphericalSubdivision"] = 1;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["flatSubdivision"] = 1;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["normalsType"] = "SurfaceUp";
+                        terrainGridMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["dataType"] = instance2.getStaticFieldValue("TerrainGridMeshObject", "COLORMAP_REFERENCE_DATATYPE")[0];
                         terrainGridMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["loaderId"] = colorTextureLoaderId;
 
                         terrainJson = mergeComponentsToObjectInitializationJson(instance2, terrainGridMeshObjectCameraGrid2DLoaderJson, terrainJson);
@@ -539,6 +501,7 @@
                         buildingMeshObjectCameraGrid2DLoaderJson[0]["cascades"] = { x: 0, y: 0 };
                         buildingMeshObjectCameraGrid2DLoaderJson[0]["loadInterval"] = 0.0;
                         buildingMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["color"] = { r: 1.0, g: 1.0, b: 1.0, a: 1.0 };
+                        buildingMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["dataType"] = instance2.getStaticFieldValue("FeatureGridMeshObjectBase", "FEATURE_REFERENCE_DATATYPE")[0];
                         buildingMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["loaderId"] = buildingFeatureDataLoaderId;
                        
                         buildingsJson = mergeComponentsToObjectInitializationJson(instance2, buildingMeshObjectCameraGrid2DLoaderJson, buildingsJson);
@@ -547,10 +510,10 @@
 
                         //Create Camera---------------------------------------------------------
 
-                        camera2 = createCamera(instance2, map.transform.id, "Camera", true, 10000.0, $MATERIAL_BASE_PATH + "Skybox/Atmosphere-Skybox");
-                        var cameraTargetObject = camera2[0];
-                        instance2.set({ id: cameraTargetObject.transform.id, geoCoordinate: { latitude: 40.71030760095461, longitude: -74.00914355419624 } });
-                   
+                        camera2 = createTargetCamera(instance2, map.transform.id, "Camera", 10000.0, $MATERIAL_BASE_PATH + "Skybox/Atmosphere-Skybox")[0];
+                        var target = instance2.getId(camera2.controller.targetId, { transform: { id: "true" } })[0];
+                        instance2.set({ id: target.transform.id, geoCoordinate: { latitude: 40.71030760095461, longitude: -74.00914355419624 } });
+
                         //Force Start Loading---------------------------------------------------
 
                         for (var i in mapLoaders)
@@ -563,7 +526,7 @@
                         marker = createMarker(instance2, map.id, "Marker", "#ff0000", "UNIVERSEPIN", true, 30.0);
                         instance2.bindElementToTransformPosition(popup, marker[0].transform.id);
 
-                        marker2 = createMarker(instance2, map.id, "Marker2", "#00ff00", "UNIVERSEPIN");
+                        marker2 = createMarker(instance2, map.id, "Marker2", "#0000ff", "UNIVERSEPIN");
                         instance2.set({
                             id: marker2[0].transform.id,
                             geoCoordinate: { latitude: 40.71463488432494, longitude: -74.00376079165244 }
@@ -613,7 +576,7 @@
                             }
                         }
 
-                        instance2.callInstanceMethod(camera2[5].id, "SetDistance", [{ type: "System.Double", value: 1000.0 }, { type: "System.Int32", value: 6.0 }, { type: $NAMESPACE + ".EasingType", value: "QuartEaseOut" }]);
+                        instance2.callInstanceMethod(camera2.animator.id, "SetDistance", [{ type: "System.Double", value: 1000.0 }, { type: "System.Int32", value: 6.0 }, { type: $NAMESPACE + ".EasingType", value: "QuartEaseOut" }]);
                     }
 
                     container2.addEventListener("hierarchicalUpdate", hierarchicalUpdate);
@@ -621,12 +584,11 @@
                     function hierarchicalUpdate()
                     {
                         var markerObject = marker[0];
-                        var cameraObject = camera[3];
                         if (markerObject != null && instance2 != null)
                         {
-                            if (cameraObject != null && instance != null)
+                            if (camera != null && instance != null)
                             {
-                                let geoCoordinate = instance.getId(cameraObject.id, { transform: { geoCoordinate: "true" } })[0].transform.geoCoordinate;
+                                let geoCoordinate = instance.getId(camera.id, { transform: { geoCoordinate: "true" } })[0].transform.geoCoordinate;
                                 geoCoordinate.altitude = 0.0;
                                 instance2.set({ id: markerObject.transform.id, geoCoordinate: geoCoordinate });
                             }
@@ -647,7 +609,7 @@
                 <div id="popup2" class="popup2"></div>
 
                 <div class="attribution">
-                    <a href="https://mapbox.com">© Mapbox</a> | <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> | <a href="https://3dbuildings.com">© 3dBuildings</a> | <a href="https://vizinteractive.io">© VIZ Interactive</a>
+                    <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> | <a href="https://3dbuildings.com">© 3dBuildings</a> | <a href="https://vizinteractive.io">© VIZ Interactive</a>
                 </div>
 
                 <div id="container2Loader" class="loaderGrp">

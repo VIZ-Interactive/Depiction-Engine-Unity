@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UIElements;
+using UnityEditor;
 
 namespace DepictionEngine
 {
@@ -294,7 +295,7 @@ namespace DepictionEngine
             foreach (int i in Enum.GetValues(typeof(Marker.Icon)))
             {
                 Marker.Icon icon = (Marker.Icon)i;
-                Marker marker = instanceManager.CreateInstance<Marker>(json: icon.ToString(), initializingContext: InitializationContext.Editor);
+                Marker marker = instanceManager.CreateInstance<Marker>(json: new JSONObject { [nameof(Object.name)] = icon.ToString() }, initializingContext: InitializationContext.Editor);
                 marker.icon = icon;
                 marker.color = UnityEngine.Random.ColorHSV(0.0f, 1.0f, 1.0f, 1.0f, 0.5f, 1.0f);
                 marker.transform.position = new Vector3Double(i * 25.0f, 0.0f, 0.0f);
@@ -336,14 +337,13 @@ namespace DepictionEngine
             InitRTTCamera();
         }
 
-
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
             InitValue(value => dynamicSkybox = value, true, initializingContext);
             InitValue(value => originShifting = value, true, initializingContext);
-            InitValue(value => environmentUpdateInterval = value, 0.1f, initializingContext);
+            InitValue(value => environmentUpdateInterval = value, 5.0f, initializingContext);
             InitValue(value => highlightColor = value, new Color(0.0f, 1.0f, 1.0f, 0.75f), initializingContext);
             InitValue(value => labelOutlineColor = value, Color.black, initializingContext);
             InitValue(value => labelOutlineWidth = value, 0.25f, initializingContext);
@@ -426,7 +426,6 @@ namespace DepictionEngine
             return false;
         }
 #endif
-
 
         private void RemoveMeshDelegate(Mesh mesh)
         {
@@ -617,7 +616,7 @@ namespace DepictionEngine
         [Json]
         public float environmentUpdateInterval
         {
-            get { return _environmentUpdateInterval; }
+            get => _environmentUpdateInterval;
             set
             {
                 if (value < 0.01f)
@@ -635,8 +634,8 @@ namespace DepictionEngine
         [Json]
         public bool dynamicSkybox
         {
-            get { return _dynamicSkybox; }
-            set { SetValue(nameof(dynamicSkybox), value, ref _dynamicSkybox); }
+            get => _dynamicSkybox;
+            set => SetValue(nameof(dynamicSkybox), value, ref _dynamicSkybox);
         }
 
         /// <summary>
@@ -645,7 +644,7 @@ namespace DepictionEngine
         [Json]
         public bool originShifting
         {
-            get { return _originShifting; }
+            get => _originShifting;
             set
             {
                 SetValue(nameof(originShifting), value, ref _originShifting, (newValue, oldValue) =>
@@ -662,8 +661,8 @@ namespace DepictionEngine
         [Json]
         public Color labelOutlineColor
         {
-            get { return _labelOutlineColor; }
-            set { SetValue(nameof(labelOutlineColor), value, ref _labelOutlineColor); }
+            get => _labelOutlineColor;
+            set => SetValue(nameof(labelOutlineColor), value, ref _labelOutlineColor);
         }
 
         /// <summary>
@@ -672,8 +671,8 @@ namespace DepictionEngine
         [Json]
         public float labelOutlineWidth
         {
-            get { return _labelOutlineWidth; }
-            set { SetValue(nameof(labelOutlineWidth), Mathf.Clamp01(value), ref _labelOutlineWidth); }
+            get => _labelOutlineWidth;
+            set => SetValue(nameof(labelOutlineWidth), Mathf.Clamp01(value), ref _labelOutlineWidth);
         }
 
         /// <summary>
@@ -681,7 +680,7 @@ namespace DepictionEngine
         /// </summary>
         public UniversalRendererData rendererData
         {
-            get { return _rendererData; }
+            get => _rendererData;
             set
             {
                 SetValue(nameof(rendererData), value, ref _rendererData, (newValue, oldValue) =>
@@ -696,7 +695,7 @@ namespace DepictionEngine
         /// </summary>
         public Volume postProcessVolume
         {
-            get { return _postProcessVolume; }
+            get => _postProcessVolume;
             set
             {
                 SetValue(nameof(postProcessVolume), value, ref _postProcessVolume, (newValue, oldValue) =>
@@ -712,8 +711,8 @@ namespace DepictionEngine
         [Json]
         public Color highlightColor
         {
-            get { return _highlightColor; }
-            set { SetValue(nameof(highlightColor), value, ref _highlightColor); }
+            get => _highlightColor;
+            set => SetValue(nameof(highlightColor), value, ref _highlightColor);
         }
 
         /// <summary>
@@ -722,8 +721,8 @@ namespace DepictionEngine
         [Json]
         public bool dynamicFocusDistance
         {
-            get { return _dynamicFocusDistance; }
-            set { SetValue(nameof(dynamicFocusDistance), value, ref _dynamicFocusDistance); }
+            get => _dynamicFocusDistance;
+        set => SetValue(nameof(dynamicFocusDistance), value, ref _dynamicFocusDistance);
         }
 
         /// <summary>
@@ -732,8 +731,8 @@ namespace DepictionEngine
         [Json]
         public Vector2 minMaxFocusDistance
         {
-            get { return _minMaxFocusDistance; }
-            set { SetValue(nameof(minMaxFocusDistance), value, ref _minMaxFocusDistance); }
+            get => _minMaxFocusDistance;
+        set => SetValue(nameof(minMaxFocusDistance), value, ref _minMaxFocusDistance);
         }
 
         public RTTCamera rttCamera
@@ -743,7 +742,7 @@ namespace DepictionEngine
                 InitRTTCamera();
                 return _rttCamera; 
             }
-            set { _rttCamera = value; }
+            set => _rttCamera = value;
         }
 
         private void InitRTTCamera()
@@ -755,7 +754,7 @@ namespace DepictionEngine
                 if (reflectionCameraGO != null)
                     _rttCamera = reflectionCameraGO.GetComponentInitialized<RTTCamera>();
                 if (_rttCamera == Disposable.NULL)
-                    _rttCamera = instanceManager.CreateInstance<RTTCamera>(null, rttCameraName);
+                    _rttCamera = instanceManager.CreateInstance<RTTCamera>(null, new JSONObject() { [nameof(Object.name)] = rttCameraName });
             }
         }
 
@@ -1262,18 +1261,34 @@ namespace DepictionEngine
             }
         }
 
+        private SphericalHarmonicsL2 _ambientProbe;
+        private bool _environmentMapChanged;
         public void ApplyEnvironmentAndReflectionToRenderSettings(Camera camera)
-        { 
-            if (dynamicSkybox)
+        {
+            if (dynamicSkybox && _environmentMapChanged)
             {
-                RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
-                RenderSettings.customReflectionTexture = camera.GetEnvironmentCubeMap();
+                _environmentMapChanged = false;
 
-                RenderSettings.skybox = dynamicSkyboxMaterial;
-                RenderSettings.skybox.SetTexture("_Tex", RenderSettings.customReflectionTexture);
-           
+                RenderTexture environmentCubeMap = camera.GetEnvironmentCubeMap();
+
+                RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
+
+                if (RenderSettings.customReflectionTexture != environmentCubeMap)
+                    RenderSettings.customReflectionTexture = environmentCubeMap;
+
+                if (dynamicSkyboxMaterial.GetTexture("_Tex") != environmentCubeMap)
+                    dynamicSkyboxMaterial.SetTexture("_Tex", environmentCubeMap);
+
+                RenderSettings.ambientMode = AmbientMode.Skybox;
+
+                if (RenderSettings.skybox != dynamicSkyboxMaterial)
+                    RenderSettings.skybox = dynamicSkyboxMaterial;
+
                 DynamicGI.UpdateEnvironment();
+                _ambientProbe = RenderSettings.ambientProbe;
             }
+
+            RenderSettings.ambientProbe = _ambientProbe;
         }
 
         public void UpdateReflectionProbeTransform(Camera camera)
@@ -1442,7 +1457,10 @@ namespace DepictionEngine
                     (camera) =>
                     {
                         if (_environmentDirty || camera.environmentCubemap == null)
+                        {
                             camera.UpdateEnvironmentCubemap(rttCamera);
+                            _environmentMapChanged = true;
+                        }
 
                         return true;
                     });
@@ -1459,9 +1477,19 @@ namespace DepictionEngine
             return Resources.Load<Material>(path);
         }
 
+        private static Dictionary<string, Shader> _shaderCache;
         public static Shader LoadShader(string path)
         {
-            return Resources.Load<Shader>(path);
+            Shader shader;
+
+            _shaderCache ??= new();
+            if (!_shaderCache.TryGetValue(path, out shader))
+            {
+                shader = Resources.Load<Shader>(path);
+                _shaderCache.Add(path, shader);
+            }
+
+            return shader;
         }
 
         private void DisposeAllComputeBuffers()

@@ -29,7 +29,7 @@ namespace DepictionEngine
         private int _rgbComponentOffset;
 
         private byte[] _elevation;
-        
+
 #if UNITY_EDITOR
         protected override LoaderBase.DataType GetDataTypeFromExtension(string extension)
         {
@@ -119,7 +119,7 @@ namespace DepictionEngine
         [Json]
         public float elevationMultiplier
         {
-            get { return _elevationMultiplier; }
+            get => _elevationMultiplier;
             set 
             { 
                 SetValue(nameof(elevationMultiplier), value, ref _elevationMultiplier, (newValue, oldValue) => 
@@ -137,8 +137,8 @@ namespace DepictionEngine
         [Json]
         public bool xFlip
         {
-            get { return _xFlip; }
-            set { SetValue(nameof(xFlip), value, ref _xFlip); }
+            get => _xFlip;
+            set => SetValue(nameof(xFlip), value, ref _xFlip);
         }
 
         /// <summary>
@@ -147,8 +147,8 @@ namespace DepictionEngine
         [Json]
         public bool yFlip
         {
-            get { return _yFlip; }
-            set { SetValue(nameof(yFlip), value, ref _yFlip); }
+            get => _yFlip;
+            set => SetValue(nameof(yFlip), value, ref _yFlip);
         }
 
         /// <summary>
@@ -157,13 +157,13 @@ namespace DepictionEngine
         [Json]
         public float minElevation
         {
-            get { return _minElevation; }
-            set { SetValue(nameof(minElevation), value, ref _minElevation); }
+            get => _minElevation;
+            set => SetValue(nameof(minElevation), value, ref _minElevation);
         }
 
         public int rgbComponentOffset
         {
-            get { return _rgbComponentOffset; }
+            get => _rgbComponentOffset;
             set
             {
                 if (_rgbComponentOffset == value)
@@ -251,7 +251,7 @@ namespace DepictionEngine
             if (textureModifier != Disposable.NULL)
             {
                 int textureSize = 256;
-                textureModifier.Init(PopulateProceduralPixels(parameters, textureSize, textureSize, GetPixel), true, textureSize, textureSize, TextureFormat.RGBA32, false, true);
+                textureModifier.Init(PopulateProceduralPixels(parameters, textureSize, textureSize, GetPixel), true, textureSize, textureSize, TextureFormat.RGBA32, 1, true);
             }
 
             return textureModifier;
@@ -291,9 +291,9 @@ namespace DepictionEngine
             return this;
         }
 
-        public ElevationModifier Init(float minElevation, int rgbComponentOffset, byte[] textureData, bool isRawTextureData = false, int width = 0, int height = 0, TextureFormat format = TextureFormat.RGBA32, bool mipChain = false, bool linear = true)
+        public ElevationModifier Init(float minElevation, int rgbComponentOffset, byte[] textureData, bool isRawTextureData = false, int width = 0, int height = 0, TextureFormat format = TextureFormat.RGBA32, bool linear = true)
         {
-            base.Init(textureData, isRawTextureData, width, height, format, mipChain, linear);
+            base.Init(textureData, isRawTextureData, width, height, format, 1, linear);
 
             _minElevation = minElevation;
             _rgbComponentOffset = rgbComponentOffset;

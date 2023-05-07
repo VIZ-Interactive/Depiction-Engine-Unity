@@ -376,14 +376,11 @@ namespace DepictionEngine
         {
             if (base.IterateOverLoadScopes(callback))
             {
-                if (callback != null)
+                for (int i = idLoadScopes.Count - 1; i >= 0; i--)
                 {
-                    for (int i = idLoadScopes.Count - 1; i >= 0; i--)
-                    {
-                        KeyValuePair<SerializableGuid, IdLoadScope> idLoadScope = idLoadScopes.ElementAt(i);
-                        if (!callback(idLoadScope.Key, idLoadScope.Value))
-                            return false;
-                    }
+                    KeyValuePair<SerializableGuid, IdLoadScope> idLoadScope = idLoadScopes.ElementAt(i);
+                    if (!callback(idLoadScope.Key, idLoadScope.Value))
+                        return false;
                 }
 
                 return true;

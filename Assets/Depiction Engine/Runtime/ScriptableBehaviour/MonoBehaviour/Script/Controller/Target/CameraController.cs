@@ -1,5 +1,6 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
+using Lean.Touch;
 using System;
 using UnityEngine;
 
@@ -470,7 +471,7 @@ namespace DepictionEngine
                     ClearInertia();
                     _collisionSnapshot?.Reset();
                 }
-
+              
                 //Distance
                 double newCameraDistance = distance;
                 double clampedCameraDistance = MathPlus.Clamp(distance, 0.1d, 1000000000000.0d);
@@ -491,14 +492,13 @@ namespace DepictionEngine
                     else
                         SetDistance(newCameraDistance);
 
-                    if (_collisionSnapshot != null)
-                        _collisionSnapshot.Reset();
+                    _collisionSnapshot?.Reset();
                 }
                         
                 //Target Position
                 double distanceDelta = newCameraDistance - distance;
                 bool leftMouseDown;
-
+               
 #if UNITY_STANDALONE || UNITY_WEBGL || UNITY_EDITOR
                 leftMouseDown = fingerMouseCount == 1 && !Input.GetMouseButtonUp(0) && Input.GetMouseButton(0);
 #else
@@ -547,9 +547,9 @@ namespace DepictionEngine
                             }
                         }
 
-                        if (_collisionSnapshot.ready && _collisionSnapshot.GetNewLocalPosition(out Vector3Double newCollisionPosition, screenPoint))
+                        if (_collisionSnapshot.ready && _collisionSnapshot.GetNewLocalPosition(out Vector3Double newCollisionLocalPosition, screenPoint))
                         {
-                            newPosition = targetParentGeoAstroObject.transform.TransformPoint(newCollisionPosition);
+                            newPosition = targetParentGeoAstroObject.transform.TransformPoint(newCollisionLocalPosition);
                             SetInertia(newPosition.Value - target.transform.position);
                         }
                         else
@@ -579,8 +579,7 @@ namespace DepictionEngine
                 else
                 {
                     AddInertia(targetParentGeoAstroObject);
-                    if (_collisionSnapshot != null)
-                        _collisionSnapshot.Reset();
+                    _collisionSnapshot?.Reset();
                 }
             }
 
@@ -713,7 +712,7 @@ namespace DepictionEngine
 
             public bool ready
             {
-                get { return _ready; }
+                get => _ready;
             }
 
             public bool GetNewLocalPosition(out Vector3Double newLocalPosition, Vector2 screenPoint)

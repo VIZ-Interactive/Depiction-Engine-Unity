@@ -93,7 +93,7 @@ namespace DepictionEngine
             {
                 SetValue(nameof(baseAddress), ValidateString(value), ref _baseAddress, (newValue, oldValue) =>
                 {
-                    UpdateBaseAdresses();
+                    UpdateBaseAddresses();
                 });
             }
         }
@@ -109,7 +109,7 @@ namespace DepictionEngine
             {
                 SetValue(nameof(baseAddress2), ValidateString(value), ref _baseAddress2, (newValue, oldValue) =>
                 {
-                    UpdateBaseAdresses();
+                    UpdateBaseAddresses();
                 });
             }
         }
@@ -125,7 +125,7 @@ namespace DepictionEngine
             {
                 SetValue(nameof(baseAddress3), ValidateString(value), ref _baseAddress3, (newValue, oldValue) =>
                 {
-                    UpdateBaseAdresses();
+                    UpdateBaseAddresses();
                 });
             }
         }
@@ -141,7 +141,7 @@ namespace DepictionEngine
             {
                 SetValue(nameof(baseAddress4), ValidateString(value), ref _baseAddress4, (newValue, oldValue) =>
                 {
-                    UpdateBaseAdresses();
+                    UpdateBaseAddresses();
                 });
             }
         }
@@ -207,7 +207,7 @@ namespace DepictionEngine
             
         }
 
-        private void UpdateBaseAdresses()
+        private void UpdateBaseAddresses()
         {
             if (_baseAddresses == null)
                 _baseAddresses = new List<string>();

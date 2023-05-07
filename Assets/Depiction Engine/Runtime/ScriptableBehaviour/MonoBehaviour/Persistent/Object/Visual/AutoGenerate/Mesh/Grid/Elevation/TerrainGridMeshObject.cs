@@ -40,7 +40,7 @@ namespace DepictionEngine
         private int _sphericalSubdivision;
         [SerializeField, Range(1, 127), Tooltip("The minimum number of subdivisions the tile geometry will have when in flat mode.")]
         private int _flatSubdivision;
-        [SerializeField, Range(MIN_SUBDIVISION_ZOOM_FACTOR, MAX_SUBDIVISION_ZOOM_FACTOR), Tooltip("A factor by which the number of subdivisions will be increased as the zoom level decreases according to the following formula. Zoom level 23 or higher will always have the minimum amount of subdivions.")]
+        [SerializeField, Range(MIN_SUBDIVISION_ZOOM_FACTOR, MAX_SUBDIVISION_ZOOM_FACTOR), Tooltip("A factor by which the number of subdivisions will be increased as the zoom level decreases according to the following formula. Zoom level 23 or higher will always have the minimum amount of subdivisions.")]
         private float _subdivisionZoomFactor;
         [SerializeField, Tooltip("A factor by which the geometry will be scaled along the longitudinal and latitudinal axis to overlap with other tiles of a similar zoom level.")]
         private float _overlapFactor;

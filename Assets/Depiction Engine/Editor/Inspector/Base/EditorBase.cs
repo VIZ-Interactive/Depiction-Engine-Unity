@@ -115,7 +115,7 @@ namespace DepictionEngine.Editor
                         int targetObjectCount = serializedObject.targetObjects.Length;
                         for (int i = 0; i < targetObjectCount; i++)
                         {
-                            JSONNode targetObjectJson = (serializedObject.targetObjects[i] as IJson).GetJson();
+                            JSONNode targetObjectJson = JsonUtility.GetObjectJson(serializedObject.targetObjects[i] as IJson);
 
                             if (targetObjectJson != null)
                             {
@@ -162,9 +162,9 @@ namespace DepictionEngine.Editor
                         }
                     }
 
-                    SerializedProperty beginFoloutSerializedProperty = null;
+                    SerializedProperty beginFoldoutSerializedProperty = null;
                     if (beginFoldoutAttribute != null)
-                        beginFoloutSerializedProperty = serializedObject.FindProperty(beginFoldoutAttribute.serializedPropertyPath);
+                        beginFoldoutSerializedProperty = serializedObject.FindProperty(beginFoldoutAttribute.serializedPropertyPath);
 
                     if (beginHorizontalGroupAttribute == null)
                     {
@@ -191,11 +191,11 @@ namespace DepictionEngine.Editor
                                 foldoutHeaderStyle = new GUIStyle(EditorStyles.foldoutHeader);
 
                             foldoutHeaderStyle.fixedWidth = position.width - 5.0f;
-                            beginFoloutSerializedProperty.isExpanded = EditorGUILayout.Foldout(beginFoloutSerializedProperty.isExpanded, beginFoldoutAttribute.label, true, foldoutHeaderStyle);
+                            beginFoldoutSerializedProperty.isExpanded = EditorGUILayout.Foldout(beginFoldoutSerializedProperty.isExpanded, beginFoldoutAttribute.label, true, foldoutHeaderStyle);
 
                             EditorGUILayout.Space(8.0f);
 
-                            if (beginFoloutSerializedProperty.isExpanded)
+                            if (beginFoldoutSerializedProperty.isExpanded)
                                 EditorGUI.indentLevel++;
 
                             beginFoldoutAttribute.foldoutCreated = true;
@@ -211,7 +211,7 @@ namespace DepictionEngine.Editor
                             beginHorizontalGroupAttribute.horizontalGroupCreated = true;
                         }
 
-                        if (beginFoldoutAttribute == null || beginFoloutSerializedProperty.isExpanded)
+                        if (beginFoldoutAttribute == null || beginFoldoutSerializedProperty.isExpanded)
                         {
                             string labelOverride = null;
                             LabelOverrideAttribute labelOverrideAttribute = MemberUtility.GetFirstAttribute<LabelOverrideAttribute>(customAttributes);
@@ -241,9 +241,7 @@ namespace DepictionEngine.Editor
 
                                 UnityEngine.Object firstTargetObject = targetObjects[0];
 
-                                PropertyInfo propertyInfo = MemberUtility.GetMemberInfoFromMemberName<PropertyInfo>(firstTargetObject.GetType(), GetName(serializedProperty.propertyPath));
-
-                                if (propertyInfo != null && propertyInfo.PropertyType != typeof(Datasource))
+                                if (MemberUtility.GetMemberInfoFromMemberName<PropertyInfo>(firstTargetObject.GetType(), GetName(serializedProperty.propertyPath), out PropertyInfo propertyInfo) && propertyInfo.PropertyType != typeof(Datasource))
                                 {
                                     if (propertyInfo.CanWrite)
                                     {
@@ -284,11 +282,9 @@ namespace DepictionEngine.Editor
                                 {
                                     if (serializedProperty.serializedObject.targetObject != null)
                                     {
-                                        FieldInfo fieldInfo = MemberUtility.GetMemberInfoFromMemberName<FieldInfo>(serializedProperty.serializedObject.targetObject.GetType(), serializedProperty.propertyPath);
-
                                         ButtonAttribute btnAttribute = null;
 
-                                        if (fieldInfo != null)
+                                        if (MemberUtility.GetMemberInfoFromMemberName<FieldInfo>(serializedProperty.serializedObject.targetObject.GetType(), serializedProperty.propertyPath, out FieldInfo fieldInfo))
                                             btnAttribute = fieldInfo.GetCustomAttribute<ButtonAttribute>();
 
                                         if (btnAttribute == null)
@@ -316,7 +312,7 @@ namespace DepictionEngine.Editor
                     {
                         if (beginFoldoutAttribute != null && beginFoldoutAttribute.foldoutCreated)
                         {
-                            if (beginFoloutSerializedProperty.isExpanded)
+                            if (beginFoldoutSerializedProperty.isExpanded)
                             {
                                 EditorGUILayout.Space(endFoldoutAttribute.space);
                                 EditorGUI.indentLevel--;
@@ -359,8 +355,7 @@ namespace DepictionEngine.Editor
                     RecordAdditionalObjectsAttribute recordAdditionalObjectsAttribute = propertyInfo.GetCustomAttribute<RecordAdditionalObjectsAttribute>();
                     if (recordAdditionalObjectsAttribute != null)
                     {
-                        MethodInfo methodInfo = MemberUtility.GetMethodInfoFromMethodName(targetObject, recordAdditionalObjectsAttribute.methodName);
-                        if (methodInfo != null)
+                        if (MemberUtility.GetMethodInfoFromMethodName(targetObject, recordAdditionalObjectsAttribute.methodName, out MethodInfo methodInfo))
                             additionalTargetObjects = methodInfo.Invoke(targetObject, null) as UnityEngine.Object[];
                         else
                             Debug.LogError("RecordAdditionalObjectsAttribute method '" + recordAdditionalObjectsAttribute.methodName + "' not found!");
@@ -529,14 +524,14 @@ namespace DepictionEngine.Editor
             }
             else if (targetObject is AtmosphereEffect)
             {
-                AtmosphereEffect atmopshereEffect = targetObject as AtmosphereEffect;
+                AtmosphereEffect atmosphereEffect = targetObject as AtmosphereEffect;
 
                 Star star = InstanceManager.Instance(false)?.GetStar();
 
                 if (star == Disposable.NULL)
                     helpBoxes.Add(("Add a 'Star' to the Scene to control light direction", MessageType.Warning));
 
-                GeoAstroObject geoAstroObject = atmopshereEffect != Disposable.NULL ? atmopshereEffect.geoAstroObject : null;
+                GeoAstroObject geoAstroObject = atmosphereEffect != Disposable.NULL ? atmosphereEffect.geoAstroObject : null;
                 Vector3Double lossyScale = geoAstroObject != Disposable.NULL ? geoAstroObject.transform.lossyScale : Vector3Double.one;
                 if (!lossyScale.IsUniform() || geoAstroObject == Disposable.NULL || !geoAstroObject.IsSpherical())
                     helpBoxes.Add(("Atmosphere requires a 'GeoAstroObject' with a sphericalRatio of 1.0 and a uniform scale", MessageType.Warning));
@@ -711,9 +706,7 @@ namespace DepictionEngine.Editor
             {
                 UnityEngine.Object targetObject = serializedProperty.serializedObject.targetObject;
 
-                MethodInfo methodInfo = MemberUtility.GetMethodInfoFromMethodName(targetObject, conditionalAttribute.methodName);
-
-                if (methodInfo != null)
+                if (MemberUtility.GetMethodInfoFromMethodName(targetObject, conditionalAttribute.methodName, out MethodInfo methodInfo))
                 {
                     if (methodInfo.GetParameters().Length == 1)
                         value = (bool)methodInfo.Invoke(targetObject, new object[] { serializedProperty });

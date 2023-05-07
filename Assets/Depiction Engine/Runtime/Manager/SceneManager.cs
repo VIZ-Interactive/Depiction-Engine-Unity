@@ -10,6 +10,7 @@ using UnityEngine.UIElements;
 using System.Text.RegularExpressions;
 using System.Linq;
 using UnityEngine.SceneManagement;
+using Lean.Touch;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Microsoft.Design", "IDE1006",
@@ -1142,14 +1143,14 @@ namespace DepictionEngine
                             if (propertyMonoBehaviour is TransformBase transform)
                                 transform.DetectGameObjectChanges();
 
-                            SceneManager.StartUserContext();
+                            StartUserContext();
 
                             if (propertyMonoBehaviour is JsonMonoBehaviour jsonMonoBehaviour)
                                 jsonMonoBehaviour.DetectUserGameObjectChanges();
 
                             propertyMonoBehaviour.UpdateActiveAndEnabled();
 
-                            SceneManager.EndUserContext();
+                            EndUserContext();
                         }
                     }
                 }
@@ -1161,7 +1162,6 @@ namespace DepictionEngine
                 if (!_updated)
                 {
                     _updated = true;
-
                     sceneExecutionState = ExecutionState.Update;
                     PreHierarchicalUpdate();
                     HierarchicalUpdate();
@@ -1238,65 +1238,65 @@ namespace DepictionEngine
 
         private void FixedUpdate()
         {
-            //Capture physics driven transform change
-            DetectTransformChange(instanceManager.physicTransforms);
-
-            RenderingManager renderingManager = RenderingManager.Instance(false);
-            if (renderingManager != Disposable.NULL && renderingManager.originShifting)
+            InstanceManager instanceManager = InstanceManager.Instance(false);
+            if (instanceManager != Disposable.NULL && instanceManager.physicTransforms != null && instanceManager.physicTransforms.Count() > 0)
             {
-                //The physics camera is the camera relative to which we render physics when origin shifting is enabled.
-                //The physics camera will be the main camera, if there is one, otherwise it will be any other camera.
-                Camera physicsCamera = Camera.main;
+                //Capture physics driven transform change
+                DetectTransformChange(instanceManager.physicTransforms);
 
-                if (physicsCamera == Disposable.NULL)
+                RenderingManager renderingManager = RenderingManager.Instance(false);
+                if (renderingManager != Disposable.NULL && renderingManager.originShifting)
                 {
-                    instanceManager.IterateOverInstances<Camera>(
-                        (camera) =>
-                        {
-#if UNITY_EDITOR
-                            if (camera is Editor.SceneCamera)
-                                camera = null;
-#endif
-                            if (camera != Disposable.NULL)
+                    //The physics camera is the camera relative to which we render physics when origin shifting is enabled.
+                    //The physics camera will be the main camera, if there is one, otherwise it will be any other camera.
+                    Camera physicsCamera = Camera.main;
+
+                    if (physicsCamera == Disposable.NULL)
+                    {
+                        instanceManager.IterateOverInstances<Camera>(
+                            (camera) =>
                             {
-                                physicsCamera = camera;
-                                return false;
-                            }
+#if UNITY_EDITOR
+                                if (camera is Editor.SceneCamera)
+                                    camera = null;
+#endif
+                                if (camera != Disposable.NULL)
+                                {
+                                    physicsCamera = camera;
+                                    return false;
+                                }
 
-                            return true;
-                        });
-                }
+                                return true;
+                            });
+                    }
 
 #if UNITY_EDITOR
-                //If we do not have a physicsCamera and we are in the Editor we use the first SceneCamera.
-                if (physicsCamera == Disposable.NULL)
-                {
-                    instanceManager.IterateOverInstances<Camera>(
-                        (camera) =>
-                        {
-                            if (camera is Editor.SceneCamera && camera != Disposable.NULL)
+                    //If we do not have a physicsCamera and we are in the Editor we use the first SceneCamera.
+                    if (physicsCamera == Disposable.NULL)
+                    {
+                        instanceManager.IterateOverInstances<Camera>(
+                            (camera) =>
                             {
-                                physicsCamera = camera;
-                                return false;
-                            }
+                                if (camera is Editor.SceneCamera && camera != Disposable.NULL)
+                                {
+                                    physicsCamera = camera;
+                                    return false;
+                                }
 
-                            return true;
-                        });
-                }
+                                return true;
+                            });
+                    }
 #endif
 
-                if (physicsCamera != Disposable.NULL && physicsCamera.transform != Disposable.NULL)
-                    TransformDouble.ApplyOriginShifting(physicsCamera.GetOrigin());
+                    if (physicsCamera != Disposable.NULL && physicsCamera.transform != Disposable.NULL)
+                        TransformDouble.ApplyOriginShifting(physicsCamera.GetOrigin());
+                }
             }
         }
 
-        public void DetectTransformChange(IEnumerable<TransformBase> transforms)
+        public void DetectTransformChange(IList<TransformDouble> transforms)
         {
-            IterateThroughList(transforms, (transform) => 
-            { 
-                if (transform is TransformDouble transformDouble)
-                    transformDouble.DetectTransformChanges(); 
-            });
+            IterateThroughList(transforms, (transform) => { transform.DetectTransformChanges(); });
         }
 
         private void LateUpdate()
@@ -1375,7 +1375,7 @@ namespace DepictionEngine
         {
             //Preemptively apply origin shifting for proper camera relative raycasting
             TransformDouble.ApplyOriginShifting(camera.GetOrigin());
-
+     
             //Apply Ignore Render layerMask so that visual objects are property excluded from raycasting
             instanceManager.IterateOverInstances<TransformBase>(
                 (transform) =>
@@ -1388,7 +1388,7 @@ namespace DepictionEngine
 
             //Update Mouse properties
             inputManager.UpdateCameraMouse(camera);
-
+          
             //Update Camera Controllers
             instanceManager.IterateOverInstances<Camera>(
                 (updateCamera) =>
@@ -1404,7 +1404,7 @@ namespace DepictionEngine
 
             //Update the reflection probe Transform
             renderingManager.UpdateReflectionProbeTransform(camera);
-
+         
             //Apply all the latest Transform changes
             TransformDouble.ApplyOriginShifting(camera.GetOrigin());
 
@@ -1487,17 +1487,17 @@ namespace DepictionEngine
         {
             bool containsDisposed = base.ApplyBeforeChildren(callback);
 
-            if (_tweenManager is not null && TriggerCallback(_tweenManager, callback))
+            if (_tweenManager is not null && !TriggerCallback(_tweenManager, callback))
                 containsDisposed = true;
-            if (_poolManager is not null && TriggerCallback(_poolManager, callback))
+            if (_poolManager is not null && !TriggerCallback(_poolManager, callback))
                 containsDisposed = true;
-            if (_cameraManager is not null && TriggerCallback(_cameraManager, callback))
+            if (_cameraManager is not null && !TriggerCallback(_cameraManager, callback))
                 containsDisposed = true;
-            if (_inputManager is not null && TriggerCallback(_inputManager, callback))
+            if (_inputManager is not null && !TriggerCallback(_inputManager, callback))
                 containsDisposed = true;
-            if (_instanceManager is not null && TriggerCallback(_instanceManager, callback))
+            if (_instanceManager is not null && !TriggerCallback(_instanceManager, callback))
                 containsDisposed = true;
-            if (_jsonInterface is not null && TriggerCallback(_jsonInterface, callback))
+            if (_jsonInterface is not null && !TriggerCallback(_jsonInterface, callback))
                 containsDisposed = true;
 
             return containsDisposed;
@@ -1508,10 +1508,10 @@ namespace DepictionEngine
         {
             bool containsDisposed = base.ApplyAfterChildren(callback);
 
-            if (_datasourceManager is not null && TriggerCallback(_datasourceManager, callback))
+            if (_datasourceManager is not null && !TriggerCallback(_datasourceManager, callback))
                 containsDisposed = true;
 
-            if (_renderingManager is not null && TriggerCallback(_renderingManager, callback))
+            if (_renderingManager is not null && !TriggerCallback(_renderingManager, callback))
                 containsDisposed = true;
 
             return containsDisposed;

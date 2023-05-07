@@ -325,6 +325,45 @@ namespace CW.Common
 			}
 		}
 
+		public static bool DrawSlider(string propertyPath, float min, float max, string overrideTooltip = null, string overrideText = null)
+		{
+			var property = GetPropertyAndSetCustomContent(propertyPath, overrideTooltip, overrideText);
+			var value    = property.floatValue;
+
+			EditorGUI.BeginChangeCheck();
+
+			value = EditorGUILayout.Slider(customContent, value, min, max);
+
+			if (EditorGUI.EndChangeCheck() == true)
+			{
+				property.floatValue = value;
+
+				return true;
+			}
+
+			return false;
+		}
+
+		public static bool DrawIntSlider(string propertyPath, int min, int max, string overrideTooltip = null, string overrideText = null)
+		{
+			var property = GetPropertyAndSetCustomContent(propertyPath, overrideTooltip, overrideText);
+			var value    = property.intValue;
+
+			EditorGUI.BeginChangeCheck();
+
+			value = EditorGUILayout.IntSlider(customContent, value, min, max);
+
+			if (EditorGUI.EndChangeCheck() == true)
+			{
+				property.intValue = value;
+
+				return true;
+			}
+
+			return false;
+		}
+
+
 		public static bool DrawMinMax(string propertyPath, float min, float max, string overrideTooltip = null, string overrideText = null)
 		{
 			var property = GetPropertyAndSetCustomContent(propertyPath, overrideTooltip, overrideText);

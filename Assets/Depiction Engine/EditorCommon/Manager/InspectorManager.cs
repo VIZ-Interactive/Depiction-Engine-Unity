@@ -75,7 +75,7 @@ namespace DepictionEngine.Editor
 
                     SceneManager.StartUserContext();
 
-                    iJson.SetJson(json);
+                    JsonUtility.ApplyJsonToObject(iJson, json);
 
                     SceneManager.EndUserContext();
                 }

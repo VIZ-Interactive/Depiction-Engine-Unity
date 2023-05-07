@@ -349,14 +349,11 @@ namespace DepictionEngine
         {
             if (base.IterateOverLoadScopes(callback))
             {
-                if (callback != null)
+                for (int i = index2DLoadScopes.Count - 1; i >= 0; i--)
                 {
-                    for (int i = index2DLoadScopes.Count - 1; i >= 0; i--)
-                    {
-                        KeyValuePair<Grid2DIndex, Index2DLoadScope> indexLoadScope = index2DLoadScopes.ElementAt(i);
-                        if (!callback(indexLoadScope.Key, indexLoadScope.Value))
-                            return false;
-                    }
+                    KeyValuePair<Grid2DIndex, Index2DLoadScope> indexLoadScope = index2DLoadScopes.ElementAt(i);
+                    if (!callback(indexLoadScope.Key, indexLoadScope.Value))
+                        return false;
                 }
 
                 return true;

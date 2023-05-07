@@ -55,6 +55,7 @@ namespace DepictionEngine.Editor
                 if (transformDouble != Disposable.NULL)
                     _transformDoublesList.Add(transformDouble);
             }
+
             return _transformDoublesList;
         }
 
