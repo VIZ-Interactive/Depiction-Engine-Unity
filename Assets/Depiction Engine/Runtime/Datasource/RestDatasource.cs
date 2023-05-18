@@ -88,7 +88,7 @@ namespace DepictionEngine
         [Json]
         public string baseAddress
         {
-            get { return _baseAddress; }
+            get => _baseAddress;
             set
             {
                 SetValue(nameof(baseAddress), ValidateString(value), ref _baseAddress, (newValue, oldValue) =>
@@ -104,7 +104,7 @@ namespace DepictionEngine
         [Json]
         public string baseAddress2
         {
-            get { return _baseAddress2; }
+            get => _baseAddress2;
             set
             {
                 SetValue(nameof(baseAddress2), ValidateString(value), ref _baseAddress2, (newValue, oldValue) =>
@@ -120,7 +120,7 @@ namespace DepictionEngine
         [Json]
         public string baseAddress3
         {
-            get { return _baseAddress3; }
+            get => _baseAddress3;
             set
             {
                 SetValue(nameof(baseAddress3), ValidateString(value), ref _baseAddress3, (newValue, oldValue) =>
@@ -136,7 +136,7 @@ namespace DepictionEngine
         [Json]
         public string baseAddress4
         {
-            get { return _baseAddress4; }
+            get => _baseAddress4;
             set
             {
                 SetValue(nameof(baseAddress4), ValidateString(value), ref _baseAddress4, (newValue, oldValue) =>
@@ -152,7 +152,7 @@ namespace DepictionEngine
         [Json]
         public string saveEndpoint
         {
-            get { return _saveEndpoint; }
+            get => _saveEndpoint;
             set
             {
                 SetValue(nameof(saveEndpoint), ValidateString(value), ref _saveEndpoint, (newValue, oldValue) =>
@@ -169,7 +169,7 @@ namespace DepictionEngine
         [Json]
         public string synchronizeEndpoint
         {
-            get { return _synchronizeEndpoint; }
+            get => _synchronizeEndpoint;
             set
             {
                 SetValue(nameof(synchronizeEndpoint), ValidateString(value), ref _synchronizeEndpoint, (newValue, oldValue) =>
@@ -186,7 +186,7 @@ namespace DepictionEngine
         [Json]
         public string deleteEndpoint
         {
-            get { return _deleteEndpoint; }
+            get => _deleteEndpoint;
             set
             {
                 SetValue(nameof(deleteEndpoint), ValidateString(value), ref _deleteEndpoint, (newValue, oldValue) =>
@@ -246,7 +246,7 @@ namespace DepictionEngine
 
         public bool containsCopyrightedMaterial
         {
-            get { return _containsCopyrightedMaterial; }
+            get => _containsCopyrightedMaterial;
         }
 
         protected override DatasourceOperationBase CreateLoadDatasourceOperation(LoadScope loadScope)

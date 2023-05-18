@@ -369,7 +369,7 @@ namespace DepictionEngine
 
             private void UpdateElevation(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject, GeoCoordinate3Double geoCoordinate, bool forceAddAltitude = false)
             {
-                if (grid2DIndexTerrainGridMeshObject.GetGeoCoordinateElevation(out double elevation, geoCoordinate, camera) && (SetElevation(elevation) || forceAddAltitude))
+                if (grid2DIndexTerrainGridMeshObject.GetGeoCoordinateElevation(out float elevation, geoCoordinate, camera) && (SetElevation(elevation) || forceAddAltitude))
                     AddElevation(elevation);
             }
 

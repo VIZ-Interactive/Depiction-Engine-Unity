@@ -906,7 +906,7 @@ namespace DepictionEngine
             return false;
         }
 
-        protected void ParentGeoAstroObjectPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
+        protected virtual void ParentGeoAstroObjectPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
         {
             ParentGeoAstroObjectPropertyAssignedEvent?.Invoke(property as GeoAstroObject, name, newValue, oldValue);
         }
@@ -1041,7 +1041,7 @@ namespace DepictionEngine
 
         protected virtual bool GetDefaultIsHiddenInHierarchy()
         {
-            return false;
+            return isFallbackValues;
         }
 
         protected virtual bool CanGameObjectBeDeactivated()
@@ -1180,18 +1180,15 @@ namespace DepictionEngine
         /// When enabled, the <see cref="UnityEngine.GameObject"/> will not be displayed in the hierarchy.
         /// </summary>
         [Json]
-        public virtual bool isHiddenInHierarchy
+        public bool isHiddenInHierarchy
         {
             get => objectAdditionalFallbackValues != null ? objectAdditionalFallbackValues.isHiddenInHierarchy : _isHiddenInHierarchy;
             set
             {
-                SetValue(nameof(isHiddenInHierarchy), value, ref _isHiddenInHierarchy, (newValue, oldValue) =>
-                {
-                    if (objectAdditionalFallbackValues != null)
-                        objectAdditionalFallbackValues.isHiddenInHierarchy = newValue;
-
-                    UpdateHideFlags();
-                });
+                if (objectAdditionalFallbackValues != null)
+                    SetValue(nameof(isHiddenInHierarchy), value, ref objectAdditionalFallbackValues.isHiddenInHierarchy, (newValue, oldValue) => { UpdateHideFlags(); });
+                else
+                    SetValue(nameof(isHiddenInHierarchy), value, ref _isHiddenInHierarchy, (newValue, oldValue) => { UpdateHideFlags(); });
             }
         }
 

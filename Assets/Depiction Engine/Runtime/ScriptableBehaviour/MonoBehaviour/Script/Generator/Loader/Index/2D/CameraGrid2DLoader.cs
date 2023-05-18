@@ -403,7 +403,7 @@ namespace DepictionEngine
 
                                 GeoCoordinate3Double geoCoordinate = parentGeoAstroObject.GetGeoCoordinateFromPoint(centerOnTransform.position);
 
-                                parentGeoAstroObject.GetGeoCoordinateElevation(out double elevation, geoCoordinate, null, false);
+                                parentGeoAstroObject.GetGeoCoordinateElevation(out float elevation, geoCoordinate, null, false);
                                 geoCoordinate.altitude = elevation;
 
                                 float sizeMultiplier = this.sizeMultiplier - cameraGridLoaderCenterOnLoadTrigger.dynamicSizeOffset;

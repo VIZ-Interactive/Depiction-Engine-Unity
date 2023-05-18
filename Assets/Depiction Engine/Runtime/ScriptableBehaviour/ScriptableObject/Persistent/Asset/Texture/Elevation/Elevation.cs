@@ -16,17 +16,12 @@ namespace DepictionEngine
         public const float MIN_ELEVATION = -500000.0f;
 
         [BeginFoldout("Elevation")]
-        [SerializeField, Tooltip("A Factor by which we multiply the elevation value to accentuate or reduce its magnitude.")]
+        [SerializeField, Tooltip("A factor by which we multiply the elevation value to accentuate or reduce its magnitude.")]
         private float _elevationMultiplier;
-        [SerializeField, Tooltip("When enabled the pixel values will be flipped horizontally.")]
-        private bool _xFlip;
-        [SerializeField, Tooltip("When enabled the pixel values will be flipped vertically.")]
-        private bool _yFlip;
-        [SerializeField, Tooltip("The lowest point supported by the elevation encoding mode."), EndFoldout]
+        [SerializeField, Tooltip("The lowest point supported by the elevation encoding mode.")]
         private float _minElevation;
-
-        [SerializeField, HideInInspector]
-        private int _rgbComponentOffset;
+        [SerializeField, Tooltip("The texture includes a 1-pixel buffer around the edges to enable adjacent tile interpolation."), EndFoldout]
+        private bool _pixelBuffer;
 
         private byte[] _elevation;
 
@@ -37,6 +32,7 @@ namespace DepictionEngine
 
             switch (extension)
             {
+                case ".png":
                 case ".pngraw":
 
                     dataType = LoaderBase.DataType.ElevationTerrainRGBPngRaw;
@@ -67,7 +63,6 @@ namespace DepictionEngine
             base.Recycle();
 
             _elevation = default;
-            _rgbComponentOffset = default;
         }
 
         protected override bool InitializeLastFields()
@@ -94,9 +89,13 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
            
             InitValue(value => elevationMultiplier = value, 1.0f, initializingContext);
-            InitValue(value => xFlip = value, false, initializingContext);
-            InitValue(value => yFlip = value, false, initializingContext);
             InitValue(value => minElevation = value, MIN_ELEVATION, initializingContext);
+            InitValue(value => pixelBuffer = value, false, initializingContext);
+        }
+
+        protected override FilterMode GetDefaultFilterMode()
+        {
+            return FilterMode.Point;
         }
 
 #if UNITY_EDITOR
@@ -132,26 +131,6 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled the pixel values will be flipped horizontally.
-        /// </summary>
-        [Json]
-        public bool xFlip
-        {
-            get => _xFlip;
-            set => SetValue(nameof(xFlip), value, ref _xFlip);
-        }
-
-        /// <summary>
-        /// When enabled the pixel values will be flipped vertically.
-        /// </summary>
-        [Json]
-        public bool yFlip
-        {
-            get => _yFlip;
-            set => SetValue(nameof(yFlip), value, ref _yFlip);
-        }
-
-        /// <summary>
         /// The lowest point supported by the elevation encoding mode.
         /// </summary>
         [Json]
@@ -161,26 +140,28 @@ namespace DepictionEngine
             set => SetValue(nameof(minElevation), value, ref _minElevation);
         }
 
-        public int rgbComponentOffset
+        /// <summary>
+        /// The texture includes a 1-pixel buffer around the edges to enable adjacent tile interpolation.
+        /// </summary>
+        [Json]
+        public bool pixelBuffer
         {
-            get => _rgbComponentOffset;
-            set
-            {
-                if (_rgbComponentOffset == value)
-                    return;
+            get => _pixelBuffer;
+            set => SetValue(nameof(pixelBuffer), value, ref _pixelBuffer);
+        }
 
-                _rgbComponentOffset = value;
-            }
+        protected override void SetData(Texture2D texture, InitializationContext initializingContext = InitializationContext.Programmatically)
+        {
+            //A temporary solution used to convert the sRGB textures produced by the DownloadHandlerTexture, until Unity adds parameters to let us specify the colorSpace to create linear textures.
+            if (texture.isDataSRGB)
+                base.SetData(texture.GetRawTextureData<Color32>(), texture.width, texture.height, texture.format, texture.mipmapCount, true, initializingContext);
+            else
+                base.SetData(texture, initializingContext);
         }
 
         public static float GetMinElevationFromDataType(LoaderBase.DataType dataType)
         {
             return dataType == LoaderBase.DataType.ElevationTerrainRGBPngRaw || dataType == LoaderBase.DataType.ElevationTerrainRGBWebP ? RGB_TERRAIN_MIN_ELEVATION : MIN_ELEVATION;
-        }
-
-        public static int GetRGBComponentOffsetFromDataType(LoaderBase.DataType dataType)
-        {
-            return dataType == LoaderBase.DataType.ElevationEsriLimitedErrorRasterCompression || dataType == LoaderBase.DataType.ElevationTerrainRGBPngRaw ? 1 : 0;
         }
 
         protected override bool IsTextureDataType(LoaderBase.DataType dataType)
@@ -193,8 +174,6 @@ namespace DepictionEngine
             base.SetData(value, dataType, initializingContext);
 
             minElevation = GetMinElevationFromDataType(dataType);
-
-            rgbComponentOffset = GetRGBComponentOffsetFromDataType(dataType);
         }
 
         protected override object ProcessDataBytes(byte[] value, LoaderBase.DataType dataType)
@@ -222,26 +201,38 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float GetElevation(float x, float y, bool clamp = false)
+        public bool GetElevation(Vector2Int pixel, out float elevation)
         {
             try
             {
-                if (_elevation != null && _elevation.Length > 0)
+                if (_elevation != null)
                 {
-                    Vector2Int pixel = GetPixelFromNormalized(x, y, clamp, xFlip, yFlip);
-
                     int startIndex = (pixel.y * width + pixel.x) * 4;
 
-                    startIndex += rgbComponentOffset;
+                    if (format == TextureFormat.ARGB32)
+                        startIndex += 1;
 
-                    return ElevationUtility.DecodeToFloat(_elevation[startIndex], _elevation[startIndex + 1], _elevation[startIndex + 2], _minElevation) * _elevationMultiplier;
+                    elevation = ElevationUtility.DecodeToFloat(_elevation[startIndex], _elevation[startIndex + 1], _elevation[startIndex + 2], _minElevation) * _elevationMultiplier;
+                    return true;
                 }
             }
             catch (IndexOutOfRangeException e)
             {
                 Debug.LogError(e.Message);
             }
-            return 0.0f;
+
+            elevation = 0.0f;
+            return false;
+        }
+
+        public override Vector2Int GetPixelFromNormalizedCoordinate(Vector2 normalizedCoordinate)
+        {
+            if (pixelBuffer)
+            {
+                normalizedCoordinate.x = normalizedCoordinate.x * (width - 2) / width + 1.0f / width;
+                normalizedCoordinate.y = normalizedCoordinate.y * (height - 2) / height + 1.0f / height;
+            }
+            return base.GetPixelFromNormalizedCoordinate(normalizedCoordinate);
         }
 
         private static PropertyModifier GetProceduralPropertyModifier(PropertyModifierParameters parameters)
@@ -271,32 +262,28 @@ namespace DepictionEngine
     public class ElevationModifier : TextureModifier
     {
         private float _minElevation;
-        private int _rgbComponentOffset;
 
         public override void Recycle()
         {
             base.Recycle();
 
             _minElevation = default;
-            _rgbComponentOffset = default;
         }
 
-        public ElevationModifier Init(float minElevation, int rgbComponentOffset, Texture2D texture)
+        public ElevationModifier Init(float minElevation, Texture2D texture)
         {
             base.Init(texture);
 
             _minElevation = minElevation;
-            _rgbComponentOffset = rgbComponentOffset;
 
             return this;
         }
 
-        public ElevationModifier Init(float minElevation, int rgbComponentOffset, byte[] textureData, bool isRawTextureData = false, int width = 0, int height = 0, TextureFormat format = TextureFormat.RGBA32, bool linear = true)
+        public ElevationModifier Init(float minElevation, byte[] textureData, bool isRawTextureData = false, int width = 0, int height = 0, TextureFormat format = TextureFormat.RGBA32, bool linear = true)
         {
             base.Init(textureData, isRawTextureData, width, height, format, 1, linear);
 
             _minElevation = minElevation;
-            _rgbComponentOffset = rgbComponentOffset;
 
             return this;
         }
@@ -310,7 +297,6 @@ namespace DepictionEngine
                 Elevation elevation = scriptableBehaviour as Elevation;
 
                 elevation.minElevation = _minElevation;
-                elevation.rgbComponentOffset = _rgbComponentOffset;
             }
         }
     }

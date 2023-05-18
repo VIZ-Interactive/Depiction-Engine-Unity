@@ -202,8 +202,8 @@ namespace DepictionEngine
 
         public List<ResultData> resultsData
         {
-            get { return _resultsData; }
-            private set { _resultsData = value; }
+            get => _resultsData;
+            private set => _resultsData = value;
         }
 
         public void Add(ResultData responseData)
@@ -274,32 +274,32 @@ namespace DepictionEngine
 
         public Type type
         {
-            get { return _type; }
+            get => _type;
         }
 
         public JSONObject jsonResult
         {
-            get { return _jsonResult; }
+            get => _jsonResult;
         }
 
         public JSONObject jsonFallback
         {
-            get { return _jsonFallback; }
+            get => _jsonFallback;
         }
 
         public SerializableGuid persistentFallbackValuesId
         {
-            get { return _persistentFallbackValuesId; }
+            get => _persistentFallbackValuesId;
         }
 
         public List<PropertyModifier> propertyModifiers
         {
-            get { return _propertyModifiers; }
+            get => _propertyModifiers;
         }
 
         public List<LoadResultData> children
         {
-            get { return _children; }
+            get => _children;
         }
 
         public override bool OnDispose(DisposeContext disposeContext)
@@ -343,7 +343,7 @@ namespace DepictionEngine
 
         public JSONNode json
         {
-            get { return _json; }
+            get => _json;
         }
     }
 
@@ -360,7 +360,7 @@ namespace DepictionEngine
 
         public SerializableGuid id
         {
-            get { return _id; }
+            get => _id;
         }
     }
 

@@ -8,7 +8,7 @@ using UnityEngine;
 namespace DepictionEngine.Editor
 {
     [CustomEditor(typeof(Label), true)]
-    public class LabelEditor : EditorBase
+    public class LabelEditor : InspectorBase
     {
         protected override void OnSceneGUI()
         {

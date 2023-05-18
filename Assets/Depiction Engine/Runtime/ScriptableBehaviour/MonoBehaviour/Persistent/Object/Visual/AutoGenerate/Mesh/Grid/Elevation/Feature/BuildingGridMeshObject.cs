@@ -135,6 +135,18 @@ namespace DepictionEngine
             return false;
         }
 
+        protected override bool SetPopupT(float value)
+        {
+            if (base.SetPopupT(value))
+            {
+                if (initialized)
+                    UpdateChildrenMeshRendererVisualLocalScale();
+
+                return true;
+            }
+            return false;
+        }
+
         /// <summary>
         /// A fallback color value used by the parser if no other value are present in the feature. 
         /// </summary>
@@ -545,8 +557,7 @@ namespace DepictionEngine
                             uvTilePerUnit *= scale;
 
                             //Add Elevation
-                            double elevation = 0.0d;
-                            if (GetElevation(parameters, new Vector3Double(vectorGeometry.center.x, 0.0d, -vectorGeometry.center.y), ref elevation))
+                            if (GetElevation(parameters, new Vector3Double(vectorGeometry.center.x, 0.0d, -vectorGeometry.center.y), out float elevation))
                             {
                                 float elevationDelta = (float)(elevation - parameters.centerElevation);
 

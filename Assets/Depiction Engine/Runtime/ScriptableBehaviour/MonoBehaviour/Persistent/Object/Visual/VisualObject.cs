@@ -170,24 +170,9 @@ namespace DepictionEngine
             return true;
         }
 
-        protected virtual bool GetDefaultDontSaveVisualsToScene()
-        {
-            return false;
-        }
-
         protected virtual float GetDefaultAlpha()
         {
             return 1.0f;
-        }
-
-        protected virtual PopupType GetDefaultPopupType()
-        {
-            return PopupType.Alpha;
-        }
-
-        protected virtual float GetDefaultPopupDuration()
-        {
-            return 0.2f;
         }
 
         protected List<MeshRenderer> managedMeshRenderers
@@ -215,8 +200,8 @@ namespace DepictionEngine
 #endif
         public float alpha
         {
-            get { return _alpha; }
-            set { SetAlpha(value); }
+            get => _alpha;
+            set => SetAlpha(value);
         }
 
         protected virtual bool SetAlpha(float value)
@@ -273,13 +258,13 @@ namespace DepictionEngine
 
                     //materialPropertyBlock = this.materialPropertyBlock;
 
-                    if (materialPropertyBlock != null)
-                        meshRenderer.GetPropertyBlock(materialPropertyBlock);
+                    //if (materialPropertyBlock != null)
+                    //    meshRenderer.GetPropertyBlock(materialPropertyBlock);
 
                     callback(materialPropertyBlock, meshRenderer);
 
-                    if (materialPropertyBlock != null)
-                        meshRenderer.SetPropertyBlock(materialPropertyBlock);
+                    //if (materialPropertyBlock != null)
+                    //    meshRenderer.SetPropertyBlock(materialPropertyBlock);
                 }
             }
         }
@@ -346,13 +331,13 @@ namespace DepictionEngine
 
                         //materialPropertyBlock = this.materialPropertyBlock;
 
-                        if (materialPropertyBlock != null)
-                            meshRenderer.GetPropertyBlock(materialPropertyBlock);
+                        //if (materialPropertyBlock != null)
+                        //    meshRenderer.GetPropertyBlock(materialPropertyBlock);
 
                         ApplyReflectionTextureToMaterial(meshRenderer, meshRenderer.sharedMaterial, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, rttCamera, context);
 
-                        if (materialPropertyBlock != null)
-                            meshRenderer.SetPropertyBlock(materialPropertyBlock);
+                        //if (materialPropertyBlock != null)
+                        //    meshRenderer.SetPropertyBlock(materialPropertyBlock);
                     }
                 }
             }
@@ -389,9 +374,14 @@ namespace DepictionEngine
             return !afterRendering && CameraIsMasked(camera);
         }
 
-        protected virtual Vector3Double GetClosestGeoAstroObjectCenterOS(GeoAstroObject closestGeoAstroObject)
+        protected Vector3Double GetClosestGeoAstroObjectCenterOS(GeoAstroObject closestGeoAstroObject)
         {
-            return transform.InverseTransformPoint(closestGeoAstroObject.transform.position);
+            return transform.InverseTransformPoint(closestGeoAstroObject.transform.position) / GetMeshRendererVisualLocalScale();
+        }
+
+        protected virtual Vector3 GetMeshRendererVisualLocalScale()
+        {
+            return Vector3.one;
         }
 
         public void ApplyCameraMaskLayerToVisuals(Camera camera = null, bool afterRendering = false)
@@ -489,6 +479,7 @@ namespace DepictionEngine
         {
             Vector3Double closestGeoAstroObjectSurfacePointWS = Vector3Double.zero;
             Vector3Double closestGeoAstroObjectCenterOS = Vector3Double.zero;
+            Vector3Double closestGeoAstroObjectCenterOS2 = Vector3Double.zero;
             Vector3Double closestGeoAstroObjectCenterWS = Vector3Double.zero;
 
             Vector3Double shadowPositionWS = new(0.0d, -10000000000000000.0d, 0.0d);
@@ -497,54 +488,59 @@ namespace DepictionEngine
 
             float tileSizeLatitudeFactor = 1.0f;
 
-            float sphericalRatio = 0.0f;
-
             float radius = 0.0f;
 
-            if (closestGeoAstroObject != Disposable.NULL && (closestGeoAstroObject.IsValidSphericalRatio()) && star != Disposable.NULL)
+            bool closestGeoAstroObjectIsNotNull = closestGeoAstroObject != Disposable.NULL;
+
+            if (closestGeoAstroObjectIsNotNull && closestGeoAstroObject.IsValidSphericalRatio())
             {
                 if (closestGeoAstroObject.IsSpherical())
                     tileSizeLatitudeFactor = (float)(1.0d / Math.Cos(MathPlus.DEG2RAD * transform.GetGeoCoordinate().latitude));
 
-                sphericalRatio = closestGeoAstroObject.GetSphericalRatio();
                 radius = (float)closestGeoAstroObject.GetScaledRadius();
 
                 closestGeoAstroObjectSurfacePointWS = closestGeoAstroObject.GetSurfacePointFromPoint(transform.position);
                 closestGeoAstroObjectCenterOS = GetClosestGeoAstroObjectCenterOS(closestGeoAstroObject);
+                closestGeoAstroObjectCenterOS2 = closestGeoAstroObjectCenterOS.normalized * (500000.0f / GetMeshRendererVisualLocalScale().y);
+
                 closestGeoAstroObjectCenterWS = closestGeoAstroObject.transform.position;
 
-                Vector3Double starPosition = star.transform.position;
-
-                Vector3Double upVector = closestGeoAstroObject.GetUpVectorFromPoint(closestGeoAstroObjectSurfacePointWS) * Vector3Double.up;
-                Vector3Double forwardVector = (starPosition - closestGeoAstroObjectCenterWS).normalized;
-
-                Vector3Double surfacePoint;
-
-                Vector3Double edgePosition;
-                if (closestGeoAstroObject.IsSpherical())
+                if (star != Disposable.NULL)
                 {
-                    surfacePoint = closestGeoAstroObjectSurfacePointWS;
-                    edgePosition = QuaternionDouble.LookRotation(forwardVector, upVector) * Vector3Double.up * closestGeoAstroObject.radius;
-                }
-                else
-                {
-                    surfacePoint = closestGeoAstroObjectCenterWS;
-                    edgePosition = QuaternionDouble.LookRotation(upVector, forwardVector) * Vector3Double.up * closestGeoAstroObject.size / 2.0d;
-                }
-                edgePosition += closestGeoAstroObjectCenterWS;
+                    Vector3Double starPosition = star.transform.position;
 
-                _shadowRay ??= new RayDouble();
-                _shadowRay.Init(starPosition, (edgePosition - starPosition).normalized);
+                    Vector3Double upVector = closestGeoAstroObject.GetUpVectorFromPoint(closestGeoAstroObjectSurfacePointWS) * Vector3Double.up;
+                    Vector3Double forwardVector = (starPosition - closestGeoAstroObjectCenterWS).normalized;
 
-                if (Vector3Double.Dot(upVector, forwardVector) <= 0.0d && MathGeometry.LinePlaneIntersection(out Vector3Double intersection, surfacePoint, QuaternionDouble.LookRotation(upVector, (surfacePoint - starPosition).normalized) * QuaternionDouble.Euler(90.0d, 0.0d, 0.0d) * Vector3Double.forward, _shadowRay, false))
-                {
-                    shadowPositionWS = intersection;
-                    shadowDirectionWS = closestGeoAstroObject.GetUpVectorFromPoint(edgePosition);
+                    Vector3Double surfacePoint;
+
+                    Vector3Double edgePosition;
+                    if (closestGeoAstroObject.IsSpherical())
+                    {
+                        surfacePoint = closestGeoAstroObjectSurfacePointWS;
+                        edgePosition = QuaternionDouble.LookRotation(forwardVector, upVector) * Vector3Double.up * closestGeoAstroObject.radius;
+                    }
+                    else
+                    {
+                        surfacePoint = closestGeoAstroObjectCenterWS;
+                        edgePosition = QuaternionDouble.LookRotation(upVector, forwardVector) * Vector3Double.up * closestGeoAstroObject.size / 2.0d;
+                    }
+                    edgePosition += closestGeoAstroObjectCenterWS;
+
+                    _shadowRay ??= new RayDouble();
+                    _shadowRay.Init(starPosition, (edgePosition - starPosition).normalized);
+
+                    if (Vector3Double.Dot(upVector, forwardVector) <= 0.0d && MathGeometry.LinePlaneIntersection(out Vector3Double intersection, surfacePoint, QuaternionDouble.LookRotation(upVector, (surfacePoint - starPosition).normalized) * QuaternionDouble.Euler(90.0d, 0.0d, 0.0d) * Vector3Double.forward, _shadowRay, false))
+                    {
+                        shadowPositionWS = intersection;
+                        shadowDirectionWS = closestGeoAstroObject.GetUpVectorFromPoint(edgePosition);
+                    }
                 }
             }
 
             SetVectorToMaterial("_ClosestGeoAstroObjectSurfacePointWS", TransformDouble.SubtractOrigin(closestGeoAstroObjectSurfacePointWS), material, materialPropertyBlock);
             SetVectorToMaterial("_ClosestGeoAstroObjectCenterOS", closestGeoAstroObjectCenterOS, material, materialPropertyBlock);
+            SetVectorToMaterial("_ClosestGeoAstroObjectCenterOS2", closestGeoAstroObjectCenterOS2, material, materialPropertyBlock);
             SetVectorToMaterial("_ClosestGeoAstroObjectCenterWS", TransformDouble.SubtractOrigin(closestGeoAstroObjectCenterWS), material, materialPropertyBlock);
 
             Vector3Double mainLightPositionWS = star != Disposable.NULL ? star.transform.position : Vector3Double.zero;
@@ -556,11 +552,12 @@ namespace DepictionEngine
            
             SetFloatToMaterial("_CameraAtmosphereAltitudeRatio", (float)cameraAtmosphereAltitudeRatio, material, materialPropertyBlock);
 
-            //The zero check prevents a weird Shadow flickering bug when the star is almost perpendicular to the surface
-            SetFloatToMaterial("_SphericalRatio", sphericalRatio == 0.0f ? 0.00000000000000001f : sphericalRatio, material, materialPropertyBlock);
+            SetFloatToMaterial("_SphericalRatio", closestGeoAstroObjectIsNotNull ? closestGeoAstroObject.GetSphericalRatio() : 0.0f, material, materialPropertyBlock);
   
             SetFloatToMaterial("_Radius", radius, material, materialPropertyBlock);
-  
+          
+            SetFloatToMaterial("_Altitude", (float)(transform.GetGeoCoordinate().altitude / GetMeshRendererVisualLocalScale().y), material, materialPropertyBlock);
+
             SetFloatToMaterial("_TileSizeLatitudeFactor", tileSizeLatitudeFactor, material, materialPropertyBlock);
         }
 

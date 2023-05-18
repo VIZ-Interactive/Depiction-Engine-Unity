@@ -270,7 +270,7 @@ namespace DepictionEngine
 
             public AssetBase asset
             {
-                get { return _asset; }
+                get => _asset;
             }
         }
 
@@ -309,8 +309,7 @@ namespace DepictionEngine
                                 Vector3 point = parameters.TransformGeoCoordinateToVector(geoCoordinate.latitude, geoCoordinate.longitude);
 
                                 float elevationDelta = 0.0f;
-                                double elevation = 0.0d;
-                                if (GetElevation(parameters, point, ref elevation))
+                                if (GetElevation(parameters, point, out float elevation))
                                     elevationDelta = (float)(elevation - parameters.centerElevation);
 
                                 for (int e = 0; e < vertices.Count; e++)

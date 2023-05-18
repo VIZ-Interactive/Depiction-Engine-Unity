@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI;
 
 namespace DepictionEngine
 {
@@ -12,7 +13,7 @@ namespace DepictionEngine
 
         [BeginFoldout("Altitude")]
         [SerializeField, Tooltip("The altitude at which the object should be positioned."), EndFoldout]
-        private double _altitudeOffset;
+        private float _altitudeOffset;
 
         [BeginFoldout("Grid 2D")]
         [SerializeField, Tooltip("The horizontal and vertical size of the grid.")]
@@ -44,8 +45,19 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => altitudeOffset = value, 0.0d, initializingContext);
+            InitValue(value => altitudeOffset = value, 0.0f, initializingContext);
             InitValue(value => grid2DDimensions = value, Vector2Int.one, initializingContext);
+        }
+
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
+
+            UpdateReferenceDataIndex2D();
+
+            UpdateMeshRendererVisualLocalScale();
+
+            UpdateChildrenMeshRendererVisualLocalScale();
         }
 
         protected override bool UpdateAllDelegates()
@@ -66,6 +78,17 @@ namespace DepictionEngine
             SceneManager.LeftMouseUpInSceneOrInspectorEvent -= LeftMouseUpInSceneOrInspectorHandler;
             if (isBeingMovedByUser && !IsDisposing())
                 SceneManager.LeftMouseUpInSceneOrInspectorEvent += LeftMouseUpInSceneOrInspectorHandler;
+        }
+
+        protected override void ParentGeoAstroObjectPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
+        {
+            base.ParentGeoAstroObjectPropertyAssignedHandler(property, name, newValue, oldValue);
+
+            if (initialized)
+            {
+                if (name == nameof(GeoAstroObject.size) || name == nameof(GeoAstroObject.sphericalRatio))
+                    UpdateMeshRendererVisualLocalScale();
+            }
         }
 
         private void LeftMouseUpInSceneOrInspectorHandler()
@@ -129,13 +152,6 @@ namespace DepictionEngine
                 UpdateReferenceDataIndex2D();
         }
 
-        public override void Initialized(InitializationContext initializingContext)
-        {
-            base.Initialized(initializingContext);
-
-            UpdateReferenceDataIndex2D();
-        }
-
         public bool IsGridIndexValid()
         {
             return transform != Disposable.NULL && transform.parentGeoAstroObject != Disposable.NULL;
@@ -148,7 +164,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         [RecordAdditionalObjects(nameof(GetTransformAdditionalRecordObjects))]
 #endif
-        public double altitudeOffset
+        public float altitudeOffset
         {
             get => _altitudeOffset;
             set
@@ -156,6 +172,9 @@ namespace DepictionEngine
                 SetValue(nameof(altitudeOffset), value, ref _altitudeOffset, (newValue, oldValue) =>
                 {
                     ForceUpdateTransform(true);
+
+                    if (initialized)
+                        UpdateMeshRendererVisualLocalScale();
                 });
             }
         }
@@ -180,6 +199,9 @@ namespace DepictionEngine
                 {
                     if (!UpdateGridIndex() && initialized)
                         ForceUpdateTransform(true, true);
+
+                    if (initialized)
+                        UpdateMeshRendererVisualLocalScale();
                 });
             }
         }
@@ -275,8 +297,12 @@ namespace DepictionEngine
 
         protected double size
         {
-            get => _size;
-            private set { SetValue(nameof(size), value, ref _size); }
+            get => parentGeoAstroObject != Disposable.NULL ? parentGeoAstroObject.size : 100.0f;
+        }
+
+        protected virtual float GetSphericalRatio()
+        {
+            return parentGeoAstroObject != Disposable.NULL ? parentGeoAstroObject.sphericalRatio : -1.0f;
         }
 
         public bool IsValidSphericalRatio()
@@ -286,29 +312,30 @@ namespace DepictionEngine
 
         protected bool IsSpherical()
         {
-            return sphericalRatio == 1.0f;
+            return GetSphericalRatio() == 1.0f;
         }
 
         protected bool IsFlat()
         {
-            return sphericalRatio == 0.0f;
+            return GetSphericalRatio() == 0.0f;
         }
 
-        protected float sphericalRatio
+        protected override Vector3 GetMeshRendererVisualLocalScale()
         {
-            get => _sphericalRatio;
-            private set { SetValue(nameof(sphericalRatio), value, ref _sphericalRatio); }
+            return meshRendererVisualLocalScale;
         }
 
         protected Vector3 meshRendererVisualLocalScale
         {
             get => _meshRendererVisualLocalScale;
-            private set { SetValue(nameof(meshRendererVisualLocalScale), value, ref _meshRendererVisualLocalScale); }
-        }
-
-        protected override Vector3Double GetClosestGeoAstroObjectCenterOS(GeoAstroObject closestGeoAstroObject)
-        {
-            return base.GetClosestGeoAstroObjectCenterOS(closestGeoAstroObject) / meshRendererVisualLocalScale;
+            private set 
+            { 
+                SetValue(nameof(meshRendererVisualLocalScale), value, ref _meshRendererVisualLocalScale, (newValue, oldValue) => 
+                {
+                    if (initialized)
+                        UpdateChildrenMeshRendererVisualLocalScale();
+                }); 
+            }
         }
 
         protected virtual double GetAltitude(bool addOffset = true)
@@ -319,11 +346,6 @@ namespace DepictionEngine
         public static double GetScale(double size, Vector2Int grid2DDimensions)
         {
             return size / grid2DDimensions.y;
-        }
-
-        protected virtual Vector3 GetMeshRendererVisualLocalScale()
-        {
-            return meshRendererVisualLocalScale;
         }
 
         protected virtual Color GetColor()
@@ -342,30 +364,25 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Color GetTexturePixel(Texture texture, float x, float y)
+        public bool GetTexturePixel(Texture texture, Vector2 normalizedCoordinate, out Color color)
         {
-            Color value = Color.clear;
-
             if (texture != Disposable.NULL)
-            {
-                Vector2 pixel = GetProjectedPixel(texture, x, y);
+                return texture.GetPixel(texture.GetPixelFromNormalizedCoordinate(GetProjectedNormalizedCoordinate(this, texture, normalizedCoordinate)), out color);
 
-                value = texture.GetPixel(pixel.x, pixel.y);
-            }
-
-            return value;
+            color = Color.clear;
+            return false;
         }
 
-        protected Vector2 GetProjectedPixel(Texture texture, float x, float y)
+        public static Vector2 GetProjectedNormalizedCoordinate(IGrid2DIndex iGrid2DIndex,Texture texture, Vector2 normalizedCoordinate)
         {
-            if (grid2DDimensions != texture.grid2DDimensions)
+            if (iGrid2DIndex.grid2DDimensions != texture.grid2DDimensions)
             {
-                Vector2 projectedGrid2DIndex = MathPlus.ProjectGrid2DIndex(x, y, grid2DIndex, grid2DDimensions, texture.grid2DIndex, texture.grid2DDimensions);
-                x = projectedGrid2DIndex.x;
-                y = projectedGrid2DIndex.y;
+                Vector2 projectedGrid2DIndex = MathPlus.ProjectGrid2DIndex(normalizedCoordinate.x, normalizedCoordinate.y, iGrid2DIndex.grid2DIndex, iGrid2DIndex.grid2DDimensions, texture.grid2DIndex, texture.grid2DDimensions);
+                normalizedCoordinate.x = projectedGrid2DIndex.x;
+                normalizedCoordinate.y = projectedGrid2DIndex.y;
             }
 
-            return new Vector2(x, y);
+            return normalizedCoordinate;
         }
 
         public static bool operator <(Grid2DMeshObjectBase a, Grid2DMeshObjectBase b)
@@ -448,26 +465,17 @@ namespace DepictionEngine
         {
             base.UpdateVisualProperties();
 
-            bool parentGeoAstroObjectNotNull = parentGeoAstroObject != Disposable.NULL;
-
-            size = parentGeoAstroObjectNotNull ? parentGeoAstroObject.size : 100.0d;
-
-            bool transformDirty = PropertyDirty(nameof(transform));
-
-            if (transformDirty || PropertyDirty(nameof(parentGeoAstroObject)) || (parentGeoAstroObjectNotNull && parentGeoAstroObject.PropertyDirty(nameof(sphericalRatio))))
-                sphericalRatio = parentGeoAstroObjectNotNull ? parentGeoAstroObject.GetSphericalRatio() : 0.0f;
-
             UpdateAltitudeOffset();
+        }
 
-            if (transformDirty || PropertyDirty(nameof(size)) || PropertyDirty(nameof(sphericalRatio)) || PropertyDirty(nameof(altitudeOffset)) || PropertyDirty(nameof(grid2DDimensions)))
-            {
-                double altitudeScale = 1.0d;
+        private void UpdateMeshRendererVisualLocalScale()
+        {
+            double altitudeScale = 1.0d;
 
-                if (parentGeoAstroObject != Disposable.NULL && parentGeoAstroObject.IsSpherical())
-                    altitudeScale = (parentGeoAstroObject.radius + altitudeOffset) / parentGeoAstroObject.radius;
+            if (parentGeoAstroObject != Disposable.NULL && parentGeoAstroObject.IsSpherical())
+                altitudeScale = (parentGeoAstroObject.radius + altitudeOffset) / parentGeoAstroObject.radius;
 
-                meshRendererVisualLocalScale = Vector3.one * (float)(size / grid2DDimensions.y * altitudeScale);
-            }
+            meshRendererVisualLocalScale = Vector3.one * (float)(size / grid2DDimensions.y * altitudeScale);
         }
 
         protected override Type GetMeshRendererVisualDirtyFlagType()
@@ -511,26 +519,24 @@ namespace DepictionEngine
         {
             base.ApplyPropertiesToVisual(visualsChanged, meshRendererVisualDirtyFlags);
 
-            if (visualsChanged || PropertyDirty(nameof(size)) || PropertyDirty(nameof(meshRendererVisualLocalScale)) || PropertyDirty(nameof(popupT)))
+            if (visualsChanged)
+                UpdateChildrenMeshRendererVisualLocalScale();
+        }
+
+        protected void UpdateChildrenMeshRendererVisualLocalScale()
+        {
+            transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
             {
-                transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
-                { 
-                    Vector3 meshRendererVisualLocalScale = GetMeshRendererVisualLocalScale();
-                    if (meshRendererVisualLocalScale != Vector3.zero)
-                        meshRendererVisual.transform.localScale = meshRendererVisualLocalScale;
-                    return true;
-                });
-            }
+                Vector3 meshRendererVisualLocalScale = GetMeshRendererVisualLocalScale();
+                if (meshRendererVisualLocalScale != Vector3.zero)
+                    meshRendererVisual.transform.localScale = meshRendererVisualLocalScale;
+                return true;
+            });
         }
 
         protected virtual void UpdateAltitudeOffset()
         {
             
-        }
-
-        protected virtual float GetSphericalRatio()
-        {
-            return sphericalRatio;
         }
 
         protected virtual bool GetFlipTriangles()
@@ -562,6 +568,13 @@ namespace DepictionEngine
             SetColorToMaterial("_Color", GetColor(), material, materialPropertyBlock);
             SetTextureToMaterial("_ColorMap", GetColorMap(), Texture2D.blackTexture, material, materialPropertyBlock);
             SetTextureToMaterial("_AdditionalMap", GetAdditionalMap(), Texture2D.whiteTexture, material, materialPropertyBlock);
+
+            float radius = 0.0f;
+
+            if (closestGeoAstroObject != Disposable.NULL && closestGeoAstroObject.IsValidSphericalRatio() && star != Disposable.NULL)
+                radius = (float)closestGeoAstroObject.GetScaledRadius();
+
+            SetFloatToMaterial("_Radius2", radius / meshRendererVisualLocalScale.y, material, materialPropertyBlock);
         }
 
         public override bool OnDispose(DisposeContext disposeContext)
@@ -576,7 +589,7 @@ namespace DepictionEngine
             return false;
         }
 
-        protected class Grid2DMeshObjectParameters : ProcessorParameters
+        protected class Grid2DMeshObjectParameters : ProcessorParameters, IGrid2DIndex
         {
             private double _size;
             private Vector2Int _grid2DDimensions;
@@ -632,11 +645,11 @@ namespace DepictionEngine
 
                 GeoCoordinate3Double centerGeoCoordinate = MathPlus.GetGeoCoordinate3FromIndex(new Vector2Double(_grid2DIndex.x + 0.5d, _grid2DIndex.y + 0.5d), grid2DDimensions);
                 if (UseAltitude())
-                    centerGeoCoordinate.altitude = altitude * _inverseScale;
+                    centerGeoCoordinate.altitude = altitude;
 
-                _centerPoint = MathPlus.GetLocalPointFromGeoCoordinate(centerGeoCoordinate, _sphericalRatio, _normalizedRadiusSize, _normalizedCircumferenceSize);
+                _centerPoint = MathPlus.GetLocalPointFromGeoCoordinate(centerGeoCoordinate, _sphericalRatio, MathPlus.GetRadiusFromCircumference(_size), _size);
                 _centerRotation = MathPlus.GetUpVectorFromGeoCoordinate(centerGeoCoordinate, _sphericalRatio);
-                _inverseCenterRotation = Quaternion.Inverse(_centerRotation);
+                _inverseCenterRotation = QuaternionDouble.Inverse(_centerRotation);
 
                 _flipTriangles = flipTriangles;
 
@@ -708,22 +721,16 @@ namespace DepictionEngine
                 get => _flipTriangles;
             }
 
-            public virtual bool GetElevation(out double value, float x, float y, bool clamp = false)
+            public bool IsGridIndexValid()
             {
-                value = 0;
-                return false;
-            }
-
-            public virtual double GetElevation(float x, float y, bool clamp = false)
-            {
-                return 0;
+                return true;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Vector3Double TransformGeoCoordinateToVector(double latitude, double longitude, double altitude = 0.0d)
             {
-                Vector3Double point = MathPlus.GetLocalPointFromGeoCoordinate(new GeoCoordinate3Double(latitude, longitude, altitude), _sphericalRatio, _normalizedRadiusSize, _normalizedCircumferenceSize);
-                Vector3 vector = _inverseCenterRotation * (point - _centerPoint);
+                Vector3Double point = MathPlus.GetLocalPointFromGeoCoordinate(new GeoCoordinate3Double(latitude, longitude, altitude), _sphericalRatio, MathPlus.GetRadiusFromCircumference(_size), _size);
+                Vector3 vector = _inverseCenterRotation * (point - _centerPoint) * _inverseScale;
                 vector.y *= _inverseHeightScale;
                 return vector;
             }

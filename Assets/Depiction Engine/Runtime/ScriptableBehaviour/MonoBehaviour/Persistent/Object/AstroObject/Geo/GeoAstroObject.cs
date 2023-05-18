@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Rendering;
+using static UnityEngine.Rendering.DebugUI;
 
 namespace DepictionEngine
 {
@@ -433,7 +434,7 @@ namespace DepictionEngine
         /// <param name="fallbackToRaycast">When true, a second attempt at getting an elevation value will be made using raycast if an elevation texture is not present.</param>
         /// <returns>True if a valid elevation value was calculated.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool GetGeoCoordinateElevation(out double elevation, GeoCoordinate3Double geoCoordinate, Camera camera = null, bool raycast = false)
+        public bool GetGeoCoordinateElevation(out float elevation, GeoCoordinate3Double geoCoordinate, Camera camera = null, bool raycast = false)
         {
             Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject = GetGrid2DIndexTerrainGridMeshObjectFromGeoCoordinate(geoCoordinate, camera);
 
@@ -519,7 +520,7 @@ namespace DepictionEngine
         public double radius
         {
             get => _radius;
-            private set { SetValue(nameof(radius), value, ref _radius); }
+            private set => SetValue(nameof(radius), value, ref _radius);
         }
 
         public double GetScaledSize()
@@ -553,7 +554,7 @@ namespace DepictionEngine
         public float sphericalDuration
         {
             get => _sphericalDuration;
-            set { SetValue(nameof(sphericalDuration), value, ref _sphericalDuration); }
+            set => SetValue(nameof(sphericalDuration), value, ref _sphericalDuration);
         }
 
         /// <summary>
@@ -563,7 +564,7 @@ namespace DepictionEngine
         public bool spherical
         {
             get => _spherical;
-            set { SetSpherical(value); }
+            set => SetSpherical(value);
         }
 
         public void SetSpherical(bool value, bool animate = true)
@@ -584,13 +585,13 @@ namespace DepictionEngine
         public bool reflectionProbe
         {
             get => _reflectionProbe;
-            set { SetValue(nameof(reflectionProbe), value, ref _reflectionProbe); }
+            set => SetValue(nameof(reflectionProbe), value, ref _reflectionProbe);
         }
 
         public float sphericalRatio
         {
             get => _sphericalRatio;
-            private set { SetValue(nameof(sphericalRatio), value, ref _sphericalRatio); }
+            private set => SetValue(nameof(sphericalRatio), value, ref _sphericalRatio);
         }
 
         private Tween sphericalRatioTween
@@ -1069,7 +1070,7 @@ namespace DepictionEngine
             return alpha;
         }
 
-        public bool GetGeoCoordinateElevation(out double elevation, GeoCoordinate3Double geoCoordinate, Camera camera = null, bool raycast = false)
+        public bool GetGeoCoordinateElevation(out float elevation, GeoCoordinate3Double geoCoordinate, Camera camera = null, bool raycast = false)
         {
             TerrainGridMeshObject terrainGridMeshObject = GetHighestSubdivisionTerrainGridMeshObject(camera);
 

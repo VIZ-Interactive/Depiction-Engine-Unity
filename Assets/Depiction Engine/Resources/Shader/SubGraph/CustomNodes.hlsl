@@ -118,12 +118,12 @@ void DivideZeroSafe_half(float A, float B, out float Out)
 
 void ElevationFromRGBTerrain_float(float3 RGB, float minElevation, out float Out)
 {
-	Out = minElevation + ((RGB.x * 255 * 65536.0 + RGB.y * 255 * 256 + RGB.z * 255) * 0.1);
+	Out = minElevation + (RGB.x * 255 * 65536.0 + RGB.y * 255 * 256 + RGB.z * 255) * 0.1;
 }
 
 void ElevationFromRGBTerrain_half(half3 RGB, float minElevation, out half Out)
 {
-	Out = minElevation + ((RGB.x * 255 * 65536.0 + RGB.y * 255 * 256 + RGB.z * 255) * 0.1);
+	Out = minElevation + (RGB.x * 255 * 65536.0 + RGB.y * 255 * 256 + RGB.z * 255) * 0.1;
 }
 
 void SharpenSampleTexture2D_float(UnityTexture2D Texture, float2 UV, SamplerState Sampler, float SharpenFactor, out float4 RGBA)
@@ -198,4 +198,42 @@ void CustomEffects_half(float4 worldPosition, out float4 color, out float alpha)
 
 		index += customEffectType == 0 ? 12 : 0;
 	}
+}
+
+void ProjectPositionToSphericalSurface_float(float3 Position, float Radius, float Altitude, out float3 Surface) 
+{
+	float distance = 0.0;
+
+	float3 downVector = float3(0.0, 0.0, 0.0);
+
+	float3 posRelativeCenter = float3(0.0f, -(Radius + Altitude), 0.0f) - Position;
+	//Normalize to get a downVector. Avoid using normalize() as it is not precise enough.
+	float num = sqrt(posRelativeCenter.x * posRelativeCenter.x + posRelativeCenter.y * posRelativeCenter.y + posRelativeCenter.z * posRelativeCenter.z);
+	if (num > 1E-05)
+		downVector = posRelativeCenter / num;
+
+	float denom = dot(float3(0.0, 1.0, 0.0), downVector);
+	if (abs(denom) > 0.0001)
+		distance = dot(float3(Position.x, Position.y - (-(1.0 + denom) * Radius - Altitude), Position.z), float3(0.0, -1.0, 0.0)) / denom;
+
+	Surface = Position + downVector * distance;
+}
+
+void ProjectPositionToSphericalSurface_half(float3 Position, float Radius, float Altitude, out float3 Surface)
+{
+	float distance = 0.0;
+
+	float3 downVector = float3(0.0, 0.0, 0.0);
+
+	float3 posRelativeCenter = float3(0.0f, -(Radius + Altitude), 0.0f) - Position;
+	//Normalize to get a downVector. Avoid using normalize() as it is not precise enough.
+	float num = sqrt(posRelativeCenter.x * posRelativeCenter.x + posRelativeCenter.y * posRelativeCenter.y + posRelativeCenter.z * posRelativeCenter.z);
+	if (num > 1E-05)
+		downVector = posRelativeCenter / num;
+
+	float denom = dot(float3(0.0, 1.0, 0.0), downVector);
+	if (abs(denom) > 0.0001)
+		distance = dot(float3(Position.x, Position.y - (-(1.0 + denom) * Radius - Altitude), Position.z), float3(0.0, -1.0, 0.0)) / denom;
+
+	Surface = Position + downVector * distance;
 }

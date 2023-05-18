@@ -737,17 +737,10 @@ namespace DepictionEngine
                 }
             }
 
-            protected static bool GetElevation(FeatureParameters parameters, Vector3Double center, ref double elevation)
+            protected static bool GetElevation(FeatureParameters parameters, Vector3Double center, out float elevation)
             {
-                if (parameters.elevation != null)
-                {
-                    Vector2Double centerIndex = MathPlus.GetIndexFromLocalPoint(parameters.centerPoint + (parameters.centerRotation * center), parameters.grid2DDimensions, parameters.sphericalRatio == 1.0f, parameters.normalizedRadiusSize, parameters.normalizedCircumferenceSize);
-                    elevation = parameters.GetElevation((float)(centerIndex.x - parameters.grid2DIndex.x), (float)(centerIndex.y - parameters.grid2DIndex.y), true);
-                    return true;
-                }
-
-                elevation = 0.0d;
-                return false;
+                Vector2Double centerIndex = MathPlus.GetIndexFromLocalPoint(parameters.centerPoint + (parameters.centerRotation * center), parameters.grid2DDimensions, parameters.sphericalRatio == 1.0f, parameters.normalizedRadiusSize, parameters.normalizedCircumferenceSize);
+                return parameters.GetElevation(new Vector2((float)centerIndex.x - parameters.grid2DIndex.x, (float)centerIndex.y - parameters.grid2DIndex.y), out elevation);
             }
         }
     }

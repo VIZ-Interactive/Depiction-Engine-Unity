@@ -821,7 +821,6 @@ namespace DepictionEngine.Editor
                     _undoOperationsQueue.Add(objectInstanceId, new(existingUndoOperationType, operationParam.Item2, operationParam.Item3, operationParam.Item4));
                 }
             }
-            Debug.LogError(objectToUndo +", "+undoOperationType);
             UndoRedoPerformed(objectToUndo);
         }
 

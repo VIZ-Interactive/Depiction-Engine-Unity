@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections;
+using System.Runtime.CompilerServices;
+using Unity.Collections;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -32,6 +34,10 @@ namespace DepictionEngine
         private int _width;
         [SerializeField, HideInInspector]
         private int _height;
+        [SerializeField, HideInInspector]
+        private TextureFormat _format;
+        [SerializeField, HideInInspector]
+        private bool _isDataSRGB;
 
 #if UNITY_EDITOR
         protected override LoaderBase.DataType GetDataTypeFromExtension(string extension)
@@ -63,7 +69,12 @@ namespace DepictionEngine
                 unityTexture = InstanceManager.Duplicate(unityTexture, initializingContext);
 
             InitValue(value => wrapMode = value, TextureWrapMode.Clamp, initializingContext);
-            InitValue(value => filterMode = value, FilterMode.Bilinear, initializingContext);
+            InitValue(value => filterMode = value, GetDefaultFilterMode(), initializingContext);
+        }
+
+        protected virtual FilterMode GetDefaultFilterMode()
+        {
+            return FilterMode.Bilinear;
         }
 
         public int width
@@ -76,14 +87,19 @@ namespace DepictionEngine
             get => _height;
         }
 
+        public TextureFormat format
+        {
+            get => _format;
+        }
+
+        public bool isDataSRGB
+        {
+            get => _isDataSRGB;
+        }
+
         public int mipmapCount
         {
             get => unityTexture != null ? unityTexture.mipmapCount : 1;
-        }
-
-        public TextureFormat format
-        {
-            get => unityTexture != null ? unityTexture.format : TextureFormat.RGBA32;
         }
 
         /// <summary>
@@ -130,42 +146,36 @@ namespace DepictionEngine
                 unityTexture.filterMode = filterMode;
         }
 
-        public Color GetPixel(float x, float y, bool clamp = false)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool GetPixel(Vector2Int pixel, out Color color)
         {
-            Color color = Color.clear;
-
-            if (_unityTexture != null)
+            try
             {
-                Vector2Int pixel = GetPixelFromNormalized(x, y, clamp);
-
-                color = _unityTexture.GetPixel(pixel.x, pixel.y);
+                if (_unityTexture != null)
+                {
+                    color = _unityTexture.GetPixel(pixel.x, pixel.y);
+                    return true;
+                }
+            }
+            catch (IndexOutOfRangeException e)
+            {
+                Debug.LogError(e.Message);
             }
 
-            return color;
+            color = Color.clear;
+            return false;
         }
 
-        protected Vector2Int GetPixelFromNormalized(float x, float y, bool clamp = false, bool xFlip = false, bool yFlip = false)
+        public virtual Vector2Int GetPixelFromNormalizedCoordinate(Vector2 normalizedCoordinate)
         {
-            if (clamp)
-            {
-                x = Mathf.Clamp01(x);
-                y = Mathf.Clamp01(y);
-            }
+            Vector2Int pixel = new Vector2Int(Mathf.FloorToInt(normalizedCoordinate.x * width), Mathf.FloorToInt(normalizedCoordinate.y * height));
 
-            if (xFlip)
-                x = 1.0f - x;
-            if (!yFlip)
-                y = 1.0f - y;
+            if (pixel.x == width)
+                pixel.x -= 1;
+            if (pixel.y == height)
+                pixel.y -= 1;
 
-            int pixelX = (int)(x * width);
-            if (pixelX == width)
-                pixelX = width - 1;
-
-            int pixelY = (int)(y * height);
-            if (pixelY == height)
-                pixelY = height - 1;
-
-            return new Vector2Int(pixelX, pixelY);
+            return pixel;
         }
 
         protected virtual bool IsTextureDataType(LoaderBase.DataType dataType)
@@ -193,19 +203,44 @@ namespace DepictionEngine
             SetData(value as byte[], false, width, height, format, mipmapCount, false, initializingContext);
         }
 
+        public void SetData(NativeArray<Color32> textureBytes, int width, int height, TextureFormat format, int mipmapCount, bool linear, InitializationContext initializingContext = InitializationContext.Programmatically)
+        {
+            try
+            {
+                CreateTextureIfRequired(true, width, height, format, mipmapCount, linear, initializingContext);
+
+                unityTexture.SetPixelData(textureBytes, 0);
+                unityTexture.Apply();
+
+                UpdateUnityTextureProperties();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e.Message);
+            }
+
+            DataPropertyAssigned();
+        }
+
         public void SetData(byte[] textureBytes, bool isRawTextureBytes, int width, int height, TextureFormat format, int mipmapCount, bool linear, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
-            CreateTextureIfRequired(isRawTextureBytes, width, height, format, mipmapCount, linear, initializingContext);
+            try
+            {
+                CreateTextureIfRequired(isRawTextureBytes, width, height, format, mipmapCount, linear, initializingContext);
 
-            if (isRawTextureBytes)
-            {
-                unityTexture.LoadRawTextureData(textureBytes);
-                unityTexture.Apply();
+                if (isRawTextureBytes)
+                {
+                    unityTexture.LoadRawTextureData(textureBytes);
+                    unityTexture.Apply();
+                }
+                else
+                    unityTexture.LoadImage(textureBytes);
+
+                UpdateUnityTextureProperties();
             }
-            else
-            {
-                unityTexture.LoadImage(textureBytes);
-                UpdateSize();
+            catch (Exception e) 
+            { 
+                Debug.LogError(e.Message); 
             }
 
             DataPropertyAssigned();
@@ -213,7 +248,7 @@ namespace DepictionEngine
 
         private void CreateTextureIfRequired(bool isRawTextureBytes, int width, int height, TextureFormat format, int mipmapCount, bool linear, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
-            bool requiresNewTexture2D = unityTexture == null || this.mipmapCount != mipmapCount;
+            bool requiresNewTexture2D = unityTexture == null || this.mipmapCount != mipmapCount || !unityTexture.isDataSRGB != linear;
 
 #if UNITY_EDITOR
             if (initializingContext == InitializationContext.Editor)
@@ -254,12 +289,12 @@ namespace DepictionEngine
             return unityTexture;
         }
 
-        private void SetData(Texture2D texture, InitializationContext initializingContext = InitializationContext.Programmatically)
+        protected virtual void SetData(Texture2D texture, InitializationContext initializingContext = InitializationContext.Programmatically)
         {
             Texture2D oldUnityTexture = unityTexture;
 
             unityTexture = texture;
-
+            unityTexture.anisoLevel = 4;
 
             DisposeOldDataAndRegisterNewData(oldUnityTexture, unityTexture, initializingContext);
         }
@@ -274,21 +309,28 @@ namespace DepictionEngine
 
                 _unityTexture = value;
 
-                UpdateSize();
+
+                UpdateUnityTextureProperties();
+                UpdateTextureWrapMode();
+                UpdateTextureFilterMode();
             }
         }
 
-        private void UpdateSize()
+        private void UpdateUnityTextureProperties()
         {
             if (unityTexture != null)
             {
                 _width = unityTexture.width;
                 _height = unityTexture.height;
+                _format = unityTexture.format;
+                _isDataSRGB = unityTexture.isDataSRGB;
             }
             else
             {
                 _width = 0;
                 _height = 0;
+                _format = TextureFormat.RGBA32;
+                _isDataSRGB = false;
             }
         }
 
@@ -483,11 +525,22 @@ namespace DepictionEngine
             return this;
         }
 
+        public TextureModifier Init(int width = 0, int height = 0, TextureFormat format = TextureFormat.RGB24, int mipmapCount = 1, bool linear = false)
+        {
+            _width = width;
+            _height = height;
+            _format = format;
+            _mipmapCount = mipmapCount;
+            _linear = linear;
+
+            return this;
+        }
+
         public override void ModifyProperties(IScriptableBehaviour scriptableBehaviour)
         {
             base.ModifyProperties(scriptableBehaviour);
 
-            Texture texture= scriptableBehaviour as Texture;
+            Texture texture = scriptableBehaviour as Texture;
 
             if (!Object.ReferenceEquals(_texture2D, null))
             {
@@ -495,7 +548,10 @@ namespace DepictionEngine
                 _texture2D = null;
             }
             else
-                texture.SetData(_textureBytes, _isRawTextureBytes, _width, _height, _format, _mipmapCount, _linear);
+            {
+                if (_textureBytes != null)
+                    texture.SetData(_textureBytes, _isRawTextureBytes, _width, _height, _format, _mipmapCount, _linear);
+            }
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

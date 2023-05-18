@@ -29,7 +29,9 @@ namespace DepictionEngine
         {
             DerivedFromElevation,
             SurfaceUp,
-            Auto
+            GPU,
+            Auto,
+            None
         };
 
         private const float MIN_SUBDIVISION_ZOOM_FACTOR = 1.0f;
@@ -44,8 +46,8 @@ namespace DepictionEngine
         private float _subdivisionZoomFactor;
         [SerializeField, Tooltip("A factor by which the geometry will be scaled along the longitudinal and latitudinal axis to overlap with other tiles of a similar zoom level.")]
         private float _overlapFactor;
-        [SerializeField, Tooltip("How deep the tile edges should extend below the ground, in local units. Extending the edges can help avoid gaps between the tiles when elevation is used. Set to zero to deactivate.")]
-        private float _edgeDepth;
+        [SerializeField, Tooltip("When enabled it caps the sides of the terrain geometry. Extending the edges can help avoid gaps between the tiles when elevation is used.")]
+        private bool _capSides;
         [SerializeField, Tooltip("The type of normals to generate for the terrain mesh."), EndFoldout]
         private NormalsType _normalsType;
 
@@ -100,10 +102,10 @@ namespace DepictionEngine
             InitValue(value => flatSubdivision = value, 6, initializingContext);
             InitValue(value => subdivisionZoomFactor = value, 1.2f, initializingContext);
             InitValue(value => overlapFactor = value, 1.0f, initializingContext);
-            InitValue(value => edgeDepth = value, GetDefaultEdgeDepth(), initializingContext);
-            InitValue(value => normalsType = value, NormalsType.DerivedFromElevation, initializingContext);
+            InitValue(value => capSides = value, GetDefaultCapSides(), initializingContext);
+            InitValue(value => normalsType = value, NormalsType.GPU, initializingContext);
             InitValue(value => shaderPath = value, GetDefaultShaderPath(), initializingContext);
-            InitValue(value => edgeOverlapThickness = value, 0.12f, initializingContext);
+            InitValue(value => edgeOverlapThickness = value, 0.0f, initializingContext);
             InitValue(value => color = value, Color.clear, initializingContext);
         }
 
@@ -150,9 +152,9 @@ namespace DepictionEngine
             return RenderingManager.SHADER_BASE_PATH + "TerrainGrid";
         }
 
-        protected virtual float GetDefaultEdgeDepth()
+        protected virtual bool GetDefaultCapSides()
         {
-            return -1.0f;
+            return true;
         }
 
         protected override bool UpdateAllDelegates()
@@ -221,10 +223,10 @@ namespace DepictionEngine
         /// How deep the tile edges should extend below the ground, in local units. Extending the edges can help avoid gaps between the tiles when elevation is used. Set to zero to deactivate.
         /// </summary>
         [Json]
-        public float edgeDepth
+        public bool capSides
         {
-            get => _edgeDepth;
-            set => SetValue(nameof(edgeDepth), value, ref _edgeDepth);
+            get => _capSides;
+            set => SetValue(nameof(capSides), value, ref _capSides);
         }
 
         /// <summary>
@@ -286,7 +288,7 @@ namespace DepictionEngine
         public Texture colorMap
         {
             get => _colorMap;
-            private set { SetValue(nameof(colorMap), value, ref _colorMap); }
+            private set => SetValue(nameof(colorMap), value, ref _colorMap);
         }
 
         protected override Texture GetColorMap()
@@ -307,7 +309,7 @@ namespace DepictionEngine
         public Texture additionalMap
         {
             get => _additionalMap;
-            private set { SetValue(nameof(additionalMap), value, ref _additionalMap); }
+            private set => SetValue(nameof(additionalMap), value, ref _additionalMap);
         }
 
         protected override Texture GetAdditionalMap()
@@ -328,7 +330,7 @@ namespace DepictionEngine
         public Texture surfaceTypeMap
         {
             get => _surfaceTypeMap;
-            private set { SetValue(nameof(surfaceTypeMap), value, ref _surfaceTypeMap); }
+            private set => SetValue(nameof(surfaceTypeMap), value, ref _surfaceTypeMap);
         }
 
         private TerrainGridCache terrainGridCache
@@ -379,11 +381,6 @@ namespace DepictionEngine
         protected override MeshRendererVisual.ColliderType GetColliderType()
         {
             return IsFlat() && elevation == Disposable.NULL ? MeshRendererVisual.ColliderType.Box : base.GetColliderType();
-        }
-
-        private float GetEdgeDepth()
-        {
-            return edgeDepth / 10.0f;
         }
 
         private float GetSubdivisionSize(int subdivision)
@@ -476,10 +473,10 @@ namespace DepictionEngine
         {
             int hash = base.GetCacheHash(meshRendererVisualModifier);
 
-            if (sphericalRatio == 0.0f && elevation == Disposable.NULL)
+            if (IsFlat() && elevation == Disposable.NULL)
             {
                 hash = 17;
-                hash *= 31 + GetEdgeDepth().GetHashCode();
+                hash *= 31 + capSides.GetHashCode();
                 hash *= 31 + subdivision.GetHashCode();
                 hash *= 31 + overlapFactor.GetHashCode();
                 hash *= 31 + (grid2DDimensions.x / grid2DDimensions.y).GetHashCode();
@@ -509,8 +506,8 @@ namespace DepictionEngine
                 terrainMeshRendererVisualDirtyFlags.subdivision = subdivision;
                 terrainMeshRendererVisualDirtyFlags.subdivisionSize = subdivisionSize;
                 terrainMeshRendererVisualDirtyFlags.overlapFactor = overlapFactor;
-                terrainMeshRendererVisualDirtyFlags.generateEdgeInSeperateMesh = generateEdgeInSeparateMesh;
-                terrainMeshRendererVisualDirtyFlags.edgeDepth = GetEdgeDepth();
+                terrainMeshRendererVisualDirtyFlags.generateEdgeInSeparateMesh = generateEdgeInSeparateMesh;
+                terrainMeshRendererVisualDirtyFlags.capSides = capSides;
                 terrainMeshRendererVisualDirtyFlags.normalsType = normalsType;
             }
         }
@@ -528,7 +525,7 @@ namespace DepictionEngine
             {
                 TerrainGridMeshObjectVisualDirtyFlags terrainRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as TerrainGridMeshObjectVisualDirtyFlags;
                 
-                (parameters as TerrainGridMeshObjectParameters).Init(terrainRendererVisualDirtyFlags.subdivision, terrainRendererVisualDirtyFlags.subdivisionSize, terrainRendererVisualDirtyFlags.overlapFactor, terrainRendererVisualDirtyFlags.edgeDepth, terrainRendererVisualDirtyFlags.normalsType, terrainRendererVisualDirtyFlags.trianglesDirty, terrainRendererVisualDirtyFlags.uvsDirty, terrainRendererVisualDirtyFlags.verticesNormalsDirty, terrainRendererVisualDirtyFlags.generateEdgeInSeperateMesh);
+                (parameters as TerrainGridMeshObjectParameters).Init(terrainRendererVisualDirtyFlags.subdivision, terrainRendererVisualDirtyFlags.subdivisionSize, terrainRendererVisualDirtyFlags.overlapFactor, terrainRendererVisualDirtyFlags.capSides, terrainRendererVisualDirtyFlags.normalsType, terrainRendererVisualDirtyFlags.trianglesDirty, terrainRendererVisualDirtyFlags.uvsDirty, terrainRendererVisualDirtyFlags.verticesNormalsDirty, terrainRendererVisualDirtyFlags.generateEdgeInSeparateMesh);
             }
         }
 
@@ -537,11 +534,23 @@ namespace DepictionEngine
             base.ApplyCastShadowToMeshRendererVisual(meshRendererVisual, alpha != 1.0f ? ShadowCastingMode.Off : shadowCastingMode);
         }
 
+        protected virtual bool GetEnableGPUTerrain()
+        {
+            return true;
+        }
+
         protected override void ApplyPropertiesToMaterial(MeshRenderer meshRenderer, Material material, MaterialPropertyBlock materialPropertyBlock, double cameraAtmosphereAltitudeRatio, Camera camera, GeoAstroObject closestGeoAstroObject, Star star)
         {
             base.ApplyPropertiesToMaterial(meshRenderer, material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, star);
 
             SetTextureToMaterial("_SurfaceTypeMap", surfaceTypeMap, Texture2D.whiteTexture, material, materialPropertyBlock);
+
+            SetIntToMaterial("_Subdivision", subdivision, material, materialPropertyBlock);
+
+            if (GetEnableGPUTerrain())
+                material.EnableKeyword("ENABLE_GPU_TERRAIN");
+            else
+                material.DisableKeyword("ENABLE_GPU_TERRAIN");
         }
 
         protected override void ApplyAlphaToMaterial(Material material, MaterialPropertyBlock materialPropertyBlock, GeoAstroObject closestGeoAstroObject, Camera camera, float alpha)
@@ -636,7 +645,7 @@ namespace DepictionEngine
             private int _subdivision;
             private float _subdivisionSize;
             private float _overlapFactor;
-            private float _edgeDepth;
+            private bool _capSides;
             private NormalsType _normalsType;
 
             private bool _generateEdgeInSeparateMesh;
@@ -646,12 +655,12 @@ namespace DepictionEngine
             private bool _verticesDirty;
             private bool _normalsDirty;
 
-            public TerrainGridMeshObjectParameters Init(int subdivision, float subdivisionSize, float overlapFactor = 1.0f, float edgeDepth = 0.0f, NormalsType normalsType = NormalsType.DerivedFromElevation, bool trianglesDirty = true, bool uvsDirty = true, bool verticesNormalsDirty = true, bool generateEdgeInSeparateMesh = false)
+            public TerrainGridMeshObjectParameters Init(int subdivision, float subdivisionSize, float overlapFactor = 1.0f, bool capSides = false, NormalsType normalsType = NormalsType.DerivedFromElevation, bool trianglesDirty = true, bool uvsDirty = true, bool verticesNormalsDirty = true, bool generateEdgeInSeparateMesh = false)
             {
                 _subdivision = subdivision;
                 _subdivisionSize = subdivisionSize;
                 _overlapFactor = overlapFactor;
-                _edgeDepth = edgeDepth;
+                _capSides = capSides;
                 _normalsType = normalsType;
 
                 _generateEdgeInSeparateMesh = generateEdgeInSeparateMesh;
@@ -691,22 +700,22 @@ namespace DepictionEngine
 
             public bool GetUVsDirty()
             {
-                return uvsDirty;
+                return _uvsDirty;
             }
 
             public bool GetVerticesDirty()
             {
-                return verticesDirty;
+                return _verticesDirty;
             }
 
             public bool GetNormalsDirty()
             {
-                return normalsDirty;
+                return _normalsDirty;
             }
 
-            public float edgeDepth
+            public bool capSides
             {
-                get => _edgeDepth;
+                get => _capSides;
             }
 
             public NormalsType normalsType
@@ -741,7 +750,7 @@ namespace DepictionEngine
                     _subdivision = 0;
                     _subdivisionSize = 0.0f;
                     _overlapFactor = 0.0f;
-                    _edgeDepth = 0.0f;
+                    _capSides = false;
 
                     _generateEdgeInSeparateMesh = false;
 
@@ -1052,7 +1061,7 @@ namespace DepictionEngine
                 bool trianglesDirty = parameters.GetTrianglesDirty();
                 bool uvsDirty = parameters.GetUVsDirty();
 
-                meshRendererVisualProcessorOutput.meshModifier.Init(verticesDirty ? GetVerticesNormalsCount(vertexCount) : -1, normalsDirty ? parameters.normalsType != NormalsType.Auto ? GetVerticesNormalsCount(vertexCount) : 0 : -1, trianglesDirty ? GetTrianglesCount(subdivision) : -1, uvsDirty ? GetUVsCount(vertexCount) : -1);
+                meshRendererVisualProcessorOutput.meshModifier.Init(verticesDirty ? GetVerticesNormalsCount(vertexCount) : -1, normalsDirty ? parameters.normalsType == NormalsType.SurfaceUp || parameters.normalsType == NormalsType.DerivedFromElevation ? GetVerticesNormalsCount(vertexCount) : 0 : -1, trianglesDirty ? GetTrianglesCount(subdivision) : -1, uvsDirty ? GetUVsCount(vertexCount) : -1);
 
                 foreach (object enumeration in PopulateGrid(meshRendererVisualProcessorOutput, parameters))
                     yield return enumeration;
@@ -1065,7 +1074,7 @@ namespace DepictionEngine
                 int vertexCount = subdivision + 1;
 
                 bool verticesDirty = parameters.GetVerticesDirty();
-                bool normalsDirty = parameters.GetNormalsDirty() && parameters.normalsType != NormalsType.Auto;
+                bool normalsDirty = parameters.GetNormalsDirty() && (parameters.normalsType == NormalsType.SurfaceUp || parameters.normalsType == NormalsType.DerivedFromElevation);
                 bool trianglesDirty = parameters.GetTrianglesDirty();
                 bool uvsDirty = parameters.GetUVsDirty();
 
@@ -1147,7 +1156,7 @@ namespace DepictionEngine
                         for (int y = 0; y < vertexCount; y++)
                         {
                             for (int x = 0; x < vertexCount; x++)
-                                meshModifier.uvs[startIndex + y * vertexCount + x] = new Vector2((float)(subdivisionSize * x), (float)(1.0d - (subdivisionSize * y)));
+                                meshModifier.uvs[startIndex + y * vertexCount + x] = new Vector2((float)(subdivisionSize * x), (float)(1.0f - (subdivisionSize * y)));
 
                             parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
@@ -1185,7 +1194,7 @@ namespace DepictionEngine
             {
                 GeoCoordinate3Double geoCoordinate = MathPlus.GetGeoCoordinate3FromIndex(new Vector2Double(parameters.grid2DIndex.x + normalizedX, parameters.grid2DIndex.y + normalizedY), parameters.grid2DDimensions);
 
-                if (parameters.GetElevation(out double elevation, normalizedX, normalizedY))
+                if (parameters.GetElevation(new Vector2(normalizedX, 1.0f - normalizedY), out float elevation))
                     geoCoordinate.altitude = elevation;
 
                 return geoCoordinate;
@@ -1196,7 +1205,7 @@ namespace DepictionEngine
             {
                 GeoCoordinate3Double geoCoordinate = GetGeoCoordinate(parameters, normalizedX, normalizedY);
 
-                Vector3 vertex = parameters.TransformGeoCoordinateToVector(geoCoordinate.latitude, geoCoordinate.longitude, geoCoordinate.altitude + altitudeOffset) * overlapFactor;
+                Vector3 vertex = parameters.TransformGeoCoordinateToVector(geoCoordinate.latitude, geoCoordinate.longitude, geoCoordinate.altitude + altitudeOffset / parameters.inverseScale) * overlapFactor;
                 meshModifier.vertices[bufferIndex] = vertex;
                 meshModifier.UpdateMinMaxBounds(vertex);
             }
@@ -1206,8 +1215,7 @@ namespace DepictionEngine
             {
                 GeoCoordinate3Double geoCoordinate = GetGeoCoordinate(parameters, normalizedX, normalizedY);
 
-                if (parameters.GetNormalsDirty())
-                    meshModifier.normals[bufferIndex] = parameters.GetUpVector(geoCoordinate) * GetNormal(parameters, normalizedX, normalizedY, 0.05f);
+                meshModifier.normals[bufferIndex] = parameters.GetUpVector(geoCoordinate) * GetNormal(parameters, normalizedX, normalizedY, 0.05f);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1217,12 +1225,20 @@ namespace DepictionEngine
 
                 if (parameters.normalsType == NormalsType.DerivedFromElevation && parameters.elevation != Disposable.NULL)
                 {
-                    double leftElevation = parameters.GetElevation(normalizedX - subdivisionSize, normalizedY, true);
-                    double rightElevation = parameters.GetElevation(normalizedX + subdivisionSize, normalizedY, true);
-                    double downElevation = parameters.GetElevation(normalizedX, normalizedY - subdivisionSize, true);
-                    double upElevation = parameters.GetElevation(normalizedX, normalizedY + subdivisionSize, true);
+                    normalizedY = 1.0f - normalizedY;
+
+                    float invertScale = (float)parameters.inverseScale;
+                    if (parameters.GetElevation(new Vector2(normalizedX - subdivisionSize, normalizedY), out float leftElevation))
+                        leftElevation *= invertScale;
+                    if (parameters.GetElevation(new Vector2(normalizedX + subdivisionSize, normalizedY), out float rightElevation))
+                        rightElevation *= invertScale;
+                    if (parameters.GetElevation(new Vector2(normalizedX, normalizedY - subdivisionSize), out float downElevation))
+                        downElevation *= invertScale;
+                    if (parameters.GetElevation(new Vector2(normalizedX, normalizedY + subdivisionSize), out float upElevation))
+                        upElevation *= invertScale;
+                    
                     normal = Vector3Double.Cross(
-                        new Vector3Double(0.0d, downElevation - upElevation, subdivisionSize * 2.0d).normalized,
+                        new Vector3Double(0.0d, upElevation - downElevation, subdivisionSize * 2.0d).normalized,
                         new Vector3Double(subdivisionSize * 2.0d, rightElevation - leftElevation, 0.0d).normalized);
                 }
 
@@ -1240,7 +1256,7 @@ namespace DepictionEngine
 
             protected static IEnumerable InitPopulateEdgeAndGrid(MeshRendererVisualProcessorOutput meshRendererVisualProcessorOutput, TerrainGridMeshObjectParameters parameters)
             {
-                bool addEdge = parameters.edgeDepth != 0.0f;
+                bool capSides = parameters.capSides;
 
                 int subdivision = parameters.GetSubdivision();
                 int vertexCount = subdivision + 1;
@@ -1256,26 +1272,26 @@ namespace DepictionEngine
 
                 int verticesCount = -1;
                 if (verticesDirty)
-                    verticesCount = grid2DVerticesNormalsCount + (addEdge ? GetVerticesNormalsCount(vertexCount) : 0);
+                    verticesCount = grid2DVerticesNormalsCount + (capSides ? GetVerticesNormalsCount(vertexCount) : 0);
 
                 int normalsCount = -1;
                 if (normalsDirty)
-                    normalsCount = parameters.normalsType != NormalsType.Auto ? grid2DVerticesNormalsCount + (addEdge ? GetVerticesNormalsCount(vertexCount) : 0) : 0;
+                    normalsCount = parameters.normalsType == NormalsType.SurfaceUp || parameters.normalsType == NormalsType.DerivedFromElevation ? grid2DVerticesNormalsCount + (capSides ? GetVerticesNormalsCount(vertexCount) : 0) : 0;
 
                 int trianglesCount = -1;
                 if (trianglesDirty)
-                    trianglesCount = grid2DTrianglesCount + (addEdge ? GetTrianglesCount(subdivision * 4) : 0);
-                
+                    trianglesCount = grid2DTrianglesCount + (capSides ? GetTrianglesCount(subdivision * 4) : 0);
+
                 int uvsCount = -1;
                 if (uvsDirty)
-                    uvsCount = grid2DUvsCount + (addEdge ? GetUVsCount(vertexCount) : 0);
+                    uvsCount = grid2DUvsCount + (capSides ? GetUVsCount(vertexCount) : 0);
 
                 meshRendererVisualProcessorOutput.meshModifier.Init(verticesCount, normalsCount, trianglesCount, uvsCount);
 
                 foreach (object enumeration in Grid2DMeshObjectProcessingFunctions.PopulateGrid(meshRendererVisualProcessorOutput, parameters))
                     yield return enumeration;
 
-                if (addEdge)
+                if (capSides)
                 {
                     foreach (object enumeration in PopulateEdge(meshRendererVisualProcessorOutput, parameters, grid2DVerticesNormalsCount, grid2DTrianglesCount, grid2DUvsCount))
                         yield return enumeration;
@@ -1298,12 +1314,14 @@ namespace DepictionEngine
                 bool trianglesDirty = parameters.GetTrianglesDirty();
                 bool uvsDirty = parameters.GetUVsDirty();
 
-                meshRendererVisualProcessorOutput.meshModifier.Init(verticesDirty ? GetVerticesNormalsCount(vertexCount) : -1, normalsDirty ? parameters.normalsType != NormalsType.Auto ? GetVerticesNormalsCount(vertexCount) : 0 : -1, trianglesDirty ? GetTrianglesCount(subdivision) : -1, uvsDirty ? GetUVsCount(vertexCount) : -1);
+                meshRendererVisualProcessorOutput.meshModifier.Init(verticesDirty ? GetVerticesNormalsCount(vertexCount) : -1, normalsDirty ? parameters.normalsType == NormalsType.SurfaceUp || parameters.normalsType == NormalsType.DerivedFromElevation ? GetVerticesNormalsCount(vertexCount) : 0 : -1, trianglesDirty ? GetTrianglesCount(subdivision) : -1, uvsDirty ? GetUVsCount(vertexCount) : -1);
 
                 foreach (object enumeration in PopulateEdge(meshRendererVisualProcessorOutput, parameters))
                     yield return enumeration;
             }
 
+            private const int EDGE_DEPTH_MULTIPLIER = 2;
+            private static int[] _sides = new int[] {0,2,4,6,1,3,5,7};
             protected static IEnumerable PopulateEdge(MeshRendererVisualProcessorOutput meshRendererVisualProcessorOutput, TerrainGridMeshObjectParameters parameters, int verticesNormalsStartIndex = 0, int trianglesStartIndex = 0, int uvsStartIndex = 0)
             {
                 int subdivision = parameters.GetSubdivision();
@@ -1311,7 +1329,7 @@ namespace DepictionEngine
                 int vertexCount = subdivision + 1;
 
                 bool verticesDirty = parameters.GetVerticesDirty();
-                bool normalsDirty = parameters.GetNormalsDirty() && parameters.normalsType != NormalsType.Auto;
+                bool normalsDirty = parameters.GetNormalsDirty() && (parameters.normalsType == NormalsType.SurfaceUp || parameters.normalsType == NormalsType.DerivedFromElevation);
                 bool trianglesDirty = parameters.GetTrianglesDirty();
                 bool uvsDirty = parameters.GetUVsDirty();
 
@@ -1322,13 +1340,16 @@ namespace DepictionEngine
                     if (verticesDirty)
                     {
                         int startIndex = verticesNormalsStartIndex;
-                        for (int side = 0; side < 8; side++)
+                        int sideCount = 0;
+                        foreach (int side in _sides)
                         {
-                            double edgeAltitudeOffset = side % 2 == 0 ? 0.0f : parameters.edgeDepth;
+                            double edgeAltitudeOffset = side % 2 == 0 ? 0.0f : -subdivisionSize * EDGE_DEPTH_MULTIPLIER;
 
                             for (int index = 0; index < vertexCount; index++)
-                                Grid2DMeshObjectProcessingFunctions.SetVertices(parameters, meshModifier, startIndex + side * vertexCount + index, GetX(side, index, vertexCount) * subdivisionSize, GetY(side, index, vertexCount) * subdivisionSize, parameters.GetOverlapFactor(), edgeAltitudeOffset);
-                            
+                                Grid2DMeshObjectProcessingFunctions.SetVertices(parameters, meshModifier, startIndex + sideCount * vertexCount + index, GetX(side, index, vertexCount) * subdivisionSize, GetY(side, index, vertexCount) * subdivisionSize, parameters.GetOverlapFactor(), edgeAltitudeOffset);
+
+                            sideCount++;
+
                             parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
                     }
@@ -1337,11 +1358,11 @@ namespace DepictionEngine
                     {
                         int startIndex = verticesNormalsStartIndex;
                         int i = trianglesStartIndex;
-                        for (int side = 0; side < 8; side += 2)
+                        for (int side = 0; side < 4; side++)
                         {
                             for (int index = 0; index < subdivision; index++)
                             {
-                                int bottomLeft = startIndex + (side + 1) * vertexCount + index;
+                                int bottomLeft = startIndex + (side + 4) * vertexCount + index;
                                 int topLeft = startIndex + (side * vertexCount) + index;
                                 int topRight = topLeft + 1;
                                 int bottomRight = bottomLeft + 1;
@@ -1363,10 +1384,13 @@ namespace DepictionEngine
                     if (normalsDirty)
                     {
                         int startIndex = verticesNormalsStartIndex;
-                        for (int side = 0; side < 8; side++)
+                        int sideCount = 0;
+                        foreach (int side in _sides)
                         {
                             for (int index = 0; index < vertexCount; index++)
-                                Grid2DMeshObjectProcessingFunctions.SetNormals(parameters, meshModifier, startIndex + side * vertexCount + index, GetX(side, index, vertexCount) * subdivisionSize, GetY(side, index, vertexCount) * subdivisionSize);
+                                Grid2DMeshObjectProcessingFunctions.SetNormals(parameters, meshModifier, startIndex + sideCount * vertexCount + index, GetX(side, index, vertexCount) * subdivisionSize, GetY(side, index, vertexCount) * subdivisionSize);
+
+                            sideCount++;
 
                             parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
@@ -1375,11 +1399,32 @@ namespace DepictionEngine
                     if (uvsDirty)
                     {
                         int startIndex = uvsStartIndex;
-                        for (int side = 0; side < 8; side++)
+                        int sideCount = 0;
+                        foreach (int side in _sides)
                         {
                             for (int index = 0; index < vertexCount; index++)
-                                meshModifier.uvs[startIndex + side * vertexCount + index] = new Vector2((float)(subdivisionSize * GetX(side, index, vertexCount)), (float)(1.0d - (subdivisionSize * GetY(side, index, vertexCount))));
-                            
+                            {
+                                int x = GetX(side, index, vertexCount);
+                                int y = GetY(side, index, vertexCount);
+
+                                bool edgeBottom = side % 2 != 0;
+                                if (edgeBottom)
+                                {
+                                    if (side == 0 || side == 1)//Bottom
+                                        y -= EDGE_DEPTH_MULTIPLIER;
+                                    if (side == 2 || side == 3)//Left
+                                        x += EDGE_DEPTH_MULTIPLIER;
+                                    if (side == 4 || side == 5)//Top
+                                        y += EDGE_DEPTH_MULTIPLIER;
+                                    if (side == 6 || side == 7)//Right
+                                        x -= EDGE_DEPTH_MULTIPLIER;
+                                }
+
+                                meshModifier.uvs[startIndex + sideCount * vertexCount + index] = new Vector2((float)(subdivisionSize * x), (float)(1.0f - (subdivisionSize * y)));
+                            }
+
+                            sideCount++;
+
                             parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
                     }

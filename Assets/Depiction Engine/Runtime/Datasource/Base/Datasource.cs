@@ -578,7 +578,7 @@ namespace DepictionEngine
 
         public bool supportsSave
         {
-            get { return _supportsSave; }
+            get => _supportsSave;
             set
             {
                 if (_supportsSave == value)
@@ -594,7 +594,7 @@ namespace DepictionEngine
 
         public bool supportsSynchronize
         {
-            get { return _supportsSynchronize; }
+            get => _supportsSynchronize;
             set
             {
                 if (_supportsSynchronize == value)
@@ -610,7 +610,7 @@ namespace DepictionEngine
 
         public bool supportsDelete
         {
-            get { return _supportsDelete; }
+            get => _supportsDelete;
             set
             {
                 if (_supportsDelete == value)
@@ -626,7 +626,7 @@ namespace DepictionEngine
 
         public int persistentCount
         {
-            get { return persistentsDictionary.Count; }
+            get => persistentsDictionary.Count;
         }
 
         private PersistentsComponentsOutOfSyncDictionary persistentsComponentsOutOfSyncDictionary
@@ -783,6 +783,7 @@ namespace DepictionEngine
 
             if (outOfSynchChanged)
                 return UpdateIsOutOfSync(persistent, autoDispose);
+
             return false;
         }
 

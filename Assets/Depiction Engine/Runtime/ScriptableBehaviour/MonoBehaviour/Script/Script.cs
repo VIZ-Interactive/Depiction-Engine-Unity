@@ -204,7 +204,7 @@ namespace DepictionEngine
         public GeoAstroObject parentGeoAstroObject
         {
             get => _parentGeoAstroObject;
-            protected set { SetParentGeoAstroObject(value, _parentGeoAstroObject); }
+            protected set => SetParentGeoAstroObject(value, _parentGeoAstroObject);
         }
 
         protected virtual bool SetParentGeoAstroObject(GeoAstroObject newValue, GeoAstroObject oldValue)

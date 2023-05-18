@@ -33,8 +33,8 @@ namespace DepictionEngine
 
         public double altitude
         {
-            get { return _altitude; }
-            set { SetAltitude(value); }
+            get => _altitude;
+            set => SetAltitude(value);
         }
 
         protected virtual bool SetAltitude(double value)

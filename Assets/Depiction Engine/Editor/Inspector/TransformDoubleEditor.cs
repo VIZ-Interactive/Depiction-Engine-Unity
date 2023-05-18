@@ -7,7 +7,7 @@ namespace DepictionEngine.Editor
 {
     [CanEditMultipleObjects]
     [CustomEditor(typeof(TransformDouble), true)]
-    public class TransformDoubleEditor : EditorBase
+    public class TransformDoubleEditor : InspectorBase
     {
         protected override void OnSceneGUI()
         {

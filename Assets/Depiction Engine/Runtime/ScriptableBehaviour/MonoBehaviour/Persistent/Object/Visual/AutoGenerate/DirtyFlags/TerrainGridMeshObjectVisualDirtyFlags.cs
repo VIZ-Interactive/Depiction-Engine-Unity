@@ -13,9 +13,9 @@ namespace DepictionEngine
         [SerializeField]
         private float _overlapFactor;
         [SerializeField]
-        private bool _generateEdgeInSeperateMesh;
+        private bool _generateEdgeInSeparateMesh;
         [SerializeField]
-        private float _edgeDepth;
+        private bool _capSides;
         [SerializeField]
         private TerrainGridMeshObject.NormalsType _normalsType;
 
@@ -33,14 +33,14 @@ namespace DepictionEngine
             _subdivision = default;
             _subdivisionSize = default;
             _overlapFactor = default;
-            _generateEdgeInSeperateMesh = default;
-            _edgeDepth = default;
+            _generateEdgeInSeparateMesh = default;
+            _capSides = default;
             _normalsType = default;
         }
 
         public int subdivision
         {
-            get { return _subdivision; }
+            get => _subdivision;
             set
             {
                 if (_subdivision == value)
@@ -54,7 +54,7 @@ namespace DepictionEngine
 
         public float subdivisionSize
         {
-            get { return _subdivisionSize; }
+            get => _subdivisionSize;
             set
             {
                 if (_subdivisionSize == value)
@@ -75,7 +75,7 @@ namespace DepictionEngine
 
         public float overlapFactor
         {
-            get { return _overlapFactor; }
+            get => _overlapFactor;
             set
             {
                 if (_overlapFactor == value)
@@ -87,37 +87,37 @@ namespace DepictionEngine
             }
         }
 
-        public bool generateEdgeInSeperateMesh
+        public bool generateEdgeInSeparateMesh
         {
-            get { return _generateEdgeInSeperateMesh; }
+            get => _generateEdgeInSeparateMesh;
             set
             {
-                if (_generateEdgeInSeperateMesh == value)
+                if (_generateEdgeInSeparateMesh == value)
                     return;
 
-                _generateEdgeInSeperateMesh = value;
+                _generateEdgeInSeparateMesh = value;
 
-                EdgeChanged();
+                CapSidesChanged();
             }
         }
 
-        public float edgeDepth
+        public bool capSides
         {
-            get { return _edgeDepth; }
+            get => _capSides;
             set
             {
-                if (_edgeDepth == value)
+                if (_capSides == value)
                     return;
 
-                _edgeDepth = value;
+                _capSides = value;
 
-                EdgeChanged();
+                CapSidesChanged();
             }
         }
 
         public TerrainGridMeshObject.NormalsType normalsType
         {
-            get { return _normalsType; }
+            get => _normalsType;
             set
             {
                 if (_normalsType == value)
@@ -129,7 +129,7 @@ namespace DepictionEngine
             }
         }
 
-        protected void EdgeChanged()
+        protected void CapSidesChanged()
         {
             TrianglesDirty();
             UVsDirty();

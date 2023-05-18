@@ -183,7 +183,7 @@ namespace DepictionEngine
             if (_www != null)
             {
                 text = _www.downloadHandler.text;
-                texture = _www.downloadHandler is DownloadHandlerTexture ? (_www.downloadHandler as DownloadHandlerTexture).texture : null;
+                texture = _www.downloadHandler is DownloadHandlerTexture ? DownloadHandlerTexture.GetContent(_www) : null;
                 data = _www.downloadHandler.data;
             }
 
@@ -208,7 +208,7 @@ namespace DepictionEngine
             _text = text;
             _data = data;
             _texture = texture;
-
+            
             return this;
         }
 
@@ -227,7 +227,7 @@ namespace DepictionEngine
         public Texture2D texture
         {
             get => _texture;
-            private set => SetTexture(value);
+            protected set => SetTexture(value);
         }
 
         public bool SetTexture(Texture2D value, bool destroyLastTexture = true)

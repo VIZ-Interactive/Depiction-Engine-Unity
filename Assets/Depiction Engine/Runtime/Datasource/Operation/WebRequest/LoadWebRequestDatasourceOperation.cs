@@ -231,7 +231,6 @@ namespace DepictionEngine
                 return loadResultData;
             }
 
-
             private static LoadResultData GetLoadResultDataFromAsset(LoadWebRequestProcessorParameters loadOperationResultParameters)
             {
                 LoadResultData loadResultData = null;
@@ -252,28 +251,38 @@ namespace DepictionEngine
 
                             if (typeof(Elevation).IsAssignableFrom(type))
                             {
-                                int rgbComponentOffset = Elevation.GetRGBComponentOffsetFromDataType(loadOperationResultParameters.dataType);
                                 float minElevation = Elevation.GetMinElevationFromDataType(loadOperationResultParameters.dataType);
                                 
                                 json[nameof(Elevation.minElevation)] = minElevation;
 
                                 if (loadOperationResultParameters.texture != null)
                                 {
-                                    Texture2D texture2D = loadOperationResultParameters.texture;
+                                    Texture2D texture = loadOperationResultParameters.texture;
                                     loadOperationResultParameters.SetTexture(null, false);
-                                    textureModifier = CreatePropertyModifier<ElevationModifier>().Init(minElevation, rgbComponentOffset, texture2D);
+
+                                    textureModifier = CreatePropertyModifier<ElevationModifier>().Init(minElevation, texture);
                                 }
                                 else if (loadOperationResultParameters.data != null && loadOperationResultParameters.data.Length != 0)
                                 {
                                     byte[] elevationData = loadOperationResultParameters.data;
-                                    int width = 0;
-                                    int height = 0;
+
+                                    int width;
+                                    int height;
 
                                     switch (loadOperationResultParameters.dataType)
                                     {
+                                        case LoaderBase.DataType.ElevationTerrainRGBPngRaw:
+
+                                            textureModifier = CreatePropertyModifier<ElevationModifier>().Init(minElevation, elevationData);
+
+                                            break;
+
                                         case LoaderBase.DataType.ElevationTerrainRGBWebP:
 
                                             elevationData = LoadRGBAFromWebP(out width, out height, elevationData);
+
+                                            if (width != 0 && height != 0)
+                                                textureModifier = CreatePropertyModifier<ElevationModifier>().Init(minElevation, elevationData, true, width, height);
 
                                             break;
 
@@ -285,11 +294,11 @@ namespace DepictionEngine
 
                                             elevationData = ElevationUtility.EncodeToRGBBytes(elevation, width, height, minElevation);
 
+                                            if (width != 0 && height != 0)
+                                                textureModifier = CreatePropertyModifier<ElevationModifier>().Init(minElevation, elevationData, true, width, height);
+
                                             break;
                                     }
-
-                                    if (width != 0 && height != 0)
-                                        textureModifier = CreatePropertyModifier<ElevationModifier>().Init(minElevation, rgbComponentOffset, elevationData, true, width, height);
                                 }
                             }
                             else

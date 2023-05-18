@@ -95,10 +95,10 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRGBToByteArray(byte r, byte g, byte b, byte[] rgbElevation, int index)
         {
-            rgbElevation[index] = 0;
-            rgbElevation[index + 1] = r;
-            rgbElevation[index + 2] = g;
-            rgbElevation[index + 3] = b;
+            rgbElevation[index] = r;
+            rgbElevation[index + 1] = g;
+            rgbElevation[index + 2] = b;
+            rgbElevation[index + 3] = 0;
         }
 
         /// <summary>

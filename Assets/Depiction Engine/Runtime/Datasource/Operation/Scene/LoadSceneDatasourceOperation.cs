@@ -145,7 +145,7 @@ namespace DepictionEngine
                         ElevationUtility.AddRGBToByteArray(r, g, b, rgbElevation, 8);
                         ElevationUtility.AddRGBToByteArray(r, g, b, rgbElevation, 12);
 
-                        propertyModifier = ProcessingFunctions.CreatePropertyModifier<ElevationModifier>().Init(minElevation, 1, rgbElevation, true);
+                        propertyModifier = ProcessingFunctions.CreatePropertyModifier<ElevationModifier>().Init(minElevation, rgbElevation, true);
                     }
                     else
                         propertyModifier = ProcessingFunctions.CreatePropertyModifier<TextureModifier>().Init(WHITE_RAW_TEXTURE_BYTES, true);

@@ -104,8 +104,8 @@ namespace DepictionEngine
         private DatasourceDictionary _datasources;
 
         //Physics
-        private List<SerializableGuid> _physicObjectsId;
-        private List<TransformDouble> _physicObjects;
+        private List<SerializableGuid> _physicTransformsId;
+        private List<TransformDouble> _physicTransforms;
 
         //Manager
         private ManagerDictionary _managers;
@@ -160,14 +160,6 @@ namespace DepictionEngine
             if (_instance == Disposable.NULL)
                 _instance = GetManagerComponent<InstanceManager>(createIfMissing);
             return _instance;
-        }
-
-        protected override void InitializeSerializedFields(InitializationContext initializingContext)
-        {
-            base.InitializeSerializedFields(initializingContext);
-
-            _physicObjectsId ??= new();
-            _physicObjects ??= new();
         }
 
         /// <summary>
@@ -331,15 +323,21 @@ namespace DepictionEngine
             get { _managers ??= new ManagerDictionary(); return _managers; }
         }
 
-        public List<TransformDouble> physicTransforms => _physicObjects;
+        public List<TransformDouble> physicTransforms 
+        {
+            get { _physicTransforms ??= new(); return _physicTransforms; } 
+        }
 
         public void RemovePhysicTransform(SerializableGuid id)
         {
-            int index = _physicObjectsId.IndexOf(id);
-            if (index != -1)
+            if (_physicTransformsId != null)
             {
-                _physicObjectsId.RemoveAt(index);
-                _physicObjects.RemoveAt(index);
+                int index = _physicTransformsId.IndexOf(id);
+                if (index != -1)
+                {
+                    _physicTransformsId.RemoveAt(index);
+                    _physicTransforms.RemoveAt(index);
+                }
             }
         }
 
@@ -347,10 +345,11 @@ namespace DepictionEngine
         {
             if (transform != Disposable.NULL)
             {
-                if (!_physicObjectsId.Contains(id))
+                _physicTransformsId ??= new();
+                if (!_physicTransformsId.Contains(id))
                 {
-                    _physicObjectsId.Add(id);
-                    _physicObjects.Add(transform);
+                    _physicTransformsId.Add(id);
+                    physicTransforms.Add(transform);
                 }
             }
         }

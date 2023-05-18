@@ -340,7 +340,7 @@ namespace DepictionEngine
                         {
                             if (RequiresElevation())
                             {
-                                if (parentGeoAstroObject.GetGeoCoordinateElevation(out double newElevation, geoCoordinate, filterTerrainCamera, autoSnapToAltitude == SnapType.Highest_Surface_Raycast || autoSnapToAltitude == SnapType.Prevent_Surface_Penetration_Raycast))
+                                if (parentGeoAstroObject.GetGeoCoordinateElevation(out float newElevation, geoCoordinate, filterTerrainCamera, autoSnapToAltitude == SnapType.Highest_Surface_Raycast || autoSnapToAltitude == SnapType.Prevent_Surface_Penetration_Raycast))
                                     elevation = newElevation;
 
                                 double newAltitude = elevation + surfaceSnapOffset;

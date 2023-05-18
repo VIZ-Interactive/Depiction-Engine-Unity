@@ -6,6 +6,24 @@ namespace DepictionEngine
 {
     public class AtmosphereGridMeshObject : TerrainGridMeshObject
     {
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
+
+            UpdateChildrenMeshRendererVisualActive();
+        }
+
+        protected override void ParentGeoAstroObjectPropertyAssignedHandler(IProperty property, string name, object newValue, object oldValue)
+        {
+            base.ParentGeoAstroObjectPropertyAssignedHandler(property, name, newValue, oldValue);
+
+            if (initialized)
+            {
+                if (name == nameof(GeoAstroObject.sphericalRatio))
+                    UpdateChildrenMeshRendererVisualActive();
+            }
+        }
+
         protected override bool CanBeDuplicated()
         {
             return false;
@@ -41,9 +59,9 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override float GetDefaultEdgeDepth()
+        protected override bool GetDefaultCapSides()
         {
-            return 0.0f;
+            return false;
         }
 
         protected override MeshRendererVisual.ColliderType GetColliderType()
@@ -76,20 +94,22 @@ namespace DepictionEngine
             base.UpdateAltitudeOffset();
 
             if (parentGeoAstroObject != Disposable.NULL)
-            {
-                double parentGeoAstroObjectRadius = parentGeoAstroObject.radius;
-                altitudeOffset = (AtmosphereEffect.ATMOPSHERE_ALTITUDE_FACTOR * parentGeoAstroObjectRadius) - parentGeoAstroObjectRadius;
-            }
+                altitudeOffset = (float)((AtmosphereEffect.ATMOPSHERE_ALTITUDE_FACTOR * parentGeoAstroObject.radius) - parentGeoAstroObject.radius);
         }
 
         protected override void ApplyPropertiesToVisual(bool visualsChanged, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
         {
             base.ApplyPropertiesToVisual(visualsChanged, meshRendererVisualDirtyFlags);
 
+            if (visualsChanged)
+                UpdateChildrenMeshRendererVisualActive();
+        }
+
+        private void UpdateChildrenMeshRendererVisualActive()
+        {
             transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
             {
-                if (visualsChanged || PropertyDirty(nameof(sphericalRatio)))
-                    meshRendererVisual.gameObject.SetActive(IsSpherical());
+                meshRendererVisual.gameObject.SetActive(IsSpherical());
 
                 return true;
             });

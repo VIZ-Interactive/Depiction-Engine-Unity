@@ -218,8 +218,8 @@ namespace DepictionEngine
         public static Vector2 ProjectGrid2DIndex(float x, float y, Vector2Int fromGrid2DIndex, Vector2Int fromGrid2DDimensions, Vector2Int toGrid2DIndex, Vector2Int toGrid2DDimensions)
         {
             float xScale = (float)toGrid2DDimensions.x / (float)fromGrid2DDimensions.x;
-            float yScale = (float)toGrid2DDimensions.x / (float)fromGrid2DDimensions.y;
-            return new Vector2((fromGrid2DIndex.x - toGrid2DIndex.x / xScale + x) * xScale, (fromGrid2DIndex.y - toGrid2DIndex.y / yScale + y) * yScale);
+            float yScale = (float)toGrid2DDimensions.y / (float)fromGrid2DDimensions.y;
+            return new Vector2((fromGrid2DIndex.x - toGrid2DIndex.x / xScale + x) * xScale, 1.0f - (fromGrid2DIndex.y - toGrid2DIndex.y / yScale + 1.0f - y) * yScale);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

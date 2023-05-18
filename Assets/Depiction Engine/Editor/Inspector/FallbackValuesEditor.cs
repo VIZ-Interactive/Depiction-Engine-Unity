@@ -11,7 +11,7 @@ namespace DepictionEngine.Editor
 {
     [CustomEditor(typeof(FallbackValues), true)]
     [CanEditMultipleObjects]
-    public class FallbackValuesEditor : EditorBase
+    public class FallbackValuesEditor : InspectorBase
     {
         private static string[] _instanceTypes;
 
@@ -119,7 +119,7 @@ namespace DepictionEngine.Editor
         {
             base.AddAdditionalEditor(serializedProperty);
 
-            EditorBase fallbackValuesObjectEditorBase = fallbackValuesObjectEditor as EditorBase;
+            InspectorBase fallbackValuesObjectEditorBase = fallbackValuesObjectEditor as InspectorBase;
             if (fallbackValuesObjectEditorBase != null)
             {
                 EditorGUI.BeginChangeCheck();

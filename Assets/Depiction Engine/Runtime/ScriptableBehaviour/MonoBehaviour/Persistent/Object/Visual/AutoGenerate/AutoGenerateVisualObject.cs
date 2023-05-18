@@ -139,6 +139,21 @@ namespace DepictionEngine
             InitValue(value => popupDuration = value, GetDefaultPopupDuration(), initializingContext);
         }
 
+        protected virtual bool GetDefaultDontSaveVisualsToScene()
+        {
+            return false;
+        }
+
+        protected virtual PopupType GetDefaultPopupType()
+        {
+            return PopupType.Alpha;
+        }
+
+        protected virtual float GetDefaultPopupDuration()
+        {
+            return 0.2f;
+        }
+
 #if UNITY_EDITOR
         protected override bool UpdateUndoRedoSerializedFields()
         {

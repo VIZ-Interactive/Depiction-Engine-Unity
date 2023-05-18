@@ -34,10 +34,10 @@ namespace DepictionEngine.Editor
         {
             IEnumerable<CustomAttribute> customAttributes = MemberUtility.GetMemberAttributes<CustomAttribute>(serializedProperty.serializedObject.targetObject, serializedProperty.propertyPath);
 
-            if (EditorBase.GetConditionalShowAttributeMethodValue(customAttributes, serializedProperty))
+            if (InspectorBase.GetConditionalShowAttributeMethodValue(customAttributes, serializedProperty))
             {
                 bool lastEnabled = GUI.enabled;
-                GUI.enabled = EditorBase.GetConditionalEnableAttributeMethodValue(customAttributes, serializedProperty);
+                GUI.enabled = InspectorBase.GetConditionalEnableAttributeMethodValue(customAttributes, serializedProperty);
 
                 bool propertyFieldsOverrided = false;
 
@@ -332,7 +332,7 @@ namespace DepictionEngine.Editor
 
         private bool AddDatasourcePropertyField(Rect position, SerializedProperty serializedProperty, GUIContent label)
         {
-            Datasource datasource = EditorBase.GetDatasourceFromSerializedProperty(serializedProperty.serializedObject.targetObject);
+            Datasource datasource = InspectorBase.GetDatasourceFromSerializedProperty(serializedProperty.serializedObject.targetObject);
 
             position.y += 5.0f;
 
@@ -526,7 +526,7 @@ namespace DepictionEngine.Editor
 
                 case nameof(Datasource):
 
-                    Datasource datasource = EditorBase.GetDatasourceFromSerializedProperty(serializedProperty.serializedObject.targetObject);
+                    Datasource datasource = InspectorBase.GetDatasourceFromSerializedProperty(serializedProperty.serializedObject.targetObject);
 
                     float totalHeight = 15.0f;
 

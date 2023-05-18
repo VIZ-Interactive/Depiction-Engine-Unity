@@ -1,13 +1,14 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace DepictionEngine
 {
     [CreateComponent(typeof(AssetReference))]
-    public class ElevationGridMeshObjectBase : Grid2DMeshObjectBase
+    public class ElevationGridMeshObjectBase : Grid2DMeshObjectBase, IElevationGrid
     {
         public const string ELEVATION_REFERENCE_DATATYPE = nameof(Elevation);
 
@@ -24,7 +25,7 @@ namespace DepictionEngine
         {
             if (base.UpdateAllDelegates())
             {
-                RemoveElevationDelgates(elevation);
+                RemoveElevationDelegates(elevation);
                 AddElevationDelegates(elevation);
 
                 return true;
@@ -32,7 +33,7 @@ namespace DepictionEngine
             return false;
         }
 
-        private void RemoveElevationDelgates(Elevation elevation)
+        private void RemoveElevationDelegates(Elevation elevation)
         {
             if (elevation is not null)
                 elevation.PropertyAssignedEvent -= ElevationPropertyAssignedHandler;
@@ -90,7 +91,7 @@ namespace DepictionEngine
                 {
                     if (initialized & HasChanged(newValue, oldValue, false))
                     {
-                        RemoveElevationDelgates(oldValue);
+                        RemoveElevationDelegates(oldValue);
                         AddElevationDelegates(newValue);
 
                         ElevationChanged();
@@ -111,7 +112,7 @@ namespace DepictionEngine
             }
         }
 
-        public bool GetGeoCoordinateElevation(out double elevation, GeoCoordinate3Double geoCoordinate, bool raycast = false)
+        public bool GetGeoCoordinateElevation(out float elevation, GeoCoordinate3Double geoCoordinate, bool raycast = false)
         {
             if (raycast)
             {
@@ -136,14 +137,15 @@ namespace DepictionEngine
 
                 if (hit != null)
                 {
-                    elevation = parentGeoAstroObject.GetGeoCoordinateFromPoint(hit.point).altitude;
+                    elevation = (float)parentGeoAstroObject.GetGeoCoordinateFromPoint(hit.point).altitude;
                     return true;
                 }
             }
             else
             {
                 Vector2 normalizedGrid2DIndex = GetGrid2DIndexFromGeoCoordinate(geoCoordinate) - grid2DIndex;
-                if (GetElevation(out elevation, normalizedGrid2DIndex.x, normalizedGrid2DIndex.y))
+                normalizedGrid2DIndex.y = 1.0f - normalizedGrid2DIndex.y;
+                if (GetElevation(normalizedGrid2DIndex, out elevation))
                     return true;
             }
 
@@ -152,25 +154,36 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool GetElevation(out double elevation, float x, float y)
+        public bool GetElevation(Vector2 normalizedCoordinate, out float elevation)
         {
-            elevation = 0.0f;
+            return GetElevation(this, normalizedCoordinate, out elevation, altitudeOffset);
+        }
 
-            if (this.elevation != Disposable.NULL)
+        [ThreadStatic]
+        private static List<float> _elevationSamples;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GetElevation(IElevationGrid elevationGrid, Vector2 normalizedCoordinate, out float elevation, float altitudeOffset = 0.0f)
+        {
+            if (elevationGrid.elevation != Disposable.NULL)
             {
-                Vector2 pixel = GetProjectedPixel(this.elevation, x, y);
-                elevation = this.elevation.GetElevation(pixel.x, pixel.y) + altitudeOffset;
+                normalizedCoordinate.x = Mathf.Clamp01(normalizedCoordinate.x);
+                normalizedCoordinate.y = Mathf.Clamp01(normalizedCoordinate.y);
 
-                return true;
+                if (elevationGrid.elevation.GetElevation(elevationGrid.elevation.GetPixelFromNormalizedCoordinate(GetProjectedNormalizedCoordinate(elevationGrid, elevationGrid.elevation, normalizedCoordinate)), out elevation))
+                {
+                    elevation += altitudeOffset;
+                    return true;
+                }
             }
 
+            elevation = 0.0f;
             return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override double GetAltitude(bool addOffset = true)
         {
-            GetElevation(out double elevation, 0.5f, 0.5f);
+            GetElevation(new Vector2(0.5f, 0.5f), out float elevation);
             return base.GetAltitude(addOffset) + elevation;
         }
 
@@ -209,11 +222,14 @@ namespace DepictionEngine
         {
             base.ApplyPropertiesToMaterial(meshRenderer, material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, star);
 
+            bool hasElevation = elevation != null;
             SetTextureToMaterial("_ElevationMap", elevation, Texture2D.blackTexture, material, materialPropertyBlock);
-            SetFloatToMaterial("_MinElevation", elevation != null ? elevation.minElevation : 0.0f, material, materialPropertyBlock);
+            SetFloatToMaterial("_MinElevation", hasElevation ? elevation.minElevation : 0.0f, material, materialPropertyBlock);
+            SetFloatToMaterial("_ElevationMultiplier", hasElevation ? elevation.elevationMultiplier : 1.0f, material, materialPropertyBlock);
+            SetIntToMaterial("_ElevationPixelBuffer", hasElevation && elevation.pixelBuffer ? 1 : 0, material, materialPropertyBlock);
         }
 
-        protected class ElevationGridMeshObjectParameters : Grid2DMeshObjectParameters
+        protected class ElevationGridMeshObjectParameters : Grid2DMeshObjectParameters, IElevationGrid
         {
             private Elevation _elevation;
 
@@ -235,7 +251,7 @@ namespace DepictionEngine
                     _elevation = elevation;
                 }
 
-                if (GetElevation(out double centerElevation, 0.5f, 0.5f))
+                if (GetElevation(new Vector2(0.5f, 0.5f), out float centerElevation))
                     _centerElevation = centerElevation;
 
                 return this;
@@ -251,27 +267,9 @@ namespace DepictionEngine
                 get => _centerElevation;
             }
 
-            public override bool GetElevation(out double value, float x, float y, bool clamp = false)
+            public bool GetElevation(Vector2 normalizedCoordinate, out float elevation)
             {
-                value = 0.0d;
-                if (_elevation != Disposable.NULL)
-                {
-                    value = GetElevation(x, y, clamp);
-                    return true;
-                }
-                return false;
-            }
-
-            public override double GetElevation(float x, float y, bool clamp = false)
-            {
-                if (grid2DDimensions != _elevation.grid2DDimensions)
-                {
-                    Vector2 projectedGrid2DIndex = MathPlus.ProjectGrid2DIndex(x, y, grid2DIndex, grid2DDimensions, _elevation.grid2DIndex, _elevation.grid2DDimensions);
-                    x = projectedGrid2DIndex.x;
-                    y = projectedGrid2DIndex.y;
-                }
-
-                return _elevation.GetElevation(x, y, clamp) * inverseScale;
+                return ElevationGridMeshObjectBase.GetElevation(this, normalizedCoordinate, out elevation);
             }
         }
     }

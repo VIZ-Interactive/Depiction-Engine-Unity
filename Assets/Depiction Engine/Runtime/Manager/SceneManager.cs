@@ -10,7 +10,6 @@ using UnityEngine.UIElements;
 using System.Text.RegularExpressions;
 using System.Linq;
 using UnityEngine.SceneManagement;
-using Lean.Touch;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Microsoft.Design", "IDE1006",
@@ -61,6 +60,8 @@ namespace DepictionEngine
         [BeginFoldout("Editor")]
         [SerializeField, Tooltip("When enabled some hidden properties and objects will be exposed to help with debugging.")]
         private bool _debug;
+        [SerializeField, Tooltip("When enabled CameraGrid2DLoader's will display their loading/loaded count in the inspector next to the GameObject name.")]
+        private bool _showLoadCountInInspector;
         [SerializeField, Tooltip("When enabled an approximate Editor framerate will be shown in the scene view windows.")]
         private bool _showFrameRateInSceneViews;
         [SerializeField, Tooltip("When enabled some log entries will be disable such as 'Child GameObject ... became dangling during undo'."), EndFoldout]
@@ -177,7 +178,6 @@ namespace DepictionEngine
             return false;
         }
 
-
         protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
             base.CreateAndInitializeDependencies(initializingContext);
@@ -191,7 +191,10 @@ namespace DepictionEngine
         {
             base.InitializeFields(initializingContext);
 
-#if UNITY_EDITOR            
+            UnityEngine.Texture.allowThreadedTextureCreation = true;
+
+#if UNITY_EDITOR
+            UnityEditor.PlayerSettings.gcIncremental = true;
             UnityEditor.PlayerSettings.allowUnsafeCode = true;
 
             InitSceneCameraTransforms();
@@ -224,6 +227,7 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
 
             InitValue(value => debug = value, false, initializingContext);
+            InitValue(value => showLoadCountInInspector = value, true, initializingContext);
             InitValue(value => showFrameRateInSceneViews = value, false, initializingContext);
             InitValue(value => logConsoleFiltering = value, true, initializingContext);
             InitValue(value => runInBackground = value, true, initializingContext);
@@ -232,6 +236,19 @@ namespace DepictionEngine
             InitValue(value => buildOutputPath = value, "Assets/Depiction Engine/Resources/AssetBundle", initializingContext);
             InitValue(value => buildOptions = value, UnityEditor.BuildAssetBundleOptions.None, initializingContext);
             InitValue(value => buildTarget = value, UnityEditor.BuildTarget.StandaloneWindows64, initializingContext);
+#endif
+        }
+
+        public override void Initialized(InitializationContext initializingContext)
+        {
+            base.Initialized(initializingContext);
+
+#if UNITY_EDITOR
+            instanceManager.IterateOverInstances<CameraGrid2DLoader>((cameraGrid2DLoader) => 
+            {
+                AddCameraGrid2DLoader(cameraGrid2DLoader);
+                return true;
+            });
 #endif
         }
 
@@ -257,6 +274,7 @@ namespace DepictionEngine
                 }
 
 #if UNITY_EDITOR
+                UnityEditor.EditorApplication.hierarchyWindowItemOnGUI -= HierarchyWindowItemOnGUIHandler;
                 UnityEditor.SceneView.duringSceneGui -= CustomOnSceneGUI;
                 UnityEditor.ClipboardUtility.copyingGameObjects -= CopyingGameObjectsHandler;
                 UnityEditor.ClipboardUtility.pastedGameObjects -= PastedGameObjectsHandler;
@@ -270,6 +288,7 @@ namespace DepictionEngine
                 UnityEditor.Selection.selectionChanged -= SelectionChangedHandler;
                 if (!IsDisposing())
                 {
+                    UnityEditor.EditorApplication.hierarchyWindowItemOnGUI += HierarchyWindowItemOnGUIHandler;
                     UnityEditor.SceneView.duringSceneGui += CustomOnSceneGUI;
                     UnityEditor.ClipboardUtility.copyingGameObjects += CopyingGameObjectsHandler;
                     UnityEditor.ClipboardUtility.pastedGameObjects += PastedGameObjectsHandler;
@@ -297,6 +316,45 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        protected override void InstanceAddedHandler(IProperty property)
+        {
+            base.InstanceAddedHandler(property);
+
+            if (property is CameraGrid2DLoader cameraGrid2DLoader)
+                AddCameraGrid2DLoader(cameraGrid2DLoader);
+        }
+
+        protected override void InstanceRemovedHandler(IProperty property)
+        {
+            base.InstanceRemovedHandler(property);
+
+            if (property is CameraGrid2DLoader cameraGrid2DLoader)
+            {
+                if (_loaderGOs != null)
+                    _loaderGOs.Remove(cameraGrid2DLoader.gameObject.GetInstanceID());
+            }
+        }
+
+        private void AddCameraGrid2DLoader(CameraGrid2DLoader cameraGrid2DLoader)
+        {
+            _loaderGOs ??= new();
+            _loaderGOs.TryAdd(cameraGrid2DLoader.gameObject.GetInstanceID(), cameraGrid2DLoader.gameObject);
+        }
+
+        [Serializable]
+        private class GameObjectDictionary : SerializableDictionary<int, GameObject> { };
+        private GameObjectDictionary _loaderGOs;
+        private void HierarchyWindowItemOnGUIHandler(int instanceID, Rect selectionRect)
+        {
+            if (showLoadCountInInspector && _loaderGOs != null && _loaderGOs.TryGetValue(instanceID, out GameObject value))
+            {
+                CameraGrid2DLoader cameraGrid2DLoader = value.GetComponent<CameraGrid2DLoader>();
+                string label = "(Loading: " + cameraGrid2DLoader.loadingCount + "/" + (cameraGrid2DLoader.loadingCount + cameraGrid2DLoader.loadedCount) + ")";
+                float width = label.Length * 6.0f;
+                GUI.Label(new Rect(selectionRect.xMax - width, selectionRect.y, width, selectionRect.height), label);
+            }
+        }
+        
         private void CustomOnSceneGUI(UnityEditor.SceneView sceneview)
         {
             if (showFrameRateInSceneViews)
@@ -961,6 +1019,21 @@ namespace DepictionEngine
 #endif
                 });
             }
+        }
+
+        /// <summary>
+        /// When enabled <see cref="DepictionEngine.CameraGrid2DLoader"/>'s will display their loading/loaded count in the inspector next to the GameObject name.
+        /// </summary>
+        [Json]
+        public bool showLoadCountInInspector
+        {
+            get => _showLoadCountInInspector;
+            set => SetValue(nameof(_showLoadCountInInspector), value, ref _showLoadCountInInspector, (newValue, oldValue) => 
+            {
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.RepaintHierarchyWindow();
+#endif
+            });
         }
 
         /// <summary>

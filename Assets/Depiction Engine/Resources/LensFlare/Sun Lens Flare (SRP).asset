@@ -26,7 +26,7 @@ MonoBehaviour:
     m_Count: 2
     preserveAspectRatio: 0
     rotation: 0
-    tint: {r: 1, g: 0.9279525, b: 0.72237194, a: 1}
+    tint: {r: 1, g: 0.92544436, b: 0.81671154, a: 1}
     blendMode: 0
     autoRotate: 0
     flareType: 1
@@ -110,6 +110,7 @@ MonoBehaviour:
       atime6: 0
       atime7: 0
       m_Mode: 0
+      m_ColorSpace: -1
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
     m_IntensityVariation: 0.75
@@ -270,6 +271,7 @@ MonoBehaviour:
       atime6: 0
       atime7: 0
       m_Mode: 0
+      m_ColorSpace: -1
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
     m_IntensityVariation: 0.75
@@ -448,6 +450,7 @@ MonoBehaviour:
       atime6: 0
       atime7: 0
       m_Mode: 0
+      m_ColorSpace: -1
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
     m_IntensityVariation: 0.75
@@ -626,6 +629,7 @@ MonoBehaviour:
       atime6: 0
       atime7: 0
       m_Mode: 0
+      m_ColorSpace: -1
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
     m_IntensityVariation: 1
