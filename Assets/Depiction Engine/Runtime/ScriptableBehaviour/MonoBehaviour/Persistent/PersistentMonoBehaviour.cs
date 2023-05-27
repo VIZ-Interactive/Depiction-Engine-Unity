@@ -191,7 +191,7 @@ namespace DepictionEngine
 
         protected virtual bool GetDefaultDontSaveToScene()
         {
-            return PersistentScriptableObject.DEFAULT_DONT_SAVE_TO_SCENE;
+            return IsFallbackValues() || PersistentScriptableObject.DEFAULT_DONT_SAVE_TO_SCENE;
         }
 
         private string _lastName;

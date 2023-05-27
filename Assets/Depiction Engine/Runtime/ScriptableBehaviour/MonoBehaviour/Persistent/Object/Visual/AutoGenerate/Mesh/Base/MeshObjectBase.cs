@@ -11,8 +11,6 @@ namespace DepictionEngine
 {
     public class MeshObjectBase : AutoGenerateVisualObject, IProcessing
     {
-        protected const int DEFAULT_MISSING_CACHE_HASH = -1;
-
         [BeginFoldout("Collider")]
         [SerializeField, Tooltip("When enabled the "+nameof(MeshRendererVisual)+"'s will have collider component.")]
         private bool _useCollider;
@@ -114,12 +112,6 @@ namespace DepictionEngine
         {
             if (meshDataProcessor != null && meshDataProcessor.ProcessingWasCompromised())
                 meshDataProcessor.Dispose();
-
-            if (meshRendererVisualModifiers != null)
-            {
-                foreach (MeshRendererVisualModifier meshRendererVisualModifier in meshRendererVisualModifiers)
-                    meshRendererVisualModifier.DisposeMeshModifierProcessorIfProcessingWasCompromised();
-            }
         }
 
         /// <summary>
@@ -129,7 +121,7 @@ namespace DepictionEngine
         public bool useCollider
         {
             get => _useCollider;
-            set { SetValue(nameof(useCollider), value, ref _useCollider); }
+            set => SetValue(nameof(useCollider), value, ref _useCollider);
         }
 
         /// <summary>
@@ -139,7 +131,7 @@ namespace DepictionEngine
         public bool convexCollider
         {
             get => _convexCollider;
-            set { SetValue(nameof(convexCollider), value, ref _convexCollider); }
+            set => SetValue(nameof(convexCollider), value, ref _convexCollider);
         }
 
         /// <summary>
@@ -149,7 +141,7 @@ namespace DepictionEngine
         public bool castShadow
         {
             get => _castShadow;
-            set { SetValue(nameof(castShadow), value, ref _castShadow); }
+            set => SetValue(nameof(castShadow), value, ref _castShadow);
         }
 
         /// <summary>
@@ -159,7 +151,7 @@ namespace DepictionEngine
         public bool receiveShadows
         {
             get => _receiveShadows;
-            set { SetValue(nameof(receiveShadows), value, ref _receiveShadows); }
+            set => SetValue(nameof(receiveShadows), value, ref _receiveShadows);
         }
 
         protected override void DontSaveVisualsToSceneChanged(bool newValue, bool oldValue)
@@ -282,34 +274,29 @@ namespace DepictionEngine
             }
         }
 
+        protected virtual bool EnableRecalculateNormals()
+        {
+            return true;
+        }
+
         protected Type GetMeshRendererType(MeshRendererVisual.ColliderType colliderType, Type meshRendererVisualNoCollider, Type meshRendererVisualBoxCollider, Type meshRendererVisualMeshCollider)
         {
             return colliderType == MeshRendererVisual.ColliderType.None ? meshRendererVisualNoCollider : colliderType == MeshRendererVisual.ColliderType.Box ? meshRendererVisualBoxCollider : meshRendererVisualMeshCollider;
         }
 
-        private Mesh GetMeshFromCache(MeshRendererVisualModifier meshRendererVisualModifier)
+        protected List<Mesh> GetMeshFromCache(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
         {
-            Mesh mesh = null;
-            int hash = GetCacheHash(meshRendererVisualModifier);
-            if (hash != -1)
-                mesh = renderingManager.GetMeshFromCache(hash);
-            return mesh;
+            return renderingManager.GetMeshesFromCache(GetCacheHash(meshRendererVisualDirtyFlags));
         }
 
-        protected virtual int GetCacheHash(MeshRendererVisualModifier meshRendererVisualModifier)
+        private bool AddMeshToCache(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags, List<Mesh> meshes)
         {
-            return DEFAULT_MISSING_CACHE_HASH;
+            return renderingManager.AddMeshesToCache(GetCacheHash(meshRendererVisualDirtyFlags), meshes);
         }
 
-        private bool AddMeshToCache(MeshRendererVisualModifier meshRendererVisualModifier, Mesh mesh)
+        protected virtual int GetCacheHash(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
         {
-            int hash = GetCacheHash(meshRendererVisualModifier);
-            if (hash != DEFAULT_MISSING_CACHE_HASH)
-            {
-                renderingManager.AddMeshToCache(hash, mesh);
-                return true;
-            }
-            return false;
+            return RenderingManager.DEFAULT_MISSING_CACHE_HASH;
         }
 
         protected override void UpdateMeshRendererDirtyFlags(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
@@ -330,7 +317,7 @@ namespace DepictionEngine
 
             foreach (MeshRendererVisualModifier meshRendererVisualModifier in meshRendererVisualModifiers)
             {
-                if (meshRendererVisualModifier.sharedMesh != Disposable.NULL && !meshRendererVisualModifier.sharedMesh.modificationPending)
+                if (meshRendererVisualModifier.mesh != Disposable.NULL)
                     allMeshesReady = true;
                 else
                 {
@@ -351,8 +338,10 @@ namespace DepictionEngine
                     MeshRendererVisual meshRendererVisual = GetVisual(i) as MeshRendererVisual;
                     if (meshRendererVisual == Disposable.NULL)
                         meshRendererVisual = CreateMeshRendererVisual(meshRendererVisualDirtyFlags.colliderType, meshRendererVisualModifier);
+                    else
+                        meshRendererVisualModifier.ModifyProperties(meshRendererVisual);
 
-                    meshRendererVisualModifier.sharedMesh = null;
+                    meshRendererVisualModifier.mesh = null;
                 }
 
                 meshRendererVisualModifiers = null;
@@ -361,7 +350,7 @@ namespace DepictionEngine
             transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
             {
                 Mesh mesh = GetMeshFromUnityMesh(meshRendererVisual.sharedMesh, false);
-                if (mesh != Disposable.NULL && mesh.NormalsDirty())
+                if (mesh != Disposable.NULL && mesh.NormalsDirty() && EnableRecalculateNormals())
                     mesh.RecalculateNormals();
                 return true;
             });
@@ -436,60 +425,132 @@ namespace DepictionEngine
             return CreateVisual(type, meshRendererVisualModifier.name, null, new List<PropertyModifier>() { meshRendererVisualModifier }) as MeshRendererVisual;
         }
 
-        protected virtual void UpdateMeshRendererVisualModifiers(Action<VisualObjectVisualDirtyFlags> completedCallback, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
+        public Processor meshRendererVisualModifiersProcessor
         {
-           
+            get => _meshRendererVisualModifiersProcessor;
+            private set
+            {
+                if (Object.ReferenceEquals(_meshRendererVisualModifiersProcessor, value))
+                    return;
+
+                _meshRendererVisualModifiersProcessor?.Cancel();
+
+                _meshRendererVisualModifiersProcessor = value;
+            }
         }
 
-        private void UpdateMeshRendererVisualModifiersMesh(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
+        private Processor _meshRendererVisualModifiersProcessor;
+        protected virtual void UpdateMeshRendererVisualModifiers(Action<List<MeshRendererVisualModifier>> completedCallback, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
         {
-            for (int i = 0; i < meshRendererVisualModifiers.Count; i++)
-                UpdateMeshRendererVisualModifierMesh(meshRendererVisualModifiers[i], i, meshRendererVisualDirtyFlags);
+            if (meshRendererVisualDirtyFlags != null)
+            {
+                List<Mesh> meshes = GetMeshFromCache(meshRendererVisualDirtyFlags);
+
+                if (meshes != null)
+                {
+                    List<MeshRendererVisualModifier> meshRendererVisualModifiers = new List<MeshRendererVisualModifier>();
+
+                    foreach (Mesh mesh in meshes)
+                    {
+                        MeshRendererVisualModifier meshRendererVisualModifier = MeshRendererVisual.CreateMeshRendererVisualModifier();
+                        
+                        meshRendererVisualModifier.isSharedMesh = true;
+                        meshRendererVisualModifier.mesh = mesh;
+
+                        meshRendererVisualModifiers.Add(meshRendererVisualModifier);
+                    }
+
+                    completedCallback?.Invoke(meshRendererVisualModifiers);
+                }
+                else 
+                { 
+                    Func<ProcessorOutput, ProcessorParameters, IEnumerator> processorFunction = GetProcessorFunction();
+
+                    if (processorFunction != null)
+                    {
+                        InstanceManager instanceManager = InstanceManager.Instance(false);
+                        if (instanceManager != null)
+                            meshRendererVisualModifiersProcessor ??= instanceManager.CreateInstance<Processor>();
+
+                        meshRendererVisualDirtyFlags.SetProcessing(true, meshRendererVisualModifiersProcessor);
+
+                        meshRendererVisualModifiersProcessor.StartProcessing(processorFunction, typeof(MeshObjectProcessorOutput), GetProcessorParametersType(), InitializeProcessorParameters,
+                            (data, errorMsg) =>
+                            {
+                                meshRendererVisualDirtyFlags.SetProcessing(false);
+
+                                MeshObjectProcessorOutput meshObjectProcessorOutput = data as MeshObjectProcessorOutput;
+                                if (meshObjectProcessorOutput != Disposable.NULL)
+                                {
+                                    List<MeshRendererVisualModifier> meshRendererVisualModifiers = meshObjectProcessorOutput.meshRendererVisualModifiers;
+
+                                    for (int index = 0; index < meshRendererVisualModifiers.Count; index++)
+                                    {
+                                        Mesh mesh = index < this.meshes.Count && !isSharedMeshFlags[index] ? this.meshes[index] : null;
+
+                                        MeshRendererVisualModifier meshRendererVisualModifier = meshRendererVisualModifiers[index];
+
+                                        Type meshType = meshRendererVisualModifier.GetMeshType();
+                                        if (mesh == Disposable.NULL || mesh.GetType() != meshType)
+                                            mesh = Mesh.CreateMesh(meshType);
+
+                                        meshRendererVisualModifier.mesh = ModifyMesh(meshRendererVisualModifier, mesh);
+
+                                        if (meshes == null)
+                                            meshes = new();
+                                        meshes.Add(meshRendererVisualModifier.mesh);
+                                    }
+
+                                    bool sharedMeshes = AddMeshToCache(meshRendererVisualDirtyFlags, meshes);
+                                    foreach (MeshRendererVisualModifier meshRendererVisualModifier in meshRendererVisualModifiers)
+                                        meshRendererVisualModifier.isSharedMesh = sharedMeshes;
+
+                                    meshObjectProcessorOutput.Clear();
+
+                                    completedCallback?.Invoke(meshRendererVisualModifiers);
+                                }
+
+                            }, GetProcessingType(meshRendererVisualDirtyFlags));
+                    }
+                }
+            }
         }
 
-        private void UpdateMeshRendererVisualModifierMesh(MeshRendererVisualModifier meshRendererVisualModifier, int index, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
+        protected virtual Func<ProcessorOutput, ProcessorParameters, IEnumerator> GetProcessorFunction()
+        {
+            return null;
+        }
+
+        protected virtual Type GetProcessorParametersType()
+        {
+            return null;
+        }
+
+        protected virtual void InitializeProcessorParameters(ProcessorParameters parameters)
+        {
+
+        }
+
+        private void UpdateMeshRendererVisualModifiersMesh(List<MeshRendererVisualModifier> meshRendererVisualModifiers)
         {
             if (IsDisposing())
                 return;
 
-            bool isSharedMesh = true;
+            for (int i = 0; i < meshRendererVisualModifiers.Count; i++)
+                UpdateMeshAtIndex(i, meshRendererVisualModifiers[i].mesh, meshRendererVisualModifiers[i].isSharedMesh);
 
-            Mesh mesh = GetMeshFromCache(meshRendererVisualModifier);
-
-            if (mesh == Disposable.NULL || mesh.IsEmpty())
-            {
-                if (mesh == Disposable.NULL)
-                {
-                    mesh = index < meshes.Count ? meshes[index] : null;
-
-                    Type meshType = meshRendererVisualModifier.GetMeshType();
-                    if (mesh == Disposable.NULL || mesh.GetType() != meshType)
-                        mesh = Mesh.CreateMesh(meshType);
-
-                    isSharedMesh = AddMeshToCache(meshRendererVisualModifier, mesh);
-                }
-
-                if (!isSharedMesh || !mesh.modificationPending)
-                {
-                    mesh.AddModifying(this);
-                    ModifyMesh(meshRendererVisualModifier, mesh, () => { mesh.RemoveModifying(this); }, meshRendererVisualDirtyFlags);
-                }
-            }
-
-            meshRendererVisualModifier.sharedMesh = mesh;
-
-            UpdateMeshAtIndex(index, mesh, isSharedMesh);
+            this.meshRendererVisualModifiers = meshRendererVisualModifiers;
         }
 
-        protected virtual void ModifyMesh(MeshRendererVisualModifier meshRendererVisualModifier, Mesh mesh, Action meshModifiedCallback, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags, bool disposeMeshModifier = true)
+        protected virtual Mesh ModifyMesh(MeshRendererVisualModifier meshRendererVisualModifier, Mesh mesh, bool disposeMeshModifier = true)
         {
             if (meshRendererVisualModifier.ApplyMeshModifierToMesh(mesh))
             {
                 if (disposeMeshModifier)
                     meshRendererVisualModifier.DisposeMeshModifier();
-
-                meshModifiedCallback?.Invoke();
             }
+
+            return mesh;
         }
 
         private void UpdateMeshAtIndex(int index, Mesh mesh, bool isSharedMesh)
@@ -534,17 +595,15 @@ namespace DepictionEngine
 
         private void DisposeMesh(int index, DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            if (_meshes != null && _isSharedMeshFlags != null)
-            {
-                if (!_isSharedMeshFlags[index])
-                    DisposeManager.Dispose(_meshes[index], disposeContext);
-            }
+            if (_isSharedMeshFlags != null && !_isSharedMeshFlags[index] && _meshes != null)
+                DisposeManager.Dispose(_meshes[index], disposeContext);
         }
 
         public override bool OnDispose(DisposeContext disposeContext)
         {
             if (base.OnDispose(disposeContext))
             {
+                DisposeDataProcessor(_meshRendererVisualModifiersProcessor);
                 DisposeDataProcessor(_meshDataProcessor);
 
                 meshRendererVisualModifiers = null;
@@ -555,6 +614,7 @@ namespace DepictionEngine
                 {
                     for (int i = _meshes.Count - 1; i >= 0; i--)
                         DisposeMesh(i, disposeContext);
+                    _meshes.Clear();
                 }
 
                 return true;
@@ -686,7 +746,7 @@ namespace DepictionEngine
             private set => _meshRendererVisualModifiers = value;
         }
 
-        public void AddMeshRendererVisualModifier(MeshRendererVisualModifier meshModifier)
+        public void AddMeshRendererVisualModifier(MeshRendererVisualModifier meshRendererVisualModifier)
         {
             if (meshRendererVisualModifiers.Count > 0)
             {
@@ -694,7 +754,7 @@ namespace DepictionEngine
                 if (featureMeshModifier != Disposable.NULL)
                     featureMeshModifier.FeatureComplete();
             }
-            meshRendererVisualModifiers.Add(meshModifier);
+            meshRendererVisualModifiers.Add(meshRendererVisualModifier);
         }
 
         public void Clear()

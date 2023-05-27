@@ -14,7 +14,7 @@ namespace DepictionEngine
         /// The different types of HTTP method. <br/><br/>
         /// <b><see cref="Get"/>:</b> <br/>
         /// Requests a representation of the specified resource. <br/><br/>
-        /// <b><see cref="GetTexure"/>:</b> <br/>
+        /// <b><see cref="GetTexture"/>:</b> <br/>
         /// Requests a representation of the specified texture. <br/><br/>
         /// <b><see cref="Put"/>:</b> <br/>
         /// Replaces all current representations of the target resource with the request payload. <br/><br/>
@@ -26,7 +26,7 @@ namespace DepictionEngine
         protected enum HTTPMethod
         {
             Get, 
-            GetTexure, 
+            GetTexture, 
             Put, 
             Post, 
             Delete
@@ -57,7 +57,7 @@ namespace DepictionEngine
 
         protected Processor webRequestDataProcessor
         {
-            get { return _webRequestDataProcessor; }
+            get => _webRequestDataProcessor;
             set
             {
                 if (Object.ReferenceEquals(_webRequestDataProcessor, value))
@@ -113,8 +113,8 @@ namespace DepictionEngine
         {
             UnityWebRequest request = null;
 
-            if (httpMethod == HTTPMethod.Get || httpMethod == HTTPMethod.GetTexure)
-                request = httpMethod == HTTPMethod.GetTexure ? UnityWebRequestTexture.GetTexture(uri) : UnityWebRequest.Get(uri);
+            if (httpMethod == HTTPMethod.Get || httpMethod == HTTPMethod.GetTexture)
+                request = httpMethod == HTTPMethod.GetTexture ? UnityWebRequestTexture.GetTexture(uri) : UnityWebRequest.Get(uri);
             else if (httpMethod == HTTPMethod.Put)
                 request = UnityWebRequest.Put(uri, bodyData);
             else if (httpMethod == HTTPMethod.Post || httpMethod == HTTPMethod.Delete)

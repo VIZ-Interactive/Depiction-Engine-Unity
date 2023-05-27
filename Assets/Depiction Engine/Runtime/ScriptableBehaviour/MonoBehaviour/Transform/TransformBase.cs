@@ -507,6 +507,11 @@ namespace DepictionEngine
             get => children != null ? children.Count : 0;
         }
 
+        public void RevertUnityLocalPosition()
+        {
+            transform.localPosition = _lastTransformLocalPosition;
+        }
+
         private Vector3 _lastTransformLocalPosition;
         protected Vector3 transformLocalPosition
         {
@@ -520,6 +525,11 @@ namespace DepictionEngine
             }
         }
 
+        public void RevertUnityLocalRotation()
+        {
+            transform.localRotation = _lastTransformLocalRotation;
+        }
+
         private Quaternion _lastTransformLocalRotation;
         protected Quaternion transformLocalRotation
         {
@@ -531,6 +541,11 @@ namespace DepictionEngine
                 transform.localRotation = value;
                 InitLastLocalRotationField();
             }
+        }
+
+        public void RevertUnityLocalScale()
+        {
+            transform.localScale = _lastTransformLocalScale;
         }
 
         private Vector3 _lastTransformLocalScale;
@@ -714,10 +729,10 @@ namespace DepictionEngine
                 {
                     parentObject = transform.parent != null ? transform.parent.GetComponent<Object>() : null;
                 }
-                catch(MissingReferenceException)
+                catch(MissingReferenceException e)
                 {
                     parentObject = null;
-                    Debug.Log(this); 
+                    Debug.Log(e.Message); 
                 }
             }
             return parentObject;
@@ -860,21 +875,6 @@ namespace DepictionEngine
                 manipulationDetected = true;
 
             return manipulationDetected;
-        }
-
-        public void RevertUnityLocalPosition()
-        {
-            transform.localPosition = _lastTransformLocalPosition;
-        }
-
-        public void RevertUnityLocalRotation()
-        {
-            transform.localRotation = _lastTransformLocalRotation;
-        }
-
-        public void RevertUnityLocalScale()
-        {
-            transform.localScale = _lastTransformLocalScale;
         }
 
         protected override bool UpdateHideFlags()

@@ -6,6 +6,13 @@ namespace DepictionEngine
 {
     public class AtmosphereGridMeshObject : TerrainGridMeshObject
     {
+#if UNITY_EDITOR
+        protected override bool GetShowMaterialProperties()
+        {
+            return false;
+        }
+#endif
+
         public override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
@@ -59,9 +66,9 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool GetDefaultCapSides()
+        protected override TerrainGeometryType GetDefaultGenerateTerrainGeometry()
         {
-            return false;
+            return TerrainGeometryType.Surface;
         }
 
         protected override MeshRendererVisual.ColliderType GetColliderType()
@@ -74,9 +81,9 @@ namespace DepictionEngine
             return true;
         }
 
-        protected override int GetCacheHash(MeshRendererVisualModifier meshRendererVisualModifier)
+        protected override int GetCacheHash(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
         {
-            return DEFAULT_MISSING_CACHE_HASH;
+            return RenderingManager.DEFAULT_MISSING_CACHE_HASH;
         }
 
         protected override float GetAtmosphereAlpha(float atmosphereAlpha, float atmosphereAltitudeRatio)

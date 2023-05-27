@@ -49,7 +49,7 @@ namespace DepictionEngine
 
         public float elevationMultiplier
         {
-            get { return _elevationMultiplier; }
+            get => _elevationMultiplier;
             set
             {
                 if (_elevationMultiplier == value)

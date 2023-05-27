@@ -72,6 +72,8 @@ namespace DepictionEngine
         public const string ADDITIONALMAP_REFERENCE_DATATYPE = nameof(Texture) + " AdditionalMap";
 
         [BeginFoldout("Building")]
+        [SerializeField, Tooltip("The path of the material's shader from within the Resources directory.")]
+        private string _shaderPath;
         [SerializeField, Tooltip("A fallback color value used by the parser if no other value are present in the feature. ")]
         private Color _defaultColor;
         [SerializeField, Tooltip("A fallback building height value used by the parser if no other value are present in the feature. ")]
@@ -79,26 +81,24 @@ namespace DepictionEngine
         [SerializeField, Tooltip("A fallback level height value used by the parser if no other value are present in the feature. "), EndFoldout]
         private float _defaultLevelHeight;
 
-        [BeginFoldout("Material")]
-        [SerializeField, Tooltip("The path of the material's shader from within the Resources directory."), EndFoldout]
-        private string _shaderPath;
-
-        [BeginFoldout("Color")]
-        [SerializeField, Tooltip("A color value which will override building color depending on alpha value."), EndFoldout]
-        private Color _color;
-
         private Texture _colorMap;
         private Texture _additionalMap;
+
+#if UNITY_EDITOR
+        protected override bool GetShowColor()
+        {
+            return true;
+        }
+#endif
 
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
+            InitValue(value => shaderPath = value, GetDefaultShaderPath(), initializingContext);
             InitValue(value => defaultColor = value, new Color(0.6352941f, 0.5882353f, 0.5411765f), initializingContext);
             InitValue(value => defaultHeight = value, 10.0f, initializingContext);
             InitValue(value => defaultLevelHeight = value, 3.0f, initializingContext);
-            InitValue(value => shaderPath = value, RenderingManager.SHADER_BASE_PATH + "BuildingGrid", initializingContext);
-            InitValue(value => color = value, Color.clear, initializingContext);
         }
 
         protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
@@ -135,6 +135,11 @@ namespace DepictionEngine
             return false;
         }
 
+        protected override string GetDefaultShaderPath()
+        {
+            return base.GetDefaultShaderPath() + "BuildingGrid";
+        }
+
         protected override bool SetPopupT(float value)
         {
             if (base.SetPopupT(value))
@@ -145,6 +150,16 @@ namespace DepictionEngine
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// The path of the material's shader from within the Resources directory.
+        /// </summary>
+        [Json]
+        public string shaderPath
+        {
+            get => _shaderPath;
+            set => SetValue(nameof(shaderPath), value, ref _shaderPath);
         }
 
         /// <summary>
@@ -175,31 +190,6 @@ namespace DepictionEngine
         {
             get => _defaultLevelHeight;
             set => SetValue(nameof(defaultLevelHeight), value, ref _defaultLevelHeight);
-        }
-
-        /// <summary>
-        /// The path of the material's shader from within the Resources directory.
-        /// </summary>
-        [Json]
-        public string shaderPath
-        {
-            get => _shaderPath;
-            set => SetValue(nameof(shaderPath), value, ref _shaderPath);
-        }
-
-        /// <summary>
-        /// A color value which will override building color depending on alpha value.
-        /// </summary>
-        [Json]
-        public Color color
-        {
-            get => _color;
-            set => SetValue(nameof(color), value, ref _color); 
-        }
-
-        protected override Color GetColor()
-        {
-            return color;
         }
 
         private AssetReference colorMapAssetReference
@@ -234,20 +224,6 @@ namespace DepictionEngine
             return additionalMap;
         }
 
-        public Processor meshRendererVisualModifiersProcessor
-        {
-            get => _meshRendererVisualModifiersProcessor;
-            private set
-            {
-                if (Object.ReferenceEquals(_meshRendererVisualModifiersProcessor, value))
-                    return;
-
-                _meshRendererVisualModifiersProcessor?.Cancel();
-
-                _meshRendererVisualModifiersProcessor = value;
-            }
-        }
-
         protected override Type GetMeshRendererVisualDirtyFlagType()
         {
             return typeof(BuildingGridMeshObjectVisualDirtyFlags);
@@ -267,6 +243,11 @@ namespace DepictionEngine
             }
         }
 
+        protected override Func<ProcessorOutput, ProcessorParameters, IEnumerator> GetProcessorFunction()
+        {
+            return BuildingFeatureProcessingFunctions.PopulateMeshes;
+        }
+
         protected override Type GetProcessorParametersType()
         {
             return typeof(BuildingGridMeshObjectParameters);
@@ -281,40 +262,6 @@ namespace DepictionEngine
                 BuildingGridMeshObjectVisualDirtyFlags buildingMeshRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as BuildingGridMeshObjectVisualDirtyFlags;
 
                 (parameters as BuildingGridMeshObjectParameters).Init(buildingMeshRendererVisualDirtyFlags.defaultColor, buildingMeshRendererVisualDirtyFlags.defaultLevelHeight, buildingMeshRendererVisualDirtyFlags.defaultHeight);
-            }
-        }
-
-        private Processor _meshRendererVisualModifiersProcessor;
-        protected override void UpdateMeshRendererVisualModifiers(Action<VisualObjectVisualDirtyFlags> completedCallback, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
-        {
-            base.UpdateMeshRendererVisualModifiers(completedCallback, meshRendererVisualDirtyFlags);
-
-            BuildingGridMeshObjectVisualDirtyFlags buildingGridMeshObjectVisualDirtyFlags = meshRendererVisualDirtyFlags as BuildingGridMeshObjectVisualDirtyFlags;
-
-            if (buildingGridMeshObjectVisualDirtyFlags != null)
-            {
-                InstanceManager instanceManager = InstanceManager.Instance(false);
-                if (instanceManager != null)
-                    meshRendererVisualModifiersProcessor ??= instanceManager.CreateInstance<Processor>();
-
-                buildingGridMeshObjectVisualDirtyFlags.SetProcessing(true, meshRendererVisualModifiersProcessor);
-
-                meshRendererVisualModifiersProcessor.StartProcessing(BuildingFeatureProcessingFunctions.PopulateMeshes, typeof(MeshObjectProcessorOutput), typeof(BuildingGridMeshObjectParameters), InitializeProcessorParameters,
-                    (data, errorMsg) =>
-                    {
-                        buildingGridMeshObjectVisualDirtyFlags.SetProcessing(false);
-
-                        MeshObjectProcessorOutput meshObjectProcessorOutput = data as MeshObjectProcessorOutput;
-                        if (meshObjectProcessorOutput != Disposable.NULL)
-                        {
-                            meshRendererVisualModifiers = meshObjectProcessorOutput.meshRendererVisualModifiers;
-
-                            meshObjectProcessorOutput.Clear();
-
-                            completedCallback?.Invoke(meshRendererVisualDirtyFlags);
-                        }
-
-                    }, GetProcessingType(meshRendererVisualDirtyFlags));
             }
         }
 
@@ -348,17 +295,6 @@ namespace DepictionEngine
         protected override string GetShaderPath()
         {
             return shaderPath;
-        }
-
-        public override bool OnDispose(DisposeContext disposeContext)
-        {
-            if (base.OnDispose(disposeContext))
-            {
-                DisposeDataProcessor(_meshRendererVisualModifiersProcessor);
-
-                return true;
-            }
-            return false;
         }
 
         protected class BuildingGridMeshObjectParameters : FeatureParameters
@@ -424,7 +360,7 @@ namespace DepictionEngine
                 BuildingFeature buildingFeature = parameters.feature as BuildingFeature;
                 if (buildingFeature != null)
                 {
-                    int nextYieldfeatureCount = YIELD_FEATURE_INTERVAL;
+                    int nextYieldFeatureCount = YIELD_FEATURE_INTERVAL;
                     for (int featureIndex = 0; featureIndex < buildingFeature.featureCount; featureIndex++)
                     {
                         Color wallColor = buildingFeature.GetWallColor(featureIndex, parameters.defaultColor);
@@ -545,8 +481,8 @@ namespace DepictionEngine
                             }
 
                             //Scale
-                            float scale = (float)parameters.scale;
-                            float inverseScale = (float)parameters.inverseScale;
+                            float scale = parameters.scale;
+                            float inverseScale = parameters.inverseScale;
 
                             roofHeight *= inverseScale;
                             wallHeight *= inverseScale;
@@ -557,9 +493,9 @@ namespace DepictionEngine
                             uvTilePerUnit *= scale;
 
                             //Add Elevation
-                            if (GetElevation(parameters, new Vector3Double(vectorGeometry.center.x, 0.0d, -vectorGeometry.center.y), out float elevation))
+                            if (GetElevation(parameters, new Vector3Double(vectorGeometry.center.x, 0.0d, vectorGeometry.center.y), out float elevation))
                             {
-                                float elevationDelta = (float)(elevation - parameters.centerElevation);
+                                float elevationDelta = elevation - parameters.centerElevation;
 
                                 wallZ += elevationDelta;
                                 roofZ += elevationDelta;
@@ -570,9 +506,9 @@ namespace DepictionEngine
                             parameters.cancellationTokenSource?.ThrowIfCancellationRequested();
                         }
 
-                        if (parameters.processingType == Processor.ProcessingType.AsyncCoroutine && featureIndex > nextYieldfeatureCount)
+                        if (parameters.processingType == Processor.ProcessingType.AsyncCoroutine && featureIndex > nextYieldFeatureCount)
                         {
-                            nextYieldfeatureCount += YIELD_FEATURE_INTERVAL;
+                            nextYieldFeatureCount += YIELD_FEATURE_INTERVAL;
                             yield return null;
                         }
                     }
@@ -627,7 +563,7 @@ namespace DepictionEngine
                         if (buildingFeature.GetHasLevels(index) && buildingFeature.GetHasMinLevel(index))
                             ty2 = buildingFeature.GetLevels(index) - buildingFeature.GetMinLevel(index);
                         else
-                            ty2 = wallHeight / (parameters.defaultLevelHeight * (float)parameters.inverseScale);
+                            ty2 = wallHeight / (parameters.defaultLevelHeight * parameters.inverseScale);
 
                         AddExtrusion(meshObjectProcessorOutput, vectorGeometry.polygons, wallHeight, wallZ, wallColor, new Vector4(0.0f, uvTilePerUnit, ty1 / wallHeight, ty2 / wallHeight));
                         break;

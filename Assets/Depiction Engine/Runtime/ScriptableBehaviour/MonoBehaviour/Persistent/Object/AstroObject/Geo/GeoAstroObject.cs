@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Rendering;
-using static UnityEngine.Rendering.DebugUI;
 
 namespace DepictionEngine
 {
@@ -22,7 +21,7 @@ namespace DepictionEngine
         public const double DEFAULT_SIZE = 40000000.0d;
 
         [BeginFoldout("Geo")]
-        [SerializeField, Tooltip("The size (radius in spherical mode or width in flat mode), in world units."), EndFoldout]
+        [SerializeField, Tooltip("The size (Circumference in spherical mode or width in flat mode), in world units."), EndFoldout]
         private double _size;
 
         [BeginFoldout("Spherical")]
@@ -51,8 +50,6 @@ namespace DepictionEngine
         private Grid2DIndexTerrainGridMeshObjectDictionary[] _grid2DIndexTerrainGridMeshObjects;
 
         private Tween _sphericalRatioTween;
-
-        private double _radius;
 
         /// <summary>
         /// Dispatched when a <see cref="DepictionEngine.Grid2DIndexTerrainGridMeshObjects"/> is added at a specific zoom level and index in the <see cref="DepictionEngine.GeoAstroObject"/> grid.
@@ -107,13 +104,6 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override void InitializeFields(InitializationContext initializingContext)
-        {
-            base.InitializeFields(initializingContext);
-
-            UpdateRadius();
-        }
-
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
@@ -133,7 +123,7 @@ namespace DepictionEngine
             }
 
             InitValue(value => size = value, DEFAULT_SIZE, initializingContext);
-            InitValue(value => sphericalDuration = value, 2.0f, initializingContext);
+            InitValue(value => sphericalDuration = value, 0.0f, initializingContext);
             InitValue(value => spherical = value, true, initializingContext);
             InitValue(value => reflectionProbe = value, GetDefaultReflectionProbe(), initializingContext);
         }
@@ -512,15 +502,15 @@ namespace DepictionEngine
             return radius * GetScale();
         }
 
-        private void UpdateRadius()
-        {
-            radius = MathPlus.GetRadiusFromCircumference(size);
-        }
-
+        private double? _radius;
         public double radius
         {
-            get => _radius;
-            private set => SetValue(nameof(radius), value, ref _radius);
+            get 
+            { 
+                if (!_radius.HasValue)
+                    _radius = MathPlus.GetRadiusFromCircumference(size);
+                return _radius.Value;
+            }
         }
 
         public double GetScaledSize()
@@ -529,7 +519,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The size (radius in spherical mode or width in flat mode), in world units.
+        /// The size (Circumference in spherical mode or width in flat mode), in world units.
         /// </summary>
         [Json]
         public double size
@@ -542,7 +532,7 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                     _lastSize = newValue;
 #endif
-                    UpdateRadius();
+                    _radius = null;
                 }, true); 
             }
         }
@@ -579,7 +569,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Whether the reflection probe should be activated or not.
+        /// Whether the reflection probe should be enabled or not. When enabled the reflectionProbe will reflect the environment cubemap updated according to <see cref="DepictionEngine.RenderingManager.dynamicEnvironment"/> and <see cref="DepictionEngine.RenderingManager.dynamicEnvironmentUpdateInterval"/>.
         /// </summary>
         [Json]
         public bool reflectionProbe
@@ -750,9 +740,9 @@ namespace DepictionEngine
             return AtmosphereEffect.ATMOPSHERE_ALTITUDE_FACTOR * radius - radius;
         }
 
-        public double GetAtmosphereAltitudeRatio(double atmospherethickness, Vector3Double position)
+        public double GetAtmosphereAltitudeRatio(double atmosphereThickness, Vector3Double position)
         {
-            return 1.0d - MathPlus.Clamp01(Math.Abs(GetGeoCoordinateFromPoint(position).altitude / atmospherethickness));
+            return 1.0d - MathPlus.Clamp01(Math.Abs(GetGeoCoordinateFromPoint(position).altitude / atmosphereThickness));
         }
 
         public static GeoAstroObject GetClosestGeoAstroObject(Vector3Double point)
@@ -829,15 +819,27 @@ namespace DepictionEngine
             {
                 if (probe.name == GetReflectionProbeName())
                 {
-                    probe.intensity = IsValidSphericalRatio() && reflectionProbe ? (float)GetAtmosphereAltitudeRatio(GetScaledAtmosphereThickness(), camera.transform.position) : 0.0f;
+                    bool dynamicEnvironment = IsValidSphericalRatio() && reflectionProbe;
 
-                    if (probe.boxSize.x != size)
-                        probe.boxSize = Vector3.one * (float)size;
-                    probe.boxOffset = transform.position - probe.transform.position;
+                    if (dynamicEnvironment)
+                    {
+                        RenderingManager renderingManager = RenderingManager.Instance(false);
+                        if (renderingManager != Disposable.NULL)
+                            dynamicEnvironment = renderingManager.dynamicEnvironment;
+                    }
 
-                    RenderTexture environmentCubeMap = context.HasValue && reflectionProbe ? camera.GetEnvironmentCubeMap() : null;
-                    if (probe.reflectionProbe.customBakedTexture != environmentCubeMap)
-                        probe.reflectionProbe.customBakedTexture = environmentCubeMap;
+                    probe.intensity = dynamicEnvironment ? (float)GetAtmosphereAltitudeRatio(GetScaledAtmosphereThickness(), camera.transform.position) : 0.0f;
+
+                    if (probe.intensity != 0.0f)
+                    {
+                        if (probe.boxSize.x != size)
+                            probe.boxSize = Vector3.one * (float)size;
+                        probe.boxOffset = transform.position - probe.transform.position;
+
+                        RenderTexture environmentCubeMap = context.HasValue && reflectionProbe ? camera.GetEnvironmentCubeMap() : null;
+                        if (probe.reflectionProbe.customBakedTexture != environmentCubeMap)
+                            probe.reflectionProbe.customBakedTexture = environmentCubeMap;
+                    }
                 }
                 return true;
             });

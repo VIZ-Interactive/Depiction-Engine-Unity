@@ -19,6 +19,11 @@ namespace DepictionEngine
         private float _scale;
 
 #if UNITY_EDITOR
+        protected override bool GetShowMaterialProperties()
+        {
+            return false;
+        }
+
         protected override bool GetShowDontSaveVisualsToScene()
         {
             return false;

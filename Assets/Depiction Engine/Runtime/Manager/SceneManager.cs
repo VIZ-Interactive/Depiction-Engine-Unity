@@ -134,6 +134,10 @@ namespace DepictionEngine
         /// </summary>
         public static Action SceneClosingEvent;
         /// <summary>
+        /// Dispatched when the parent Scene of the <see cref="DepictionEngine.SceneManager"/> gameObject as closed.
+        /// </summary>
+        public static Action SceneClosedEvent;
+        /// <summary>
         /// Dispatched at the same time as the <see cref="UnityEditor.AssemblyReloadEvents.beforeAssemblyReload"/>.
         /// </summary>
         public static Action BeforeAssemblyReloadEvent;
@@ -194,12 +198,13 @@ namespace DepictionEngine
             UnityEngine.Texture.allowThreadedTextureCreation = true;
 
 #if UNITY_EDITOR
+            //Experimental
+            //UnityEditor.PlayerSettings.WebGL.threadsSupport = false;
+
             UnityEditor.PlayerSettings.gcIncremental = true;
             UnityEditor.PlayerSettings.allowUnsafeCode = true;
 
             InitSceneCameraTransforms();
-
-            Editor.AssetManager.InitListeners();
 
             Editor.SceneViewDouble.InitSceneViewDoubles(ref _sceneViewDoubles);
 #endif
@@ -214,13 +219,6 @@ namespace DepictionEngine
 
             UpdateRunInBackground();
         }
-
-#if UNITY_EDITOR
-        private void InitSceneCameraTransforms()
-        {
-            _sceneCameraTransforms ??= new List<TransformBase>();
-        }
-#endif
 
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
@@ -239,20 +237,23 @@ namespace DepictionEngine
 #endif
         }
 
+#if UNITY_EDITOR
+        private void InitSceneCameraTransforms()
+        {
+            _sceneCameraTransforms ??= new List<TransformBase>();
+        }
+
         public override void Initialized(InitializationContext initializingContext)
         {
             base.Initialized(initializingContext);
 
-#if UNITY_EDITOR
             instanceManager.IterateOverInstances<CameraGrid2DLoader>((cameraGrid2DLoader) => 
             {
                 AddCameraGrid2DLoader(cameraGrid2DLoader);
                 return true;
             });
-#endif
         }
 
-#if UNITY_EDITOR
         public override void UpdateDependencies()
         {
             base.UpdateDependencies();
@@ -302,8 +303,6 @@ namespace DepictionEngine
                     UnityEditor.Selection.selectionChanged += SelectionChangedHandler;
                 }
 
-                Editor.AssetManager.InitListeners();
-
                 Editor.UndoManager.UpdateAllDelegates(IsDisposing());
 
                 UpdateUpdateDelegate(IsDisposing());
@@ -331,7 +330,7 @@ namespace DepictionEngine
             if (property is CameraGrid2DLoader cameraGrid2DLoader)
             {
                 if (_loaderGOs != null)
-                    _loaderGOs.Remove(cameraGrid2DLoader.gameObject.GetInstanceID());
+                    _loaderGOs.Remove(cameraGrid2DLoader.GetGameObjectInstanceID());
             }
         }
 
@@ -346,7 +345,7 @@ namespace DepictionEngine
         private GameObjectDictionary _loaderGOs;
         private void HierarchyWindowItemOnGUIHandler(int instanceID, Rect selectionRect)
         {
-            if (showLoadCountInInspector && _loaderGOs != null && _loaderGOs.TryGetValue(instanceID, out GameObject value))
+            if (showLoadCountInInspector && _loaderGOs != null && _loaderGOs.TryGetValue(instanceID, out GameObject value) && value != null)
             {
                 CameraGrid2DLoader cameraGrid2DLoader = value.GetComponent<CameraGrid2DLoader>();
                 string label = "(Loading: " + cameraGrid2DLoader.loadingCount + "/" + (cameraGrid2DLoader.loadingCount + cameraGrid2DLoader.loadedCount) + ")";
@@ -510,7 +509,7 @@ namespace DepictionEngine
             Editor.Selection.SelectionChanged();
         }
 
-        private void SceneClosingHandler(UnityEngine.SceneManagement.Scene scene, bool removingScene)
+        private void SceneClosingHandler(Scene scene, bool removingScene)
         {
             try
             {
@@ -529,6 +528,8 @@ namespace DepictionEngine
         {
             UnityEditor.SceneManagement.EditorSceneManager.sceneClosed -= SceneClosed;
             _sceneClosing = false;
+
+            SceneClosedEvent?.Invoke();
         }
 
         private HarmonyLib.Harmony _harmony;
@@ -1090,6 +1091,7 @@ namespace DepictionEngine
             set => SetValue(nameof(enableMultithreading), value, ref _enableMultithreading);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Debugging()
         {
             bool debug = false;
@@ -1104,6 +1106,7 @@ namespace DepictionEngine
             return debug;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override bool AddChild(PropertyMonoBehaviour child)
         {
             if (child is TweenManager)
@@ -1144,6 +1147,7 @@ namespace DepictionEngine
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override bool RemoveChild(PropertyMonoBehaviour child)
         {
             if (this != Disposable.NULL)
@@ -1245,6 +1249,7 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void HierarchicalInitializeEditorCreatedObjects()
         {
             if (Editor.UndoManager.DetectEditorUndoRedoRegistered())
@@ -1301,6 +1306,7 @@ namespace DepictionEngine
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void FinishInitializingObjects()
         {
             InstanceManager.LateInitializeObjects();
@@ -1372,6 +1378,7 @@ namespace DepictionEngine
             IterateThroughList(transforms, (transform) => { transform.DetectTransformChanges(); });
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void LateUpdate()
         {
             InvokeAction(ref LateUpdateEvent, "LateUpdate", ExecutionState.LateUpdate);
@@ -1388,6 +1395,7 @@ namespace DepictionEngine
             _updated = false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InvokeAction(ref Action action, string actionName, ExecutionState sceneExecutionState, bool clear = true)
         {
             if (action != null)
@@ -1521,6 +1529,7 @@ namespace DepictionEngine
                 });
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EndCameraRendering(ScriptableRenderContext context, UnityEngine.Camera unityCamera)
         {
             if (IsDisposing())

@@ -87,6 +87,13 @@ namespace DepictionEngine
                             parsedValue = json.AsDouble;
                         else if (type == typeof(float))
                             parsedValue = json.AsFloat;
+                        else if (type.IsEnum)
+                        {
+                            if (Enum.TryParse(type, json, out object parsedEnum))
+                                parsedValue = parsedEnum;
+                            else
+                                success = false;
+                        }
                         else
                             success = false;
                     }
@@ -134,6 +141,11 @@ namespace DepictionEngine
                             }
                             if (parsedValue == null)
                                 success = false;
+                        }
+                        else if (type == typeof(double))
+                        {
+                            parsedValue = Convert.ToDouble(jsonStr);
+                            success = true;
                         }
                         else if (type == typeof(SerializableGuid))
                         {

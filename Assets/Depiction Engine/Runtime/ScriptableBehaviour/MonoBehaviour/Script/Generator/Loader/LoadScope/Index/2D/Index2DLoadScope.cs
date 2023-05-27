@@ -75,8 +75,8 @@ namespace DepictionEngine
 
         public URLParametersType indexUrlParamType
         {
-            get { return _indexUrlParamType; }
-            private set { _indexUrlParamType = value; }
+            get => _indexUrlParamType;
+            private set => _indexUrlParamType = value;
         }
 
         public int GetZoom()

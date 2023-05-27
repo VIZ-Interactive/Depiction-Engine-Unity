@@ -232,7 +232,6 @@ namespace DepictionEngine
                     {
                         lock (meshCollider) 
                         { 
-                            //TODO: This crashes Unity sometimes and should be fixed somehow
                             //Hack to force MeshCollider Update
                             bool lastColliderEnabled = meshCollider.enabled;
                             meshCollider.enabled = false;
@@ -355,41 +354,6 @@ namespace DepictionEngine
         }
     }
 
-    public class MeshRendererVisualProcessorOutput : ProcessorOutput
-    {
-        public MeshModifier _meshModifier;
-
-        public override void Initializing()
-        {
-            base.Initializing();
-
-            _meshModifier = Mesh.CreateMeshModifier();
-        }
-
-        public MeshModifier meshModifier
-        {
-            get { return _meshModifier; }
-            set
-            {
-                if (Object.ReferenceEquals(_meshModifier, value))
-                    return;
-
-                _meshModifier = value;
-            }
-        }
-
-        public override bool OnDispose(DisposeContext disposeContext)
-        {
-            if (base.OnDispose(disposeContext))
-            {
-                DisposeManager.Dispose(_meshModifier);
-
-                return true;
-            }
-            return false;
-        }
-    }
-
     [Serializable]
     public class MeshRendererVisualModifier : PropertyModifier
     {
@@ -399,7 +363,9 @@ namespace DepictionEngine
         [SerializeField]
         private MeshModifier _meshModifier;
 
-        public Mesh sharedMesh;
+        public bool isSharedMesh;
+
+        public Mesh mesh;
 
         private Type _typeNoCollider;
         private Type _typeBoxCollider;
@@ -478,7 +444,7 @@ namespace DepictionEngine
 
                 meshRendererVisual.name = !string.IsNullOrEmpty(name) ? name : meshRendererVisual.GetType().Name;
 
-                meshRendererVisual.sharedMesh = sharedMesh.unityMesh;
+                meshRendererVisual.sharedMesh = mesh.unityMesh;
             }
         }
 
@@ -492,54 +458,15 @@ namespace DepictionEngine
             return false;
         }
 
-        public Processor meshModifierProcessor
-        {
-            get => _meshModifierProcessor;
-            private set
-            {
-                if (Object.ReferenceEquals(_meshModifierProcessor, value))
-                    return;
-
-                _meshModifierProcessor?.Cancel();
-
-                _meshModifierProcessor = value;
-            }
-        }
-
-        private Processor _meshModifierProcessor;
-        public void StartProcessing(Func<ProcessorOutput, ProcessorParameters, IEnumerator> processingFunction, Type parametersType, Action<ProcessorParameters> parametersCallback = null, Processor.ProcessingType processingType = Processor.ProcessingType.AsyncTask, Action<MeshRendererVisualProcessorOutput> processingCompleted = null)
-        {
-            if (processingFunction != null)
-            {
-                InstanceManager instanceManager = InstanceManager.Instance(false);
-                if (instanceManager != null)
-                    meshModifierProcessor ??= instanceManager.CreateInstance<Processor>();
-                
-                meshModifierProcessor.StartProcessing(processingFunction, typeof(MeshRendererVisualProcessorOutput), parametersType, parametersCallback,
-                    (data, errorMsg) =>
-                    {
-                        processingCompleted?.Invoke(data as MeshRendererVisualProcessorOutput);
-                    }, processingType);
-            }
-        }
-
         public void DisposeMeshModifier()
         {
             meshModifier = null;
-        }
-
-        public void DisposeMeshModifierProcessorIfProcessingWasCompromised()
-        {
-            if (meshModifier != Disposable.NULL && meshModifierProcessor != null && meshModifierProcessor.ProcessingWasCompromised())
-                meshModifierProcessor.Dispose();
         }
 
         public override bool OnDispose(DisposeContext disposeContext)
         {
             if (base.OnDispose(disposeContext))
             {
-                _meshModifierProcessor?.Dispose();
-
                 DisposeMeshModifier();
 
                 return true;

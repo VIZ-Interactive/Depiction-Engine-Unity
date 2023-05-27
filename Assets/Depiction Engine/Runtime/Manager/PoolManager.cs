@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -245,6 +246,7 @@ namespace DepictionEngine
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddToPool(IDisposable disposable)
         {
             if (!enablePooling)
@@ -362,6 +364,7 @@ namespace DepictionEngine
             return disposable;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private IDisposable RemoveFromPool(List<IDisposable> pool, int index)
         {
             IDisposable disposable = null;
@@ -375,6 +378,7 @@ namespace DepictionEngine
             return disposable;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetHashCodeFromType(Type type)
         {
             int index = 0;

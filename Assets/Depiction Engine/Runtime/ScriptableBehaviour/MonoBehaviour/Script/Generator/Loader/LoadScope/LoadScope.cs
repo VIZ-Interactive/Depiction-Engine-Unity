@@ -197,17 +197,15 @@ namespace DepictionEngine
         public bool LoadingWasCompromised()
         {
             //Problem: Loading was interrupted before finishing(Often because the scene is Played while LoadScopes are still loading)
-            return initialized && (datasourceOperation == null || datasourceOperation.LoadingWasCompromised());
+            return initialized && (loadingState == DatasourceOperationBase.LoadingState.Interval && loadIntervalTween == null) || (datasourceOperation == null || datasourceOperation.LoadingWasCompromised());
         }
 
         public void KillLoading()
         {
             if (LoadInProgress())
             {
-                if (loadIntervalTween != null)
-                    loadIntervalTween = null;
-                if (datasourceOperation != null && datasourceOperation.loadingState == DatasourceOperationBase.LoadingState.Loading)
-                    datasourceOperation = null;
+                loadIntervalTween = null;
+                datasourceOperation = null;
                 loadingState = DatasourceOperationBase.LoadingState.Interrupted;
             }
         }
@@ -268,7 +266,7 @@ namespace DepictionEngine
 
         public bool LoadInProgress()
         {
-            return loadingState == DatasourceOperationBase.LoadingState.Interval || loadingState == DatasourceOperationBase.LoadingState.Loading;
+            return loadIntervalTween != Disposable.NULL || (datasourceOperation != null && datasourceOperation.loadingState == DatasourceOperationBase.LoadingState.Loading);
         }
 
         public void Load(float loadInterval = 0.0f)

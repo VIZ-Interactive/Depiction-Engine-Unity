@@ -294,7 +294,6 @@ namespace DepictionEngine
             Texture2D oldUnityTexture = unityTexture;
 
             unityTexture = texture;
-            unityTexture.anisoLevel = 4;
 
             DisposeOldDataAndRegisterNewData(oldUnityTexture, unityTexture, initializingContext);
         }

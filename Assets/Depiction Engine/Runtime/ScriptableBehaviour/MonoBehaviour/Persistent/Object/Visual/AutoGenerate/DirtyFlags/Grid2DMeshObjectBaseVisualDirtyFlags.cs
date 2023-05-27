@@ -85,7 +85,7 @@ namespace DepictionEngine
             set => SetSphericalRatio(value);
         }
 
-        protected virtual bool SetSphericalRatio(float value)
+        public virtual bool SetSphericalRatio(float value, bool disableMultiThreading = true)
         {
             if (_sphericalRatio == value)
                 return false;

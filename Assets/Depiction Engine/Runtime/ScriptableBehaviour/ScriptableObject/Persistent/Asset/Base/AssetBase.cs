@@ -88,7 +88,7 @@ namespace DepictionEngine
             }
             catch (Exception e)
             {
-                Debug.LogError(e);
+                Debug.LogError(e.Message);
             }
             GUIUtility.ExitGUI();
         }
@@ -111,7 +111,7 @@ namespace DepictionEngine
             }
             catch (Exception e)
             {
-                Debug.LogError(e);
+                Debug.LogError(e.Message);
             }
             GUIUtility.ExitGUI();
         }

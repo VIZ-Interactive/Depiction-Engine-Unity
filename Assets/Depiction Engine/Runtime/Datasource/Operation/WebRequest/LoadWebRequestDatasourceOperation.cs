@@ -24,7 +24,7 @@ namespace DepictionEngine
 
         protected override UnityWebRequest CreateUnityWebRequest(string uri = null, int timeout = 60, List<string> headers = null, byte[] bodyData = null, HTTPMethod httpMethod = HTTPMethod.Get)
         {
-            return base.CreateUnityWebRequest(uri, timeout, headers, bodyData, _dataType == LoaderBase.DataType.TexturePngJpg || _dataType == LoaderBase.DataType.ElevationTerrainRGBPngRaw ? HTTPMethod.GetTexure : HTTPMethod.Get);
+            return base.CreateUnityWebRequest(uri, timeout, headers, bodyData, _dataType == LoaderBase.DataType.TexturePngJpg || _dataType == LoaderBase.DataType.ElevationTerrainRGBPngRaw ? HTTPMethod.GetTexture : HTTPMethod.Get);
         }
 
         protected override IEnumerator WebRequestDataProcessorFunction(ProcessorOutput data, ProcessorParameters parameters)
@@ -337,7 +337,7 @@ namespace DepictionEngine
                             }
                         }
                         else
-                            Debug.LogWarning("Asset type '" + type.Name + "' not currently supported.");
+                            Debug.LogWarning("Asset type '" + type.Name + "' not currently supported");
 
                         loadResultData = GetInstance<LoadResultData>().Init(type, json, jsonFallback, persistentFallbackValuesId, propertyModifiers);
                     }

@@ -1,6 +1,7 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DepictionEngine
@@ -78,8 +79,8 @@ namespace DepictionEngine
         [Json]
         public string floorShaderPath
         {
-            get { return _floorShaderPath; }
-            set { SetValue(nameof(floorShaderPath), value, ref _floorShaderPath); }
+            get => _floorShaderPath;
+            set => SetValue(nameof(floorShaderPath), value, ref _floorShaderPath);
         }
 
         /// <summary>
@@ -88,8 +89,8 @@ namespace DepictionEngine
         [Json]
         public string wallsShaderPath
         {
-            get { return _wallsShaderPath; }
-            set { SetValue(nameof(wallsShaderPath), value, ref _wallsShaderPath); }
+            get => _wallsShaderPath;
+            set => SetValue(nameof(wallsShaderPath), value, ref _wallsShaderPath);
         }
 
         /// <summary>
@@ -98,20 +99,20 @@ namespace DepictionEngine
         [Json]
         public string ceilingShaderPath
         {
-            get { return _ceilingShaderPath; }
-            set { SetValue(nameof(ceilingShaderPath), value, ref _ceilingShaderPath); }
+            get => _ceilingShaderPath;
+            set => SetValue(nameof(ceilingShaderPath), value, ref _ceilingShaderPath);
         }
 
-        protected override void UpdateMeshRendererVisualModifiers(Action<VisualObjectVisualDirtyFlags> completedCallback, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
+        protected override void UpdateMeshRendererVisualModifiers(Action<List<MeshRendererVisualModifier>> completedCallback, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
         {
             base.UpdateMeshRendererVisualModifiers(completedCallback, meshRendererVisualDirtyFlags);
 
-            completedCallback?.Invoke(meshRendererVisualDirtyFlags);
+            //completedCallback?.Invoke(meshRendererVisualDirtyFlags);
         }
 
-        protected override void ModifyMesh(MeshRendererVisualModifier meshRendererVisualModifier, Mesh mesh, Action meshModified, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags, bool disposeMeshModifier = true)
+        protected override Mesh ModifyMesh(MeshRendererVisualModifier meshRendererVisualModifier, Mesh mesh, bool disposeMeshModifier = true)
         {
-            base.ModifyMesh(meshRendererVisualModifier, mesh, meshModified, meshRendererVisualDirtyFlags, false);
+            return base.ModifyMesh(meshRendererVisualModifier, mesh, false);
         }
 
         protected override void InitializeMaterial(MeshRenderer meshRenderer, Material material)

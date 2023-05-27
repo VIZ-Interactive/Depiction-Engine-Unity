@@ -111,7 +111,6 @@ namespace DepictionEngine
             {
                 //Breaks Undo/redo by adding an additional "Move Component(s)" action.
                 //UnityEditorInternal.ComponentUtility.MoveComponentUp(GetUniversalAdditionalCameraData());
-                moveComponentDown = true;
             }
         }
 #endif
@@ -228,24 +227,6 @@ namespace DepictionEngine
             return stacks.Count;
         }
 
-        private bool moveComponentDown;
-        protected override bool LateInitialize(InitializationContext initializingContext)
-        {
-            if (base.LateInitialize(initializingContext))
-            {
-#if UNITY_EDITOR
-                if (moveComponentDown)
-                {
-                    moveComponentDown = false;
-                    //UnityEditorInternal.ComponentUtility.MoveComponentDown(GetUniversalAdditionalCameraData());
-                }
-#endif
-
-                return true;
-            }
-            return false;
-        }
-
         protected override bool UpdateHideFlags()
         {
             if (base.UpdateHideFlags())
@@ -358,7 +339,8 @@ namespace DepictionEngine
             {
                 environmentCubemap = new(textureSize, textureSize, 0, RenderTextureFormat.ARGB32, 0)
                 {
-                    filterMode = FilterMode.Point,
+                    filterMode = FilterMode.Bilinear,
+                    anisoLevel = 0,
                     dimension = TextureDimension.Cube,
                     name = name + "_Dynamic_Skybox_Cubemap"
                 };

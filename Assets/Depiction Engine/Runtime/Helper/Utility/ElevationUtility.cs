@@ -49,7 +49,7 @@ namespace DepictionEngine
                 floatElevation = new float[nValues];
                 hr = LercDecode.lerc_decode(elevation, (UInt32)elevation.Length, pValidBytes, nDim, nCols, nRows, nBands, dataType, floatElevation);
                 //if (hr == 0)
-                //    GenericPixelLoop<float>.GetMinMax(_elevation, pValidBytes, nDim, nCols, nRows, nBands);
+                //    GenericPixelLoop<byte>.GetMinMax(elevation, pValidBytes, nDim, nCols, nRows, nBands);
             }
             else
                 throw new InvalidOperationException("Elevation requires float data type.");

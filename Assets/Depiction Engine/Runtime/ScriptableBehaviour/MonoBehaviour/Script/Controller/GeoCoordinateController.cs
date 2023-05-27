@@ -191,7 +191,7 @@ namespace DepictionEngine
         {
 			base.ParentGeoAstroObjectPropertyAssignedHandler(property, name, newValue, oldValue);	
 
-			if (name == nameof(GeoAstroObject.radius))
+			if (name == nameof(GeoAstroObject.size))
                 ForceUpdateTransform(true);
         }
 

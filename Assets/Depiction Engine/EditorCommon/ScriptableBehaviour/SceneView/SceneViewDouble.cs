@@ -114,7 +114,7 @@ namespace DepictionEngine.Editor
                         _rotation = rotation;
                     EditorPrefs.DeleteKey(id + ROTATION_EDITOR_PREFS_NAME);
 
-                    if (JsonUtility.FromJson(out double cameraDistance, JSONObject.Parse(EditorPrefs.GetString(id + CAMERA_DISTANCE_EDITOR_PREFS_NAME))))
+                    if (JsonUtility.FromJson(out double cameraDistance, EditorPrefs.GetString(id + CAMERA_DISTANCE_EDITOR_PREFS_NAME)))
                         _cameraDistance = cameraDistance;
                     EditorPrefs.DeleteKey(id + CAMERA_DISTANCE_EDITOR_PREFS_NAME);
                 }
@@ -1117,7 +1117,7 @@ namespace DepictionEngine.Editor
                 }
 
                 if (!isValidBounds)
-                    Debug.LogWarning("FrameSelected Failed: Object too far.");
+                    Debug.LogWarning("FrameSelected Failed, Object too far");
 
                 if (originShiftSnapshot != null)
                     TransformDouble.ApplyOriginShifting(originShiftSnapshot);
@@ -1201,7 +1201,7 @@ namespace DepictionEngine.Editor
                 }
             }
             else
-                Debug.LogWarning("AlignWithView Failed: Object too far.");
+                Debug.LogWarning("AlignWithView Failed, Object too far");
         }
 
         public void MoveToView(TransformDouble target)
@@ -1234,7 +1234,7 @@ namespace DepictionEngine.Editor
                 }
             }
             else
-                Debug.LogWarning("MoveToView Failed: Object too far.");
+                Debug.LogWarning("MoveToView Failed, Object too far");
         }
 
         private static bool PatchedPreFrame(SceneView __instance, Bounds bounds, bool instant)

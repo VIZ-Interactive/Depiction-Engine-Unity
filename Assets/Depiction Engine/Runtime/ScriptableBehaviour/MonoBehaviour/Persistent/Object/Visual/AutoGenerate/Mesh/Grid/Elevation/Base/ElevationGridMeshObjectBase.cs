@@ -156,6 +156,12 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool GetElevation(Vector2 normalizedCoordinate, out float elevation)
         {
+            if (elevationAssetReference.IsLoaded() && this.elevation == Disposable.NULL)
+            {
+                elevation = 0.0f;
+                return true;
+            }
+
             return GetElevation(this, normalizedCoordinate, out elevation, altitudeOffset);
         }
 
@@ -183,8 +189,12 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override double GetAltitude(bool addOffset = true)
         {
-            GetElevation(new Vector2(0.5f, 0.5f), out float elevation);
-            return base.GetAltitude(addOffset) + elevation;
+            double altitude = base.GetAltitude(addOffset);
+
+            if (GetElevation(new Vector2(0.5f, 0.5f), out float elevation))
+                altitude += elevation;
+
+            return altitude;
         }
 
         protected override Type GetMeshRendererVisualDirtyFlagType()
@@ -233,7 +243,7 @@ namespace DepictionEngine
         {
             private Elevation _elevation;
 
-            private double _centerElevation;
+            private float _centerElevation;
 
             public override void Recycle()
             {
@@ -262,14 +272,19 @@ namespace DepictionEngine
                 get => _elevation;
             }
 
-            public double centerElevation
+            public float centerElevation
             {
                 get => _centerElevation;
             }
 
             public bool GetElevation(Vector2 normalizedCoordinate, out float elevation)
             {
-                return ElevationGridMeshObjectBase.GetElevation(this, normalizedCoordinate, out elevation);
+                if (ElevationGridMeshObjectBase.GetElevation(this, normalizedCoordinate, out elevation))
+                {
+                    elevation *= inverseScale;
+                    return true;
+                }
+                return false;
             }
         }
     }

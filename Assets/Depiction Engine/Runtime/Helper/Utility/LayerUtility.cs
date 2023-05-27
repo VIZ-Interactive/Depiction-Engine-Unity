@@ -43,7 +43,7 @@ namespace DepictionEngine
 
             if (firstEmptyProp == null)
             {
-                Debug.LogError("Maximum limit of " + propCount + " layers exceeded. Layer \"" + name + "\" not created.");
+                Debug.LogError("Maximum limit of " + propCount + " layers exceeded, layer \"" + name + "\" not created");
                 return;
             }
 

@@ -55,7 +55,7 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4Double TRS(Vector3Double translation, QuaternionDouble rotation, Vector3Double scale)
         {
-            DoubleMatrix3x3 r = new DoubleMatrix3x3(rotation);
+            Matrix3x3Double r = new Matrix3x3Double(rotation);
             return new Matrix4x4Double(new Vector4Double(r.c0 * scale.x, 0.0d),
                               new Vector4Double(r.c1 * scale.y, 0.0d),
                               new Vector4Double(r.c2 * scale.z, 0.0d),
@@ -543,13 +543,13 @@ namespace DepictionEngine
             return String.Format(CultureInfo.InvariantCulture.NumberFormat, fmt, args);
         }
 
-        private struct DoubleMatrix3x3
+        private struct Matrix3x3Double
         {
             public Vector3Double c0;
             public Vector3Double c1;
             public Vector3Double c2;
 
-            public DoubleMatrix3x3(QuaternionDouble q)
+            public Matrix3x3Double(QuaternionDouble q)
             {
                 double x = q.x * 2.0d;
                 double y = q.y * 2.0d;

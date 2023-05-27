@@ -13,9 +13,7 @@ namespace DepictionEngine
         [SerializeField]
         private float _overlapFactor;
         [SerializeField]
-        private bool _generateEdgeInSeparateMesh;
-        [SerializeField]
-        private bool _capSides;
+        private TerrainGridMeshObject.TerrainGeometryType _generateTerrainGeometry;
         [SerializeField]
         private TerrainGridMeshObject.NormalsType _normalsType;
 
@@ -33,8 +31,7 @@ namespace DepictionEngine
             _subdivision = default;
             _subdivisionSize = default;
             _overlapFactor = default;
-            _generateEdgeInSeparateMesh = default;
-            _capSides = default;
+            _generateTerrainGeometry = default;
             _normalsType = default;
         }
 
@@ -87,31 +84,17 @@ namespace DepictionEngine
             }
         }
 
-        public bool generateEdgeInSeparateMesh
+        public TerrainGridMeshObject.TerrainGeometryType generateTerrainGeometry
         {
-            get => _generateEdgeInSeparateMesh;
+            get => _generateTerrainGeometry;
             set
             {
-                if (_generateEdgeInSeparateMesh == value)
+                if (_generateTerrainGeometry == value)
                     return;
 
-                _generateEdgeInSeparateMesh = value;
+                _generateTerrainGeometry = value;
 
-                CapSidesChanged();
-            }
-        }
-
-        public bool capSides
-        {
-            get => _capSides;
-            set
-            {
-                if (_capSides == value)
-                    return;
-
-                _capSides = value;
-
-                CapSidesChanged();
+                GenerateTerrainGeometryChanged();
             }
         }
 
@@ -129,7 +112,7 @@ namespace DepictionEngine
             }
         }
 
-        protected void CapSidesChanged()
+        protected void GenerateTerrainGeometryChanged()
         {
             TrianglesDirty();
             UVsDirty();
@@ -182,12 +165,13 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool SetSphericalRatio(float value)
+        public override bool SetSphericalRatio(float value, bool disableMultiThreading = true)
         {
-            if (base.SetSphericalRatio(value))
+            if (base.SetSphericalRatio(value, disableMultiThreading))
             {
                 VerticesNormalsDirty();
-                DisableMultithreading();
+                if (disableMultiThreading)
+                    DisableMultithreading();
 
                 return true;
             }

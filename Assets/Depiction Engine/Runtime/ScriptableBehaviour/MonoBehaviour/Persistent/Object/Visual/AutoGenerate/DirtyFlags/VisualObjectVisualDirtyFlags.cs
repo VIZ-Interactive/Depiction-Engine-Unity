@@ -15,14 +15,21 @@ namespace DepictionEngine
         private bool _isDirty;
         [SerializeField]
         private bool _disposeAllVisuals;
+        [SerializeField]
+        private bool _processing;
 
         private bool _colliderTypeDirty;
 
         private bool _disableMultithreading;
 
+        private Processor _processor;
+
         public virtual void Recycle()
         {
             ResetAll();
+
+            _processing = default;
+            _processor = default;
 
             _colliderType = MeshRendererVisual.ColliderType.None;
 
@@ -158,6 +165,17 @@ namespace DepictionEngine
         public void ResetColliderDirty()
         {
             _colliderTypeDirty = false;
+        }
+
+        public void SetProcessing(bool processing, Processor processor = null)
+        {
+            _processing = processing;
+            _processor = processor;
+        }
+
+        public bool ProcessingWasCompromised()
+        {
+            return _processing && _processor == null;
         }
     }
 }

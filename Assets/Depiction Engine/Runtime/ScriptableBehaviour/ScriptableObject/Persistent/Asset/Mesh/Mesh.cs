@@ -55,14 +55,6 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private int _unityMeshInstanceId;
 
-        private List<MeshObjectBase> _meshObjectModifying;
-        private bool _modificationPending;
-
-        /// <summary>
-        /// Dispatched to signal a <see cref="DepictionEngine.MeshRendererVisualModifier"/> in a <see cref="DepictionEngine.MeshGridMeshObject"/> is about to start modification or right after it finished modifying. 
-        /// </summary>
-        private Action ModificationPendingChangedEvent;
-
         public override void Recycle()
         {
             base.Recycle();
@@ -83,59 +75,6 @@ namespace DepictionEngine
             
             //InstanceId can change between execution
             UpdateUnityMeshInstanceId();
-        }
-
-        protected override bool UpdateAllDelegates()
-        {
-            if (base.UpdateAllDelegates())
-            {
-                foreach (MeshObjectBase meshObject in meshObjectModifying)
-                {
-                    RemoveMeshObjectDelegate(meshObject);
-                    if (!IsDisposing())
-                        AddMeshObjectDelegate(meshObject);
-                }
-
-                return true;
-            }
-            return false;
-        }
-
-        private void AddMeshObjectDelegate(MeshObjectBase meshObject)
-        {
-            meshObject.DisposedEvent += MeshObjectDisposedHandler;
-        }
-
-        private void RemoveMeshObjectDelegate(MeshObjectBase meshObject)
-        {
-            meshObject.DisposedEvent -= MeshObjectDisposedHandler;
-        }
-
-        private void MeshObjectDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
-        {
-            RemoveModifying(disposable as MeshObjectBase);
-        }
-
-        private List<MeshObjectBase> meshObjectModifying
-        {
-            get { _meshObjectModifying ??= new List<MeshObjectBase>(); return _meshObjectModifying; }
-        }
-
-        public bool modificationPending
-        {
-            get => _modificationPending;
-            private set
-            {
-                if (_modificationPending == value)
-                    return;
-                _modificationPending = value;
-                if (ModificationPendingChangedEvent != null)
-                {
-                    Action modificationPendingChangedEvent = ModificationPendingChangedEvent;
-                    ModificationPendingChangedEvent = null;
-                    modificationPendingChangedEvent();
-                }
-            }
         }
 
         public Bounds bounds
@@ -210,7 +149,7 @@ namespace DepictionEngine
 
         public void RecalculateNormals()
         {
-            if (unityMesh != null && NormalsDirty())
+            if (unityMesh != null)
             {
                 unityMesh.RecalculateNormals();
                 _normalsType = NormalsType.Auto;
@@ -514,7 +453,7 @@ namespace DepictionEngine
 
         public UnityEngine.Mesh unityMesh
         {
-            get { return _unityMesh; }
+            get => _unityMesh;
             private set
             {
                 if (_unityMesh == value)
@@ -534,34 +473,6 @@ namespace DepictionEngine
         protected override string GetFileExtension()
         {
             return "mesh";
-        }
-
-        public bool AddModifying(MeshObjectBase meshObject)
-        {
-            if (!meshObjectModifying.Contains(meshObject))
-            {
-                AddMeshObjectDelegate(meshObject);
-                meshObjectModifying.Add(meshObject);
-                UpdateModificationPending();
-                return true;
-            }
-            return false;
-        }
-
-        public bool RemoveModifying(MeshObjectBase meshObject)
-        {
-            if (meshObjectModifying.Remove(meshObject))
-            {
-                RemoveMeshObjectDelegate(meshObject);
-                UpdateModificationPending();
-                return true;
-            }
-            return false;
-        }
-
-        private void UpdateModificationPending()
-        {
-            modificationPending = meshObjectModifying.Count != 0;
         }
 
         public static T CreateMesh<T>(InitializationContext initializingContext = InitializationContext.Programmatically) where T : Mesh
@@ -596,26 +507,12 @@ namespace DepictionEngine
             return InstanceManager.Instance(false)?.CreateInstance<T>();
         }
 
-        protected override bool OnDisposedLocked()
-        {
-            if (base.OnDisposedLocked())
-            {
-                for (int i = meshObjectModifying.Count - 1; i >= 0; i--)
-                    RemoveModifying(meshObjectModifying[i]);
-
-                return true;
-            }
-            return false;
-        }
-
         public override bool OnDispose(DisposeContext disposeContext)
         {
             if (base.OnDispose(disposeContext))
             {
                 if (disposeContext != DisposeContext.Programmatically_Pool)
                     DisposeManager.Dispose(_unityMesh, disposeContext);
-
-                ModificationPendingChangedEvent = null;
 
                 return true;
             }

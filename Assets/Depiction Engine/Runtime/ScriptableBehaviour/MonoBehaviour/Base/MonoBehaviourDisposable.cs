@@ -287,10 +287,12 @@ namespace DepictionEngine
             }
 
 #if UNITY_EDITOR
+            SceneManager.SceneClosedEvent -= SceneClosedHandler;
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= Saving;
             UnityEditor.SceneManagement.EditorSceneManager.sceneSaved -= Saved;
             if (!IsDisposing())
             {
+                SceneManager.SceneClosedEvent += SceneClosedHandler;
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaving += Saving;
                 UnityEditor.SceneManagement.EditorSceneManager.sceneSaved += Saved;
             }
@@ -303,6 +305,13 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
+        protected virtual void SceneClosedHandler()
+        {
+            //Inactive GameObject's will not trigger OnDestroy during SceneClosing so we trigger it manually
+            if (!IsDisposing() && this == null)
+                OnDestroy();
+        }
+
         protected virtual bool UpdateUndoRedoSerializedFields()
         {
             return !isFallbackValues;

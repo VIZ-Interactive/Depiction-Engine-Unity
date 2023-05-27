@@ -170,11 +170,11 @@ namespace DepictionEngine
             }
         }
 
-        public VectorPolygon[] polygons  { get { return _polygons; } }
+        public VectorPolygon[] polygons  { get => _polygons; }
 
-        public Vector2 center { get { return bbox.center; } }
+        public Vector2 center { get => bbox.center; }
 
-        public float radius { get { return bbox.radius; } }
+        public float radius { get => bbox.radius; }
 
         public void Add(VectorPolygon value)
         {
@@ -303,9 +303,9 @@ namespace DepictionEngine
             _radius = (float)(X - x) / 2.0f;
         }
 
-        public Vector2 center { get { return _center; } }
+        public Vector2 center { get => _center; }
 
-        public float radius { get { return _radius; } }
+        public float radius { get => _radius; }
     }
 
     /// <summary>

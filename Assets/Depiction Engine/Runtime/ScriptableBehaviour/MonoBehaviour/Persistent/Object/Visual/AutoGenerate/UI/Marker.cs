@@ -215,8 +215,6 @@ namespace DepictionEngine
         public const string MARKER_ICON_FONT_NAME = "MarkerIcons"; 
 
         [BeginFoldout("Marker")]
-        [SerializeField, Tooltip("The Marker tint.")]
-        private Color _color;
         [SerializeField, Tooltip("The distance between the Marker position and the badge.")]
         private float _badgeOffset;
         [SerializeField, Tooltip("The icon to display in the badge.")]
@@ -232,17 +230,20 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private Mesh _badgeMesh;
 
-        private Color _currentColor;
-
         private SerializableGuid _buildingId;
         private Building _building;
         private static IdLoadScope _buildingLoadScope;
 
+#if UNITY_EDITOR
+        protected override bool GetShowColor()
+        {
+            return true;
+        }
+#endif
+
         public override void Recycle()
         {
             base.Recycle();
-
-            _currentColor = default;
 
             _buildingId = default;
             _building = default;
@@ -261,10 +262,14 @@ namespace DepictionEngine
                 _badgeMesh = default;
             }
 
-            InitValue(value => color = value, new Color(188.0f / 255.0f, 22.0f / 255.0f, 22.0f / 255.0f), initializingContext);
             InitValue(value => badgeOffset = value, 10.0f, initializingContext);
             InitValue(value => icon = value, Icon.CIRCLE, initializingContext);
             InitValue(value => additionalData = value, "", initializingContext);
+        }
+
+        protected override Color GetDefaultColor()
+        {
+            return new Color(188.0f / 255.0f, 22.0f / 255.0f, 22.0f / 255.0f);
         }
 
 #if UNITY_EDITOR
@@ -373,16 +378,6 @@ namespace DepictionEngine
             }
         }
 
-        /// <summary>
-        /// The Marker tint.
-        /// </summary>
-        [Json]
-        public Color color
-        {
-            get => _color;
-            set => SetValue(nameof(color), value, ref _color);
-        }
-
 #if UNITY_EDITOR
         protected UnityEngine.Object[] GetUIVisualTransformsAdditionalRecordObjects()
         {
@@ -447,12 +442,6 @@ namespace DepictionEngine
             set => SetValue(nameof(additionalData), value, ref _additionalData);
         }
 
-        private Color currentColor
-        {
-            get => _currentColor;
-            set => SetValue(nameof(currentColor), value, ref _currentColor);
-        }
-
         private CharacterInfo characterInfo
         {
             get 
@@ -464,7 +453,7 @@ namespace DepictionEngine
 
         public override float GetCurrentAlpha()
         {
-            return building != Disposable.NULL ? 0.0f : currentColor.a * base.GetCurrentAlpha();
+            return building != Disposable.NULL ? 0.0f : color.a * base.GetCurrentAlpha();
         }
 
         protected override void InitializeMaterial(MeshRenderer meshRenderer, Material material = null)
@@ -492,17 +481,6 @@ namespace DepictionEngine
             CreateMeshRendererVisual(typeof(UIMeshRendererVisualNoCollider), SHADOW_MESH_NAME, uiVisual.transform).sharedMesh = renderingManager.quadMesh.unityMesh;
 
             return uiVisual;
-        }
-
-        protected override void UpdateVisualProperties()
-        {
-            base.UpdateVisualProperties();
-           
-            Color.RGBToHSV(color, out float h, out float s, out float v);
-            
-            s = GetMouseDown() ? s * 0.3f : GetMouseOver() ? 1.0f : s;
-            
-            currentColor = Color.HSVToRGB(h, s, v);
         }
 
         protected override void ApplyPropertiesToVisual(bool visualsChanged, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
@@ -633,10 +611,27 @@ namespace DepictionEngine
             if (meshRenderer.name == SHADOW_MESH_NAME)
                 SetTextureToMaterial("_AlphaMap", GetShadowTexture(), material, materialPropertyBlock);
             if (meshRenderer.name == BADGE_MESH_NAME)
-            {
                 SetTextureToMaterial("_LuminosityMap", GetBadgeLuminosityTextureShadowTexture(), material, materialPropertyBlock);
-                SetColorToMaterial(currentColor, material, materialPropertyBlock);
+        }
+
+        protected override Color GetColor(MeshRenderer meshRenderer, Material material, MaterialPropertyBlock materialPropertyBlock, Camera camera, GeoAstroObject closestGeoAstroObject)
+        {
+            Color color = base.GetColor(meshRenderer, material, materialPropertyBlock, camera, closestGeoAstroObject);
+
+            if (meshRenderer.name == BADGE_MESH_NAME)
+            {
+                Color.RGBToHSV(color, out float h, out float s, out float v);
+
+                s = GetMouseDown() ? s * 0.3f : GetMouseOver() ? 1.0f : s;
+
+                return Color.HSVToRGB(h, s, v);
             }
+            else if (meshRenderer.name == SHADOW_MESH_NAME)
+                return Color.black;
+            else if (meshRenderer.name == LINE_MESH_NAME)
+                return Color.white;
+
+            return color;
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

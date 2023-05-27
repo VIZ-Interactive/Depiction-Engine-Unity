@@ -933,7 +933,7 @@ namespace DepictionEngine
             }
             catch (MissingReferenceException e)
             {
-                Debug.LogError(e.StackTrace);
+                Debug.LogError(e.Message);
             }
             return false;
         }

@@ -2943,7 +2943,7 @@
     "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
     "m_ObjectId": "7cba518f96574db1835269b7ddc288a3",
     "m_Id": 0,
-    "m_DisplayName": "Radius",
+    "m_DisplayName": "RadiusWS",
     "m_SlotType": 1,
     "m_Hidden": false,
     "m_ShaderOutputName": "Out",
@@ -3286,6 +3286,7 @@
     "m_SGVersion": 1,
     "m_Type": "UnityEditor.Rendering.Universal.ShaderGraph.UniversalTarget",
     "m_ObjectId": "96c7a2ab0fda4befbd7ed3a36fd0b555",
+    "m_Datas": [],
     "m_ActiveSubTarget": {
         "m_Id": "c0f7676b6400432d816ff2faf689ed16"
     },
@@ -3298,6 +3299,7 @@
     "m_AlphaClip": true,
     "m_CastShadows": true,
     "m_ReceiveShadows": true,
+    "m_SupportsLODCrossFade": false,
     "m_CustomEditorGUI": "",
     "m_SupportVFX": false
 }
@@ -4026,7 +4028,7 @@
 }
 
 {
-    "m_SGVersion": 1,
+    "m_SGVersion": 2,
     "m_Type": "UnityEditor.Rendering.Universal.ShaderGraph.UniversalLitSubTarget",
     "m_ObjectId": "c0f7676b6400432d816ff2faf689ed16",
     "m_WorkflowMode": 1,
@@ -4090,10 +4092,10 @@
     "m_Guid": {
         "m_GuidSerialized": "051db9ca-2a05-4128-b331-3ed120679553"
     },
-    "m_Name": "Radius",
+    "m_Name": "RadiusWS",
     "m_DefaultRefNameVersion": 1,
-    "m_RefNameGeneratedByDisplayName": "Radius",
-    "m_DefaultReferenceName": "_Radius",
+    "m_RefNameGeneratedByDisplayName": "RadiusWS",
+    "m_DefaultReferenceName": "_RadiusWS",
     "m_OverrideReferenceName": "",
     "m_GeneratePropertyBlock": true,
     "m_UseCustomSlotLabel": false,

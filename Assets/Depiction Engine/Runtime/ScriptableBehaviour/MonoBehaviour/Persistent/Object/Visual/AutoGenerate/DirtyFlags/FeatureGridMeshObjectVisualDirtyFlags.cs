@@ -8,18 +8,12 @@ namespace DepictionEngine
     {
         [SerializeField]
         private Feature _feature;
-        [SerializeField]
-        private bool _processing;
-
-        private Processor _processor;
 
         public override void Recycle()
         {
             base.Recycle();
 
             _feature = default;
-            _processing = default;
-            _processor = default;
         }
 
 #if UNITY_EDITOR
@@ -48,17 +42,6 @@ namespace DepictionEngine
         public void FeatureChanged()
         {
             Recreate();
-        }
-
-        public void SetProcessing(bool processing, Processor processor = null)
-        {
-            _processing = processing;
-            _processor = processor;
-        }
-
-        public bool ProcessingWasCompromised()
-        {
-            return _processing && _processor == null;
         }
     }
 }

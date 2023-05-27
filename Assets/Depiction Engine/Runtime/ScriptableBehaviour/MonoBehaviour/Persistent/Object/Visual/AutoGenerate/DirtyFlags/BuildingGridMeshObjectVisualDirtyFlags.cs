@@ -61,9 +61,9 @@ namespace DepictionEngine
             }
         }
 
-        protected override bool SetSphericalRatio(float value)
+        public override bool SetSphericalRatio(float value, bool disableMultiThreading = true)
         {
-            if (base.SetSphericalRatio(value))
+            if (base.SetSphericalRatio(value, disableMultiThreading))
             {
                 isDirty = true;
 

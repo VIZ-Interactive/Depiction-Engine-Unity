@@ -6,8 +6,7 @@ using UnityEngine.Rendering;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.UIElements;
-using UnityEditor;
+using static UnityEngine.Rendering.DebugUI;
 
 namespace DepictionEngine
 {
@@ -30,9 +29,11 @@ namespace DepictionEngine
         }
 
         [Serializable]
-        private class MeshesDictionary : SerializableDictionary<int, Mesh> { };
+        private class MeshesDictionary : SerializableDictionary<int, List<Mesh>> { };
 
         private static readonly string[] FONT_NAMES = { Marker.MARKER_ICON_FONT_NAME };
+
+        public const int DEFAULT_MISSING_CACHE_HASH = -1;
 
         public const string SHADER_BASE_PATH = "Shader/";
         public const string MATERIAL_BASE_PATH = "Material/";
@@ -44,12 +45,10 @@ namespace DepictionEngine
 #endif
 
         [BeginFoldout("Environment")]
-        [SerializeField, Tooltip("The interval (in seconds) at which we call the '"+nameof(UpdateEnvironment)+"' function. Set to zero to deactivate."), EndFoldout]
-        private float _environmentUpdateInterval;
-
-        [BeginFoldout("Dynamic Skybox")]
-        [SerializeField, Tooltip("When enabled the skybox will be updated automatically."), EndFoldout]
-        private bool _dynamicSkybox;
+        [SerializeField, Tooltip("When enabled, a realtime environment cubemap will be generated for each camera and be made available for Global Illumination (GI) and reflection.")]
+        private bool _dynamicEnvironment;
+        [SerializeField, Tooltip("The interval (in seconds) at which we call the '"+nameof(UpdateEnvironmentCubemap)+"' function to update the environment cubemap."), EndFoldout]
+        private float _dynamicEnvironmentUpdateInterval;
 
         [BeginFoldout("Double Precision")]
         [SerializeField, Tooltip("When enabled the objects will be rendered relative to the camera's position (origin). Required for large Scene."), EndFoldout]
@@ -88,7 +87,7 @@ namespace DepictionEngine
         private Vector2 _minMaxFocusDistance;
 
         [SerializeField, HideInInspector]
-        private MeshesDictionary _meshCache;
+        private MeshesDictionary _meshesCache;
 
         private Material _dynamicSkyboxMaterial;
 
@@ -341,9 +340,9 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => dynamicSkybox = value, true, initializingContext);
+            InitValue(value => dynamicEnvironment = value, true, initializingContext);
+            InitValue(value => dynamicEnvironmentUpdateInterval = value, 5.0f, initializingContext);
             InitValue(value => originShifting = value, true, initializingContext);
-            InitValue(value => environmentUpdateInterval = value, 5.0f, initializingContext);
             InitValue(value => highlightColor = value, new Color(0.0f, 1.0f, 1.0f, 0.75f), initializingContext);
             InitValue(value => labelOutlineColor = value, Color.black, initializingContext);
             InitValue(value => labelOutlineWidth = value, 0.25f, initializingContext);
@@ -355,7 +354,7 @@ namespace DepictionEngine
         {
             base.Initialized(initializingContext);
 
-            UpdateEnvironment();
+            UpdateEnvironmentCubemap();
         }
 
         public override void UpdateDependencies()
@@ -389,14 +388,6 @@ namespace DepictionEngine
                 if (!IsDisposing())
                     SceneManager.BeforeAssemblyReloadEvent += BeforeAssemblyReloadHandler;
 #endif
-
-                foreach (Mesh mesh in meshCache.Values)
-                {
-                    RemoveMeshDelegate(mesh);
-                    if (!IsDisposing())
-                        AddMeshDelegate(mesh);
-                }
-
                 foreach (ICustomEffect customEffect in customEffects)
                 {
                     RemoveCustomEffectDelegate(customEffect);
@@ -419,28 +410,13 @@ namespace DepictionEngine
         {
             if (base.AfterAssemblyReload())
             {
-                UpdateEnvironment();
+                UpdateEnvironmentCubemap();
 
                 return true;
             }
             return false;
         }
 #endif
-
-        private void RemoveMeshDelegate(Mesh mesh)
-        {
-            mesh.DisposedEvent -= MeshDisposedHandler;
-        }
-
-        private void AddMeshDelegate(Mesh mesh)
-        {
-            mesh.DisposedEvent += MeshDisposedHandler;
-        }
-
-        private void MeshDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
-        {
-
-        }
 
         private void RemoveCustomEffectDelegate(ICustomEffect customEffect)
         {
@@ -611,31 +587,36 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// The interval (in seconds) at which we call the <see cref="DepictionEngine.RenderingManager.UpdateEnvironment"/> function. Set to zero to deactivate.
+        /// When enabled, a realtime environment cubemap will be generated for each camera and be made available for Global Illumination (GI) and reflection. 
         /// </summary>
         [Json]
-        public float environmentUpdateInterval
+        public bool dynamicEnvironment
         {
-            get => _environmentUpdateInterval;
+            get => _dynamicEnvironment;
+            set => SetValue(nameof(dynamicEnvironment), value, ref _dynamicEnvironment);
+        }
+
+        /// <summary>
+        /// The interval (in seconds) at which we call the <see cref="DepictionEngine.RenderingManager.UpdateEnvironmentCubemap"/> function to update the environment cubemap.
+        /// </summary>
+        [Json]
+        public float dynamicEnvironmentUpdateInterval
+        {
+            get => _dynamicEnvironmentUpdateInterval;
             set
             {
-                if (value < 0.01f)
-                    value = 0.01f;
-                SetValue(nameof(environmentUpdateInterval), value, ref _environmentUpdateInterval, (newValue, oldValue) =>
+                SetValue(nameof(dynamicEnvironmentUpdateInterval), ValidateDynamicEnvironmentUpdateInterval(value), ref _dynamicEnvironmentUpdateInterval, (newValue, oldValue) =>
                 {
-                    UpdateEnvironment();
+                    UpdateEnvironmentCubemap();
                 });
             }
         }
 
-        /// <summary>
-        /// When enabled the skybox will be updated automatically. 
-        /// </summary>
-        [Json]
-        public bool dynamicSkybox
+        private float ValidateDynamicEnvironmentUpdateInterval(float value)
         {
-            get => _dynamicSkybox;
-            set => SetValue(nameof(dynamicSkybox), value, ref _dynamicSkybox);
+            if (value < 0.01f)
+                value = 0.01f;
+            return value;
         }
 
         /// <summary>
@@ -763,9 +744,9 @@ namespace DepictionEngine
             get => _fonts;
         }
 
-        private MeshesDictionary meshCache
+        private MeshesDictionary meshesCache
         {
-            get { _meshCache ??= new MeshesDictionary(); return _meshCache; }
+            get { _meshesCache ??= new MeshesDictionary(); return _meshesCache; }
         }
 
         private void InitRendererFeatures()
@@ -897,7 +878,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// Real-time Shadows type to be used.
+        /// Realtime Shadows type to be used.
         /// </summary>
         [Json]
         public UnityEngine.ShadowQuality shadows
@@ -1120,18 +1101,18 @@ namespace DepictionEngine
             }
         }
 
-        public Mesh GetMeshFromCache(int hash)
+        public List<Mesh> GetMeshesFromCache(int hash)
         {
-            meshCache.TryGetValue(hash, out Mesh mesh);
-            return mesh;
+            if (hash != DEFAULT_MISSING_CACHE_HASH && meshesCache.TryGetValue(hash, out List<Mesh> meshes))
+                return meshes;
+            return null;
         }
 
-        public bool AddMeshToCache(int hash, Mesh mesh)
+        public bool AddMeshesToCache(int hash, List<Mesh> meshes)
         {
-            if (!meshCache.ContainsKey(hash))
+            if (hash != DEFAULT_MISSING_CACHE_HASH && meshes != null && !meshesCache.ContainsKey(hash))
             {
-                AddMeshDelegate(mesh);
-                meshCache.Add(hash, mesh);
+                meshesCache.Add(hash, meshes);
                 return true;
             }
             return false;
@@ -1244,52 +1225,6 @@ namespace DepictionEngine
             headerTextures[index] = headerTexture;
         }
 #endif
-
-        private bool _environmentDirty;
-        public void UpdateEnvironment()
-        {
-            if (initialized)
-            {
-                _environmentDirty = true;
-
-                if (environmentUpdateInterval != 0.0f)
-                {
-                    TweenManager tweenManager = TweenManager.Instance();
-                    if (tweenManager != Disposable.NULL)
-                        environmentTimer = tweenManager.DelayedCall(environmentUpdateInterval, null, UpdateEnvironment);
-                }
-            }
-        }
-
-        private SphericalHarmonicsL2 _ambientProbe;
-        private bool _environmentMapChanged;
-        public void ApplyEnvironmentAndReflectionToRenderSettings(Camera camera)
-        {
-            if (dynamicSkybox && _environmentMapChanged)
-            {
-                _environmentMapChanged = false;
-
-                RenderTexture environmentCubeMap = camera.GetEnvironmentCubeMap();
-
-                RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
-
-                if (RenderSettings.customReflectionTexture != environmentCubeMap)
-                    RenderSettings.customReflectionTexture = environmentCubeMap;
-
-                if (dynamicSkyboxMaterial.GetTexture("_Tex") != environmentCubeMap)
-                    dynamicSkyboxMaterial.SetTexture("_Tex", environmentCubeMap);
-
-                RenderSettings.ambientMode = AmbientMode.Skybox;
-
-                if (RenderSettings.skybox != dynamicSkyboxMaterial)
-                    RenderSettings.skybox = dynamicSkyboxMaterial;
-
-                DynamicGI.UpdateEnvironment();
-                _ambientProbe = RenderSettings.ambientProbe;
-            }
-
-            RenderSettings.ambientProbe = _ambientProbe;
-        }
 
         public void UpdateReflectionProbeTransform(Camera camera)
         {
@@ -1442,34 +1377,84 @@ namespace DepictionEngine
 #if UNITY_EDITOR
                 EmbedURPPackage();
 
-                _cachedMeshCount = meshCache.Count;
+                _cachedMeshCount = meshesCache.Count;
 #endif
                 return true;
             }
             return false;
         }
 
+        private bool _environmentDirty;
         public override bool PostHierarchicalUpdate()
         {
             if (base.PostHierarchicalUpdate())
             {
-                instanceManager.IterateOverInstances<Camera>(
-                    (camera) =>
-                    {
-                        if (_environmentDirty || camera.environmentCubemap == null)
+                if (dynamicEnvironment)
+                {
+                    instanceManager.IterateOverInstances<Camera>(
+                        (camera) =>
                         {
-                            camera.UpdateEnvironmentCubemap(rttCamera);
-                            _environmentMapChanged = true;
-                        }
+                            if (_environmentDirty || camera.environmentCubemap == null)
+                            {
+                                camera.UpdateEnvironmentCubemap(rttCamera);
+                                _environmentMapChanged = true;
+                            }
 
-                        return true;
-                    });
+                            return true;
+                        });
 
-                _environmentDirty = false;
+                    _environmentDirty = false;
+                }
 
                 return true;
             }
             return false;
+        }
+
+        public void UpdateEnvironmentCubemap()
+        {
+            if (initialized)
+            {
+                _environmentDirty = true;
+
+                TweenManager tweenManager = TweenManager.Instance();
+                if (tweenManager != Disposable.NULL)
+                    environmentTimer = tweenManager.DelayedCall(ValidateDynamicEnvironmentUpdateInterval(dynamicEnvironmentUpdateInterval), null, UpdateEnvironmentCubemap);
+            }
+        }
+
+        private SphericalHarmonicsL2 _ambientProbe;
+        private bool _environmentMapChanged;
+        public void ApplyEnvironmentAndReflectionToRenderSettings(Camera camera)
+        {
+            if (!dynamicEnvironment || _ambientProbe  == null || _environmentMapChanged)
+            {
+                if (_environmentMapChanged)
+                {
+                    _environmentMapChanged = false;
+
+                    RenderTexture environmentCubeMap = camera.GetEnvironmentCubeMap();
+
+                    RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
+
+                    if (RenderSettings.customReflectionTexture != environmentCubeMap)
+                        RenderSettings.customReflectionTexture = environmentCubeMap;
+
+                    if (dynamicSkyboxMaterial.GetTexture("_Tex") != environmentCubeMap)
+                        dynamicSkyboxMaterial.SetTexture("_Tex", environmentCubeMap);
+
+                    RenderSettings.ambientMode = AmbientMode.Skybox;
+
+                    if (RenderSettings.skybox != dynamicSkyboxMaterial)
+                        RenderSettings.skybox = dynamicSkyboxMaterial;
+
+                    DynamicGI.UpdateEnvironment();
+                }
+
+                _ambientProbe = RenderSettings.ambientProbe;
+            }
+
+            RenderSettings.ambientProbe = _ambientProbe;
         }
 
         public static Material LoadMaterial(string path)
@@ -1510,10 +1495,14 @@ namespace DepictionEngine
 
         public void DisposeAllCachedMeshes(DisposeContext disposeContext = DisposeContext.Programmatically_Pool)
         {
-            if (_meshCache != null)
+            if (_meshesCache != null)
             {
-                foreach (Mesh mesh in _meshCache.Values)
-                    DisposeManager.Dispose(mesh, disposeContext);
+                foreach (List<Mesh> meshes in _meshesCache.Values)
+                {
+                    foreach (Mesh mesh in meshes)
+                        DisposeManager.Dispose(mesh, disposeContext);
+                }
+                _meshesCache.Clear();
             }
         }
 

@@ -69,7 +69,19 @@ namespace DepictionEngine
         {
             return true;
         }
+
+        private int _gameObjectInstanceID;
+        public int GetGameObjectInstanceID() => _gameObjectInstanceID;
 #endif
+
+        protected override void InitializeFields(InitializationContext initializingContext)
+        {
+            base.InitializeFields(initializingContext);
+
+#if UNITY_EDITOR
+            _gameObjectInstanceID = gameObject.GetInstanceID();
+#endif
+        }
 
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {

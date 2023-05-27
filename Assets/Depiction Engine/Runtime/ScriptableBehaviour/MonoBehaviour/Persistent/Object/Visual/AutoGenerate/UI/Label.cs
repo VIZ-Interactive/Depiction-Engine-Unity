@@ -11,8 +11,6 @@ namespace DepictionEngine
     public class Label : UIBase
     {
         [BeginFoldout("Label")]
-        [SerializeField, Tooltip("The text color.")]
-        private Color _color;
         [SerializeField, Tooltip("The text to display.")]
         private string _text;
         [SerializeField, Tooltip("How many times should the text be repeated (0 - 100).")]
@@ -82,13 +80,17 @@ namespace DepictionEngine
         {
             return IsNotFallbackValues() && GetShowEndCoordinate();
         }
+
+        protected override bool GetShowColor()
+        {
+            return true;
+        }
 #endif
 
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => color = value, Color.white, initializingContext);
             InitValue(value => text = value, "My Label", initializingContext);
             InitValue(value => repeatCount = value, 0, initializingContext);
             InitValue(value => repeatSpacer = value, "      ", initializingContext);
@@ -100,6 +102,25 @@ namespace DepictionEngine
             InitValue(value => useEndCoordinate = value, false, initializingContext);
             InitValue(value => endCoordinate = value, Vector3Double.zero, initializingContext);
             InitValue(value => textCurve = value, new List<Vector3Double>(), initializingContext);
+        }
+
+        protected override Color GetDefaultColor()
+        {
+            return Color.white;
+        }
+
+#if UNITY_EDITOR
+        protected override UnityEngine.Object[] GetColorAdditionalRecordObjects()
+        {
+            return GetTextMeshProsAdditionalRecordObjects();
+        }
+#endif
+
+        protected override void ColorChanged(Color newValue, Color oldValue)
+        {
+            base.ColorChanged(newValue, oldValue);
+
+            UpdateUILabelColor();
         }
 
 #if UNITY_EDITOR
@@ -120,25 +141,6 @@ namespace DepictionEngine
             return textMeshPros.ToArray();
         }
 #endif
-
-        /// <summary>
-        /// The text color. 
-        /// </summary>
-        [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetTextMeshProsAdditionalRecordObjects))]
-#endif
-        public Color color
-        {
-            get { return _color; }
-            set
-            {
-                SetValue(nameof(color), value, ref _color, (newValue, oldValue) =>
-                {
-                    UpdateUILabelColor();
-                });
-            }
-        }
 
         /// <summary>
         /// The text to display. 

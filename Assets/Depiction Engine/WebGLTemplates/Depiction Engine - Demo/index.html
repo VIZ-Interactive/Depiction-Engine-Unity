@@ -175,8 +175,7 @@
                         instance.create({ type: $NAMESPACE + ".OrbitController", orbit: "Sun" }, starObject.id);
 
                         //Create Earth----------------------------------------------------------
-
-                        var mapboxDatasource = instance.getRestDatasource("https://api.mapbox.com/");
+                        var arcGISDatasource = instance.getRestDatasource("https://services.arcgisonline.com/");
 						
 						var arcgisDatasource = instance.getRestDatasource("https://services.arcgisonline.com/");
 
@@ -191,23 +190,24 @@
                         //Add Earth -> Color Texture Index2DLoader
                         var colorTextureLoaderJson = getLoaderJson(instance, $NAMESPACE + ".Index2DLoader", $NAMESPACE + ".Texture");
                         var colorTextureLoaderId = colorTextureLoaderJson[0]["id"];
-                        //colorTextureLoaderJson[0]["datasourceId"] = mapboxDatasource.id;
-                        colorTextureLoaderJson[0]["minMaxZoom"] = { x: 0, y: 15 };
+                        colorTextureLoaderJson[0]["datasourceId"] = arcGISDatasource.id;
+                        colorTextureLoaderJson[0]["minMaxZoom"] = { x: 0, y: 18 };
                         colorTextureLoaderJson[0]["dataType"] = "TexturePngJpg";
-                        colorTextureLoaderJson[0]["loadEndpoint"] = "v4/mapbox.satellite/{0}/{1}/{2}@2x.jpg90?access_token=" + $MAPBOX_KEY;
+                        colorTextureLoaderJson[0]["loadEndpoint"] = "ArcGis/rest/services/World_Imagery/MapServer/tile/{0}/{2}/{1}.png";
 
                         earthJson = mergeComponentsToObjectInitializationJson(instance, colorTextureLoaderJson, earthJson);
 
                         //Add Earth -> Elevation Index2DLoader
-                        var elevationLoaderJson = getLoaderJson(instance, $NAMESPACE + ".Index2DLoader", $NAMESPACE + ".Elevation");
-                        var elevationLoaderId = elevationLoaderJson[0]["id"];
-                        //elevationLoaderJson[0]["datasourceId"] = mapboxDatasource.id;
-                        elevationLoaderJson[0]["minMaxZoom"] = { x: 0, y: 15 };
-                        elevationLoaderJson[0]["dataType"] = "ElevationTerrainRGBPngRaw";
-                        //"raster/v1/mapbox.mapbox-terrain-dem-v1/{0}/{1}/{2}.webp?sku=101WQxhVS07ft&access_token=" + $MAPBOX_KEY,
-                        elevationLoaderJson[0]["loadEndpoint"] = "v4/mapbox.terrain-rgb/{0}/{1}/{2}.pngraw?access_token=" + $MAPBOX_KEY;
+                        //var elevationLoaderJson = getLoaderJson(instance, $NAMESPACE + ".Index2DLoader", $NAMESPACE + ".Elevation");
+                        //var elevationLoaderId = elevationLoaderJson[0]["id"];
+                        //elevationLoaderJson[0]["datasourceId"] = arcGISDatasource.id;
+                        //elevationLoaderJson[0]["minMaxZoom"] = { x: 0, y: 15 };
+                        //elevationLoaderJson[0]["dataType"] = "ElevationEsriLimitedErrorRasterCompression";
+                        ////"raster/v1/mapbox.mapbox-terrain-dem-v1/{0}/{1}/{2}.webp?sku=101WQxhVS07ft&access_token=" + $MAPBOX_KEY,
+                        ////"v4/mapbox.terrain-rgb/{0}/{1}/{2}.pngraw?access_token=" + $MAPBOX_KEY;
+                        //elevationLoaderJson[0]["loadEndpoint"] = "arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer/tile/{0}/{2}/{1}";
 
-                        earthJson = mergeComponentsToObjectInitializationJson(instance, elevationLoaderJson, earthJson);
+                        //earthJson = mergeComponentsToObjectInitializationJson(instance, elevationLoaderJson, earthJson);
 
                         //Add Earth -> Surface Texture Index2DLoader
                         var surfaceLoaderJson = getLoaderJson(instance, $NAMESPACE + ".Index2DLoader", $NAMESPACE + ".Texture");
@@ -248,8 +248,8 @@
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["sphericalSubdivision"] = 2;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["flatSubdivision"] = 2;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["normalsType"] = "SurfaceUp";
-                        terrainGridMeshObjectCameraGrid2DLoaderJson[2]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("ElevationGridMeshObjectBase", "ELEVATION_REFERENCE_DATATYPE")[0];
-                        terrainGridMeshObjectCameraGrid2DLoaderJson[2]["fallbackValuesJson"]["loaderId"] = elevationLoaderId;
+                        //terrainGridMeshObjectCameraGrid2DLoaderJson[2]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("ElevationGridMeshObjectBase", "ELEVATION_REFERENCE_DATATYPE")[0];
+                        //terrainGridMeshObjectCameraGrid2DLoaderJson[2]["fallbackValuesJson"]["loaderId"] = elevationLoaderId;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("TerrainGridMeshObject", "COLORMAP_REFERENCE_DATATYPE")[0];
                         terrainGridMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["loaderId"] = colorTextureLoaderId;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[5]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("TerrainGridMeshObject", "SURFACETYPEMAP_REFERENCE_DATATYPE")[0];
@@ -267,8 +267,8 @@
                         buildingMeshObjectCameraGrid2DLoaderJson[0]["minMaxZoom"] = { x: 14, y: 14 };
                         buildingMeshObjectCameraGrid2DLoaderJson[0]["cascades"] = { x: 0, y: 0 };
                         buildingMeshObjectCameraGrid2DLoaderJson[0]["loadInterval"] = 0.0;
-                        buildingMeshObjectCameraGrid2DLoaderJson[2]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("ElevationGridMeshObjectBase", "ELEVATION_REFERENCE_DATATYPE")[0];
-                        buildingMeshObjectCameraGrid2DLoaderJson[2]["fallbackValuesJson"]["loaderId"] = elevationLoaderId;
+                        //buildingMeshObjectCameraGrid2DLoaderJson[2]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("ElevationGridMeshObjectBase", "ELEVATION_REFERENCE_DATATYPE")[0];
+                        //buildingMeshObjectCameraGrid2DLoaderJson[2]["fallbackValuesJson"]["loaderId"] = elevationLoaderId;
                         buildingMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("FeatureGridMeshObjectBase", "FEATURE_REFERENCE_DATATYPE")[0];
                         buildingMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["loaderId"] = buildingFeatureDataLoaderId;
                         buildingMeshObjectCameraGrid2DLoaderJson[4]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("BuildingGridMeshObject", "COLORMAP_REFERENCE_DATATYPE")[0];
@@ -312,10 +312,14 @@
                         var terrainGridMeshObjectCameraGrid2DLoaderJson = getLoaderJson(instance, $NAMESPACE + ".CameraGrid2DLoader", $NAMESPACE + ".TerrainGridMeshObject");
                         terrainGridMeshObjectCameraGrid2DLoaderJson[0]["sizeMultiplier"] = 3.0;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[0]["minMaxZoom"] = { x: 0, y: 7 };
-                        terrainGridMeshObjectCameraGrid2DLoaderJson[0]["loadInterval"] = 0.0;
+
+                        terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["smoothness"] = 0.0;
+                        terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["specular"] = 0.0;
+                        terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["colorIntensity"] = 3.0;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["sphericalSubdivision"] = 1;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["flatSubdivision"] = 1;
                         terrainGridMeshObjectCameraGrid2DLoaderJson[1]["fallbackValuesJson"]["normalsType"] = "SurfaceUp";
+
                         terrainGridMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["dataType"] = instance.getStaticFieldValue("TerrainGridMeshObject", "COLORMAP_REFERENCE_DATATYPE")[0];
                         terrainGridMeshObjectCameraGrid2DLoaderJson[3]["fallbackValuesJson"]["loaderId"] = colorTextureLoaderId;
 
@@ -395,7 +399,7 @@
                 </script>
 
                 <div class="attribution">
-                    <a href="https://mapbox.com">© Mapbox</a> | <a href="https://www.esri.com/">© Esri</a> | <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> | <a href="https://3dbuildings.com">© 3dBuildings</a> | <a href="https://vizinteractive.io">© VIZ Interactive</a>
+                    <a href="https://www.esri.com/">© Esri</a> | <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> | <a href="https://3dbuildings.com">© 3dBuildings</a> | <a href="https://vizinteractive.io">© VIZ Interactive</a>
                 </div>
 
                 <div id="containerLoader" class="loaderGrp">
@@ -440,8 +444,8 @@
                         instance2.set({ id: starObject.id, intensity: 1.0 });
    
                         //Create Map----------------------------------------------------------
-
-                        var openstreetmapDatasource = instance2.getRestDatasource("https://tile.openstreetmap.org/");
+                  
+                        var googleDatasource = instance2.getRestDatasource("https://mt1.google.com/");
 
                         var buildingFeatureDatasource = instance2.getRestDatasource(
                             "https://a-data.3dbuildings.com/",
@@ -454,10 +458,10 @@
                         //Add Earth -> Color Texture Index2DLoader
                         var colorTextureLoaderJson = getLoaderJson(instance2, $NAMESPACE + ".Index2DLoader", $NAMESPACE + ".Texture");
                         var colorTextureLoaderId = colorTextureLoaderJson[0]["id"];
-                        colorTextureLoaderJson[0]["datasourceId"] = openstreetmapDatasource.id;
+                        colorTextureLoaderJson[0]["datasourceId"] = googleDatasource.id;
                         colorTextureLoaderJson[0]["minMaxZoom"] = { x: 0, y: 30 };
                         colorTextureLoaderJson[0]["dataType"] = "TexturePngJpg";
-                        colorTextureLoaderJson[0]["loadEndpoint"] = "{0}/{1}/{2}.png";
+                        colorTextureLoaderJson[0]["loadEndpoint"] = "vt/lyrs=m&x={1}&y={2}&z={0}";
 
                         mapJson = mergeComponentsToObjectInitializationJson(instance2, colorTextureLoaderJson, mapJson);
 
@@ -529,7 +533,7 @@
                         marker2 = createMarker(instance2, map.id, "Marker2", "#0000ff", "UNIVERSEPIN");
                         instance2.set({
                             id: marker2[0].transform.id,
-                            geoCoordinate: { latitude: 40.71463488432494, longitude: -74.00376079165244 }
+                            geoCoordinate: { latitude: 40.71463488432494, longitude: -74.00376079165244, altitude: 10.0 }
                         });
                         instance2.bindElementToTransformPosition(popup2, marker2[0].transform.id);
                     }
@@ -589,12 +593,12 @@
                             if (camera != null && instance != null)
                             {
                                 let geoCoordinate = instance.getId(camera.id, { transform: { geoCoordinate: "true" } })[0].transform.geoCoordinate;
-                                geoCoordinate.altitude = 0.0;
+                                geoCoordinate.altitude = 10.0;
                                 instance2.set({ id: markerObject.transform.id, geoCoordinate: geoCoordinate });
                             }
                         }
                     }
-
+                   
                     container2.addEventListener("mouseClicked", container2MouseClicked);
 
                     function container2MouseClicked(event)
@@ -609,7 +613,7 @@
                 <div id="popup2" class="popup2"></div>
 
                 <div class="attribution">
-                    <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> | <a href="https://3dbuildings.com">© 3dBuildings</a> | <a href="https://vizinteractive.io">© VIZ Interactive</a>
+                    <a href="https://www.google.com/">© Google</a> | <a href="https://3dbuildings.com">© 3dBuildings</a> | <a href="https://vizinteractive.io">© VIZ Interactive</a>
                 </div>
 
                 <div id="container2Loader" class="loaderGrp">

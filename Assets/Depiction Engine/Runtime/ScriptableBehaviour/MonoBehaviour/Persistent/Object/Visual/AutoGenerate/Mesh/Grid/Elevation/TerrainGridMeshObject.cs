@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace DepictionEngine
-{ 
+{
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/Grid/" + nameof(TerrainGridMeshObject))]
     [CreateComponent(typeof(AssetReference), typeof(AssetReference), typeof(AssetReference))]
     public class TerrainGridMeshObject : ElevationGridMeshObjectBase
@@ -22,22 +22,47 @@ namespace DepictionEngine
         /// The normal will be derived from neighboring elevation values <br/><br/>
         /// <b><see cref="SurfaceUp"/>:</b> <br/>
         /// The planet up vector will be used as a normal irregardless of the terrain elevation <br/><br/>
-        /// <b><see cref="Auto"/>:</b> <br/>
-        /// The normals will be automatically calculated by Unity's <see cref="DepictionEngine.Mesh.RecalculateNormals"/> function
+        /// <b><see cref="GPU"/>:</b> <br/>
+        /// The normals will be calculated in realtime in the Terrain vertex shader <br/><br/>
+        /// <b><see cref="UnityCalculateNormals"/>:</b> <br/>
+        /// The normals will be calculated by Unity's 'UnityEngine.Mesh.RecalculateNormals' function <br/><br/>
+        /// <b><see cref="None"/>:</b> <br/>
+        /// Normals will not be used
         /// </summary>
         public enum NormalsType
         {
             DerivedFromElevation,
             SurfaceUp,
             GPU,
-            Auto,
+            UnityCalculateNormals,
             None
+        };
+
+        /// <summary>
+        /// The different types of terrain tile geometry that can be generated. <br/><br/>
+        /// <b><see cref="Surface"/>:</b> <br/>
+        /// Only the surface will be generated <br/><br/>
+        /// <b><see cref="Sides"/>:</b> <br/>
+        /// Only the sides will be generated <br/><br/>
+        /// <b><see cref="SurfaceSides"/>:</b> <br/>
+        /// Both the surface and the sides will be generated <br/><br/>
+        /// <b><see cref="SurfaceSidesSeparateMesh"/>:</b> <br/>
+        /// Both the surface and the sides will be generated but as part of two separate <see cref="DepictionEngine.MeshRendererVisual"/>  <br/><br/>
+        /// </summary>
+        public enum TerrainGeometryType
+        {
+            Surface,
+            Sides,
+            SurfaceSides,
+            SurfaceSidesSeparateMesh
         };
 
         private const float MIN_SUBDIVISION_ZOOM_FACTOR = 1.0f;
         private const float MAX_SUBDIVISION_ZOOM_FACTOR = 3.0f;
 
-        [BeginFoldout("Terrain Mesh")]
+        [BeginFoldout("Terrain")]
+        [SerializeField, Tooltip("The path of the material's shader from within the Resources directory.")]
+        private string _shaderPath;
         [SerializeField, Range(1, 127), Tooltip("The minimum number of subdivisions the tile geometry will have when in spherical mode.")]
         private int _sphericalSubdivision;
         [SerializeField, Range(1, 127), Tooltip("The minimum number of subdivisions the tile geometry will have when in flat mode.")]
@@ -46,20 +71,14 @@ namespace DepictionEngine
         private float _subdivisionZoomFactor;
         [SerializeField, Tooltip("A factor by which the geometry will be scaled along the longitudinal and latitudinal axis to overlap with other tiles of a similar zoom level.")]
         private float _overlapFactor;
-        [SerializeField, Tooltip("When enabled it caps the sides of the terrain geometry. Extending the edges can help avoid gaps between the tiles when elevation is used.")]
-        private bool _capSides;
+        [SerializeField, Range(0.0f, 1.0f), Tooltip("A value passed to the shader to determine how much edge overlap should exist between the tile and other higher zoom level tiles covering part or all of its surface.")]
+        private float _edgeOverlapThickness;
+        [SerializeField, Tooltip("When enabled the sides of the terrain geometry will be capped by extending the edges. Extending the edges can help avoid visible gaps between the tiles when elevation is used.")]
+        private TerrainGeometryType _generateTerrainGeometry;
+        [SerializeField, Tooltip("When enabled the terrain geometry will be shaped on the GPU using vertex shader. This can be useful to limit the load on the CPU.")]
+        private bool _GPUTerrain;
         [SerializeField, Tooltip("The type of normals to generate for the terrain mesh."), EndFoldout]
         private NormalsType _normalsType;
-
-        [BeginFoldout("Material")]
-        [SerializeField, Tooltip("The path of the material's shader from within the Resources directory.")]
-        private string _shaderPath;
-        [SerializeField, Range(0.0f, 1.0f), Tooltip("A value passed to the shader to determine how much edge overlap should exist between the tile and other higher zoom level tiles covering part or all of its surface."), EndFoldout]
-        private float _edgeOverlapThickness;
-
-        [BeginFoldout("Color")]
-        [SerializeField, Tooltip("A color value which will override texture color depending on alpha value."), EndFoldout]
-        private Color _color;
 
         [SerializeField, HideInInspector]
         private Material _material;
@@ -73,9 +92,14 @@ namespace DepictionEngine
 
         private int _cameraCount;
 
-        private bool _generateEdgeInSeparateMesh;
-
         private TerrainGridCache _terrainGridCache;
+
+#if UNITY_EDITOR
+        protected override bool GetShowColor()
+        {
+            return true;
+        }
+#endif
 
         public override void Recycle()
         {
@@ -85,8 +109,6 @@ namespace DepictionEngine
             _subdivisionSize = default;
 
             _cameraCount = default;
-
-            _generateEdgeInSeparateMesh = default;
 
             _terrainGridCache?.Clear();
         }
@@ -98,15 +120,15 @@ namespace DepictionEngine
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
                 _material = null;
 
+            InitValue(value => shaderPath = value, GetDefaultShaderPath(), initializingContext);
             InitValue(value => sphericalSubdivision = value, 6, initializingContext);
             InitValue(value => flatSubdivision = value, 6, initializingContext);
             InitValue(value => subdivisionZoomFactor = value, 1.2f, initializingContext);
             InitValue(value => overlapFactor = value, 1.0f, initializingContext);
-            InitValue(value => capSides = value, GetDefaultCapSides(), initializingContext);
-            InitValue(value => normalsType = value, NormalsType.GPU, initializingContext);
-            InitValue(value => shaderPath = value, GetDefaultShaderPath(), initializingContext);
             InitValue(value => edgeOverlapThickness = value, 0.0f, initializingContext);
-            InitValue(value => color = value, Color.clear, initializingContext);
+            InitValue(value => generateTerrainGeometry = value, GetDefaultGenerateTerrainGeometry(), initializingContext);
+            InitValue(value => GPUTerrain = value, true, initializingContext);
+            InitValue(value => normalsType = value, NormalsType.GPU, initializingContext);
         }
 
         protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
@@ -147,14 +169,14 @@ namespace DepictionEngine
             return false;
         }
 
-        protected virtual string GetDefaultShaderPath()
+        protected override string GetDefaultShaderPath()
         {
-            return RenderingManager.SHADER_BASE_PATH + "TerrainGrid";
+            return base.GetDefaultShaderPath() + "TerrainGrid";
         }
 
-        protected virtual bool GetDefaultCapSides()
+        protected virtual TerrainGeometryType GetDefaultGenerateTerrainGeometry()
         {
-            return true;
+            return TerrainGeometryType.SurfaceSides;
         }
 
         protected override bool UpdateAllDelegates()
@@ -171,6 +193,16 @@ namespace DepictionEngine
         protected override void InitializeMaterial(MeshRenderer meshRenderer, Material material = null)
         {
             base.InitializeMaterial(meshRenderer, UpdateMaterial(ref _material, shaderPath));
+        }
+
+        /// <summary>
+        /// The path of the material's shader from within the Resources directory.
+        /// </summary>
+        [Json]
+        public string shaderPath
+        {
+            get => _shaderPath;
+            set => SetValue(nameof(shaderPath), value, ref _shaderPath);
         }
 
         /// <summary>
@@ -220,36 +252,6 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// How deep the tile edges should extend below the ground, in local units. Extending the edges can help avoid gaps between the tiles when elevation is used. Set to zero to deactivate.
-        /// </summary>
-        [Json]
-        public bool capSides
-        {
-            get => _capSides;
-            set => SetValue(nameof(capSides), value, ref _capSides);
-        }
-
-        /// <summary>
-        /// The type of normals to generate for the terrain mesh.
-        /// </summary>
-        [Json]
-        public NormalsType normalsType
-        {
-            get => _normalsType;
-            set => SetValue(nameof(normalsType), value, ref _normalsType);
-        }
-
-        /// <summary>
-        /// The path of the material's shader from within the Resources directory.
-        /// </summary>
-        [Json]
-        public string shaderPath
-        {
-            get => _shaderPath;
-            set => SetValue(nameof(shaderPath), value, ref _shaderPath);
-        }
-
-        /// <summary>
         /// A value passed to the shader to determine how much edge overlap should exist between the tile and other higher zoom level tiles covering part or all of its surface. 
         /// </summary>
         [Json]
@@ -266,18 +268,33 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A color value which will override texture color depending on alpha value.
+        /// How deep the tile edges should extend below the ground, in local units. Extending the edges can help avoid gaps between the tiles when elevation is used. Set to zero to deactivate.
         /// </summary>
         [Json]
-        public Color color
+        public TerrainGeometryType generateTerrainGeometry
         {
-            get => _color;
-            set => SetValue(nameof(color), value, ref _color);
+            get => _generateTerrainGeometry;
+            set => SetValue(nameof(generateTerrainGeometry), value, ref _generateTerrainGeometry);
         }
 
-        protected override Color GetColor()
+        /// <summary>
+        /// When enabled the terrain geometry will be shaped on the GPU using vertex shader. This can be useful to limit the load on the CPU.
+        /// </summary>
+        [Json]
+        public bool GPUTerrain
         {
-            return color;
+            get => _GPUTerrain;
+            set => SetValue(nameof(GPUTerrain), value, ref _GPUTerrain);
+        }
+
+        /// <summary>
+        /// The type of normals to generate for the terrain mesh.
+        /// </summary>
+        [Json]
+        public NormalsType normalsType
+        {
+            get => _normalsType;
+            set => SetValue(nameof(normalsType), value, ref _normalsType);
         }
 
         private AssetReference colorMapAssetReference
@@ -336,12 +353,6 @@ namespace DepictionEngine
         private TerrainGridCache terrainGridCache
         {
             get { _terrainGridCache ??= new TerrainGridCache().Initialize(); return _terrainGridCache; }
-        }
-
-        private bool generateEdgeInSeparateMesh
-        {
-            get => _generateEdgeInSeparateMesh;
-            set => _generateEdgeInSeparateMesh = value;
         }
 
         /// <summary>
@@ -430,61 +441,45 @@ namespace DepictionEngine
             subdivisionSize = GetSubdivisionSize(subdivision);
         }
 
-        protected Func<ProcessorOutput, ProcessorParameters, IEnumerator> GetGridProcessingFunction()
+        protected override bool EnableRecalculateNormals()
         {
-            if (!generateEdgeInSeparateMesh)
-                return TerrainGridMeshObjectProcessingFunctions.InitPopulateEdgeAndGrid;
-            else
-                return Grid2DMeshObjectProcessingFunctions.InitPopulateGrid;
+            return normalsType == NormalsType.UnityCalculateNormals;
         }
 
-        protected override void ModifyMesh(MeshRendererVisualModifier meshRendererVisualModifier, Mesh mesh, Action meshModified, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags, bool disposeMeshModifier = true)
+        protected override Func<ProcessorOutput, ProcessorParameters, IEnumerator> GetProcessorFunction()
         {
-            Func<ProcessorOutput, ProcessorParameters, IEnumerator> processingFunction = TerrainGridMeshObjectProcessingFunctions.InitPopulateEdgeAndGrid;
-
-            if (generateEdgeInSeparateMesh)
-                processingFunction = Grid2DMeshObjectProcessingFunctions.InitPopulateGrid;
-
-            meshRendererVisualModifier.StartProcessing(processingFunction, GetProcessorParametersType(), InitializeProcessorParameters, GetProcessingType(meshRendererVisualDirtyFlags),
-                (data) =>
-                {
-                    meshRendererVisualModifier.meshModifier = data.meshModifier;
-                    data.meshModifier = null;
-                    base.ModifyMesh(meshRendererVisualModifier, mesh, meshModified, meshRendererVisualDirtyFlags, disposeMeshModifier);
-                });
+            return TerrainGridMeshObjectProcessingFunctions.InitPopulateEdgeAndGrid;
         }
 
-        protected override void UpdateMeshRendererVisualModifiers(Action<VisualObjectVisualDirtyFlags> completedCallback, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
+        protected override Type GetProcessorParametersType()
         {
-            base.UpdateMeshRendererVisualModifiers(completedCallback, meshRendererVisualDirtyFlags);
+            return typeof(TerrainGridMeshObjectParameters);
+        }
 
-            if (generateEdgeInSeparateMesh)
+        protected override void InitializeProcessorParameters(ProcessorParameters parameters)
+        {
+            base.InitializeProcessorParameters(parameters);
+
+            if (meshRendererVisualDirtyFlags is TerrainGridMeshObjectVisualDirtyFlags)
             {
-                if (meshRendererVisualModifiers.Count < 2)
-                    meshRendererVisualModifiers.Add(MeshRendererVisual.CreateMeshRendererVisualModifier());
+                TerrainGridMeshObjectVisualDirtyFlags terrainRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as TerrainGridMeshObjectVisualDirtyFlags;
 
-                meshRendererVisualModifiers[1].SetTypes(typeof(TerrainEdgeMeshRendererVisualNoCollider), typeof(TerrainEdgeMeshRendererVisualBoxCollider), typeof(TerrainEdgeMeshRendererVisualMeshCollider));
+                (parameters as TerrainGridMeshObjectParameters).Init(terrainRendererVisualDirtyFlags.subdivision, terrainRendererVisualDirtyFlags.subdivisionSize, terrainRendererVisualDirtyFlags.overlapFactor, terrainRendererVisualDirtyFlags.generateTerrainGeometry, terrainRendererVisualDirtyFlags.normalsType, terrainRendererVisualDirtyFlags.trianglesDirty, terrainRendererVisualDirtyFlags.uvsDirty, terrainRendererVisualDirtyFlags.verticesNormalsDirty);
             }
-
-            completedCallback?.Invoke(meshRendererVisualDirtyFlags);
         }
 
-        protected override int GetCacheHash(MeshRendererVisualModifier meshRendererVisualModifier)
+        protected override int GetCacheHash(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
         {
-            int hash = base.GetCacheHash(meshRendererVisualModifier);
+            int hash = base.GetCacheHash(meshRendererVisualDirtyFlags);
 
             if (IsFlat() && elevation == Disposable.NULL)
             {
                 hash = 17;
-                hash *= 31 + capSides.GetHashCode();
                 hash *= 31 + subdivision.GetHashCode();
                 hash *= 31 + overlapFactor.GetHashCode();
+                hash *= 31 + generateTerrainGeometry.GetHashCode();
+                hash *= 31 + normalsType.GetHashCode();
                 hash *= 31 + (grid2DDimensions.x / grid2DDimensions.y).GetHashCode();
-
-                //0 == terrain + edge
-                //1 == terrain
-                //2 == edge
-                hash *= 31 + (!generateEdgeInSeparateMesh ? 0 : !meshRendererVisualModifier.typeNoCollider.IsSubclassOf(typeof(TerrainEdgeMeshRendererVisual)) ? 1 : 2);
             }
 
             return hash;
@@ -506,26 +501,8 @@ namespace DepictionEngine
                 terrainMeshRendererVisualDirtyFlags.subdivision = subdivision;
                 terrainMeshRendererVisualDirtyFlags.subdivisionSize = subdivisionSize;
                 terrainMeshRendererVisualDirtyFlags.overlapFactor = overlapFactor;
-                terrainMeshRendererVisualDirtyFlags.generateEdgeInSeparateMesh = generateEdgeInSeparateMesh;
-                terrainMeshRendererVisualDirtyFlags.capSides = capSides;
+                terrainMeshRendererVisualDirtyFlags.generateTerrainGeometry = generateTerrainGeometry;
                 terrainMeshRendererVisualDirtyFlags.normalsType = normalsType;
-            }
-        }
-
-        protected override Type GetProcessorParametersType()
-        {
-            return typeof(TerrainGridMeshObjectParameters);
-        }
-
-        protected override void InitializeProcessorParameters(ProcessorParameters parameters)
-        {
-            base.InitializeProcessorParameters(parameters);
-
-            if (meshRendererVisualDirtyFlags is TerrainGridMeshObjectVisualDirtyFlags)
-            {
-                TerrainGridMeshObjectVisualDirtyFlags terrainRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as TerrainGridMeshObjectVisualDirtyFlags;
-                
-                (parameters as TerrainGridMeshObjectParameters).Init(terrainRendererVisualDirtyFlags.subdivision, terrainRendererVisualDirtyFlags.subdivisionSize, terrainRendererVisualDirtyFlags.overlapFactor, terrainRendererVisualDirtyFlags.capSides, terrainRendererVisualDirtyFlags.normalsType, terrainRendererVisualDirtyFlags.trianglesDirty, terrainRendererVisualDirtyFlags.uvsDirty, terrainRendererVisualDirtyFlags.verticesNormalsDirty, terrainRendererVisualDirtyFlags.generateEdgeInSeparateMesh);
             }
         }
 
@@ -536,7 +513,12 @@ namespace DepictionEngine
 
         protected virtual bool GetEnableGPUTerrain()
         {
-            return true;
+            return GPUTerrain;
+        }
+
+        protected virtual bool GetEnableGPUNormals()
+        {
+            return normalsType == NormalsType.GPU;
         }
 
         protected override void ApplyPropertiesToMaterial(MeshRenderer meshRenderer, Material material, MaterialPropertyBlock materialPropertyBlock, double cameraAtmosphereAltitudeRatio, Camera camera, GeoAstroObject closestGeoAstroObject, Star star)
@@ -547,10 +529,28 @@ namespace DepictionEngine
 
             SetIntToMaterial("_Subdivision", subdivision, material, materialPropertyBlock);
 
+            int beginSideVertexID = 0;
+
+            if (GetEnableGPUTerrain())
+            {
+                int vertexCount = subdivision + 1;
+                beginSideVertexID = vertexCount * 4;
+
+                if (generateTerrainGeometry == TerrainGeometryType.Surface || generateTerrainGeometry == TerrainGeometryType.SurfaceSides || (generateTerrainGeometry == TerrainGeometryType.SurfaceSidesSeparateMesh && managedMeshRenderers[0] == meshRenderer))
+                    beginSideVertexID += (int)Mathf.Pow(vertexCount, 2);
+            }
+
+            SetIntToMaterial("_BeginSideVertexID", beginSideVertexID, material, materialPropertyBlock);
+
             if (GetEnableGPUTerrain())
                 material.EnableKeyword("ENABLE_GPU_TERRAIN");
             else
                 material.DisableKeyword("ENABLE_GPU_TERRAIN");
+
+            if (GetEnableGPUNormals())
+                material.EnableKeyword("ENABLE_GPU_NORMALS");
+            else
+                material.DisableKeyword("ENABLE_GPU_NORMALS");
         }
 
         protected override void ApplyAlphaToMaterial(Material material, MaterialPropertyBlock materialPropertyBlock, GeoAstroObject closestGeoAstroObject, Camera camera, float alpha)
@@ -645,25 +645,36 @@ namespace DepictionEngine
             private int _subdivision;
             private float _subdivisionSize;
             private float _overlapFactor;
-            private bool _capSides;
+            private TerrainGeometryType _terrainGeometryType;
             private NormalsType _normalsType;
-
-            private bool _generateEdgeInSeparateMesh;
 
             private bool _trianglesDirty;
             private bool _uvsDirty;
             private bool _verticesDirty;
             private bool _normalsDirty;
 
-            public TerrainGridMeshObjectParameters Init(int subdivision, float subdivisionSize, float overlapFactor = 1.0f, bool capSides = false, NormalsType normalsType = NormalsType.DerivedFromElevation, bool trianglesDirty = true, bool uvsDirty = true, bool verticesNormalsDirty = true, bool generateEdgeInSeparateMesh = false)
+            public override void Recycle()
+            {
+                base.Recycle();
+
+                _subdivision = default;
+                _subdivisionSize = default;
+                _overlapFactor = default;
+                _terrainGeometryType = default;
+
+                _trianglesDirty = default;
+                _uvsDirty = default;
+                _verticesDirty = default;
+                _normalsDirty = default;
+            }
+
+            public TerrainGridMeshObjectParameters Init(int subdivision, float subdivisionSize, float overlapFactor, TerrainGeometryType terrainGeometryType, NormalsType normalsType, bool trianglesDirty, bool uvsDirty, bool verticesNormalsDirty)
             {
                 _subdivision = subdivision;
                 _subdivisionSize = subdivisionSize;
                 _overlapFactor = overlapFactor;
-                _capSides = capSides;
+                _terrainGeometryType = terrainGeometryType;
                 _normalsType = normalsType;
-
-                _generateEdgeInSeparateMesh = generateEdgeInSeparateMesh;
 
                 _trianglesDirty = trianglesDirty;
                 _uvsDirty = uvsDirty;
@@ -671,11 +682,6 @@ namespace DepictionEngine
                 _normalsDirty = verticesNormalsDirty;
 
                 return this;
-            }
-
-            public bool generateEdgeInSeparateMesh
-            {
-                get => _generateEdgeInSeparateMesh;
             }
 
             public int GetSubdivision()
@@ -713,9 +719,9 @@ namespace DepictionEngine
                 return _normalsDirty;
             }
 
-            public bool capSides
+            public TerrainGeometryType terrainGeometryType
             {
-                get => _capSides;
+                get => _terrainGeometryType;
             }
 
             public NormalsType normalsType
@@ -741,27 +747,6 @@ namespace DepictionEngine
             public bool normalsDirty
             {
                 get => _normalsDirty;
-            }
-
-            public override bool OnDispose(DisposeContext disposeContext)
-            {
-                if (base.OnDispose(disposeContext))
-                {
-                    _subdivision = 0;
-                    _subdivisionSize = 0.0f;
-                    _overlapFactor = 0.0f;
-                    _capSides = false;
-
-                    _generateEdgeInSeparateMesh = false;
-
-                    _trianglesDirty = false;
-                    _uvsDirty = false;
-                    _verticesDirty = false;
-                    _normalsDirty = false;
-
-                    return true;
-                }
-                return false;
             }
         }
 
@@ -1043,16 +1028,21 @@ namespace DepictionEngine
             }
         }
 
-        protected class Grid2DMeshObjectProcessingFunctions : ProcessingFunctions
+        protected class TerrainGridMeshObjectProcessingFunctions : ProcessingFunctions
         {
-            public static IEnumerator InitPopulateGrid(ProcessorOutput data, ProcessorParameters parameters)
+            private const int SIDE_DEPTH_MULTIPLIER = 1;
+            private static int[] _sides = new int[] { 0, 2, 4, 6, 1, 3, 5, 7 };
+
+            public static IEnumerator InitPopulateEdgeAndGrid(ProcessorOutput data, ProcessorParameters parameters)
             {
-                foreach (object enumeration in InitPopulateGrid(data as MeshRendererVisualProcessorOutput, parameters as TerrainGridMeshObjectParameters))
+                foreach (object enumeration in InitPopulateEdgeAndGrid(data as MeshObjectProcessorOutput, parameters as TerrainGridMeshObjectParameters))
                     yield return enumeration;
             }
 
-            private static IEnumerable InitPopulateGrid(MeshRendererVisualProcessorOutput meshRendererVisualProcessorOutput, TerrainGridMeshObjectParameters parameters)
+            protected static IEnumerable InitPopulateEdgeAndGrid(MeshObjectProcessorOutput meshObjectProcessorOutput, TerrainGridMeshObjectParameters parameters)
             {
+                TerrainGeometryType terrainGeometryType = parameters.terrainGeometryType;
+
                 int subdivision = parameters.GetSubdivision();
                 int vertexCount = subdivision + 1;
 
@@ -1061,18 +1051,95 @@ namespace DepictionEngine
                 bool trianglesDirty = parameters.GetTrianglesDirty();
                 bool uvsDirty = parameters.GetUVsDirty();
 
-                meshRendererVisualProcessorOutput.meshModifier.Init(verticesDirty ? GetVerticesNormalsCount(vertexCount) : -1, normalsDirty ? parameters.normalsType == NormalsType.SurfaceUp || parameters.normalsType == NormalsType.DerivedFromElevation ? GetVerticesNormalsCount(vertexCount) : 0 : -1, trianglesDirty ? GetTrianglesCount(subdivision) : -1, uvsDirty ? GetUVsCount(vertexCount) : -1);
+                int grid2DVerticesNormalsCount = terrainGeometryType != TerrainGeometryType.Sides ? GetVerticesNormalsCount(vertexCount) : 0;
+                int grid2DTrianglesCount = terrainGeometryType != TerrainGeometryType.Sides ? GetTrianglesCount(subdivision) : 0;
+                int grid2DUvsCount = terrainGeometryType != TerrainGeometryType.Sides ? GetUVsCount(vertexCount) : 0;
 
-                foreach (object enumeration in PopulateGrid(meshRendererVisualProcessorOutput, parameters))
-                    yield return enumeration;
+                int sidesVerticesCount = -1;
+                int verticesCount = -1;
+                if (verticesDirty)
+                {
+                    sidesVerticesCount = terrainGeometryType == TerrainGeometryType.Sides || terrainGeometryType == TerrainGeometryType.SurfaceSides || terrainGeometryType == TerrainGeometryType.SurfaceSidesSeparateMesh ? GetEdgeVerticesNormalsCount(vertexCount) : 0;
+                    verticesCount = grid2DVerticesNormalsCount;
+                    if (terrainGeometryType == TerrainGeometryType.SurfaceSides)
+                        verticesCount += sidesVerticesCount;
+                }
+
+                int sidesNormalsCount = -1;
+                int normalsCount = -1;
+                if (normalsDirty)
+                {
+                    if (parameters.normalsType == NormalsType.SurfaceUp || parameters.normalsType == NormalsType.DerivedFromElevation)
+                    {
+                        sidesNormalsCount = terrainGeometryType == TerrainGeometryType.Sides || terrainGeometryType == TerrainGeometryType.SurfaceSides || terrainGeometryType == TerrainGeometryType.SurfaceSidesSeparateMesh ? GetEdgeVerticesNormalsCount(vertexCount) : 0;
+                        normalsCount = grid2DVerticesNormalsCount;
+                        if (terrainGeometryType == TerrainGeometryType.SurfaceSides)
+                            normalsCount += sidesNormalsCount;
+                    }
+                    else
+                    {
+                        sidesNormalsCount = 0;
+                        normalsCount = 0;
+                    }
+                }
+
+                int sidesTrianglesCount = -1;
+                int trianglesCount = -1;
+                if (trianglesDirty)
+                {
+                    sidesTrianglesCount = terrainGeometryType == TerrainGeometryType.Sides || terrainGeometryType == TerrainGeometryType.SurfaceSides || terrainGeometryType == TerrainGeometryType.SurfaceSidesSeparateMesh ? GetEdgeTrianglesCount(subdivision) : 0;
+                    trianglesCount = grid2DTrianglesCount;
+                    if (terrainGeometryType == TerrainGeometryType.SurfaceSides)
+                        trianglesCount += sidesTrianglesCount;
+                }
+
+                int sidesUvsCount = -1;
+                int uvsCount = -1;
+                if (uvsDirty)
+                {
+                    sidesUvsCount = terrainGeometryType == TerrainGeometryType.Sides || terrainGeometryType == TerrainGeometryType.SurfaceSides || terrainGeometryType == TerrainGeometryType.SurfaceSidesSeparateMesh ? GetEdgeUVsCount(vertexCount) : 0;
+                    uvsCount = grid2DUvsCount;
+                    if (terrainGeometryType == TerrainGeometryType.SurfaceSides)
+                        uvsCount += sidesUvsCount;
+                }
+
+                MeshRendererVisualModifier meshRendererVisualModifier = null;
+
+                if (terrainGeometryType != TerrainGeometryType.Sides)
+                {
+                    meshRendererVisualModifier = CreateMeshRendererVisualModifier(verticesCount, normalsCount, trianglesCount, uvsCount);
+                    meshObjectProcessorOutput.AddMeshRendererVisualModifier(meshRendererVisualModifier);
+
+                    foreach (object enumeration in PopulateGrid(meshRendererVisualModifier.meshModifier, parameters))
+                        yield return enumeration;
+                }
+
+                if (terrainGeometryType == TerrainGeometryType.Sides || terrainGeometryType == TerrainGeometryType.SurfaceSides || terrainGeometryType == TerrainGeometryType.SurfaceSidesSeparateMesh)
+                {
+                    if (meshRendererVisualModifier == null || terrainGeometryType == TerrainGeometryType.SurfaceSidesSeparateMesh)
+                    {
+                        meshRendererVisualModifier = CreateMeshRendererVisualModifier(sidesVerticesCount, sidesNormalsCount, sidesTrianglesCount, sidesUvsCount);
+                        meshRendererVisualModifier.SetTypes(typeof(TerrainEdgeMeshRendererVisualNoCollider), typeof(TerrainEdgeMeshRendererVisualBoxCollider), typeof(TerrainEdgeMeshRendererVisualMeshCollider));
+                        meshObjectProcessorOutput.AddMeshRendererVisualModifier(meshRendererVisualModifier);
+
+                        if (terrainGeometryType == TerrainGeometryType.SurfaceSidesSeparateMesh)
+                            grid2DVerticesNormalsCount = grid2DTrianglesCount = grid2DUvsCount = 0;
+                    }
+
+                    foreach (object enumeration in PopulateEdge(meshRendererVisualModifier.meshModifier, parameters, grid2DVerticesNormalsCount, grid2DTrianglesCount, grid2DUvsCount))
+                        yield return enumeration;
+                }
             }
 
-            public static IEnumerable PopulateGrid(MeshRendererVisualProcessorOutput meshRendererVisualProcessorOutput, TerrainGridMeshObjectParameters parameters)
+            private static MeshRendererVisualModifier CreateMeshRendererVisualModifier(int verticesCount = -1, int normalsCount = -1, int trianglesCount = -1, int uvsCount = -1, int colorsCount = -1)
             {
-                int subdivision = parameters.GetSubdivision();
-                float subdivisionSize = parameters.GetSubdivisionSize();
-                int vertexCount = subdivision + 1;
+                MeshRendererVisualModifier meshRendererVisualModifier = MeshRendererVisual.CreateMeshRendererVisualModifier();
+                meshRendererVisualModifier.CreateMeshModifier<MeshModifier>().Init(verticesCount, normalsCount, trianglesCount, uvsCount);
+                return meshRendererVisualModifier;
+            }
 
+            public static IEnumerable PopulateGrid(MeshModifier meshModifier, TerrainGridMeshObjectParameters parameters)
+            {
                 bool verticesDirty = parameters.GetVerticesDirty();
                 bool normalsDirty = parameters.GetNormalsDirty() && (parameters.normalsType == NormalsType.SurfaceUp || parameters.normalsType == NormalsType.DerivedFromElevation);
                 bool trianglesDirty = parameters.GetTrianglesDirty();
@@ -1080,7 +1147,9 @@ namespace DepictionEngine
 
                 if (verticesDirty || normalsDirty || trianglesDirty || uvsDirty)
                 {
-                    MeshModifier meshModifier = meshRendererVisualProcessorOutput.meshModifier;
+                    int subdivision = parameters.GetSubdivision();
+                    float subdivisionSize = parameters.GetSubdivisionSize();
+                    int vertexCount = subdivision + 1;
 
                     if (verticesDirty)
                     {
@@ -1168,166 +1237,8 @@ namespace DepictionEngine
                 yield break;
             }
 
-            public static int GetVerticesNormalsCount(int vertexCount)
+            protected static IEnumerable PopulateEdge(MeshModifier meshModifier, TerrainGridMeshObjectParameters parameters, int verticesNormalsStartIndex = 0, int trianglesStartIndex = 0, int uvsStartIndex = 0)
             {
-                return vertexCount * vertexCount;
-            }
-
-            public static int GetTrianglesCount(int subdivision)
-            {
-                return 6 * subdivision * subdivision;
-            }
-
-            public static int GetUVsCount(int vertexCount)
-            {
-                return vertexCount * vertexCount;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static bool GetDiagonalOrientation(int x, int y)
-            {
-                return (x + (y % 2 == 0 ? 1 : 0)) % 2 == 0;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            protected static GeoCoordinate3Double GetGeoCoordinate(TerrainGridMeshObjectParameters parameters, float normalizedX, float normalizedY)
-            {
-                GeoCoordinate3Double geoCoordinate = MathPlus.GetGeoCoordinate3FromIndex(new Vector2Double(parameters.grid2DIndex.x + normalizedX, parameters.grid2DIndex.y + normalizedY), parameters.grid2DDimensions);
-
-                if (parameters.GetElevation(new Vector2(normalizedX, 1.0f - normalizedY), out float elevation))
-                    geoCoordinate.altitude = elevation;
-
-                return geoCoordinate;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void SetVertices(TerrainGridMeshObjectParameters parameters, MeshModifier meshModifier, int bufferIndex, float normalizedX, float normalizedY, float overlapFactor, double altitudeOffset)
-            {
-                GeoCoordinate3Double geoCoordinate = GetGeoCoordinate(parameters, normalizedX, normalizedY);
-
-                Vector3 vertex = parameters.TransformGeoCoordinateToVector(geoCoordinate.latitude, geoCoordinate.longitude, geoCoordinate.altitude + altitudeOffset / parameters.inverseScale) * overlapFactor;
-                meshModifier.vertices[bufferIndex] = vertex;
-                meshModifier.UpdateMinMaxBounds(vertex);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void SetNormals(TerrainGridMeshObjectParameters parameters, MeshModifier meshModifier, int bufferIndex, float normalizedX, float normalizedY)
-            {
-                GeoCoordinate3Double geoCoordinate = GetGeoCoordinate(parameters, normalizedX, normalizedY);
-
-                meshModifier.normals[bufferIndex] = parameters.GetUpVector(geoCoordinate) * GetNormal(parameters, normalizedX, normalizedY, 0.05f);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            protected static Vector3Double GetNormal(TerrainGridMeshObjectParameters parameters, float normalizedX, float normalizedY, float subdivisionSize)
-            {
-                Vector3Double normal = Vector3Double.up;
-
-                if (parameters.normalsType == NormalsType.DerivedFromElevation && parameters.elevation != Disposable.NULL)
-                {
-                    normalizedY = 1.0f - normalizedY;
-
-                    float invertScale = (float)parameters.inverseScale;
-                    if (parameters.GetElevation(new Vector2(normalizedX - subdivisionSize, normalizedY), out float leftElevation))
-                        leftElevation *= invertScale;
-                    if (parameters.GetElevation(new Vector2(normalizedX + subdivisionSize, normalizedY), out float rightElevation))
-                        rightElevation *= invertScale;
-                    if (parameters.GetElevation(new Vector2(normalizedX, normalizedY - subdivisionSize), out float downElevation))
-                        downElevation *= invertScale;
-                    if (parameters.GetElevation(new Vector2(normalizedX, normalizedY + subdivisionSize), out float upElevation))
-                        upElevation *= invertScale;
-                    
-                    normal = Vector3Double.Cross(
-                        new Vector3Double(0.0d, upElevation - downElevation, subdivisionSize * 2.0d).normalized,
-                        new Vector3Double(subdivisionSize * 2.0d, rightElevation - leftElevation, 0.0d).normalized);
-                }
-
-                return normal;
-            }
-        }
-
-        protected class TerrainGridMeshObjectProcessingFunctions : ProcessingFunctions
-        {
-            public static IEnumerator InitPopulateEdgeAndGrid(ProcessorOutput data, ProcessorParameters parameters)
-            {
-                foreach (object enumeration in InitPopulateEdgeAndGrid(data as MeshRendererVisualProcessorOutput, parameters as TerrainGridMeshObjectParameters))
-                    yield return enumeration;
-            }
-
-            protected static IEnumerable InitPopulateEdgeAndGrid(MeshRendererVisualProcessorOutput meshRendererVisualProcessorOutput, TerrainGridMeshObjectParameters parameters)
-            {
-                bool capSides = parameters.capSides;
-
-                int subdivision = parameters.GetSubdivision();
-                int vertexCount = subdivision + 1;
-
-                bool verticesDirty = parameters.GetVerticesDirty();
-                bool normalsDirty = parameters.GetNormalsDirty();
-                bool trianglesDirty = parameters.GetTrianglesDirty();
-                bool uvsDirty = parameters.GetUVsDirty();
-
-                int grid2DVerticesNormalsCount = Grid2DMeshObjectProcessingFunctions.GetVerticesNormalsCount(vertexCount);
-                int grid2DTrianglesCount = Grid2DMeshObjectProcessingFunctions.GetTrianglesCount(subdivision);
-                int grid2DUvsCount = Grid2DMeshObjectProcessingFunctions.GetUVsCount(vertexCount);
-
-                int verticesCount = -1;
-                if (verticesDirty)
-                    verticesCount = grid2DVerticesNormalsCount + (capSides ? GetVerticesNormalsCount(vertexCount) : 0);
-
-                int normalsCount = -1;
-                if (normalsDirty)
-                    normalsCount = parameters.normalsType == NormalsType.SurfaceUp || parameters.normalsType == NormalsType.DerivedFromElevation ? grid2DVerticesNormalsCount + (capSides ? GetVerticesNormalsCount(vertexCount) : 0) : 0;
-
-                int trianglesCount = -1;
-                if (trianglesDirty)
-                    trianglesCount = grid2DTrianglesCount + (capSides ? GetTrianglesCount(subdivision * 4) : 0);
-
-                int uvsCount = -1;
-                if (uvsDirty)
-                    uvsCount = grid2DUvsCount + (capSides ? GetUVsCount(vertexCount) : 0);
-
-                meshRendererVisualProcessorOutput.meshModifier.Init(verticesCount, normalsCount, trianglesCount, uvsCount);
-
-                foreach (object enumeration in Grid2DMeshObjectProcessingFunctions.PopulateGrid(meshRendererVisualProcessorOutput, parameters))
-                    yield return enumeration;
-
-                if (capSides)
-                {
-                    foreach (object enumeration in PopulateEdge(meshRendererVisualProcessorOutput, parameters, grid2DVerticesNormalsCount, grid2DTrianglesCount, grid2DUvsCount))
-                        yield return enumeration;
-                }
-            }
-
-            public static IEnumerator InitPopulateEdge(ProcessorOutput data, ProcessorParameters parameters)
-            {
-                foreach (object enumeration in InitPopulateEdge(data as MeshRendererVisualProcessorOutput, parameters as TerrainGridMeshObjectParameters))
-                    yield return enumeration;
-            }
-
-            protected static IEnumerable InitPopulateEdge(MeshRendererVisualProcessorOutput meshRendererVisualProcessorOutput, TerrainGridMeshObjectParameters parameters)
-            {
-                int subdivision = parameters.GetSubdivision();
-                int vertexCount = subdivision + 1;
-
-                bool verticesDirty = parameters.GetVerticesDirty();
-                bool normalsDirty = parameters.GetNormalsDirty();
-                bool trianglesDirty = parameters.GetTrianglesDirty();
-                bool uvsDirty = parameters.GetUVsDirty();
-
-                meshRendererVisualProcessorOutput.meshModifier.Init(verticesDirty ? GetVerticesNormalsCount(vertexCount) : -1, normalsDirty ? parameters.normalsType == NormalsType.SurfaceUp || parameters.normalsType == NormalsType.DerivedFromElevation ? GetVerticesNormalsCount(vertexCount) : 0 : -1, trianglesDirty ? GetTrianglesCount(subdivision) : -1, uvsDirty ? GetUVsCount(vertexCount) : -1);
-
-                foreach (object enumeration in PopulateEdge(meshRendererVisualProcessorOutput, parameters))
-                    yield return enumeration;
-            }
-
-            private const int EDGE_DEPTH_MULTIPLIER = 2;
-            private static int[] _sides = new int[] {0,2,4,6,1,3,5,7};
-            protected static IEnumerable PopulateEdge(MeshRendererVisualProcessorOutput meshRendererVisualProcessorOutput, TerrainGridMeshObjectParameters parameters, int verticesNormalsStartIndex = 0, int trianglesStartIndex = 0, int uvsStartIndex = 0)
-            {
-                int subdivision = parameters.GetSubdivision();
-                float subdivisionSize = parameters.GetSubdivisionSize();
-                int vertexCount = subdivision + 1;
-
                 bool verticesDirty = parameters.GetVerticesDirty();
                 bool normalsDirty = parameters.GetNormalsDirty() && (parameters.normalsType == NormalsType.SurfaceUp || parameters.normalsType == NormalsType.DerivedFromElevation);
                 bool trianglesDirty = parameters.GetTrianglesDirty();
@@ -1335,7 +1246,9 @@ namespace DepictionEngine
 
                 if (verticesDirty || normalsDirty || trianglesDirty || uvsDirty)
                 {
-                    MeshModifier meshModifier = meshRendererVisualProcessorOutput.meshModifier;
+                    int subdivision = parameters.GetSubdivision();
+                    float subdivisionSize = parameters.GetSubdivisionSize();
+                    int vertexCount = subdivision + 1;
 
                     if (verticesDirty)
                     {
@@ -1343,10 +1256,10 @@ namespace DepictionEngine
                         int sideCount = 0;
                         foreach (int side in _sides)
                         {
-                            double edgeAltitudeOffset = side % 2 == 0 ? 0.0f : -subdivisionSize * EDGE_DEPTH_MULTIPLIER;
+                            double sideAltitudeOffset = side % 2 == 0 ? 0.0f : Mathf.Clamp01(subdivisionSize * SIDE_DEPTH_MULTIPLIER);
 
                             for (int index = 0; index < vertexCount; index++)
-                                Grid2DMeshObjectProcessingFunctions.SetVertices(parameters, meshModifier, startIndex + sideCount * vertexCount + index, GetX(side, index, vertexCount) * subdivisionSize, GetY(side, index, vertexCount) * subdivisionSize, parameters.GetOverlapFactor(), edgeAltitudeOffset);
+                                SetVertices(parameters, meshModifier, startIndex + sideCount * vertexCount + index, GetEdgeX(side, index, vertexCount) * subdivisionSize, GetEdgeY(side, index, vertexCount) * subdivisionSize, parameters.GetOverlapFactor(), -sideAltitudeOffset);
 
                             sideCount++;
 
@@ -1363,7 +1276,7 @@ namespace DepictionEngine
                             for (int index = 0; index < subdivision; index++)
                             {
                                 int bottomLeft = startIndex + (side + 4) * vertexCount + index;
-                                int topLeft = startIndex + (side * vertexCount) + index;
+                                int topLeft = startIndex + side * vertexCount + index;
                                 int topRight = topLeft + 1;
                                 int bottomRight = bottomLeft + 1;
 
@@ -1388,7 +1301,11 @@ namespace DepictionEngine
                         foreach (int side in _sides)
                         {
                             for (int index = 0; index < vertexCount; index++)
-                                Grid2DMeshObjectProcessingFunctions.SetNormals(parameters, meshModifier, startIndex + sideCount * vertexCount + index, GetX(side, index, vertexCount) * subdivisionSize, GetY(side, index, vertexCount) * subdivisionSize);
+                            {
+                                Vector2Int normalizedCoordinate = GetNormalizedCoordinate(side, index);
+
+                                SetNormals(parameters, meshModifier, startIndex + sideCount * vertexCount + index, Mathf.Clamp01(subdivisionSize * normalizedCoordinate.x), Mathf.Clamp01(subdivisionSize * normalizedCoordinate.y));
+                            }
 
                             sideCount++;
 
@@ -1404,23 +1321,9 @@ namespace DepictionEngine
                         {
                             for (int index = 0; index < vertexCount; index++)
                             {
-                                int x = GetX(side, index, vertexCount);
-                                int y = GetY(side, index, vertexCount);
+                                Vector2Int normalizedCoordinate = GetNormalizedCoordinate(side, index);
 
-                                bool edgeBottom = side % 2 != 0;
-                                if (edgeBottom)
-                                {
-                                    if (side == 0 || side == 1)//Bottom
-                                        y -= EDGE_DEPTH_MULTIPLIER;
-                                    if (side == 2 || side == 3)//Left
-                                        x += EDGE_DEPTH_MULTIPLIER;
-                                    if (side == 4 || side == 5)//Top
-                                        y += EDGE_DEPTH_MULTIPLIER;
-                                    if (side == 6 || side == 7)//Right
-                                        x -= EDGE_DEPTH_MULTIPLIER;
-                                }
-
-                                meshModifier.uvs[startIndex + sideCount * vertexCount + index] = new Vector2((float)(subdivisionSize * x), (float)(1.0f - (subdivisionSize * y)));
+                                meshModifier.uvs[startIndex + sideCount * vertexCount + index] = new Vector2(Mathf.Clamp01(subdivisionSize * normalizedCoordinate.x), Mathf.Clamp01(1.0f - (subdivisionSize * normalizedCoordinate.y)));
                             }
 
                             sideCount++;
@@ -1429,29 +1332,70 @@ namespace DepictionEngine
                         }
                     }
 
+                    Vector2Int GetNormalizedCoordinate(int side, int index)
+                    {
+                        Vector2Int normalizedCoordinate = new Vector2Int(GetEdgeX(side, index, vertexCount), GetEdgeY(side, index, vertexCount));
+
+                        bool edgeBottom = side % 2 != 0;
+                        if (edgeBottom)
+                        {
+                            if (side == 0 || side == 1)//Bottom
+                                normalizedCoordinate.y -= SIDE_DEPTH_MULTIPLIER;
+                            if (side == 2 || side == 3)//Left
+                                normalizedCoordinate.x += SIDE_DEPTH_MULTIPLIER;
+                            if (side == 4 || side == 5)//Top
+                                normalizedCoordinate.y += SIDE_DEPTH_MULTIPLIER;
+                            if (side == 6 || side == 7)//Right
+                                normalizedCoordinate.x -= SIDE_DEPTH_MULTIPLIER;
+                        }
+
+                        return normalizedCoordinate;
+                    }
+
                     meshModifier.CalculateBoundsFromMinMax();
                 }
-
+              
                 yield break;
             }
 
             public static int GetVerticesNormalsCount(int vertexCount)
             {
-                return vertexCount * 8;
+                return vertexCount * vertexCount;
             }
 
             public static int GetTrianglesCount(int subdivision)
             {
-                return 6 * subdivision * 4;
+                return 6 * subdivision * subdivision;
             }
 
             public static int GetUVsCount(int vertexCount)
+            {
+                return vertexCount * vertexCount;
+            }
+
+            public static int GetEdgeVerticesNormalsCount(int vertexCount)
+            {
+                return vertexCount * 8;
+            }
+
+            public static int GetEdgeTrianglesCount(int subdivision)
+            {
+                return 6 * subdivision * 4;
+            }
+
+            public static int GetEdgeUVsCount(int vertexCount)
             {
                 return vertexCount * 8;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static int GetX(int side, int index, int vertexCount)
+            private static bool GetDiagonalOrientation(int x, int y)
+            {
+                return (x + (y % 2 == 0 ? 1 : 0)) % 2 == 0;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static int GetEdgeX(int side, int index, int vertexCount)
             {
                 if (side == 0 || side == 1)//Bottom
                     return index;
@@ -1465,7 +1409,7 @@ namespace DepictionEngine
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static int GetY(int side, int index, int vertexCount)
+            private static int GetEdgeY(int side, int index, int vertexCount)
             {
                 if (side == 0 || side == 1)//Bottom
                     return vertexCount - 1;
@@ -1476,6 +1420,57 @@ namespace DepictionEngine
                 if (side == 6 || side == 7)//Right
                     return vertexCount - index - 1;
                 return 0;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            protected static GeoCoordinate3Double GetGeoCoordinate(TerrainGridMeshObjectParameters parameters, float normalizedX, float normalizedY)
+            {
+                GeoCoordinate3Double geoCoordinate = MathPlus.GetGeoCoordinate3FromIndex(new Vector2Double(parameters.grid2DIndex.x + normalizedX, parameters.grid2DIndex.y + normalizedY), parameters.grid2DDimensions);
+
+                if (parameters.GetElevation(new Vector2(normalizedX, 1.0f - normalizedY), out float elevation))
+                    geoCoordinate.altitude = elevation;
+
+                return geoCoordinate;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void SetVertices(TerrainGridMeshObjectParameters parameters, MeshModifier meshModifier, int bufferIndex, float normalizedX, float normalizedY, float overlapFactor, double altitudeOffset)
+            {
+                GeoCoordinate3Double geoCoordinate = GetGeoCoordinate(parameters, normalizedX, normalizedY);
+
+                Vector3 vertex = parameters.TransformGeoCoordinateToVector(geoCoordinate.latitude, geoCoordinate.longitude, geoCoordinate.altitude + altitudeOffset) * overlapFactor;
+                meshModifier.vertices[bufferIndex] = vertex;
+                meshModifier.UpdateMinMaxBounds(vertex);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void SetNormals(TerrainGridMeshObjectParameters parameters, MeshModifier meshModifier, int bufferIndex, float normalizedX, float normalizedY)
+            {
+                GeoCoordinate3Double geoCoordinate = GetGeoCoordinate(parameters, normalizedX, normalizedY);
+
+                meshModifier.normals[bufferIndex] = parameters.GetUpVector(geoCoordinate) * GetNormal(parameters, normalizedX, normalizedY, 0.05f);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            protected static Vector3Double GetNormal(TerrainGridMeshObjectParameters parameters, float normalizedX, float normalizedY, float normalSamplingDistance)
+            {
+                Vector3Double normal = Vector3Double.up;
+
+                if (parameters.normalsType == NormalsType.DerivedFromElevation && parameters.elevation != Disposable.NULL)
+                {
+                    normalizedY = 1.0f - normalizedY;
+
+                    parameters.GetElevation(new Vector2(normalizedX, normalizedY + normalSamplingDistance), out float upElevation);
+                    parameters.GetElevation(new Vector2(normalizedX, normalizedY - normalSamplingDistance), out float downElevation);
+                    parameters.GetElevation(new Vector2(normalizedX + normalSamplingDistance, normalizedY), out float rightElevation);
+                    parameters.GetElevation(new Vector2(normalizedX - normalSamplingDistance, normalizedY), out float leftElevation);
+
+                    normal = Vector3Double.Cross(
+                        new Vector3Double(0.0d, upElevation - downElevation, normalSamplingDistance * 2.0d).normalized,
+                        new Vector3Double(normalSamplingDistance * 2.0d, rightElevation - leftElevation, 0.0d).normalized);
+                }
+
+                return normal;
             }
         }
     }

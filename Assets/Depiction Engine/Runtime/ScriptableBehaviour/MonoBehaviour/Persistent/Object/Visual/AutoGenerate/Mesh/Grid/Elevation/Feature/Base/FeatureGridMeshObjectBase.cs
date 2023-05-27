@@ -111,7 +111,7 @@ namespace DepictionEngine
         {
             if (base.UpdateAllDelegates())
             {
-                RemoveFeatureDelgates(feature);
+                RemoveFeatureDelegates(feature);
                 AddFeatureDelegates(feature);
 
                 return true;
@@ -119,7 +119,7 @@ namespace DepictionEngine
             return false;
         }
 
-        private void RemoveFeatureDelgates(Feature feature)
+        private void RemoveFeatureDelegates(Feature feature)
         {
             if (feature is not null)
                 feature.PropertyAssignedEvent -= FeaturePropertyAssignedHandler;
@@ -236,16 +236,11 @@ namespace DepictionEngine
                 {
                     if (initialized & HasChanged(newValue, oldValue, false))
                     {
-                        RemoveFeatureDelgates(oldValue);
+                        RemoveFeatureDelegates(oldValue);
                         AddFeatureDelegates(newValue);
                     }
                 });
             }
-        }
-
-        protected override void UpdateGridMeshRendererVisualModifier()
-        {
-           
         }
 
         protected override void ApplyPropertiesToMaterial(MeshRenderer meshRenderer, Material material, MaterialPropertyBlock materialPropertyBlock, double cameraAtmosphereAltitudeRatio, Camera camera, GeoAstroObject closestGeoAstroObject, Star star)
@@ -301,11 +296,6 @@ namespace DepictionEngine
             }
 
             base.InitializeMaterial(meshRenderer, material);
-        }
-
-        protected override Type GetProcessorParametersType()
-        {
-            return typeof(FeatureParameters);
         }
 
         protected override void InitializeProcessorParameters(ProcessorParameters parameters)

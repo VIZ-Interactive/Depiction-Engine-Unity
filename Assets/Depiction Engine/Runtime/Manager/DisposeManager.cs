@@ -84,17 +84,17 @@ namespace DepictionEngine
                         {
 #if UNITY_EDITOR
                             //if some components are not compatible with pooling we destroy the object
-                            //foreach (Component component in components)
-                            //{
-                            //    if (component is MonoBehaviourDisposable componentMonoBehaviourDisposable)
-                            //    {
-                            //        if (componentMonoBehaviourDisposable.notPoolable)
-                            //        {
-                            //            goDisposeContext = DisposeContext.Programmatically_Destroy;
-                            //            break;
-                            //        }
-                            //    }
-                            //}
+                            foreach (Component component in components)
+                            {
+                                if (component is MonoBehaviourDisposable componentMonoBehaviourDisposable)
+                                {
+                                    if (componentMonoBehaviourDisposable.notPoolable)
+                                    {
+                                        goDisposeContext = DisposeContext.Programmatically_Destroy;
+                                        break;
+                                    }
+                                }
+                            }
 #endif
                             //Destroy components that are not required
                             if (goDisposeContext == DisposeContext.Programmatically_Pool && disposable is IRequiresComponents iRequiresComponents)

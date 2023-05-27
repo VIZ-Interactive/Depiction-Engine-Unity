@@ -102,21 +102,19 @@ namespace DepictionEngine
             set => SetValue(nameof(shaderPath), value, ref _shaderPath);
         }
 
-        public Processor meshRendererVisualModifiersProcessor
-        {
-            get => _meshRendererVisualModifiersProcessor;
-            private set
-            {
-                if (Object.ReferenceEquals(_meshRendererVisualModifiersProcessor, value))
-                    return;
-                _meshRendererVisualModifiersProcessor?.Cancel();
-                _meshRendererVisualModifiersProcessor = value;
-            }
-        }
-
         protected override Type GetMeshRendererVisualDirtyFlagType()
         {
             return typeof(BuildingGridMeshObjectVisualDirtyFlags);
+        }
+
+        protected override Func<ProcessorOutput, ProcessorParameters, IEnumerator> GetProcessorFunction()
+        {
+            return MeshGridMeshObjectProcessingFunctions.PopulateMeshes;
+        }
+
+        protected override Type GetProcessorParametersType()
+        {
+            return typeof(MeshGridMeshObjectParameters);
         }
 
         protected override void UpdateMeshRendererDirtyFlags(VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
@@ -129,11 +127,6 @@ namespace DepictionEngine
 
                 meshGridMeshObjectRendererVisualDirtyFlags.asset = meshAsset;
             }
-        }
-
-        protected override Type GetProcessorParametersType()
-        {
-            return typeof(MeshGridMeshObjectParameters);
         }
 
         protected override void InitializeProcessorParameters(ProcessorParameters parameters)
@@ -169,40 +162,6 @@ namespace DepictionEngine
             }
         }
 
-        private Processor _meshRendererVisualModifiersProcessor;
-        protected override void UpdateMeshRendererVisualModifiers(Action<VisualObjectVisualDirtyFlags> completedCallback, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
-        {
-            base.UpdateMeshRendererVisualModifiers(completedCallback, meshRendererVisualDirtyFlags);
-
-            MeshGridMeshObjectVisualDirtyFlags meshGridMeshObjectVisualDirtyFlags = meshRendererVisualDirtyFlags as MeshGridMeshObjectVisualDirtyFlags;
-
-            if (meshGridMeshObjectVisualDirtyFlags != null)
-            {
-                InstanceManager instanceManager = InstanceManager.Instance(false);
-                if (instanceManager != null)
-                    meshRendererVisualModifiersProcessor ??= instanceManager.CreateInstance<Processor>();
-
-                meshGridMeshObjectVisualDirtyFlags.SetProcessing(true, meshRendererVisualModifiersProcessor);
-
-                meshRendererVisualModifiersProcessor.StartProcessing(MeshGridMeshObjectProcessingFunctions.PopulateMeshes, typeof(MeshObjectProcessorOutput), typeof(MeshGridMeshObjectParameters), InitializeProcessorParameters,
-                    (data, errorMsg) =>
-                    {
-                        meshGridMeshObjectVisualDirtyFlags.SetProcessing(false);
-
-                        MeshObjectProcessorOutput meshObjectProcessorOutput = data as MeshObjectProcessorOutput;
-                        if (meshObjectProcessorOutput != Disposable.NULL)
-                        {
-                            meshRendererVisualModifiers = meshObjectProcessorOutput.meshRendererVisualModifiers;
-
-                            meshObjectProcessorOutput.Clear();
-
-                            completedCallback?.Invoke(meshRendererVisualDirtyFlags);
-                        }
-
-                    }, GetProcessingType(meshRendererVisualDirtyFlags));
-            }
-        }
-
         protected override void OnFeatureClickedHit(RaycastHitDouble hit, int featureIndex)
         {
             base.OnFeatureClickedHit(hit, featureIndex);
@@ -234,8 +193,6 @@ namespace DepictionEngine
         {
             if (base.OnDispose(disposeContext))
             {
-                DisposeDataProcessor(_meshRendererVisualModifiersProcessor);
-
                 if (disposeContext != DisposeContext.Programmatically_Pool)
                     DisposeManager.Dispose(_material, disposeContext);
                 
@@ -310,7 +267,7 @@ namespace DepictionEngine
 
                                 float elevationDelta = 0.0f;
                                 if (GetElevation(parameters, point, out float elevation))
-                                    elevationDelta = (float)(elevation - parameters.centerElevation);
+                                    elevationDelta = (float)(elevation - parameters.centerElevation) * parameters.inverseScale;
 
                                 for (int e = 0; e < vertices.Count; e++)
                                 {

@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -30,10 +29,6 @@ namespace DepictionEngine
 
         private static readonly double EARTH_RADIUS = MathPlus.GetRadiusFromCircumference(GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Earth));
 
-        [BeginFoldout("Opacity")]
-        [SerializeField, Range(0.0f, 1.0f), Tooltip("How transparent should the object be."), EndFoldout]
-        private float _alpha;
-
 #if UNITY_EDITOR
         [BeginFoldout("MeshRenderers")]
         [SerializeField, Button(nameof(UpdateAllChildMeshRenderersBtn)), Tooltip("Automatically add all the child MeshRenderers so the VisualObject can manage their materials."), EndFoldout]
@@ -41,22 +36,56 @@ namespace DepictionEngine
         private bool _updateAllChildMeshRenderers;
 #endif
 
+        [BeginFoldout("Material")]
+        [SerializeField, Range(0.0f, 1.0f), Tooltip("How transparent should the object be.")]
+        private float _alpha;
+        [SerializeField, Tooltip("A value by which the smoothness output is multiplied.")]
+#if UNITY_EDITOR
+        [ConditionalShow(nameof(GetShowMaterialProperties))]
+#endif
+        private float _smoothness;
+        [SerializeField, Tooltip("A value by which the specular output is multiplied.")]
+#if UNITY_EDITOR
+        [ConditionalShow(nameof(GetShowMaterialProperties))]
+#endif
+        private float _specular;
+        [SerializeField, Tooltip("A color value which will override building color depending on alpha value.")]
+#if UNITY_EDITOR
+        [ConditionalShow(nameof(GetShowColor))]
+#endif
+        private Color _color;
+        [SerializeField, Tooltip("A value by which the color output is multiplied."), EndFoldout]
+#if UNITY_EDITOR
+        [ConditionalShow(nameof(GetShowMaterialProperties))]
+#endif
+        private float _colorIntensity;
+
         [SerializeField, HideInInspector]
         private List<MeshRenderer> _managedMeshRenderers;
 
         private static MaterialPropertyBlock _materialPropertyBlock;
 
 #if UNITY_EDITOR
+        protected virtual bool GetShowMaterialProperties()
+        {
+            return true;
+        }
+
         protected virtual bool GetShowUpdateAllChildMeshRenderers()
         {
             return true;
+        }
+
+        protected virtual bool GetShowColor()
+        {
+            return false;
         }
 
         private void UpdateAllChildMeshRenderersBtn()
         {
             int found = UpdateAllChildManagedMeshRenderers();
 
-            EditorUtility.DisplayDialog("Updated", "Found "+found+" MeshRenderers.", "OK");
+            UnityEditor.EditorUtility.DisplayDialog("Updated", "Found "+found+" MeshRenderers.", "OK");
         }
 #endif
 
@@ -91,6 +120,20 @@ namespace DepictionEngine
                 RemoveNullManagedMeshRenderers();
 
             InitValue(value => alpha = value, GetDefaultAlpha(), initializingContext);
+            InitValue(value => smoothness = value, 1.0f, initializingContext);
+            InitValue(value => specular = value, 1.0f, initializingContext);
+            InitValue(value => colorIntensity = value, 1.0f, initializingContext);
+            InitValue(value => color = value, GetDefaultColor(), initializingContext);
+        }
+
+        protected virtual string GetDefaultShaderPath()
+        {
+            return RenderingManager.SHADER_BASE_PATH;
+        }
+
+        protected virtual Color GetDefaultColor()
+        {
+            return Color.clear;
         }
 
         private void RemoveNullManagedMeshRenderers()
@@ -222,6 +265,76 @@ namespace DepictionEngine
 #endif
 
         /// <summary>
+        /// A value by which the smoothness output is multiplied.
+        /// </summary>
+        [Json]
+        public float smoothness
+        {
+            get => _smoothness;
+            set 
+            {
+                if (value < 0.0f)
+                    value = 0.0f;
+                SetValue(nameof(smoothness), value, ref _smoothness); 
+            }
+        }
+
+        /// <summary>
+        /// A value by which the specular output is multiplied.
+        /// </summary>
+        [Json]
+        public float specular
+        {
+            get => _specular;
+            set 
+            {
+                if (value < 0.0f)
+                    value = 0.0f;
+                SetValue(nameof(specular), value, ref _specular); 
+            }
+        }
+
+        /// <summary>
+        /// A value by which the color output is multiplied.
+        /// </summary>
+        [Json]
+        public float colorIntensity
+        {
+            get => _colorIntensity;
+            set 
+            {
+                if (value < 0.0f)
+                    value = 0.0f;
+                SetValue(nameof(colorIntensity), value, ref _colorIntensity); 
+            }
+        }
+
+#if UNITY_EDITOR
+        protected virtual UnityEngine.Object[] GetColorAdditionalRecordObjects()
+        {
+            return null;
+        }
+#endif
+
+        /// <summary>
+        /// A color value which will override texture color depending on alpha value.
+        /// </summary>
+        [Json]
+#if UNITY_EDITOR
+        [RecordAdditionalObjects(nameof(GetColorAdditionalRecordObjects))]
+#endif
+        public Color color
+        {
+            get => _color;
+            set => SetValue(nameof(color), value, ref _color, (newValue, oldValue) => { ColorChanged(newValue, oldValue); });
+        }
+
+        protected virtual void ColorChanged(Color newValue, Color oldValue)
+        {
+
+        }
+
+        /// <summary>
         /// Automatically add all the child MeshRenderers so the <see cref="DepictionEngine.VisualObject"/> can manage their materials.
         /// </summary>
         /// <returns>The number of managed meshRenderers.</returns>
@@ -273,30 +386,36 @@ namespace DepictionEngine
         {
             if (base.HierarchicalBeginCameraRendering(camera))
             {
-                Star star = null;
-
-                InstanceManager instanceManager = InstanceManager.Instance(false);
-                if (instanceManager != null)
-                    star = instanceManager.GetStar();
-
-                GeoAstroObject closestGeoAstroObject = GetClosestGeoAstroObject();
-
-                Vector3Double cameraPosition = camera.transform.position;
-
-                double cameraAtmosphereAltitudeRatio = 0.0d;
-                if (closestGeoAstroObject != Disposable.NULL)
+                if (gameObject.activeInHierarchy)
                 {
-                    double atmosphereThickness = closestGeoAstroObject.GetScaledAtmosphereThickness();
-                    cameraAtmosphereAltitudeRatio = closestGeoAstroObject.GetAtmosphereAltitudeRatio(atmosphereThickness, cameraPosition);
+                    Star star = null;
+
+                    InstanceManager instanceManager = InstanceManager.Instance(false);
+                    if (instanceManager != null)
+                        star = instanceManager.GetStar();
+
+                    GeoAstroObject closestGeoAstroObject = GetClosestGeoAstroObject();
+
+                    Vector3Double cameraPosition = camera.transform.position;
+
+                    double cameraAtmosphereAltitudeRatio = 0.0d;
+                    if (closestGeoAstroObject != Disposable.NULL)
+                    {
+                        double atmosphereThickness = closestGeoAstroObject.GetScaledAtmosphereThickness();
+                        cameraAtmosphereAltitudeRatio = closestGeoAstroObject.GetAtmosphereAltitudeRatio(atmosphereThickness, cameraPosition);
+                    }
+
+                    IterateOverManagedMeshRenderer((materialPropertyBlock, meshRenderer) =>
+                    {
+                        if (meshRenderer != null && meshRenderer.gameObject.activeInHierarchy)
+                        {
+                            InitializeMaterial(meshRenderer, meshRenderer.sharedMaterial);
+
+                            if (meshRenderer.sharedMaterial != null)
+                                ApplyPropertiesToMaterial(meshRenderer, meshRenderer.sharedMaterial, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, star);
+                        }
+                    });
                 }
-
-                IterateOverManagedMeshRenderer((materialPropertyBlock, meshRenderer) =>
-                {
-                    InitializeMaterial(meshRenderer, meshRenderer.sharedMaterial);
-
-                    if (meshRenderer != null && meshRenderer.sharedMaterial != null)
-                        ApplyPropertiesToMaterial(meshRenderer, meshRenderer.sharedMaterial, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, star);
-                });
 
                 return true;
             }
@@ -305,7 +424,7 @@ namespace DepictionEngine
 
         public void UpdateReflectionMaterial(Camera camera, ScriptableRenderContext? context)
         {
-            if (managedMeshRenderers.Count > 0)
+            if (gameObject.activeInHierarchy && managedMeshRenderers.Count > 0)
             {
                 GeoAstroObject closestGeoAstroObject = GetClosestGeoAstroObject();
 
@@ -325,7 +444,7 @@ namespace DepictionEngine
 
                 foreach (MeshRenderer meshRenderer in managedMeshRenderers)
                 {
-                    if (meshRenderer != null && meshRenderer.sharedMaterial != null)
+                    if (meshRenderer != null && meshRenderer.gameObject.activeInHierarchy && meshRenderer.sharedMaterial != null)
                     {
                         MaterialPropertyBlock materialPropertyBlock = null;
 
@@ -461,7 +580,12 @@ namespace DepictionEngine
         {
             if (material != null)
             {
-                ApplyAlphaToMaterial(material, materialPropertyBlock, closestGeoAstroObject, camera, GetCurrentAlpha());
+                ApplyAlphaToMaterial(material, materialPropertyBlock, closestGeoAstroObject, camera, alpha);
+
+                SetFloatToMaterial("_Smoothness", smoothness, material, materialPropertyBlock);
+                SetFloatToMaterial("_Specular", specular, material, materialPropertyBlock);
+                SetColorToMaterial("_Color", GetColor(meshRenderer, material, materialPropertyBlock, camera, closestGeoAstroObject), material, materialPropertyBlock);
+                SetFloatToMaterial("_ColorIntensity", colorIntensity, material, materialPropertyBlock);
 
                 ApplyClosestGeoAstroObjectPropertiesToMaterial(material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, closestGeoAstroObject, star, camera);
 
@@ -474,12 +598,28 @@ namespace DepictionEngine
             }
         }
 
+        protected virtual void ApplyAlphaToMaterial(Material material, MaterialPropertyBlock materialPropertyBlock, GeoAstroObject closestGeoAstroObject, Camera camera, float alpha)
+        {
+            SetFloatToMaterial("_Alpha", alpha, material, materialPropertyBlock);
+        }
+
+        protected virtual Color GetColor(MeshRenderer meshRenderer, Material material, MaterialPropertyBlock materialPropertyBlock, Camera camera, GeoAstroObject closestGeoAstroObject)
+        {
+            return color;
+        }
+
+        protected virtual double GetAltitude(bool addOffset = true)
+        {
+            return 0.0d;
+        }
+
         private RayDouble _shadowRay;
         protected virtual void ApplyClosestGeoAstroObjectPropertiesToMaterial(Material material, MaterialPropertyBlock materialPropertyBlock, double cameraAtmosphereAltitudeRatio, GeoAstroObject closestGeoAstroObject, Star star, Camera camera)
         {
+            Vector3 meshRendererVisualLocalScale = GetMeshRendererVisualLocalScale();
+
             Vector3Double closestGeoAstroObjectSurfacePointWS = Vector3Double.zero;
             Vector3Double closestGeoAstroObjectCenterOS = Vector3Double.zero;
-            Vector3Double closestGeoAstroObjectCenterOS2 = Vector3Double.zero;
             Vector3Double closestGeoAstroObjectCenterWS = Vector3Double.zero;
 
             Vector3Double shadowPositionWS = new(0.0d, -10000000000000000.0d, 0.0d);
@@ -501,7 +641,6 @@ namespace DepictionEngine
 
                 closestGeoAstroObjectSurfacePointWS = closestGeoAstroObject.GetSurfacePointFromPoint(transform.position);
                 closestGeoAstroObjectCenterOS = GetClosestGeoAstroObjectCenterOS(closestGeoAstroObject);
-                closestGeoAstroObjectCenterOS2 = closestGeoAstroObjectCenterOS.normalized * (500000.0f / GetMeshRendererVisualLocalScale().y);
 
                 closestGeoAstroObjectCenterWS = closestGeoAstroObject.transform.position;
 
@@ -538,9 +677,9 @@ namespace DepictionEngine
                 }
             }
 
+            SetVectorToMaterial("_ClosestGeoAstroObjectCameraSurfaceWS", TransformDouble.SubtractOrigin(closestGeoAstroObject != Disposable.NULL ? closestGeoAstroObject.GetSurfacePointFromPoint(camera.transform.position) : camera.transform.position), material, materialPropertyBlock);
             SetVectorToMaterial("_ClosestGeoAstroObjectSurfacePointWS", TransformDouble.SubtractOrigin(closestGeoAstroObjectSurfacePointWS), material, materialPropertyBlock);
             SetVectorToMaterial("_ClosestGeoAstroObjectCenterOS", closestGeoAstroObjectCenterOS, material, materialPropertyBlock);
-            SetVectorToMaterial("_ClosestGeoAstroObjectCenterOS2", closestGeoAstroObjectCenterOS2, material, materialPropertyBlock);
             SetVectorToMaterial("_ClosestGeoAstroObjectCenterWS", TransformDouble.SubtractOrigin(closestGeoAstroObjectCenterWS), material, materialPropertyBlock);
 
             Vector3Double mainLightPositionWS = star != Disposable.NULL ? star.transform.position : Vector3Double.zero;
@@ -552,14 +691,16 @@ namespace DepictionEngine
            
             SetFloatToMaterial("_CameraAtmosphereAltitudeRatio", (float)cameraAtmosphereAltitudeRatio, material, materialPropertyBlock);
 
+            //sphericalRatio == 0.0f ? 0.00000000000000001f : sphericalRatio
             SetFloatToMaterial("_SphericalRatio", closestGeoAstroObjectIsNotNull ? closestGeoAstroObject.GetSphericalRatio() : 0.0f, material, materialPropertyBlock);
   
-            SetFloatToMaterial("_Radius", radius, material, materialPropertyBlock);
-          
-            SetFloatToMaterial("_Altitude", (float)(transform.GetGeoCoordinate().altitude / GetMeshRendererVisualLocalScale().y), material, materialPropertyBlock);
+            SetFloatToMaterial("_RadiusWS", radius, material, materialPropertyBlock);
+            SetFloatToMaterial("_RadiusOS", radius / meshRendererVisualLocalScale.y, material, materialPropertyBlock);
+
+            SetFloatToMaterial("_AltitudeOS", (float)GetAltitude(false) / meshRendererVisualLocalScale.y, material, materialPropertyBlock);
 
             SetFloatToMaterial("_TileSizeLatitudeFactor", tileSizeLatitudeFactor, material, materialPropertyBlock);
-        }
+         }
 
         protected virtual void ApplyAtmospherePropertiesToMaterial(Material material, MaterialPropertyBlock materialPropertyBlock, double cameraAtmosphereAltitudeRatio, GeoAstroObject closestGeoAstroObject, Star star, Camera camera)
         {
@@ -615,14 +756,9 @@ namespace DepictionEngine
                 material.DisableKeyword("ENABLE_ATMOSPHERE");
         }
 
-        protected virtual void ApplyAlphaToMaterial(Material material, MaterialPropertyBlock materialPropertyBlock, GeoAstroObject closestGeoAstroObject, Camera camera, float alpha)
+        protected void SetMatrixToMaterial(string name, Matrix4x4 value, Material material, MaterialPropertyBlock _)
         {
-            SetFloatToMaterial("_Alpha", alpha, material, materialPropertyBlock);
-        }
-
-        protected void SetColorToMaterial(Color color, Material material, MaterialPropertyBlock materialPropertyBlock)
-        {
-            SetColorToMaterial("_BaseColor", color, material, materialPropertyBlock);
+            material.SetMatrix(name, value);
         }
 
         protected void SetFloatToMaterial(string name, float value, Material material, MaterialPropertyBlock _)

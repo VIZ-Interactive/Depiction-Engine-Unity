@@ -3,7 +3,6 @@
 using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using static UnityEngine.Rendering.DebugUI;
 
 namespace DepictionEngine
 {
@@ -26,8 +25,6 @@ namespace DepictionEngine
 #endif
         private Vector2Int _grid2DIndex;
 
-        private double _size;
-        private float _sphericalRatio;
         private Vector3 _meshRendererVisualLocalScale;
 
         public override void Recycle()
@@ -36,8 +33,6 @@ namespace DepictionEngine
 
             _grid2DIndex = default;
             _grid2DDimensions = default;
-            _size = default;
-            _sphericalRatio = default;
             _meshRendererVisualLocalScale = default;
         }
 
@@ -338,19 +333,19 @@ namespace DepictionEngine
             }
         }
 
-        protected virtual double GetAltitude(bool addOffset = true)
+        protected override double GetAltitude(bool addOffset = true)
         {
-            return addOffset ? altitudeOffset : 0.0d;
+            double altitude = base.GetAltitude(addOffset);
+
+            if (addOffset)
+                altitude += altitudeOffset;
+
+            return altitude;
         }
 
-        public static double GetScale(double size, Vector2Int grid2DDimensions)
+        public static float GetScale(double size, Vector2Int grid2DDimensions)
         {
-            return size / grid2DDimensions.y;
-        }
-
-        protected virtual Color GetColor()
-        {
-            return Color.clear;
+            return (float)(size / grid2DDimensions.y);
         }
 
         protected virtual Texture GetColorMap()
@@ -393,19 +388,6 @@ namespace DepictionEngine
         public static bool operator >(Grid2DMeshObjectBase a, Grid2DMeshObjectBase b)
         {
             return a.grid2DDimensions.x > b.grid2DDimensions.x;
-        }
-
-        protected override void UpdateMeshRendererVisualModifiers(Action<VisualObjectVisualDirtyFlags> completedCallback, VisualObjectVisualDirtyFlags meshRendererVisualDirtyFlags)
-        {
-            base.UpdateMeshRendererVisualModifiers(completedCallback, meshRendererVisualDirtyFlags);
-
-            UpdateGridMeshRendererVisualModifier();
-        }
-
-        protected virtual void UpdateGridMeshRendererVisualModifier()
-        {
-            if (meshRendererVisualModifiers.Count < 1)
-                meshRendererVisualModifiers.Add(MeshRendererVisual.CreateMeshRendererVisualModifier());
         }
 
         protected override void ParentGeoAstroObjectChanged(GeoAstroObject newValue, GeoAstroObject oldValue)
@@ -494,19 +476,16 @@ namespace DepictionEngine
                 grid2DMeshRendererVisualDirtyFlags.altitude = GetAltitude(false);
                 grid2DMeshRendererVisualDirtyFlags.meshRendererVisualLocalScale = meshRendererVisualLocalScale;
                 grid2DMeshRendererVisualDirtyFlags.size = size;
-                grid2DMeshRendererVisualDirtyFlags.sphericalRatio = GetSphericalRatio();
+                grid2DMeshRendererVisualDirtyFlags.SetSphericalRatio(GetSphericalRatio(), wasFirstUpdated);
                 grid2DMeshRendererVisualDirtyFlags.grid2DIndex = grid2DIndex;
                 grid2DMeshRendererVisualDirtyFlags.grid2DDimensions = grid2DDimensions;
             }
         }
 
-        protected virtual Type GetProcessorParametersType()
+        protected override void InitializeProcessorParameters(ProcessorParameters parameters)
         {
-            return null;
-        }
+            base.InitializeProcessorParameters(parameters);
 
-        protected virtual void InitializeProcessorParameters(ProcessorParameters parameters)
-        {
             if (meshRendererVisualDirtyFlags is Grid2DMeshObjectBaseVisualDirtyFlags)
             {
                 Grid2DMeshObjectBaseVisualDirtyFlags grid2DMeshRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as Grid2DMeshObjectBaseVisualDirtyFlags;
@@ -565,16 +544,8 @@ namespace DepictionEngine
             base.ApplyPropertiesToMaterial(meshRenderer, material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, star);
 
             SetVectorToMaterial("_" + TEXTURE_INDEX_DIMENSIONS_POSTFIX, new Vector4(grid2DIndex.x, grid2DIndex.y, grid2DDimensions.x, grid2DDimensions.y), material, materialPropertyBlock);
-            SetColorToMaterial("_Color", GetColor(), material, materialPropertyBlock);
             SetTextureToMaterial("_ColorMap", GetColorMap(), Texture2D.blackTexture, material, materialPropertyBlock);
             SetTextureToMaterial("_AdditionalMap", GetAdditionalMap(), Texture2D.whiteTexture, material, materialPropertyBlock);
-
-            float radius = 0.0f;
-
-            if (closestGeoAstroObject != Disposable.NULL && closestGeoAstroObject.IsValidSphericalRatio() && star != Disposable.NULL)
-                radius = (float)closestGeoAstroObject.GetScaledRadius();
-
-            SetFloatToMaterial("_Radius2", radius / meshRendererVisualLocalScale.y, material, materialPropertyBlock);
         }
 
         public override bool OnDispose(DisposeContext disposeContext)
@@ -598,9 +569,9 @@ namespace DepictionEngine
 
             private double _normalizedRadiusSize;
             private double _normalizedCircumferenceSize;
-            private double _scale;
+            private float _scale;
             private float _inverseHeightScale;
-            private double _inverseScale;
+            private float _inverseScale;
 
             private Vector3Double _centerPoint;
             private QuaternionDouble _centerRotation;
@@ -641,13 +612,13 @@ namespace DepictionEngine
                 _normalizedCircumferenceSize = MathPlus.SIZE * _grid2DDimensions.y;
                 _scale = GetScale(_size, _grid2DDimensions);
                 _inverseHeightScale = meshRendererVisualLocalScale.x / meshRendererVisualLocalScale.y;
-                _inverseScale = 1.0d / _size * _normalizedCircumferenceSize;
+                _inverseScale = (float)(1.0d / _size * _normalizedCircumferenceSize);
 
                 GeoCoordinate3Double centerGeoCoordinate = MathPlus.GetGeoCoordinate3FromIndex(new Vector2Double(_grid2DIndex.x + 0.5d, _grid2DIndex.y + 0.5d), grid2DDimensions);
                 if (UseAltitude())
-                    centerGeoCoordinate.altitude = altitude;
+                    centerGeoCoordinate.altitude = altitude * inverseScale;
 
-                _centerPoint = MathPlus.GetLocalPointFromGeoCoordinate(centerGeoCoordinate, _sphericalRatio, MathPlus.GetRadiusFromCircumference(_size), _size);
+                _centerPoint = MathPlus.GetLocalPointFromGeoCoordinate(centerGeoCoordinate, _sphericalRatio, _normalizedRadiusSize, _normalizedCircumferenceSize);
                 _centerRotation = MathPlus.GetUpVectorFromGeoCoordinate(centerGeoCoordinate, _sphericalRatio);
                 _inverseCenterRotation = QuaternionDouble.Inverse(_centerRotation);
 
@@ -681,7 +652,7 @@ namespace DepictionEngine
                 get => _sphericalRatio;
             }
 
-            public double scale
+            public float scale
             {
                 get => _scale;
             }
@@ -691,7 +662,7 @@ namespace DepictionEngine
                 get => _inverseHeightScale;
             }
 
-            public double inverseScale
+            public float inverseScale
             {
                 get => _inverseScale;
             }
@@ -729,8 +700,8 @@ namespace DepictionEngine
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Vector3Double TransformGeoCoordinateToVector(double latitude, double longitude, double altitude = 0.0d)
             {
-                Vector3Double point = MathPlus.GetLocalPointFromGeoCoordinate(new GeoCoordinate3Double(latitude, longitude, altitude), _sphericalRatio, MathPlus.GetRadiusFromCircumference(_size), _size);
-                Vector3 vector = _inverseCenterRotation * (point - _centerPoint) * _inverseScale;
+                Vector3Double point = MathPlus.GetLocalPointFromGeoCoordinate(new GeoCoordinate3Double(latitude, longitude, altitude), _sphericalRatio, _normalizedRadiusSize, _normalizedCircumferenceSize);
+                Vector3 vector = _inverseCenterRotation * (point - _centerPoint);
                 vector.y *= _inverseHeightScale;
                 return vector;
             }
