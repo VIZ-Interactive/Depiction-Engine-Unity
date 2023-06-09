@@ -94,16 +94,11 @@ namespace DepictionEngine
 
         private TerrainGridCache _terrainGridCache;
 
-#if UNITY_EDITOR
-        protected override bool GetShowColor()
-        {
-            return true;
-        }
-#endif
-
         public override void Recycle()
         {
             base.Recycle();
+
+            RecycleMaterial(_material);
 
             _subdivision = default;
             _subdivisionSize = default;
@@ -399,15 +394,11 @@ namespace DepictionEngine
             return 1.0f / subdivision;
         }
 
-        protected override bool SetAlpha(float value)
+        protected override void ColorChanged(Color newValue, Color oldValue)
         {
-            if (base.SetAlpha(value))
-            {
-                terrainGridCache.Dirty();
+            base.ColorChanged(newValue, oldValue);
 
-                return true;
-            }
-            return false;
+            terrainGridCache.Dirty();
         }
 
         protected override bool SetPopupT(float value)
@@ -508,7 +499,7 @@ namespace DepictionEngine
 
         protected override void ApplyCastShadowToMeshRendererVisual(MeshRendererVisual meshRendererVisual, ShadowCastingMode shadowCastingMode)
         {
-            base.ApplyCastShadowToMeshRendererVisual(meshRendererVisual, alpha != 1.0f ? ShadowCastingMode.Off : shadowCastingMode);
+            base.ApplyCastShadowToMeshRendererVisual(meshRendererVisual, color.a != 1.0f ? ShadowCastingMode.Off : shadowCastingMode);
         }
 
         protected virtual bool GetEnableGPUTerrain()

@@ -63,9 +63,12 @@ namespace DepictionEngine
 #endif
         }
 
+
         protected virtual void Awake()
         {
 #if UNITY_EDITOR
+            UpdateInspectorComponentNameOverride();
+
             //We initialize right away if the gameObjects are being duplicated to make sure the Undo operations are recorded together as one.
             if (!_initializing && !InstanceManager.preventAutoInitialize && !SceneManager.IsSceneBeingDestroyed())
             {
@@ -240,7 +243,12 @@ namespace DepictionEngine
         {
             //FallbackValues Component are really only used to display properties in the Inspector or to validate property change. By preventing initialized we limit the amount of code the object can execute.
             if (!isFallbackValues)
+            {
                 _initialized = true;
+#if UNITY_EDITOR
+                UpdateInspectorComponentNameOverride();
+#endif
+            }
 
             UpdateHideFlags();
 
@@ -314,7 +322,7 @@ namespace DepictionEngine
 
         protected virtual bool UpdateUndoRedoSerializedFields()
         {
-            return !isFallbackValues;
+            return initialized && !isFallbackValues;
         }
 
         /// <summary>
@@ -327,6 +335,16 @@ namespace DepictionEngine
             //Are the Destroy and Initialize check necessary?
             if (!DisposeManager.TriggerOnDestroyIfNull(this))
                 InstanceManager.Initialize(this, InitializationContext.Existing);  
+        }
+
+        protected virtual string GetInspectorComponentNameOverride()
+        {
+            return (!initialized ? "(Not Initialized)" : "") + Editor.ObjectNames.GetInspectorTitle(this, true);
+        }
+
+        protected void UpdateInspectorComponentNameOverride()
+        {
+            inspectorComponentNameOverride = GetInspectorComponentNameOverride();
         }
 
         [SerializeField, HideInInspector]

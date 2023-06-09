@@ -74,8 +74,10 @@ namespace DepictionEngine
         [BeginFoldout("Building")]
         [SerializeField, Tooltip("The path of the material's shader from within the Resources directory.")]
         private string _shaderPath;
-        [SerializeField, Tooltip("A fallback color value used by the parser if no other value are present in the feature. ")]
+        [SerializeField, Tooltip("A fallback vertex color value used by the parser if no other value are present in the feature.")]
         private Color _defaultColor;
+        [SerializeField, Tooltip("An override vertex color value used by the parser for all the feature. The alpha channel is used to interpolate between this override color and the regular color.")]
+        private Color _overrideColor;
         [SerializeField, Tooltip("A fallback building height value used by the parser if no other value are present in the feature. ")]
         private float _defaultHeight;
         [SerializeField, Tooltip("A fallback level height value used by the parser if no other value are present in the feature. "), EndFoldout]
@@ -84,19 +86,13 @@ namespace DepictionEngine
         private Texture _colorMap;
         private Texture _additionalMap;
 
-#if UNITY_EDITOR
-        protected override bool GetShowColor()
-        {
-            return true;
-        }
-#endif
-
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);
 
             InitValue(value => shaderPath = value, GetDefaultShaderPath(), initializingContext);
             InitValue(value => defaultColor = value, new Color(0.6352941f, 0.5882353f, 0.5411765f), initializingContext);
+            InitValue(value => overrideColor = value, new Color(1.0f, 1.0f, 1.0f, 0.0f), initializingContext);
             InitValue(value => defaultHeight = value, 10.0f, initializingContext);
             InitValue(value => defaultLevelHeight = value, 3.0f, initializingContext);
         }
@@ -163,13 +159,23 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A fallback color value used by the parser if no other value are present in the feature. 
+        /// A fallback vertex color value used by the parser if no other value are present in the feature. 
         /// </summary>
         [Json]
         public Color defaultColor
         {
             get => _defaultColor;
             set => SetValue(nameof(defaultColor), value, ref _defaultColor);
+        }
+
+        /// <summary>
+        /// An override vertex color value used by the parser for all the feature. The alpha channel is used to interpolate between this override color and the regular color.
+        /// </summary>
+        [Json]
+        public Color overrideColor
+        {
+            get => _overrideColor;
+            set => SetValue(nameof(overrideColor), value, ref _overrideColor);
         }
 
         /// <summary>
@@ -238,6 +244,7 @@ namespace DepictionEngine
                 BuildingGridMeshObjectVisualDirtyFlags buildingMeshRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as BuildingGridMeshObjectVisualDirtyFlags;
 
                 buildingMeshRendererVisualDirtyFlags.defaultColor = defaultColor;
+                buildingMeshRendererVisualDirtyFlags.overrideColor = overrideColor;
                 buildingMeshRendererVisualDirtyFlags.defaultLevelHeight = defaultLevelHeight;
                 buildingMeshRendererVisualDirtyFlags.defaultHeight = defaultHeight;
             }
@@ -261,7 +268,7 @@ namespace DepictionEngine
             {
                 BuildingGridMeshObjectVisualDirtyFlags buildingMeshRendererVisualDirtyFlags = meshRendererVisualDirtyFlags as BuildingGridMeshObjectVisualDirtyFlags;
 
-                (parameters as BuildingGridMeshObjectParameters).Init(buildingMeshRendererVisualDirtyFlags.defaultColor, buildingMeshRendererVisualDirtyFlags.defaultLevelHeight, buildingMeshRendererVisualDirtyFlags.defaultHeight);
+                (parameters as BuildingGridMeshObjectParameters).Init(buildingMeshRendererVisualDirtyFlags.defaultColor, buildingMeshRendererVisualDirtyFlags.overrideColor, buildingMeshRendererVisualDirtyFlags.defaultLevelHeight, buildingMeshRendererVisualDirtyFlags.defaultHeight);
             }
         }
 
@@ -300,6 +307,7 @@ namespace DepictionEngine
         protected class BuildingGridMeshObjectParameters : FeatureParameters
         {
             private Color _defaultColor;
+            private Color _overrideColor;
             private float _defaultLevelHeight;
             private float _defaultHeight;
 
@@ -308,13 +316,15 @@ namespace DepictionEngine
                 base.Recycle();
 
                 _defaultColor = default;
+                _overrideColor = default;
                 _defaultLevelHeight = default;
                 _defaultHeight = default;
             }
 
-            public BuildingGridMeshObjectParameters Init(Color defaultColor, float defaultLevelHeight, float defaultHeight)
+            public BuildingGridMeshObjectParameters Init(Color defaultColor, Color overrideColor, float defaultLevelHeight, float defaultHeight)
             {
                 _defaultColor = defaultColor;
+                _overrideColor = overrideColor;
                 _defaultLevelHeight = defaultLevelHeight;
                 _defaultHeight = defaultHeight;
 
@@ -329,6 +339,11 @@ namespace DepictionEngine
             public Color defaultColor
             {
                 get => _defaultColor;
+            }
+
+            public Color overrideColor
+            {
+                get => _overrideColor;
             }
 
             public float defaultLevelHeight
@@ -363,8 +378,8 @@ namespace DepictionEngine
                     int nextYieldFeatureCount = YIELD_FEATURE_INTERVAL;
                     for (int featureIndex = 0; featureIndex < buildingFeature.featureCount; featureIndex++)
                     {
-                        Color wallColor = buildingFeature.GetWallColor(featureIndex, parameters.defaultColor);
-                        Color roofColor = buildingFeature.GetRoofColor(featureIndex, parameters.defaultColor);
+                        Color wallColor = buildingFeature.GetWallColor(featureIndex, parameters.defaultColor, parameters.overrideColor);
+                        Color roofColor = buildingFeature.GetRoofColor(featureIndex, parameters.defaultColor, parameters.overrideColor);
 
                         GeoCoordinateGeometries geoCoordinateGeometries = buildingFeature.GetGeoCoordinateGeometries(featureIndex);
                         foreach (GeoCoordinateGeometry geoCoordinateGeometry in geoCoordinateGeometries.geometries)

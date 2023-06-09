@@ -220,13 +220,18 @@ namespace DepictionEngine
 
                 UpdateFallbackJsonStr(jsonStr);
 
-                Type fallbackValuesType = GetFallbackValuesType();
-                inspectorComponentNameOverride = (fallbackValuesType != null ? fallbackValuesType.Name : "") + "FallbackValues";
+                UpdateInspectorComponentNameOverride();
 #endif
             });
         }
 
 #if UNITY_EDITOR
+        protected override string GetInspectorComponentNameOverride()
+        {
+            Type fallbackValuesType = GetFallbackValuesType();
+            return (fallbackValuesType != null ? fallbackValuesType.Name : "") + "FallbackValues";
+        }
+
         private void UpdateFallbackJsonStr(string jsonStr)
         {
             _lastFallbackValuesJsonStr = _fallbackValuesJsonStr = jsonStr;

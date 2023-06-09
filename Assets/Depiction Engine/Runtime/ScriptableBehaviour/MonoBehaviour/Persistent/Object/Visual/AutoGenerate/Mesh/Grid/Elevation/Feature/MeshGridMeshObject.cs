@@ -22,6 +22,13 @@ namespace DepictionEngine
 
         private AssetBase _meshAsset;
 
+        public override void Recycle()
+        {
+            base.Recycle();
+
+            RecycleMaterial(_material);
+        }
+
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);

@@ -82,11 +82,6 @@ namespace DepictionEngine.Editor
             DisposeManager.Destroy(transform);
         }
 
-        public override int GetDefaultDistancePass()
-        {
-            return cameraManager.distancePass;
-        }
-
         public SceneCameraController sceneCameraController
         {
             get => controller as SceneCameraController;
@@ -103,15 +98,14 @@ namespace DepictionEngine.Editor
             return false;
         }
 
-        //Used for debugging when UpdateHideFlags() is commented out
-        protected override bool GetDefaultIsHiddenInHierarchy()
-        {
-            return false;
-        }
-
         protected override bool UpdateHideFlags()
         {
-            return false;
+            if (SceneManager.Debugging())
+                gameObject.hideFlags = HideFlags.DontSave;
+            else
+                gameObject.hideFlags = HideFlags.HideAndDontSave;
+
+            return true;
         }
 
         private int _instanceId;

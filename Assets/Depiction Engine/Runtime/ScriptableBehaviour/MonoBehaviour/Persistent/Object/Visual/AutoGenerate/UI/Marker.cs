@@ -234,16 +234,13 @@ namespace DepictionEngine
         private Building _building;
         private static IdLoadScope _buildingLoadScope;
 
-#if UNITY_EDITOR
-        protected override bool GetShowColor()
-        {
-            return true;
-        }
-#endif
-
         public override void Recycle()
         {
             base.Recycle();
+
+            RecycleMaterial(_markerBadgeMaterial);
+            RecycleMaterial(_markerLineMaterial);
+            RecycleMaterial(_markerShadowMaterial);
 
             _buildingId = default;
             _building = default;
@@ -269,7 +266,13 @@ namespace DepictionEngine
 
         protected override Color GetDefaultColor()
         {
-            return new Color(188.0f / 255.0f, 22.0f / 255.0f, 22.0f / 255.0f);
+            Color color = base.GetDefaultColor();
+
+            color.r = 0.73725490196f;
+            color.g = 0.0862745098f;
+            color.b = 0.0862745098f;
+
+            return color;
         }
 
 #if UNITY_EDITOR
@@ -278,7 +281,7 @@ namespace DepictionEngine
             if (base.UpdateUndoRedoSerializedFields())
             {
                 //UndoManager.RecordObject does not work with UnityMesh so when we detect an Undo/Redo we push the UVs back onto the UnityMesh in case an icon change was part of the Undo/Redo
-                UpdateUILabelMeshUVs();
+                UpdateUIMeshUVs();
 
                 return true;
             }
@@ -372,8 +375,11 @@ namespace DepictionEngine
             {
                 if (Object.ReferenceEquals(_building, value))
                     return;
+
                 RemoveBuildingDelegates();
+
                 _building = value;
+
                 AddBuildingDelegates();
             }
         }
@@ -411,7 +417,7 @@ namespace DepictionEngine
             {
                 SetValue(nameof(badgeOffset), value < 0.0f ? 0.0f : value, ref _badgeOffset, (newValue, oldValue) =>
                 {
-                    UpdateUILabelTransform();
+                    UpdateUIVisualTransform();
                 });
             }
         }
@@ -427,7 +433,7 @@ namespace DepictionEngine
             { 
                 SetValue(nameof(icon), value, ref _icon, (newValue, oldValue) => 
                 {
-                    UpdateUILabelMeshUVs();
+                    UpdateUIMeshUVs();
                 }); 
             }
         }
@@ -442,6 +448,26 @@ namespace DepictionEngine
             set => SetValue(nameof(additionalData), value, ref _additionalData);
         }
 
+        protected override void ColorChanged(Color newValue, Color oldValue)
+        {
+            base.ColorChanged(newValue, oldValue);
+
+            UpdateUILabelColor();
+        }
+
+        protected void UpdateUILabelColor()
+        {
+            if (initialized)
+            {
+                transform.IterateOverChildren<UILabel>((uiLabel) =>
+                {
+                    uiLabel.color = color;
+
+                    return true;
+                });
+            }
+        }
+
         private CharacterInfo characterInfo
         {
             get 
@@ -449,11 +475,6 @@ namespace DepictionEngine
                 renderingManager.GetCharacterInfoFromFontName(Convert.ToChar(ICONS_UNICODE[(int)icon]), out CharacterInfo characterInfo, MARKER_ICON_FONT_NAME);
                 return characterInfo;
             }
-        }
-
-        public override float GetCurrentAlpha()
-        {
-            return building != Disposable.NULL ? 0.0f : color.a * base.GetCurrentAlpha();
         }
 
         protected override void InitializeMaterial(MeshRenderer meshRenderer, Material material = null)
@@ -489,12 +510,12 @@ namespace DepictionEngine
 
             if (visualsChanged)
             {
-                UpdateUILabelTransform();
-                UpdateUILabelMeshUVs();
+                UpdateUIVisualTransform();
+                UpdateUIMeshUVs();
             }
         }
 
-        private void UpdateUILabelTransform()
+        private void UpdateUIVisualTransform()
         {
             if (initialized)
             {
@@ -527,7 +548,7 @@ namespace DepictionEngine
             }
         }
 
-        private void UpdateUILabelMeshUVs()
+        private void UpdateUIMeshUVs()
         {
             if (initialized)
             {
@@ -614,24 +635,30 @@ namespace DepictionEngine
                 SetTextureToMaterial("_LuminosityMap", GetBadgeLuminosityTextureShadowTexture(), material, materialPropertyBlock);
         }
 
-        protected override Color GetColor(MeshRenderer meshRenderer, Material material, MaterialPropertyBlock materialPropertyBlock, Camera camera, GeoAstroObject closestGeoAstroObject)
+        protected override Color GetColor(MeshRenderer meshRenderer, float alpha)
         {
-            Color color = base.GetColor(meshRenderer, material, materialPropertyBlock, camera, closestGeoAstroObject);
+            Color currentColor = base.GetColor(meshRenderer, alpha);
+
+            Color color = currentColor;
 
             if (meshRenderer.name == BADGE_MESH_NAME)
             {
-                Color.RGBToHSV(color, out float h, out float s, out float v);
+                Color.RGBToHSV(currentColor, out float h, out float s, out float v);
 
                 s = GetMouseDown() ? s * 0.3f : GetMouseOver() ? 1.0f : s;
 
-                return Color.HSVToRGB(h, s, v);
+                color = Color.HSVToRGB(h, s, v);
             }
             else if (meshRenderer.name == SHADOW_MESH_NAME)
-                return Color.black;
+                color = Color.black;
             else if (meshRenderer.name == LINE_MESH_NAME)
-                return Color.white;
+                color = Color.white;
 
-            return color;
+            currentColor.r = color.r;
+            currentColor.g = color.g;
+            currentColor.b = color.b;
+
+            return currentColor;
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

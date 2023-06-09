@@ -205,7 +205,7 @@ namespace DepictionEngine
         public bool autoDispose
         {
             get => _autoDispose;
-            set { SetValue(nameof(autoDispose), value, ref _autoDispose); }
+            set => SetValue(nameof(autoDispose), value, ref _autoDispose);
         }
 
         /// <summary>
@@ -234,7 +234,7 @@ namespace DepictionEngine
         public bool createPersistentIfMissing
         {
             get => _createPersistentIfMissing;
-            set { SetValue(nameof(_createPersistentIfMissing), value, ref _createPersistentIfMissing); }
+            set => SetValue(nameof(_createPersistentIfMissing), value, ref _createPersistentIfMissing);
         }
 
         /// <summary>

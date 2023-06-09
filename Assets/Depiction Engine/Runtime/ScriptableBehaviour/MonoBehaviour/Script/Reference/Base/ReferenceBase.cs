@@ -302,11 +302,18 @@ namespace DepictionEngine
                 {
 #if UNITY_EDITOR
                     _lastDataType = newValue;
-                    inspectorComponentNameOverride = Editor.ObjectNames.GetInspectorTitle(this, true) + (string.IsNullOrEmpty(newValue) ? "" : " (" + newValue + ")");
+                    UpdateInspectorComponentNameOverride();
 #endif
                 });
             }
         }
+
+#if UNITY_EDITOR
+        protected override string GetInspectorComponentNameOverride()
+        {
+            return base.GetInspectorComponentNameOverride() + (string.IsNullOrEmpty(dataType) ? "" : " (" + dataType + ")");
+        }
+#endif
 
         public LoaderBase loader
         {

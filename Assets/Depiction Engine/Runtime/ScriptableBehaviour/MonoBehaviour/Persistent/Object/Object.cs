@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace DepictionEngine
 {
@@ -32,6 +33,12 @@ namespace DepictionEngine
         [SerializeField, ConditionalShow(nameof(IsPhysicsObject)), Tooltip("Used to determine the amount of gravitational force to apply when '"+nameof(Object.useGravity)+"' is enabled."), EndFoldout]
         private double _mass;
 
+#if UNITY_EDITOR
+        [BeginFoldout("Reflection Probe")]
+        [SerializeField, Button(nameof(UpdateReflectionProbeBtn)), Tooltip("Automatically add the ReflectionProbe(s) so the Object can manage them. When managed a 'customBakedTexture' will be generated, assigned and updated automatically for the ReflectionProbe if their type is set to 'ReflectionProbeMode.Custom'."), EndFoldout]
+        private bool _updateReflectionProbe;
+#endif
+
         [SerializeField, HideInInspector]
         private bool _isHiddenInHierarchy;
       
@@ -40,6 +47,12 @@ namespace DepictionEngine
 
         [SerializeField, HideInInspector]
         private Rigidbody _rigidbodyInternal;
+
+        [SerializeField, HideInInspector]
+        private List<ReflectionProbe> _managedReflectionProbes;
+
+        [SerializeField, HideInInspector]
+        private RenderTexture _reflectionCustomBakedTexture;
 
         private TransformDouble _transform;
         private GeoAstroObject _parentGeoAstroObject;
@@ -99,6 +112,15 @@ namespace DepictionEngine
         /// </summary>
         public Action<LocalPositionParam, LocalRotationParam, LocalScaleParam, Camera> TransformControllerCallback;
 
+#if UNITY_EDITOR
+        private void UpdateReflectionProbeBtn()
+        {
+            UpdateReflectionProbe(out int added, out int removed);
+
+            UnityEditor.EditorUtility.DisplayDialog("Updated", "Found a total of " + managedReflectionProbes.Count + " ReflectionProbe(s).                Added: " + added + "                                                Removed: " + removed, "OK");
+        }
+#endif
+
         protected override void IterateOverComponentReference(Action<SerializableGuid, Action> callback)
         {
             base.IterateOverComponentReference(callback);
@@ -134,6 +156,8 @@ namespace DepictionEngine
             _targetController = default;
 
             _visibleInCameras?.Clear();
+
+            _managedReflectionProbes?.Clear();
         }
 
         protected override bool Initialize(InitializationContext initializingContext)
@@ -223,6 +247,8 @@ namespace DepictionEngine
         {
             if (base.AddToInstanceManager())
             {
+                RegisterWithRenderingManager();
+
                 RegisterWithPhysicsManager();
                 return true;
             }
@@ -527,7 +553,7 @@ namespace DepictionEngine
         /// <returns>If true the object will be positioned in space otherwise it will remain static at identity transform(origin).</returns>
         public virtual bool RequiresPositioning()
         {
-            return false;
+            return managedReflectionProbes.Count > 0;
         }
 
         /// <summary>
@@ -546,7 +572,9 @@ namespace DepictionEngine
                 if (_lastGameObjectActiveSelf != gameObjectActiveSelf)
                 {
                     bool newValue = gameObjectActiveSelf;
+                    ignoreGameObjectActiveChange = true;
                     gameObject.SetActive(_lastGameObjectActiveSelf);
+                    ignoreGameObjectActiveChange = false;
                     gameObjectActiveSelf = newValue;
                 }
 
@@ -2069,6 +2097,225 @@ namespace DepictionEngine
             }
         }
 
+        public int reflectionProbeCount { get => managedReflectionProbes.Count; }
+
+        protected List<ReflectionProbe> managedReflectionProbes
+        {
+            get { _managedReflectionProbes ??= new List<ReflectionProbe>(); return _managedReflectionProbes; }
+            set => _managedReflectionProbes = value;
+        }
+
+        public void IterateOverReflectionProbes(Action<ReflectionProbe> callback)
+        {
+            if (callback != null)
+            {
+                for (int i = managedReflectionProbes.Count - 1; i >= 0; i--)
+                    callback(managedReflectionProbes[i]);
+            }
+        }
+
+        /// <summary>
+        /// Automatically add the <see cref="UnityEngine.ReflectionProbe"/>(s) so the <see cref="DepictionEngine.Object"/> can manage them. When managed a 'customBakedTexture' will be generated, assigned and updated automatically for the <see cref="UnityEngine.ReflectionProbe"/> if their type is set to <see cref="UnityEngine.Rendering.ReflectionProbeMode.Custom"/>.
+        /// </summary>
+        /// <param name="added">The number of added <see cref="UnityEngine.ReflectionProbe"/>(s)</param>
+        /// <param name="removed">The number of removed <see cref="UnityEngine.ReflectionProbe"/>(s)</param>
+        public void UpdateReflectionProbe(out int added, out int removed)
+        {
+            removed = 0;
+            added = 0;
+
+            List<ReflectionProbe> newManagedReflectionProbes = new();
+            GetReflectionProbes(ref newManagedReflectionProbes);
+            for (int i = managedReflectionProbes.Count - 1; i >= 0; i--)
+            {
+                ReflectionProbe reflectionProbe = managedReflectionProbes[i];
+                if (!newManagedReflectionProbes.Contains(reflectionProbe) && RemoveReflectionProbe(reflectionProbe))
+                    removed++;
+            }
+
+            foreach (ReflectionProbe reflectionProbe in newManagedReflectionProbes)
+            {
+                if (!managedReflectionProbes.Contains(reflectionProbe))
+                {
+                    if (AddReflectionProbe(reflectionProbe))
+                        added++;
+                }
+            }
+        }
+
+        protected virtual void GetReflectionProbes(ref List<ReflectionProbe> managedReflectionProbes)
+        {
+            gameObject.GetComponents(managedReflectionProbes);
+        }
+
+        /// <summary>
+        /// Add the <see cref="UnityEngine.ReflectionProbe"/> so the <see cref="DepictionEngine.Object"/> can manage it. When managed a 'customBakedTexture' will be generated, assigned and updated automatically for the <see cref="UnityEngine.ReflectionProbe"/> if their type is set to <see cref="UnityEngine.Rendering.ReflectionProbeMode.Custom"/>.
+        /// </summary>
+        /// <param name="reflectionProbe"></param>
+        public virtual bool AddReflectionProbe(ReflectionProbe reflectionProbe)
+        {
+            if (!managedReflectionProbes.Contains(reflectionProbe))
+            {
+                managedReflectionProbes.Add(reflectionProbe);
+                RegisterWithRenderingManager();
+
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Remove the <see cref="UnityEngine.ReflectionProbe"/> from the managed list.
+        /// </summary>
+        /// <param name="reflectionProbe"></param>
+        /// <returns>True if successfully removed.</returns>
+        public bool RemoveReflectionProbe(ReflectionProbe reflectionProbe)
+        {
+            if (managedReflectionProbes.Remove(reflectionProbe))
+            {
+                RegisterWithRenderingManager();
+                return true;
+            }
+            return false;
+        }
+
+        protected void RegisterWithRenderingManager()
+        {
+            if (IsReflectionObject())
+                renderingManager.AddReflectionObject(this);
+            else
+                renderingManager.RemoveReflectionObject(this);
+        }
+
+        public virtual bool IsReflectionObject()
+        {
+            return reflectionProbeCount > 0;
+        }
+
+        public RenderTexture reflectionCustomBakedTexture
+        {
+            get => _reflectionCustomBakedTexture;
+            private set
+            {
+                if (Object.ReferenceEquals(_reflectionCustomBakedTexture, value))
+                    return;
+
+                DisposeManager.Dispose(_reflectionCustomBakedTexture);
+
+                _reflectionCustomBakedTexture = value;
+            }
+        }
+
+        protected virtual void UpdateReflectionCustomBakedTexture(int textureSize)
+        {
+            RenderTexture customBakedTexture = reflectionCustomBakedTexture;
+            if (customBakedTexture == null || customBakedTexture.width != textureSize || customBakedTexture.height != textureSize)
+            {
+                reflectionCustomBakedTexture = new(textureSize, textureSize, 0, RenderTextureFormat.ARGB32, 0)
+                {
+                    filterMode = FilterMode.Bilinear,
+                    anisoLevel = 0,
+                    useMipMap = false,
+                    dimension = TextureDimension.Cube,
+                    name = name + "_ReflectionProbe_Cubemap",
+                    isPowerOfTwo = true
+                };
+            }
+        }
+
+        public bool ReflectionRequiresRender(out Camera camera)
+        {
+            if (activeAndEnabled && GetReflectionRenderCamera(out camera))
+                return true;
+
+            camera = null;
+            return false;
+        }
+
+        protected virtual bool GetReflectionRenderCamera(out Camera camera)
+        {
+            ReflectionProbe reflectionProbe = managedReflectionProbes.Count > 0 ? managedReflectionProbes[0] : null;
+            if (reflectionProbe != null && reflectionProbe.isActiveAndEnabled)
+            {
+                if (reflectionProbe.mode == ReflectionProbeMode.Custom || (reflectionProbe.mode == ReflectionProbeMode.Realtime && reflectionProbe.refreshMode == ReflectionProbeRefreshMode.ViaScripting))
+                {
+                    Camera closestCamera = null;
+                    double closestCameraDistance = double.MaxValue;
+
+                    InstanceManager instanceManager = InstanceManager.Instance(false);
+                    if (instanceManager != null)
+                    {
+                        instanceManager.IterateOverInstances<Camera>((camera) =>
+                        {
+                            if (camera.activeAndEnabled)
+                            {
+                                double cameraDistance = Vector3Double.Distance(reflectionProbe.gameObject.transform.position, camera.gameObject.transform.position);
+                                if (cameraDistance < closestCameraDistance)
+                                {
+                                    closestCamera = camera;
+                                    closestCameraDistance = cameraDistance;
+                                }
+                            }
+
+                            return true;
+                        });
+                    }
+
+                    if (closestCamera != Disposable.NULL && closestCameraDistance < reflectionProbe.size.magnitude * 50.0f)
+                    {
+                        camera = closestCamera;
+                        return true;
+                    }
+                }
+            }
+
+            camera = null;
+            return false;
+        }
+
+        protected virtual int GetReflectionTextureSize()
+        {
+            int textureSize = 0;
+
+            IterateOverReflectionProbes((reflectionProbe) =>
+            {
+                if (reflectionProbe != null)
+                    textureSize = reflectionProbe.resolution;
+            });
+
+            return textureSize;
+        }
+
+        public void UpdateEnvironmentReflection(RTTCamera rttCamera, Camera camera, ScriptableRenderContext? context = null)
+        {
+            UpdateReflectionCustomBakedTexture(GetReflectionTextureSize());
+
+            RenderToReflectionCubemap(rttCamera, camera);
+        }
+
+        protected virtual void RenderToReflectionCubemap(RTTCamera rttCamera, Camera camera)
+        {
+            IterateOverReflectionProbes((reflectionProbe) =>
+            {
+                if (reflectionProbe != null)
+                {
+                    if (reflectionProbe.mode == ReflectionProbeMode.Custom)
+                        rttCamera.RenderToCubemap(reflectionProbe.clearFlags == ReflectionProbeClearFlags.Skybox ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor, reflectionProbe.backgroundColor, camera.skybox.material, reflectionProbe.cullingMask, reflectionProbe.nearClipPlane, reflectionProbe.farClipPlane, reflectionProbe.transform.position, reflectionProbe.transform.rotation, reflectionCustomBakedTexture);
+                    else
+                    {
+                        if (reflectionProbe.mode == ReflectionProbeMode.Realtime && reflectionProbe.refreshMode == ReflectionProbeRefreshMode.ViaScripting)
+                        {
+                            //These render calls are asynchronous which can be problematic as the renders, being done outside the scope of this method, will include other reflection, dynamicSkybox and GI.
+                            //It should be avoided and mode == "ReflectionProbeMode.Custom should be used instead".
+                            reflectionProbe.RenderProbe();
+                        }
+                    }
+                }
+                else
+                    reflectionCustomBakedTexture = null;
+            });
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override bool ApplyBeforeChildren(Action<PropertyMonoBehaviour> callback)
         {
@@ -2240,6 +2487,14 @@ namespace DepictionEngine
             dataProcessor?.Dispose();
         }
 
+        protected override void ActiveAndEnabledChanged(bool newValue, bool oldValue)
+        {
+            base.ActiveAndEnabledChanged(newValue, oldValue);
+
+            if (newValue)
+                RenderingManager.MarkReflectionObjectDirty(this);
+        }
+
         /// <summary>
         /// Dispose all children visuals.
         /// </summary>
@@ -2276,6 +2531,8 @@ namespace DepictionEngine
                 RegisterWithPhysicsManager();
 
                 DisposeManager.Dispose(_objectAdditionalFallbackValues, disposeContext);
+
+                DisposeManager.Dispose(_reflectionCustomBakedTexture, disposeContext);
 
                 ChildAddedEvent = null;
                 ChildRemovedEvent = null;

@@ -452,10 +452,13 @@ namespace DepictionEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static QuaternionDouble GetUpVectorFromSphericalGeoCoordinate(GeoCoordinate2Double geoCoordinate)
         {
-            double clat = Math.Cos(0.5d * (DEG2RAD * geoCoordinate.latitude));
-            double clon = Math.Cos(0.5d * (DEG2RAD * geoCoordinate.longitude));
-            double slat = Math.Sin(0.5d * (DEG2RAD * geoCoordinate.latitude));
-            double slon = Math.Sin(0.5d * (DEG2RAD * geoCoordinate.longitude));
+            double latRad = DEG2RAD * geoCoordinate.latitude;
+            double longRad = DEG2RAD * geoCoordinate.longitude;
+
+            double clat = Math.Cos(0.5d * latRad);
+            double clon = Math.Cos(0.5d * longRad);
+            double slat = Math.Sin(0.5d * latRad);
+            double slon = Math.Sin(0.5d * longRad);
 
             double qw = clat * clon;
             double qx = 0.0d - clat * slon;

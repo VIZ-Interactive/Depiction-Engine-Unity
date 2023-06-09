@@ -9,6 +9,8 @@ namespace DepictionEngine
         [SerializeField]
         private Color _defaultColor;
         [SerializeField]
+        private Color _overrideColor;
+        [SerializeField]
         private float _defaultLevelHeight;
         [SerializeField]
         private float _defaultHeight;
@@ -18,6 +20,7 @@ namespace DepictionEngine
             base.Recycle();
 
             _defaultColor = default;
+            _overrideColor = default;
             _defaultLevelHeight = default;
             _defaultHeight = default;
         }
@@ -31,6 +34,19 @@ namespace DepictionEngine
                     return;
 
                 _defaultColor = value;
+                isDirty = true;
+            }
+        }
+
+        public Color overrideColor
+        {
+            get => _overrideColor;
+            set
+            {
+                if (_overrideColor == value)
+                    return;
+
+                _overrideColor = value;
                 isDirty = true;
             }
         }

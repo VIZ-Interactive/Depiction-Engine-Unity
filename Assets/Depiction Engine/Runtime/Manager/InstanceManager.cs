@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace DepictionEngine
 {
@@ -1074,7 +1075,7 @@ namespace DepictionEngine
                 //Pooled Instance Recycled
                 if (disposable is MonoBehaviourDisposable monoBehaviourDisposable)
                 {
-                    GameObject go = InitializeGameObject(monoBehaviourDisposable.gameObject, GetParentFromJson(parent, json), setParentAndAlign, moveToView);
+                    GameObject go = InitializeGameObject(monoBehaviourDisposable.gameObject, GetParentFromJson(parent, json), setParentAndAlign);
 
                     disposable = go.GetComponentInitialized(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
                 }
@@ -1086,11 +1087,16 @@ namespace DepictionEngine
                 //New Instance Created
                 if (type.IsSubclassOf(typeof(MonoBehaviour)))
                 {
-                    GameObject go = InitializeGameObject(new(""), GetParentFromJson(parent, json), setParentAndAlign, moveToView);
+                    GameObject go = InitializeGameObject(new(""), GetParentFromJson(parent, json), setParentAndAlign);
 #if UNITY_EDITOR
                     Editor.UndoManager.QueueRegisterCreatedObjectUndo(go, initializingContext);
 #endif
                     disposable = go.AddComponentInitialized(type, initializingContext, json, propertyModifiers, isFallbackValues) as IDisposable;
+
+#if UNITY_EDITOR
+                    if (moveToView)
+                        MoveGameObjectToView(go.transform);
+#endif
                 }
                 else if (typeof(IDisposable).IsAssignableFrom(type))
                 {
@@ -1110,6 +1116,14 @@ namespace DepictionEngine
             }
 
             return disposable;
+        }
+
+        private void MoveGameObjectToView(Transform transform)
+        {
+#if UNITY_EDITOR
+            if (transform.parent == null && UnityEditor.SceneView.lastActiveSceneView != null)
+                UnityEditor.SceneView.lastActiveSceneView.MoveToView(transform);
+#endif
         }
 
         private Transform GetParentFromJson(Transform parent, JSONNode json)
@@ -1157,7 +1171,7 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static GameObject InitializeGameObject(GameObject gameObject, Transform newParent, bool setParentAndAlign, bool moveToView)
+        private static GameObject InitializeGameObject(GameObject gameObject, Transform newParent, bool setParentAndAlign)
         {
             Transform goTransform = gameObject.transform;
 
@@ -1168,10 +1182,6 @@ namespace DepictionEngine
             if (goTransform.parent != newParent)
                 goTransform.SetParent(newParent, false);
 
-#if UNITY_EDITOR
-            if (moveToView && goTransform.parent == null && UnityEditor.SceneView.lastActiveSceneView != null)
-                UnityEditor.SceneView.lastActiveSceneView.MoveToView(goTransform);
-#endif
             return gameObject;
         }
 

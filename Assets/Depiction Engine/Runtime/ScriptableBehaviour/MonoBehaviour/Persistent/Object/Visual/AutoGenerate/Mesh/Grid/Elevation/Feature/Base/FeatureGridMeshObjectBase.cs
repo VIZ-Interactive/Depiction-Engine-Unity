@@ -85,6 +85,12 @@ namespace DepictionEngine
         {
             base.Recycle();
 
+            if (_materialsDictionary != null)
+            {
+                foreach (Material material in _materialsDictionary.Values)
+                    RecycleMaterial(material);
+            }
+
             _meshRendererHighlightIndexRange?.Clear();
             _materialsDictionary?.Clear();
         }

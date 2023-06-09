@@ -6,7 +6,8 @@ using UnityEngine.Rendering;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine.Rendering.Universal;
-using static UnityEngine.Rendering.DebugUI;
+using System.Runtime.CompilerServices;
+using System.Linq;
 
 namespace DepictionEngine
 {
@@ -45,7 +46,7 @@ namespace DepictionEngine
 #endif
 
         [BeginFoldout("Environment")]
-        [SerializeField, Tooltip("When enabled, a realtime environment cubemap will be generated for each camera and be made available for Global Illumination (GI) and reflection.")]
+        [SerializeField, Tooltip("When enabled, a realtime environment cubemap will be generated for each camera and be made available for Global Illumination (GI) and reflection. Disable 'Recalculate Environment Lighting' in 'Project Settings > Editor' or 'Lighting Window > Workflow' to avoid GI flashing.")]
         private bool _dynamicEnvironment;
         [SerializeField, Tooltip("The interval (in seconds) at which we call the '"+nameof(UpdateEnvironmentCubemap)+"' function to update the environment cubemap."), EndFoldout]
         private float _dynamicEnvironmentUpdateInterval;
@@ -88,6 +89,8 @@ namespace DepictionEngine
 
         [SerializeField, HideInInspector]
         private MeshesDictionary _meshesCache;
+
+        private List<Object> _managedReflectionObjects;
 
         private Material _dynamicSkyboxMaterial;
 
@@ -395,6 +398,13 @@ namespace DepictionEngine
                         AddCustomEffectDelegate(customEffect);
                 }
 
+                IterateOverReflectionObjects((reflectionProbeObject) =>
+                {
+                    RemoveReflectionObjectDelegate(reflectionProbeObject);
+                    if (!IsDisposing())
+                        AddReflectionObjectDelegate(reflectionProbeObject);
+                });
+
                 return true;
             }
             return false;
@@ -435,7 +445,22 @@ namespace DepictionEngine
                 RemoveCustomEffectFromLayers((int)oldValue, property as ICustomEffect);
                 AddCustomEffectToLayers((int)newValue, property as ICustomEffect);
             }
-        } 
+        }
+
+        private void RemoveReflectionObjectDelegate(Object reflectionProbeObject)
+        {
+            reflectionProbeObject.DisposedEvent -= ReflectionObjectDisposedHandler;
+        }
+
+        private void AddReflectionObjectDelegate(Object reflectionProbeObject)
+        {
+            reflectionProbeObject.DisposedEvent += ReflectionObjectDisposedHandler;
+        }
+
+        private void ReflectionObjectDisposedHandler(IDisposable disposable, DisposeContext disposeContext)
+        {
+            RemoveReflectionObject(disposable as Object);
+        }
 
         protected override void InstanceRemovedHandler(IProperty property)
         {
@@ -465,6 +490,12 @@ namespace DepictionEngine
 #endif
 
             return enableAlphaClipping;
+        }
+
+        private List<Object> managedReflectionObjects
+        {
+            get { _managedReflectionObjects ??= new (); return _managedReflectionObjects; }
+            set => _managedReflectionObjects = value;
         }
 
         public Texture2D emptyTexture
@@ -587,7 +618,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled, a realtime environment cubemap will be generated for each camera and be made available for Global Illumination (GI) and reflection. 
+        /// When enabled, a realtime environment cubemap will be generated for each camera and be made available for Global Illumination (GI) and reflection. Disable 'Recalculate Environment Lighting' in 'Project Settings > Editor' or 'Lighting Window > Workflow' to avoid GI flashing.
         /// </summary>
         [Json]
         public bool dynamicEnvironment
@@ -1089,7 +1120,7 @@ namespace DepictionEngine
 
         private Tween environmentTimer
         {
-            get { return _environmentTimer; }
+            get => _environmentTimer;
             set
             {
                 if (Object.ReferenceEquals(_environmentTimer, value))
@@ -1188,7 +1219,6 @@ namespace DepictionEngine
                         GenerateGradientHeaderTextures(_headerTextures, 8, color);
                     //Property Group Header
                     GenerateHeaderTexture(_headerTextures, 10, Color.black);
-
                 }
                 return _headerTextures;
             }
@@ -1226,17 +1256,48 @@ namespace DepictionEngine
         }
 #endif
 
-        public void UpdateReflectionProbeTransform(Camera camera)
+        /// <summary>
+        /// Added <see cref="DepictionEngine.Object"/> will have their ReflectionProbe automatically managed by the <see cref="DepictionEngine.RenderingManager"/>, which means they will be updated at a regular interval.
+        /// </summary>
+        /// <param name="reflectionObject"></param>
+        public void AddReflectionObject(Object reflectionObject)
         {
-            instanceManager.IterateOverInstances<AstroObject>(
-                (astroObject) =>
-                {
-                    GeoAstroObject geoAstroObject = astroObject as GeoAstroObject;
-                    if (geoAstroObject != Disposable.NULL)
-                        geoAstroObject.UpdateReflectionProbeTransform(camera);
+            if (!managedReflectionObjects.Contains(reflectionObject))
+            {
+                managedReflectionObjects.Add(reflectionObject);
+                AddReflectionObjectDelegate(reflectionObject);
 
-                    return true;
-                });
+                MarkReflectionObjectDirty(reflectionObject);
+            }
+        }
+
+        /// <summary>
+        /// Remove the <see cref="DepictionEngine.Object"/> from the <see cref="DepictionEngine.RenderingManager"/> managed list.
+        /// </summary>
+        /// <param name="reflectionObject"></param>
+        /// <returns>True if it was removed successfully.</returns>
+        public bool RemoveReflectionObject(Object reflectionObject)
+        {
+            if (managedReflectionObjects.Remove(reflectionObject))
+            {
+                RemoveReflectionObjectDelegate(reflectionObject);
+                return true;
+            }
+            return false;
+        }
+
+        protected void IterateOverReflectionObjects(Action<Object> callback)
+        {
+            if (callback != null)
+            {
+                for (int i = managedReflectionObjects.Count - 1; i >= 0; i--)
+                {
+                    Object reflectionObject = managedReflectionObjects[i];
+       
+                    if (reflectionObject.IsReflectionObject())
+                        callback(reflectionObject);
+                }
+            }
         }
 
         public override bool HierarchicalBeginCameraRendering(Camera camera)
@@ -1248,8 +1309,8 @@ namespace DepictionEngine
                     if (depthOfField != null)
                     {
                         Camera mainCamera = Camera.main;
-                        if (dynamicFocusDistance && mainCamera != Disposable.NULL && mainCamera.controller is TargetControllerBase)
-                            depthOfField.focusDistance.value = Mathf.Clamp((float)(mainCamera.controller as TargetControllerBase).distance, minMaxFocusDistance.x, minMaxFocusDistance.y);
+                        if (dynamicFocusDistance && mainCamera != Disposable.NULL && mainCamera.controller is TargetControllerBase mainCameraTargetController)
+                            depthOfField.focusDistance.value = Mathf.Clamp((float)mainCameraTargetController.distance, minMaxFocusDistance.x, minMaxFocusDistance.y);
                     }
                 }
 
@@ -1294,7 +1355,10 @@ namespace DepictionEngine
                     int size = 0;
 
                     foreach (ICustomEffect layerCustomEffect in layerCustomEffects)
-                        size += layerCustomEffect.GetCustomEffectComputeBufferDataSize();
+                    {
+                        if (layerCustomEffect.GetCustomEffectComputeBufferDataSize(out int effectSize))
+                            size += effectSize;
+                    }
 
                     if (layerCustomEffectComputeBufferData == null || layerCustomEffectComputeBufferData.Length != size)
                         layerCustomEffectComputeBufferData = new float[size];
@@ -1304,7 +1368,10 @@ namespace DepictionEngine
                     {
                         //Null check is required for when a CustomEffect MonoBehaviour Component is removed directly in the Editor instead of deleting the whole GameObject
                         if (layerCustomEffects[i] is ICustomEffect layerCustomEffect)
-                            startIndex += layerCustomEffect.AddToComputeBufferData(startIndex, layerCustomEffectComputeBufferData);
+                        {
+                            if (layerCustomEffect.AddToComputeBufferData(out int effectSize, startIndex, layerCustomEffectComputeBufferData))
+                                startIndex += effectSize;
+                        }
                     }
                 }
                 else
@@ -1317,7 +1384,7 @@ namespace DepictionEngine
                 _layersCustomEffectComputeBufferData[layer] = layerCustomEffectComputeBufferData;
 
                 ComputeBuffer layerCustomEffectComputeBuffer = layersCustomEffectComputeBuffer[layer];
-                if (layerCustomEffectComputeBufferData != null)
+                if (layerCustomEffectComputeBufferData != null && layerCustomEffectComputeBufferData.Length != 0)
                 {
                     if (layerCustomEffectComputeBuffer == null || layerCustomEffectComputeBuffer.count != layerCustomEffectComputeBufferData.Length)
                     {
@@ -1384,26 +1451,88 @@ namespace DepictionEngine
             return false;
         }
 
-        private bool _environmentDirty;
+        public void UpdateEnvironmentCubemap()
+        {
+            if (initialized)
+            {
+                IterateOverReflectionObjects((reflectionObject) =>
+                {
+                    MarkReflectionObjectDirty(reflectionObject);
+                });
+
+                TweenManager tweenManager = TweenManager.Instance();
+                if (tweenManager != Disposable.NULL)
+                {
+                    //Validate to make sure 'dynamicEnvironmentUpdateInterval' is not zero. This can happen if the Update happens before the 'dynamicEnvironmentUpdateInterval' value is initialized.
+                    environmentTimer = tweenManager.DelayedCall(ValidateDynamicEnvironmentUpdateInterval(dynamicEnvironmentUpdateInterval), null, UpdateEnvironmentCubemap);
+                }
+            }
+        }
+
+        private static HashSet<Object> _reflectionObjectsDirty = new();
+        /// <summary>
+        /// Queue the <see cref="DepictionEngine.Object"/> reflectionProbe for update.
+        /// </summary>
+        /// <param name="reflectionObject"></param>
+        public static void MarkReflectionObjectDirty(Object reflectionObject)
+        {
+            if (!_reflectionObjectsDirty.Contains(reflectionObject))
+                _reflectionObjectsDirty.Add(reflectionObject);
+        }
+
+        private Dictionary<int, List<Object>> _renderReflectionCameraObjects = new();
         public override bool PostHierarchicalUpdate()
         {
             if (base.PostHierarchicalUpdate())
             {
                 if (dynamicEnvironment)
                 {
-                    instanceManager.IterateOverInstances<Camera>(
-                        (camera) =>
+                    _renderReflectionCameraObjects.Clear();
+                    foreach (Object reflectionProbeObject in _reflectionObjectsDirty)
+                    {
+                        if (reflectionProbeObject != Disposable.NULL && reflectionProbeObject.ReflectionRequiresRender(out Camera camera))
                         {
-                            if (_environmentDirty || camera.environmentCubemap == null)
+                            int cameraInstanceID = camera.GetInstanceID();
+                            if (!_renderReflectionCameraObjects.TryGetValue(cameraInstanceID, out List<Object> renderReflectionProbeObjects))
                             {
-                                camera.UpdateEnvironmentCubemap(rttCamera);
-                                _environmentMapChanged = true;
+                                renderReflectionProbeObjects = new();
+                                _renderReflectionCameraObjects.Add(cameraInstanceID, renderReflectionProbeObjects);
+                            }
+                            renderReflectionProbeObjects.Add(reflectionProbeObject);
+                        }
+                    }
+                    _reflectionObjectsDirty.Clear();
+
+                    instanceManager.IterateOverInstances<Camera>(
+                    (camera) =>
+                    {
+                        if (_renderReflectionCameraObjects.TryGetValue(camera.GetInstanceID(), out List<Object> renderReflectionObjects))
+                        {
+                            sceneManager.BeginCameraRendering(camera);
+
+                            DisableReflectionAndGI(camera.skybox.material, () =>
+                            {
+                                foreach (Object reflectionObject in renderReflectionObjects)
+                                    reflectionObject.UpdateEnvironmentReflection(rttCamera, camera);
+                            });
+
+                            foreach (Object reflectionProbeObject in renderReflectionObjects)
+                            {
+                                reflectionProbeObject.IterateOverReflectionProbes((reflectionProbe) =>
+                                {
+                                    if (reflectionProbe != null)
+                                        reflectionProbe.customBakedTexture = reflectionProbeObject.reflectionCustomBakedTexture;
+                                });
                             }
 
-                            return true;
-                        });
+                            camera.transform.RevertUnityLocalPosition();
+                            sceneManager.EndCameraRendering(camera);
 
-                    _environmentDirty = false;
+                            camera.ambientProbe = default;
+                        }
+
+                        return true;
+                    });
                 }
 
                 return true;
@@ -1411,50 +1540,104 @@ namespace DepictionEngine
             return false;
         }
 
-        public void UpdateEnvironmentCubemap()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void BeginCameraRendering(Camera camera, ScriptableRenderContext? context)
         {
-            if (initialized)
+            if (context.HasValue)
             {
-                _environmentDirty = true;
+                DisableReflectionAndGI(camera.skybox.material, () =>
+                {
+                    instanceManager.IterateOverInstances<VisualObject>((visualObject) =>
+                    {
+                        visualObject.UpdateReflectionEffect(rttCamera, camera, context);
+                        return true;
+                    });
+                });
 
-                TweenManager tweenManager = TweenManager.Instance();
-                if (tweenManager != Disposable.NULL)
-                    environmentTimer = tweenManager.DelayedCall(ValidateDynamicEnvironmentUpdateInterval(dynamicEnvironmentUpdateInterval), null, UpdateEnvironmentCubemap);
+                if (dynamicEnvironment)
+                {
+                    DefaultReflectionMode defaultReflectionMode = DefaultReflectionMode.Custom;
+                    if (RenderSettings.defaultReflectionMode != defaultReflectionMode)
+                        RenderSettings.defaultReflectionMode = defaultReflectionMode;
+
+                    AmbientMode ambientMode = AmbientMode.Skybox;
+                    if (RenderSettings.ambientMode != ambientMode)
+                        RenderSettings.ambientMode = ambientMode;
+
+                    RenderTexture customReflectionTexture = camera.reflectionCustomBakedTexture;
+
+                    if (RenderSettings.customReflectionTexture != customReflectionTexture)
+                        RenderSettings.customReflectionTexture = customReflectionTexture;
+
+                    if (dynamicSkyboxMaterial.GetTexture("_Tex") != customReflectionTexture)
+                        dynamicSkyboxMaterial.SetTexture("_Tex", customReflectionTexture);
+
+                    Material skyboxMaterial = dynamicSkyboxMaterial;
+                    if (RenderSettings.skybox != skyboxMaterial)
+                        RenderSettings.skybox = skyboxMaterial;
+
+                    if (camera.ambientProbe == default)
+                    {
+                        DynamicGI.synchronousMode = true;
+                        DynamicGI.UpdateEnvironment();
+
+                        //Assign after the DynamicGI.UpdateEnvironment();
+                        camera.ambientProbe = RenderSettings.ambientProbe;
+                    }
+
+                    Shader.SetGlobalVector("_GlossyEnvironmentColor", camera.glossyEnvironmentColor);
+                    RenderSettings.ambientProbe = camera.ambientProbe;
+                }
             }
         }
 
-        private SphericalHarmonicsL2 _ambientProbe;
-        private bool _environmentMapChanged;
-        public void ApplyEnvironmentAndReflectionToRenderSettings(Camera camera)
+        private List<(float, UnityEngine.Texture)> _lastReflectionProbesValues = new();
+        public void DisableReflectionAndGI(Material skyboxMaterial, Action callback)
         {
-            if (!dynamicEnvironment || _ambientProbe  == null || _environmentMapChanged)
+            if (callback != null)
             {
-                if (_environmentMapChanged)
+                float lastAmbientIntensity = RenderSettings.ambientIntensity;
+                RenderSettings.ambientIntensity = 0.0f;
+                float lastReflectionIntensity = RenderSettings.reflectionIntensity;
+                RenderSettings.reflectionIntensity = 0.0f;
+                Material lastSkyboxMaterial = RenderSettings.skybox;
+                RenderSettings.skybox = skyboxMaterial;
+                UnityEngine.Texture lastCustomReflectionTexture = RenderSettings.customReflectionTexture;
+                RenderSettings.customReflectionTexture = null;
+                _lastReflectionProbesValues.Clear();
+                IterateOverReflectionObjects((reflectionProbeObject) => 
+                { 
+                    reflectionProbeObject.IterateOverReflectionProbes((reflectionProbe) =>
+                    {
+                        if (reflectionProbe != null)
+                        {
+                            _lastReflectionProbesValues.Add((reflectionProbe.intensity, reflectionProbe.customBakedTexture));
+                            reflectionProbe.intensity = 0.0f;
+                            reflectionProbe.customBakedTexture = null;
+                        }
+                    });
+                });
+
+                callback();
+
+                RenderSettings.ambientIntensity = lastAmbientIntensity;
+                RenderSettings.reflectionIntensity = lastReflectionIntensity;
+                RenderSettings.skybox = lastSkyboxMaterial;
+                RenderSettings.customReflectionTexture = lastCustomReflectionTexture;
+                int index = 0;
+                IterateOverReflectionObjects((reflectionProbeObject) => 
                 {
-                    _environmentMapChanged = false;
-
-                    RenderTexture environmentCubeMap = camera.GetEnvironmentCubeMap();
-
-                    RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
-
-                    if (RenderSettings.customReflectionTexture != environmentCubeMap)
-                        RenderSettings.customReflectionTexture = environmentCubeMap;
-
-                    if (dynamicSkyboxMaterial.GetTexture("_Tex") != environmentCubeMap)
-                        dynamicSkyboxMaterial.SetTexture("_Tex", environmentCubeMap);
-
-                    RenderSettings.ambientMode = AmbientMode.Skybox;
-
-                    if (RenderSettings.skybox != dynamicSkyboxMaterial)
-                        RenderSettings.skybox = dynamicSkyboxMaterial;
-
-                    DynamicGI.UpdateEnvironment();
-                }
-
-                _ambientProbe = RenderSettings.ambientProbe;
+                    reflectionProbeObject.IterateOverReflectionProbes((reflectionProbe) =>
+                    {
+                        if (reflectionProbe != null)
+                        {
+                            (float, UnityEngine.Texture)  lastReflectionProbeValue = _lastReflectionProbesValues[index];
+                            reflectionProbe.intensity = lastReflectionProbeValue.Item1;
+                            reflectionProbe.customBakedTexture = lastReflectionProbeValue.Item2;
+                        }
+                    });
+                });
             }
-
-            RenderSettings.ambientProbe = _ambientProbe;
         }
 
         public static Material LoadMaterial(string path)

@@ -376,9 +376,30 @@ namespace DepictionEngine
             return false;
         }
 
+        private bool _invalidParentWarning;
         public override void UpdateParent(PropertyMonoBehaviour originator = null)
         {
-            Originator(() => { SetParent(GetParent() as TransformBase, initialized); }, originator);
+            Originator(() => 
+            {
+                TransformBase parentTransform = GetParent() as TransformBase;
+
+                if (!_invalidParentWarning && parentTransform != Disposable.NULL)
+                {
+                    Object parentObject = parentTransform.GetComponent<Object>();
+                    if (parentObject is VisualObject)
+                    {
+                        _invalidParentWarning = true;
+                        Debug.LogWarning("VisualObject '" + parentTransform.name + "' cannot contain anything other then Visuals, 'DepictionEngine.Object's are not allowed and may not be properly Initialized.");
+                    }
+                    else if (gameObject.transform.parent != null && parentObject.gameObject.transform != gameObject.transform.parent)
+                    {
+                        _invalidParentWarning = true;
+                        Debug.LogWarning("Missing 'DepictionEngine.Object' component in '" + gameObject.transform.parent.name + "' GameObject. Every GameObject in the hierarchy needs to have a component that implements 'DepictionEngine.Object'.");
+                    }
+                }
+
+                SetParent(parentTransform, initialized); 
+            }, originator);
         }
 
         protected override PropertyMonoBehaviour GetParent()
@@ -386,7 +407,7 @@ namespace DepictionEngine
             PropertyMonoBehaviour parent = null;
 
             Type parentType = GetParentType();
-            if (parentType != null )
+            if (parentType != null)
                 parent = (PropertyMonoBehaviour)(transform.parent != null ? transform.parent.gameObject.GetComponentInParentInitialized(parentType, true) : null);
 
             return parent;

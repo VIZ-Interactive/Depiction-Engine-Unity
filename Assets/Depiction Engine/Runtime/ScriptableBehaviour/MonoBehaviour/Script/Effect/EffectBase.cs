@@ -55,11 +55,15 @@ namespace DepictionEngine
 
         protected RenderTexture RenderToTexture(RTTCamera rttCamera, Camera camera, ScriptableRenderContext context, RenderTexture texture, int cullingMask)
         {
-           return rttCamera.RenderToTexture(camera, context, texture, (rttUnityCamera, camera) => 
-           { 
-               if (!ApplyPropertiesToRTTUnityCamera(rttUnityCamera, camera, cullingMask))
-                   rttUnityCamera.cullingMask = 0;
-           }, ResetRTTUnityCamera);
+            RenderTexture renderTexture = null;
+
+            renderTexture = rttCamera.RenderToTexture(camera.clearFlags, camera.backgroundColor, camera.skybox.material, camera.cullingMask, camera.nearClipPlane, camera.farClipPlane, camera.unityCamera.transform.position, camera.unityCamera.transform.rotation, context, texture, (rttUnityCamera) =>
+            {
+                if (!ApplyPropertiesToRTTUnityCamera(rttUnityCamera, camera, cullingMask))
+                    rttUnityCamera.cullingMask = 0;
+            }, ResetRTTUnityCamera);
+
+            return renderTexture;
         }
 
         protected virtual bool ApplyPropertiesToRTTUnityCamera(UnityEngine.Camera rttUnityCamera, Camera camera, int cullingMask)
@@ -83,7 +87,7 @@ namespace DepictionEngine
 
         protected virtual void ApplyBackgroundToRTTUnityCamera(UnityEngine.Camera rttUnityCamera, Camera camera)
         {
-           
+
         }
 
         protected virtual void ModifyClipPlanes(Camera camera, ref float near, ref float far)

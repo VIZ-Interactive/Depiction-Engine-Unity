@@ -608,11 +608,12 @@ namespace DepictionEngine
             private set => _id = value;
         }
 
+        protected bool ignoreGameObjectActiveChange;
         protected override void OnDisable()
         {
             base.OnDisable();
 
-            if (initialized)
+            if (initialized && !ignoreGameObjectActiveChange)
                 UpdateActiveAndEnabled();
         }
 
@@ -620,7 +621,7 @@ namespace DepictionEngine
         {
             base.OnEnable();
 
-            if (initialized)
+            if (initialized && !ignoreGameObjectActiveChange)
                 UpdateActiveAndEnabled();
         }
 

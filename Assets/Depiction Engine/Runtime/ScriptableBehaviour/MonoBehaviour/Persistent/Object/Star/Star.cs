@@ -48,11 +48,6 @@ namespace DepictionEngine
             return false;
         }
 
-        protected override bool GetEnableReflectionProbe()
-        {
-            return false;
-        }
-
         protected bool GetEnableLensFlareOcclusion()
         {
             return useOcclusion;
@@ -72,7 +67,7 @@ namespace DepictionEngine
 
             InitValue(value => color = value, new Color(1.0f, 0.9597525f, 0.9016172f), initializingContext);
             InitValue(value => lensFlareScale = value, 1.3f, initializingContext);
-            InitValue(value => intensity = value, 1.8f, initializingContext);
+            InitValue(value => intensity = value, 1.3f, initializingContext);
             InitValue(value => range = value, 1000000.0f, initializingContext);
             InitValue(value => shadows = value, LightShadows.Soft, initializingContext);
             InitValue(value => useOcclusion = value, true, initializingContext);
@@ -80,18 +75,9 @@ namespace DepictionEngine
             InitValue(value => occlusionSampleCount = value, (uint)6, initializingContext);
         }
 
-        protected override void InitReflectionProbeObject(InitializationContext initializingContext)
-        {
-        }
-
         public override bool RequiresPositioning()
         {
             return true;
-        }
-
-        protected override bool GetDefaultReflectionProbe()
-        {
-            return false;
         }
 
         private void InitLightAndLensFlare(InitializationContext initializingContext = InitializationContext.Programmatically)

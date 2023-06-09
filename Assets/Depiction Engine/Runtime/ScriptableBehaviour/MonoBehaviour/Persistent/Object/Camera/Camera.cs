@@ -15,13 +15,23 @@ namespace DepictionEngine
     [CreateComponent(typeof(Skybox), typeof(UnityEngine.Camera), typeof(UniversalAdditionalCameraData))]
     public class Camera : Object
     {
-        public const int DEFAULT_ENVIRONMENT_TEXTURE_SIZE = 512;
         public const int DEFAULT_DISTANCE_PASS = 2;
 
+        public const int DEFAULT_ENVIRONMENT_TEXTURE_SIZE = 512;
         public const string CLEAR_FLAGS_TOOLTIP = "How the camera clears the background.";
         public const string BACKGROUND_COLOR_TOOLTIP = "The color with which the screen will be cleared.";
         public const string SKYBOX_MATERIAL_PATH_TOOLTIP = "The path of the material within the Resources directory, such as 'Star-Skybox' or Atmosphere-Skybox.";
         public const string ENVIRONMENT_TEXTURE_SIZE_TOOLTIP = "A power of two value used to establish the width/height of the environment cubemap texture.";
+
+        [BeginFoldout("Environment")]
+        [SerializeField, Tooltip(CLEAR_FLAGS_TOOLTIP)]
+        private CameraClearFlags _clearFlags;
+        [SerializeField, Tooltip(BACKGROUND_COLOR_TOOLTIP)]
+        private Color _backgroundColor;
+        [SerializeField, Tooltip(SKYBOX_MATERIAL_PATH_TOOLTIP)]
+        private string _skyboxMaterialPath;
+        [SerializeField, Tooltip(ENVIRONMENT_TEXTURE_SIZE_TOOLTIP), EndFoldout]
+        private int _environmentTextureSize;
 
         [BeginFoldout("Projection")]
         [SerializeField, Tooltip("Is the camera orthographic (true) or perspective (false)?")]
@@ -45,21 +55,9 @@ namespace DepictionEngine
         [SerializeField, Tooltip("Whether or not the Camera will use occlusion culling during rendering."), EndFoldout]
         private bool _useOcclusionCulling;
 
-        [BeginFoldout("Environment")]
-        [SerializeField, Tooltip(CLEAR_FLAGS_TOOLTIP)]
-        private CameraClearFlags _clearFlags;
-        [SerializeField, Tooltip(BACKGROUND_COLOR_TOOLTIP)]
-        private Color _backgroundColor;
-        [SerializeField, Tooltip(SKYBOX_MATERIAL_PATH_TOOLTIP)]
-        private string _skyboxMaterialPath;
-        [SerializeField, Tooltip(ENVIRONMENT_TEXTURE_SIZE_TOOLTIP), EndFoldout]
-        private int _environmentTextureSize;
-
         [BeginFoldout("Output")]
         [SerializeField, Tooltip("High dynamic range rendering."), EndFoldout]
         private bool _allowHDR;
-
-        private RenderTexture _environmentCubemap;
 
         private Skybox _skybox;
 
@@ -82,6 +80,11 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
+            InitValue(value => clearFlags = value, CameraClearFlags.Skybox, initializingContext);
+            InitValue(value => backgroundColor = value, new Color(0.1921569f, 0.3019608f, 0.4745098f, 0.0f), initializingContext);
+            InitValue(value => skyboxMaterialPath = value, cameraManager.skyboxMaterialPath, initializingContext);
+            InitValue(value => environmentTextureSize = value, DEFAULT_ENVIRONMENT_TEXTURE_SIZE, initializingContext);
+
             InitValue(value => orthographic = value, false, initializingContext);
             InitValue(value => orthographicSize = value, 5.0f, initializingContext);
             InitValue(value => fieldOfView = value, 60.0f, initializingContext);
@@ -92,11 +95,6 @@ namespace DepictionEngine
             InitValue(value => depthTextureMode = value, DepthTextureMode.None, initializingContext);
             InitValue(value => cullingMask = value, -65537, initializingContext);
             InitValue(value => useOcclusionCulling = value, true, initializingContext);
-
-            InitValue(value => clearFlags = value, CameraClearFlags.Skybox, initializingContext);
-            InitValue(value => backgroundColor = value, new Color(0.1921569f, 0.3019608f, 0.4745098f, 0.0f), initializingContext);
-            InitValue(value => skyboxMaterialPath = value, cameraManager.skyboxMaterialPath, initializingContext);
-            InitValue(value => environmentTextureSize = value, DEFAULT_ENVIRONMENT_TEXTURE_SIZE, initializingContext);
 
             InitValue(value => allowHDR = value, true, initializingContext);
         }
@@ -205,6 +203,20 @@ namespace DepictionEngine
             if (unityCamera != null)
                 unityCamera.cullingMask &= ~(1 << LayerUtility.GetLayer(CameraManager.IGNORE_RENDER_LAYER_NAME));
         }
+
+#if UNITY_EDITOR
+        private int _lastEnvironmentTextureSize;
+        protected override bool UpdateUndoRedoSerializedFields()
+        {
+            if (base.UpdateUndoRedoSerializedFields())
+            {
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { environmentTextureSize = value; }, ref _environmentTextureSize, ref _lastEnvironmentTextureSize);
+
+                return true;
+            }
+            return false;
+        }
+#endif
 
         private List<Stack> _stacksTmp;
         public override int GetAdditionalChildCount()
@@ -318,34 +330,29 @@ namespace DepictionEngine
                 skybox.material = RenderingManager.LoadMaterial(skyboxMaterialPath);
         }
 
-        public RenderTexture environmentCubemap
-        {
-            get => _environmentCubemap;
-            private set
+        private SphericalHarmonicsL2 _ambientProbe;
+        public SphericalHarmonicsL2 ambientProbe 
+        { 
+            get => _ambientProbe;
+            set 
             {
-                if (Object.ReferenceEquals(_environmentCubemap, value))
-                    return;
+                _ambientProbe = value;
 
-                DisposeManager.Dispose(_environmentCubemap);
+                _glossyEnvironmentColor = Color.black;
 
-                _environmentCubemap = value;
+                for (int i = 0; i < 9; i++)
+                {
+                    _glossyEnvironmentColor.r += _ambientProbe[0, i];
+                    _glossyEnvironmentColor.g += _ambientProbe[1, i];
+                    _glossyEnvironmentColor.b += _ambientProbe[2, i];
+                }
             }
         }
 
-        public RenderTexture GetEnvironmentCubeMap()
+        private Color _glossyEnvironmentColor;
+        public Color glossyEnvironmentColor
         {
-            int textureSize = Mathf.ClosestPowerOfTwo(environmentTextureSize);
-            if (environmentCubemap == null || _environmentCubemap.width != textureSize || _environmentCubemap.height != textureSize)
-            {
-                environmentCubemap = new(textureSize, textureSize, 0, RenderTextureFormat.ARGB32, 0)
-                {
-                    filterMode = FilterMode.Bilinear,
-                    anisoLevel = 0,
-                    dimension = TextureDimension.Cube,
-                    name = name + "_Dynamic_Skybox_Cubemap"
-                };
-            }
-            return environmentCubemap;
+            get => _glossyEnvironmentColor;
         }
 
         private static Camera _main;
@@ -421,6 +428,72 @@ namespace DepictionEngine
             return null;
         }
 #endif
+
+        /// <summary>
+        /// How the camera clears the background.
+        /// </summary>
+        [Json]
+        public CameraClearFlags clearFlags
+        {
+            get => _clearFlags;
+            set => SetValue(nameof(clearFlags), value, ref _clearFlags);
+        }
+
+        /// <summary>
+        /// The color with which the screen will be cleared.
+        /// </summary>
+        [Json]
+        public Color backgroundColor
+        {
+            get => _backgroundColor;
+            set => SetValue(nameof(backgroundColor), value, ref _backgroundColor);
+        }
+
+#if UNITY_EDITOR
+        private UnityEngine.Object[] GetSkyboxAdditionalRecordObjects()
+        {
+            if (skybox != null)
+                return new UnityEngine.Object[] { skybox };
+            return null;
+        }
+#endif
+
+        /// <summary>
+        /// The path of the material within the Resources directory, such as 'Star-Skybox' or Atmosphere-Skybox.
+        /// </summary>
+        [Json]
+#if UNITY_EDITOR
+        [RecordAdditionalObjects(nameof(GetSkyboxAdditionalRecordObjects))]
+#endif
+        public string skyboxMaterialPath
+        {
+            get => _skyboxMaterialPath;
+            set
+            {
+                SetValue(nameof(skyboxMaterialPath), value, ref _skyboxMaterialPath, (newValue, oldValue) =>
+                {
+                    UpdateSkybox();
+                });
+            }
+        }
+
+        /// <summary>
+        /// A power of two value used to establish the width/height of the environment cubemap texture.
+        /// </summary>
+        [Json]
+        public int environmentTextureSize
+        {
+            get => _environmentTextureSize;
+            set
+            {
+                SetValue(nameof(environmentTextureSize), Mathf.Clamp(value, 2, 2048), ref _environmentTextureSize, (newValue, oldValue) => 
+                {
+#if UNITY_EDITOR
+                    _lastEnvironmentTextureSize = newValue;
+#endif
+                });
+            }
+        }
 
         /// <summarty>
         /// Is the camera orthographic (true) or perspective (false)?
@@ -545,69 +618,6 @@ namespace DepictionEngine
         {
             get => _useOcclusionCulling;
             set => SetValue(nameof(useOcclusionCulling), value, ref _useOcclusionCulling);
-        }
-
-        /// <summary>
-        /// How the camera clears the background.
-        /// </summary>
-        [Json]
-        public CameraClearFlags clearFlags
-        {
-            get => _clearFlags;
-            set => SetValue(nameof(clearFlags), value, ref _clearFlags);
-        }
-
-        /// <summary>
-        /// The color with which the screen will be cleared.
-        /// </summary>
-        [Json]
-        public Color backgroundColor
-        {
-            get => _backgroundColor;
-            set => SetValue(nameof(backgroundColor), value, ref _backgroundColor);
-        }
-
-#if UNITY_EDITOR
-        private UnityEngine.Object[] GetSkyboxAdditionalRecordObjects()
-        {
-            if (skybox != null)
-                return new UnityEngine.Object[] { skybox };
-            return null;
-        }
-#endif
-
-        /// <summary>
-        /// The path of the material within the Resources directory, such as 'Star-Skybox' or Atmosphere-Skybox.
-        /// </summary>
-        [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetSkyboxAdditionalRecordObjects))]
-#endif
-        public string skyboxMaterialPath
-        {
-            get => _skyboxMaterialPath;
-            set 
-            {
-                SetValue(nameof(skyboxMaterialPath), value, ref _skyboxMaterialPath, (newValue, oldValue) =>
-                {
-                    UpdateSkybox();
-                });
-            }
-        }
-
-        /// <summary>
-        /// A power of two value used to establish the width/height of the environment cubemap texture.
-        /// </summary>
-        [Json]
-        public int environmentTextureSize
-        {
-            get => _environmentTextureSize;
-            set 
-            {
-                if (value < 2)
-                    value = 2;
-                SetValue(nameof(environmentTextureSize), value, ref _environmentTextureSize); 
-            }
         }
 
         /// <summary>
@@ -948,49 +958,38 @@ namespace DepictionEngine
             }
         }
 
-        public void UpdateEnvironmentCubemap(RTTCamera rttCamera)
+        public override bool IsReflectionObject()
         {
-            float lastAmbientIntensity = RenderSettings.ambientIntensity;
-            RenderSettings.ambientIntensity = 0.0f;
-            float lastReflectionIntensity = RenderSettings.reflectionIntensity;
-            RenderSettings.reflectionIntensity = 0.0f;
-
-            try
-            {
-                sceneManager.BeginCameraRendering(this);
-                rttCamera.RenderToCubemap(this, GetEnvironmentCubeMap(), ApplyPropertiesToUnityCamera);
-    
-                transform.RevertUnityLocalPosition();
-                sceneManager.EndCameraRendering(this);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError(e.Message);
-            }
-
-            RenderSettings.ambientIntensity = lastAmbientIntensity;
-            RenderSettings.reflectionIntensity = lastReflectionIntensity;
+            return true;
         }
 
-
-        private void ApplyPropertiesToUnityCamera(UnityEngine.Camera unityCamera, Camera copyFromCamera)
+        protected override int GetReflectionTextureSize()
         {
-            unityCamera.cullingMask = 1 << LayerUtility.GetLayer(typeof(TerrainGridMeshObject).Name) | 1 << LayerUtility.GetLayer(typeof(AtmosphereGridMeshObject).Name);
+            return Mathf.ClosestPowerOfTwo(environmentTextureSize);
+        }
 
-            float far = Camera.GetFarClipPlane(1, copyFromCamera.farClipPlane);
+        protected override bool GetReflectionRenderCamera(out Camera camera)
+        {
+            camera = this;
+            return true;
+        }
 
-            if (far > 155662040916.9f)
-                far = 155662040916.9f;
+        protected override void RenderToReflectionCubemap(RTTCamera rttCamera, Camera camera)
+        {
+            int cullingMask = 1 << LayerUtility.GetLayer(typeof(TerrainGridMeshObject).Name) | 1 << LayerUtility.GetLayer(typeof(AtmosphereGridMeshObject).Name);
 
-            Camera.ApplyClipPlanePropertiesToUnityCamera(unityCamera, 0, copyFromCamera.nearClipPlane, far);
+            float farClipPlane = Camera.GetFarClipPlane(1, this.farClipPlane);
+
+            if (farClipPlane > 155662040916.9f)
+                farClipPlane = 155662040916.9f;
+
+            rttCamera.RenderToCubemap(clearFlags, backgroundColor, camera.skybox.material, cullingMask, nearClipPlane, farClipPlane, gameObject.transform.position, gameObject.transform.rotation, reflectionCustomBakedTexture);
         }
 
         public override bool OnDispose(DisposeContext disposeContext)
         {
             if (base.OnDispose(disposeContext))
             {
-                DisposeManager.Dispose(_environmentCubemap);
-
                 if (_stacks != null)
                 {
                     foreach (Stack stack in _stacks)

@@ -232,7 +232,7 @@ namespace DepictionEngine
                     if (obj is GameObject go)
                     {
                         IterateOverAllMonoBehaviourDisposable(go, (monoBehaviourDisposable) => { monoBehaviourDisposable.OnDestroy(); });
-                        go.transform.parent = null;
+                        go.transform.SetParent(null, false);
                     }
                     else if (obj is IScriptableBehaviour scriptableBehaviour)
                         scriptableBehaviour.OnDestroy();

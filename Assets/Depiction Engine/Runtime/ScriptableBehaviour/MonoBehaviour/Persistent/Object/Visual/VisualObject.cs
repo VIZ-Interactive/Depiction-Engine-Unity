@@ -1,5 +1,6 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -30,35 +31,27 @@ namespace DepictionEngine
         private static readonly double EARTH_RADIUS = MathPlus.GetRadiusFromCircumference(GeoAstroObject.GetAstroObjectSize(AstroObject.PlanetType.Earth));
 
 #if UNITY_EDITOR
-        [BeginFoldout("MeshRenderers")]
-        [SerializeField, Button(nameof(UpdateAllChildMeshRenderersBtn)), Tooltip("Automatically add all the child MeshRenderers so the VisualObject can manage their materials."), EndFoldout]
-        [ConditionalShow(nameof(GetShowUpdateAllChildMeshRenderers))]
-        private bool _updateAllChildMeshRenderers;
+        [BeginFoldout("Mesh Renderer")]
+        [SerializeField, Button(nameof(UpdateMeshRendererBtn)), Tooltip("Automatically add all the child MeshRenderer(s) so the VisualObject can manage them. When managed, the MeshRenderer(s) material(s) fields will be automatically updated by the VisualObject."), EndFoldout]
+        [ConditionalShow(nameof(GetShowUpdateMeshRenderer))]
+        private bool _updateMeshRenderer;
 #endif
 
         [BeginFoldout("Material")]
-        [SerializeField, Range(0.0f, 1.0f), Tooltip("How transparent should the object be.")]
-        private float _alpha;
-        [SerializeField, Tooltip("A value by which the smoothness output is multiplied.")]
+        [SerializeField, Tooltip("When enabled, allow the child Material(s) to have their field values overridden.")]
+        private bool _overrideMaterialFields;
+        [SerializeField, Tooltip("A color value that will override the '_BaseColor' field of child Material(s).")]
+        private Color _color;
+        [SerializeField, Tooltip("A color value that will override the '_SpecColor' field of child Materials. Specular determines the appearance of reflections on the surface.")]
+#if UNITY_EDITOR
+        [ConditionalShow(nameof(GetShowMaterialProperties))]
+#endif
+        private Color _specular;
+        [SerializeField, Range(0.0f, 1.0f), Tooltip("A value that will override the '_Smoothness' field of child Materials. Smoothness Controls the spread of highlights and reflections on the surface."), EndFoldout]
 #if UNITY_EDITOR
         [ConditionalShow(nameof(GetShowMaterialProperties))]
 #endif
         private float _smoothness;
-        [SerializeField, Tooltip("A value by which the specular output is multiplied.")]
-#if UNITY_EDITOR
-        [ConditionalShow(nameof(GetShowMaterialProperties))]
-#endif
-        private float _specular;
-        [SerializeField, Tooltip("A color value which will override building color depending on alpha value.")]
-#if UNITY_EDITOR
-        [ConditionalShow(nameof(GetShowColor))]
-#endif
-        private Color _color;
-        [SerializeField, Tooltip("A value by which the color output is multiplied."), EndFoldout]
-#if UNITY_EDITOR
-        [ConditionalShow(nameof(GetShowMaterialProperties))]
-#endif
-        private float _colorIntensity;
 
         [SerializeField, HideInInspector]
         private List<MeshRenderer> _managedMeshRenderers;
@@ -71,21 +64,16 @@ namespace DepictionEngine
             return true;
         }
 
-        protected virtual bool GetShowUpdateAllChildMeshRenderers()
+        protected virtual bool GetShowUpdateMeshRenderer()
         {
             return true;
         }
 
-        protected virtual bool GetShowColor()
+        private void UpdateMeshRendererBtn()
         {
-            return false;
-        }
+            UpdateChildMeshRenderer(out int added, out int removed);
 
-        private void UpdateAllChildMeshRenderersBtn()
-        {
-            int found = UpdateAllChildManagedMeshRenderers();
-
-            UnityEditor.EditorUtility.DisplayDialog("Updated", "Found "+found+" MeshRenderers.", "OK");
+            UnityEditor.EditorUtility.DisplayDialog("Updated", "Found a total of " + managedMeshRenderers.Count + " MeshRenderer(s).                Added: " + added + "                                                Removed: " + removed, "OK");
         }
 #endif
 
@@ -97,12 +85,18 @@ namespace DepictionEngine
             _materialPropertyBlock?.Clear();
         }
 
+        protected void RecycleMaterial(Material material)
+        {
+            if (material != null)
+                OverrideMaterialFields(material, null, Color.white, new Color(0.5943396f, 0.5257822f, 0.4125133f), 0.5f);
+        }
+
         protected override bool InitializeLastFields()
         {
             if (base.InitializeLastFields())
             {
 #if UNITY_EDITOR
-                _lastAlpha = alpha;
+                _lastColor = color;
 #endif
                 return true;
             }
@@ -114,16 +108,20 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
 
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
-                UpdateAllChildManagedMeshRenderers();
+                UpdateChildMeshRenderer(out int added, out int removed);
 
             if (initializingContext == InitializationContext.Existing)
                 RemoveNullManagedMeshRenderers();
 
-            InitValue(value => alpha = value, GetDefaultAlpha(), initializingContext);
-            InitValue(value => smoothness = value, 1.0f, initializingContext);
-            InitValue(value => specular = value, 1.0f, initializingContext);
-            InitValue(value => colorIntensity = value, 1.0f, initializingContext);
+            InitValue(value => overrideMaterialFields = value, GetDefaultOverrideMaterialFields(), initializingContext);
             InitValue(value => color = value, GetDefaultColor(), initializingContext);
+            InitValue(value => specular = value, new Color(0.5943396f, 0.5257822f, 0.4125133f), initializingContext);
+            InitValue(value => smoothness = value, GetDefaultSmoothness(), initializingContext);
+        }
+
+        protected virtual bool GetDefaultOverrideMaterialFields()
+        {
+            return false;
         }
 
         protected virtual string GetDefaultShaderPath()
@@ -133,7 +131,12 @@ namespace DepictionEngine
 
         protected virtual Color GetDefaultColor()
         {
-            return Color.clear;
+            return new Color(1.0f, 1.0f, 1.0f, 1.0f);
+        }
+
+        protected virtual float GetDefaultSmoothness()
+        {
+            return 1.0f;
         }
 
         private void RemoveNullManagedMeshRenderers()
@@ -152,14 +155,14 @@ namespace DepictionEngine
         }
 
 #if UNITY_EDITOR
-        private float _lastAlpha;
+        private Color _lastColor;
         protected override bool UpdateUndoRedoSerializedFields()
         {
             if (base.UpdateUndoRedoSerializedFields())
             {
                 RemoveNullManagedMeshRenderers();
 
-                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { alpha = value; }, ref _alpha, ref _lastAlpha);
+                SerializationUtility.PerformUndoRedoPropertyAssign((value) => { color = value; }, ref _color, ref _lastColor);
 
                 return true;
             }
@@ -213,11 +216,6 @@ namespace DepictionEngine
             return true;
         }
 
-        protected virtual float GetDefaultAlpha()
-        {
-            return 1.0f;
-        }
-
         protected List<MeshRenderer> managedMeshRenderers
         {
             get { _managedMeshRenderers ??= new List<MeshRenderer>(); return _managedMeshRenderers; }
@@ -235,78 +233,13 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// How transparent should the object be.
+        /// When enabled, allow the child Material(s) to have their field values overridden.
         /// </summary>
         [Json]
-#if UNITY_EDITOR
-        [RecordAdditionalObjects(nameof(GetAlphaAdditionalRecordObjects))]
-#endif
-        public float alpha
+        public bool overrideMaterialFields
         {
-            get => _alpha;
-            set => SetAlpha(value);
-        }
-
-        protected virtual bool SetAlpha(float value)
-        {
-            return SetValue(nameof(alpha), value, ref _alpha, (newValue, oldValue) => 
-            {
-#if UNITY_EDITOR
-                _lastAlpha = newValue;
-#endif
-            });
-        }
-
-#if UNITY_EDITOR
-        protected virtual UnityEngine.Object[] GetAlphaAdditionalRecordObjects()
-        {
-            return null;
-        }
-#endif
-
-        /// <summary>
-        /// A value by which the smoothness output is multiplied.
-        /// </summary>
-        [Json]
-        public float smoothness
-        {
-            get => _smoothness;
-            set 
-            {
-                if (value < 0.0f)
-                    value = 0.0f;
-                SetValue(nameof(smoothness), value, ref _smoothness); 
-            }
-        }
-
-        /// <summary>
-        /// A value by which the specular output is multiplied.
-        /// </summary>
-        [Json]
-        public float specular
-        {
-            get => _specular;
-            set 
-            {
-                if (value < 0.0f)
-                    value = 0.0f;
-                SetValue(nameof(specular), value, ref _specular); 
-            }
-        }
-
-        /// <summary>
-        /// A value by which the color output is multiplied.
-        /// </summary>
-        [Json]
-        public float colorIntensity
-        {
-            get => _colorIntensity;
-            set 
-            {
-                if (value < 0.0f)
-                    value = 0.0f;
-                SetValue(nameof(colorIntensity), value, ref _colorIntensity); 
-            }
+            get => _overrideMaterialFields;
+            set => SetValue(nameof(overrideMaterialFields), value, ref _overrideMaterialFields);
         }
 
 #if UNITY_EDITOR
@@ -317,7 +250,7 @@ namespace DepictionEngine
 #endif
 
         /// <summary>
-        /// A color value which will override texture color depending on alpha value.
+        /// A color value that will override the '_BaseColor' field of child Materials.
         /// </summary>
         [Json]
 #if UNITY_EDITOR
@@ -331,34 +264,87 @@ namespace DepictionEngine
 
         protected virtual void ColorChanged(Color newValue, Color oldValue)
         {
-
+#if UNITY_EDITOR
+            _lastColor = newValue;
+#endif
         }
 
         /// <summary>
-        /// Automatically add all the child MeshRenderers so the <see cref="DepictionEngine.VisualObject"/> can manage their materials.
+        /// A color value that will override the '_SpecColor' field of child Materials. Specular determines the appearance of reflections on the surface.
         /// </summary>
-        /// <returns>The number of managed meshRenderers.</returns>
-        public int UpdateAllChildManagedMeshRenderers()
+        [Json]
+        public Color specular
         {
-            gameObject.GetComponentsInChildren(true, managedMeshRenderers);
-            return managedMeshRenderers.Count;
+            get => _specular;
+            set => SetValue(nameof(specular), value, ref _specular);
         }
 
+        /// <summary>
+        /// A value that will override the '_Smoothness' field of child Materials. Smoothness Controls the spread of highlights and reflections on the surface.
+        /// </summary>
+        [Json]
+        public float smoothness
+        {
+            get => _smoothness;
+            set => SetValue(nameof(smoothness), Mathf.Clamp01(value), ref _smoothness);
+        }
+
+        /// <summary>
+        /// Automatically add all the child <see cref="UnityEngine.MeshRenderer"/>(s) so the <see cref="DepictionEngine.VisualObject"/> can manage them. When managed, the <see cref="UnityEngine.MeshRenderer"/>(s) <see cref="UnityEngine.Material"/>(s) fields will be automatically updated by the <see cref="DepictionEngine.VisualObject"/>.
+        /// </summary>
+        /// <param name="added">The number of added <see cref="UnityEngine.MeshRenderer"/>(s)</param>
+        /// <param name="removed">The number of removed <see cref="UnityEngine.MeshRenderer"/>(s)</param>
+        public void UpdateChildMeshRenderer(out int added, out int removed)
+        {
+            removed = 0;
+            added = 0;
+
+            List<MeshRenderer> newManagedMeshRenderers = new();
+            gameObject.GetComponentsInChildren(true, newManagedMeshRenderers);
+            for (int i = managedMeshRenderers.Count - 1; i <= 0; i--)
+            {
+                MeshRenderer meshRenderer = managedMeshRenderers[i];
+                if (!newManagedMeshRenderers.Contains(meshRenderer) && RemoveMeshRenderer(meshRenderer))
+                    removed++;
+            }
+
+            foreach (MeshRenderer meshRenderer in newManagedMeshRenderers)
+            {
+                if (!managedMeshRenderers.Contains(meshRenderer))
+                {
+                    AddMeshRenderer(meshRenderer);
+                    added++;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Add the <see cref="UnityEngine.MeshRenderer"/> so the <see cref="DepictionEngine.VisualObject"/> can manage it. When managed the <see cref="UnityEngine.MeshRenderer"/> <see cref="UnityEngine.Material"/>(s) fields will be automatically updated by the <see cref="DepictionEngine.VisualObject"/>.
+        /// </summary>
+        /// <param name="meshRenderer"></param>
         public void AddMeshRenderer(MeshRenderer meshRenderer)
         {
             if (!managedMeshRenderers.Contains(meshRenderer))
                 managedMeshRenderers.Add(meshRenderer);
         }
 
-        public void RemoveMeshRenderer(MeshRenderer meshRenderer)
+        /// <summary>
+        /// Remove the <see cref="UnityEngine.MeshRenderer"/> from the managed list.
+        /// </summary>
+        /// <param name="meshRenderer"></param>
+        /// <returns>True if successfully removed.</returns>
+        public bool RemoveMeshRenderer(MeshRenderer meshRenderer)
         {
-            managedMeshRenderers.Remove(meshRenderer);
+            bool removed = managedMeshRenderers.Remove(meshRenderer);
+
             try
             {
                 if (meshRenderer != null)
                     meshRenderer.SetPropertyBlock(null);
-            }catch(MissingReferenceException)
+            } catch (MissingReferenceException)
             { }
+
+            return removed;
         }
 
         public void IterateOverManagedMeshRenderer(Action<MaterialPropertyBlock, MeshRenderer> callback)
@@ -422,7 +408,7 @@ namespace DepictionEngine
             return false;
         }
 
-        public void UpdateReflectionMaterial(Camera camera, ScriptableRenderContext? context)
+        public void UpdateReflectionEffect(RTTCamera rttCamera, Camera camera, ScriptableRenderContext? context)
         {
             if (gameObject.activeInHierarchy && managedMeshRenderers.Count > 0)
             {
@@ -437,28 +423,14 @@ namespace DepictionEngine
                     cameraAtmosphereAltitudeRatio = closestGeoAstroObject.GetAtmosphereAltitudeRatio(atmosphereThickness, cameraPosition);
                 }
 
-                RTTCamera rttCamera = null;
-                RenderingManager renderingManager = RenderingManager.Instance(false);
-                if (renderingManager != Disposable.NULL)
-                    rttCamera = renderingManager.rttCamera;
-
-                foreach (MeshRenderer meshRenderer in managedMeshRenderers)
+                IterateOverManagedMeshRenderer((materialPropertyBlock, meshRenderer) =>
                 {
-                    if (meshRenderer != null && meshRenderer.gameObject.activeInHierarchy && meshRenderer.sharedMaterial != null)
+                    if (meshRenderer.gameObject.activeInHierarchy)
                     {
-                        MaterialPropertyBlock materialPropertyBlock = null;
-
-                        //materialPropertyBlock = this.materialPropertyBlock;
-
-                        //if (materialPropertyBlock != null)
-                        //    meshRenderer.GetPropertyBlock(materialPropertyBlock);
-
-                        ApplyReflectionTextureToMaterial(meshRenderer, meshRenderer.sharedMaterial, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, rttCamera, context);
-
-                        //if (materialPropertyBlock != null)
-                        //    meshRenderer.SetPropertyBlock(materialPropertyBlock);
+                        foreach (Material material in meshRenderer.sharedMaterials)
+                            ApplyReflectionTextureToMaterial(meshRenderer, material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, rttCamera, context);
                     }
-                }
+                });
             }
         }
 
@@ -480,7 +452,7 @@ namespace DepictionEngine
 
         public virtual float GetCurrentAlpha()
         {
-            return alpha;
+            return color.a;
         }
 
         protected bool GetEnableAlphaClip()
@@ -580,32 +552,46 @@ namespace DepictionEngine
         {
             if (material != null)
             {
+                //Alpha
+                float alpha = GetCurrentAlpha();
                 ApplyAlphaToMaterial(material, materialPropertyBlock, closestGeoAstroObject, camera, alpha);
-
-                SetFloatToMaterial("_Smoothness", smoothness, material, materialPropertyBlock);
-                SetFloatToMaterial("_Specular", specular, material, materialPropertyBlock);
-                SetColorToMaterial("_Color", GetColor(meshRenderer, material, materialPropertyBlock, camera, closestGeoAstroObject), material, materialPropertyBlock);
-                SetFloatToMaterial("_ColorIntensity", colorIntensity, material, materialPropertyBlock);
-
-                ApplyClosestGeoAstroObjectPropertiesToMaterial(material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, closestGeoAstroObject, star, camera);
-
-                ApplyAtmospherePropertiesToMaterial(material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, closestGeoAstroObject, star, camera);
 
                 if (GetEnableAlphaClip())
                     material.EnableKeyword("ENABLE_ALPHA_CLIP");
                 else
                     material.DisableKeyword("ENABLE_ALPHA_CLIP");
+
+                //General
+                if (overrideMaterialFields)
+                    OverrideMaterialFields(material, materialPropertyBlock, GetColor(meshRenderer, alpha), specular, smoothness);
+
+                //Closest GeoAstroObject
+                ApplyClosestGeoAstroObjectPropertiesToMaterial(material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, closestGeoAstroObject, star, camera);
+
+                //Atmosphere
+                ApplyAtmospherePropertiesToMaterial(material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, closestGeoAstroObject, star, camera);
             }
+        }
+
+        protected void OverrideMaterialFields(Material material, MaterialPropertyBlock materialPropertyBlock, Color color, Color specular, float smoothness)
+        {
+            SetColorToMaterial("_BaseColor", color, material, materialPropertyBlock);
+            SetColorToMaterial("_SpecColor", specular, material, materialPropertyBlock);
+            SetFloatToMaterial("_Smoothness", smoothness, material, materialPropertyBlock);
         }
 
         protected virtual void ApplyAlphaToMaterial(Material material, MaterialPropertyBlock materialPropertyBlock, GeoAstroObject closestGeoAstroObject, Camera camera, float alpha)
         {
-            SetFloatToMaterial("_Alpha", alpha, material, materialPropertyBlock);
+            
         }
 
-        protected virtual Color GetColor(MeshRenderer meshRenderer, Material material, MaterialPropertyBlock materialPropertyBlock, Camera camera, GeoAstroObject closestGeoAstroObject)
+        protected virtual Color GetColor(MeshRenderer meshRenderer, float alpha)
         {
-            return color;
+            Color currentColor = color;
+            
+            currentColor.a = alpha;
+
+            return currentColor;
         }
 
         protected virtual double GetAltitude(bool addOffset = true)
@@ -700,7 +686,7 @@ namespace DepictionEngine
             SetFloatToMaterial("_AltitudeOS", (float)GetAltitude(false) / meshRendererVisualLocalScale.y, material, materialPropertyBlock);
 
             SetFloatToMaterial("_TileSizeLatitudeFactor", tileSizeLatitudeFactor, material, materialPropertyBlock);
-         }
+        }
 
         protected virtual void ApplyAtmospherePropertiesToMaterial(Material material, MaterialPropertyBlock materialPropertyBlock, double cameraAtmosphereAltitudeRatio, GeoAstroObject closestGeoAstroObject, Star star, Camera camera)
         {
@@ -710,7 +696,7 @@ namespace DepictionEngine
             {
                 closestGeoAstroObject.IterateOverEffects<AtmosphereEffect>((effect) =>
                 {
-                    atmosphereAlpha = effect.isActiveAndEnabled && closestGeoAstroObject.ContainsInitializedTerraingGridMeshObject() && closestGeoAstroObject.IsSpherical() ? effect.GetAlpha() : 0.0f;
+                    atmosphereAlpha = effect.isActiveAndEnabled && closestGeoAstroObject.ContainsInitializedTerrainGridMeshObject() && closestGeoAstroObject.IsSpherical() ? effect.GetAlpha() : 0.0f;
 
                     //TODO: Atmosphere shader needs to be optimized, most of these variables should be derived in the shader directly
                     if (atmosphereAlpha != 0.0f)
@@ -734,12 +720,10 @@ namespace DepictionEngine
 
                         float atmosphereScale = (float)(1.0d / effect.GetAtmosphereAltitude());
                         SetFloatToMaterial("_Scale", atmosphereScale, material, materialPropertyBlock);
-                        SetFloatToMaterial("_ScaleOverScaleDepth", atmosphereScale / effect.scaleDepth, material, materialPropertyBlock);
                         SetFloatToMaterial("_ScaleDepth", effect.scaleDepth, material, materialPropertyBlock);
 
                         float sunBrightness = GetSunBrightness(effect.sunBrightness * (star != Disposable.NULL ? star.intensity : 1.0f), (float)cameraAtmosphereAltitudeRatio);
                         SetFloatToMaterial("_KrESun", effect.rayleighScattering * sunBrightness, material, materialPropertyBlock);
-                        SetFloatToMaterial("_KmESun", effect.mieScattering * sunBrightness, material, materialPropertyBlock);
                         SetFloatToMaterial("_Kr4PI", effect.rayleighScattering * 4.0f * Mathf.PI, material, materialPropertyBlock);
                         SetFloatToMaterial("_Km4PI", effect.mieScattering * 4.0f * Mathf.PI, material, materialPropertyBlock);
                         SetFloatToMaterial("_G", effect.miePhaseAsymmetryFactor, material, materialPropertyBlock);
@@ -820,6 +804,18 @@ namespace DepictionEngine
         protected virtual void ApplyReflectionTextureToMaterial(MeshRenderer meshRenderer, Material material, MaterialPropertyBlock materialPropertyBlock, double cameraAtmosphereAltitudeRatio, Camera camera, GeoAstroObject closestGeoAstroObject, RTTCamera rttCamera, ScriptableRenderContext? context)
         {
            
+        }
+
+        protected override void GetReflectionProbes(ref List<ReflectionProbe> managedReflectionProbes)
+        {
+            base.GetReflectionProbes(ref managedReflectionProbes);
+
+            ReflectionProbe[] reflectionProbes = gameObject.GetComponentsInChildren<ReflectionProbe>(true);
+            foreach (ReflectionProbe reflectionProbe in reflectionProbes)
+            {
+                if (!managedReflectionProbes.Contains(reflectionProbe))
+                    managedReflectionProbes.Add(reflectionProbe);
+            }
         }
     }
 }

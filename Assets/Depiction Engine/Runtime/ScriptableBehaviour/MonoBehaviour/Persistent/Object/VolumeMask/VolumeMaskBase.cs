@@ -26,8 +26,8 @@ namespace DepictionEngine
         [Json]
         public int maskedLayers
         {
-            get { return _maskedLayers;}
-            set { SetValue(nameof(maskedLayers), value, ref _maskedLayers); }
+            get => _maskedLayers;
+            set => SetValue(nameof(maskedLayers), value, ref _maskedLayers);
         }
 
         public override bool RequiresPositioning()
@@ -35,14 +35,15 @@ namespace DepictionEngine
             return true;
         }
 
-        public virtual int GetCustomEffectComputeBufferDataSize()
+        public virtual bool GetCustomEffectComputeBufferDataSize(out int size)
         {
-            return 0;
+            size = 0;
+            return isActiveAndEnabled;
         }
 
-        public virtual int AddToComputeBufferData(int startIndex, float[] computeBufferData)
+        public virtual bool AddToComputeBufferData(out int size, int startIndex, float[] computeBufferData)
         {
-            return GetCustomEffectComputeBufferDataSize();
+            return GetCustomEffectComputeBufferDataSize(out size);
         }
 
         public virtual bool IsInsideVolume(Vector3Double point)

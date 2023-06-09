@@ -544,7 +544,7 @@ namespace DepictionEngine
             base.ApplyPropertiesToMaterial(meshRenderer, material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, star);
 
             SetVectorToMaterial("_" + TEXTURE_INDEX_DIMENSIONS_POSTFIX, new Vector4(grid2DIndex.x, grid2DIndex.y, grid2DDimensions.x, grid2DDimensions.y), material, materialPropertyBlock);
-            SetTextureToMaterial("_ColorMap", GetColorMap(), Texture2D.blackTexture, material, materialPropertyBlock);
+            SetTextureToMaterial("_ColorMap", GetColorMap(), Texture2D.whiteTexture, material, materialPropertyBlock);
             SetTextureToMaterial("_AdditionalMap", GetAdditionalMap(), Texture2D.whiteTexture, material, materialPropertyBlock);
         }
 

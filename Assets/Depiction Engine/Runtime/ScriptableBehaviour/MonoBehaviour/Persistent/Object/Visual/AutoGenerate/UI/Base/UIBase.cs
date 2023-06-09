@@ -39,6 +39,11 @@ namespace DepictionEngine
             InitValue(value => scale = value, 2.0f, initializingContext);
         }
 
+        protected override bool GetDefaultOverrideMaterialFields()
+        {
+            return true;
+        }
+
         protected override void VisibleCamerasChanged()
         {
             base.VisibleCamerasChanged();
@@ -71,7 +76,7 @@ namespace DepictionEngine
             return uiVisuals.ToArray();
         }
 
-        protected override UnityEngine.Object[] GetAlphaAdditionalRecordObjects()
+        protected override UnityEngine.Object[] GetColorAdditionalRecordObjects()
         {
             return GetUIVisualsAdditionalRecordObjects();
         }
@@ -88,8 +93,8 @@ namespace DepictionEngine
         [Json]
         public bool useCollider
         {
-            get { return _useCollider; }
-            set { SetValue(nameof(useCollider), value, ref _useCollider); }
+            get => _useCollider;
+            set => SetValue(nameof(useCollider), value, ref _useCollider);
         }
 
         /// <summary>
@@ -98,8 +103,8 @@ namespace DepictionEngine
         [Json]
         public bool screenSpace
         {
-            get { return _screenSpace; }
-            set { SetValue(nameof(screenSpace), value, ref _screenSpace); }
+            get => _screenSpace;
+            set => SetValue(nameof(screenSpace), value, ref _screenSpace);
         }
 
         /// <summary>
@@ -108,8 +113,8 @@ namespace DepictionEngine
         [Json]
         public float scale
         {
-            get { return _scale; }
-            set { SetValue(nameof(scale), value < 0.001f ? 0.001f : value, ref _scale); }
+            get => _scale;
+            set => SetValue(nameof(scale), value < 0.001f ? 0.001f : value, ref _scale);
         }
 
         protected override Type GetMeshRendererVisualDirtyFlagType()

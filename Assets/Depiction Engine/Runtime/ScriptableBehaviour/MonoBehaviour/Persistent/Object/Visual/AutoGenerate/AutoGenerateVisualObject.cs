@@ -36,7 +36,7 @@ namespace DepictionEngine
         private bool _visualsChanged;
 
 #if UNITY_EDITOR
-        protected override bool GetShowUpdateAllChildMeshRenderers()
+        protected override bool GetShowUpdateMeshRenderer()
         {
             return false;
         }
@@ -411,7 +411,7 @@ namespace DepictionEngine
                         switch (_popupType)
                         {
                             case PopupType.Alpha:
-                                popupTween = tweenManager.To(0.0f, alpha, popupDuration, (value) => { popupT = value; }, null, () =>
+                                popupTween = tweenManager.To(0.0f, 1.0f, popupDuration, (value) => { popupT = value; }, null, () =>
                                 {
                                     popupTween = null;
                                 });

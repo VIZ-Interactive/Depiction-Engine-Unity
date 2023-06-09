@@ -75,6 +75,11 @@ namespace DepictionEngine
             DetectIfProcessingWasCompromised();
         }
 
+        protected override bool GetDefaultOverrideMaterialFields()
+        {
+            return true;
+        }
+
 #if UNITY_EDITOR
         public override bool AfterAssemblyReload()
         {
@@ -581,7 +586,7 @@ namespace DepictionEngine
 
             transform.IterateOverChildren<MeshRendererVisual>((meshRendererVisual) =>
             {
-                if (visualsChanged || PropertyDirty(nameof(castShadow)) || PropertyDirty(nameof(alpha)))
+                if (visualsChanged || PropertyDirty(nameof(castShadow)) || PropertyDirty(nameof(color)))
                     ApplyCastShadowToMeshRendererVisual(meshRendererVisual, castShadow ? ShadowCastingMode.On : ShadowCastingMode.Off);
                 
                 if (visualsChanged || PropertyDirty(nameof(receiveShadows)))

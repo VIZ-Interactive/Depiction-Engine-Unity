@@ -118,7 +118,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A wrapper method to <see cref="GameObject.GetComponentInParent(Type)"/> which returns an initialized Component found in a parent, if it is an <see cref="IDisposable"/>, of the requested type.
+        /// A wrapper method to <see cref="GameObject.GetComponentInParent(Type)"/> which returns an initialized Component found in a parent(if it is an <see cref="IDisposable"/>) of the requested type.
         /// </summary>
         /// <param name="go"></param>
         /// <param name="type"></param>

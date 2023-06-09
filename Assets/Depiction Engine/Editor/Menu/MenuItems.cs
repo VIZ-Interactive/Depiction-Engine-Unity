@@ -412,7 +412,8 @@ namespace DepictionEngine.Editor
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 2.0f;
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(14, 14));
             buildingMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.cascades)] = JsonUtility.ToJson(Vector2Int.zero);
-            buildingMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(BuildingGridMeshObject.color)] = JsonUtility.ToJson(Color.white);
+            buildingMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(BuildingGridMeshObject.smoothness)] = 0.0f;
+            buildingMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(BuildingGridMeshObject.overrideColor)] = JsonUtility.ToJson(Color.white);
             buildingMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = FeatureGridMeshObjectBase.FEATURE_REFERENCE_DATATYPE;
             buildingMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = buildingFeatureDataLoaderId;
 
@@ -592,8 +593,7 @@ namespace DepictionEngine.Editor
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.sizeMultiplier)] = 3.0f;
             terrainGridMeshObjectCameraGrid2DLoaderJson[0][nameof(CameraGrid2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 7));
             terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.smoothness)] = 0.0f;
-            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.specular)] = 0.0f;
-            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.colorIntensity)] = 3.0f;
+            terrainGridMeshObjectCameraGrid2DLoaderJson[1][nameof(FallbackValues.fallbackValuesJson)][nameof(TerrainGridMeshObject.specular)] = JsonUtility.ToJson(Color.black);
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = ElevationGridMeshObjectBase.ELEVATION_REFERENCE_DATATYPE;
             terrainGridMeshObjectCameraGrid2DLoaderJson[2][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.loaderId)] = elevationLoaderId;
             terrainGridMeshObjectCameraGrid2DLoaderJson[3][nameof(FallbackValues.fallbackValuesJson)][nameof(AssetReference.dataType)] = TerrainGridMeshObject.COLORMAP_REFERENCE_DATATYPE;

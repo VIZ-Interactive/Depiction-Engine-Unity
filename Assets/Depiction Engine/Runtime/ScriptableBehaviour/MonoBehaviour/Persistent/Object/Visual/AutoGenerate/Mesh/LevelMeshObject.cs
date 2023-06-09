@@ -27,6 +27,15 @@ namespace DepictionEngine
         [SerializeField, HideInInspector]
         private Material _ceilingMaterial;
 
+        public override void Recycle()
+        {
+            base.Recycle();
+
+            RecycleMaterial(_floorMaterial);
+            RecycleMaterial(_wallsMaterial);
+            RecycleMaterial(_ceilingMaterial);
+        }
+
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
         {
             base.InitializeSerializedFields(initializingContext);

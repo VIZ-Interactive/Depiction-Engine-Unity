@@ -80,11 +80,6 @@ namespace DepictionEngine
         {
             return IsNotFallbackValues() && GetShowEndCoordinate();
         }
-
-        protected override bool GetShowColor()
-        {
-            return true;
-        }
 #endif
 
         protected override void InitializeSerializedFields(InitializationContext initializingContext)
@@ -104,24 +99,12 @@ namespace DepictionEngine
             InitValue(value => textCurve = value, new List<Vector3Double>(), initializingContext);
         }
 
-        protected override Color GetDefaultColor()
-        {
-            return Color.white;
-        }
-
 #if UNITY_EDITOR
         protected override UnityEngine.Object[] GetColorAdditionalRecordObjects()
         {
             return GetTextMeshProsAdditionalRecordObjects();
         }
 #endif
-
-        protected override void ColorChanged(Color newValue, Color oldValue)
-        {
-            base.ColorChanged(newValue, oldValue);
-
-            UpdateUILabelColor();
-        }
 
 #if UNITY_EDITOR
         protected UnityEngine.Object[] GetTextMeshProsAdditionalRecordObjects()
@@ -151,7 +134,7 @@ namespace DepictionEngine
 #endif
         public string text
         {
-            get { return _text; }
+            get => _text;
             set
             {
                 SetValue(nameof(text), value, ref _text, (newValue, oldValue) =>
@@ -170,7 +153,7 @@ namespace DepictionEngine
 #endif
         public int repeatCount
         {
-            get { return _repeatCount; }
+            get => _repeatCount;
             set
             {
                 SetValue(nameof(repeatCount), (int)Mathf.Clamp(value, 0.0f, 100.0f), ref _repeatCount, (newValue, oldValue) =>
@@ -189,7 +172,7 @@ namespace DepictionEngine
 #endif
         public string repeatSpacer
         {
-            get { return _repeatSpacer; }
+            get => _repeatSpacer;
             set 
             { 
                 SetValue(nameof(repeatSpacer), value, ref _repeatSpacer, (newValue, oldValue) =>
@@ -208,7 +191,7 @@ namespace DepictionEngine
 #endif
         public float fontSize
         {
-            get { return _fontSize; }
+            get => _fontSize;
             set 
             { 
                 SetValue(nameof(fontSize), value, ref _fontSize, (newValue, oldValue) =>
@@ -227,7 +210,7 @@ namespace DepictionEngine
 #endif
         public int maxVisibleLines
         {
-            get { return _maxVisibleLines; }
+            get => _maxVisibleLines;
             set 
             { 
                 SetValue(nameof(maxVisibleLines), value, ref _maxVisibleLines, (newValue, oldValue) => 
@@ -246,7 +229,7 @@ namespace DepictionEngine
 #endif
         public TextAlignmentOptions alignment
         {
-            get { return _alignment; }
+            get => _alignment;
             set
             {
                 SetValue(nameof(alignment), value, ref _alignment, (newValue, oldValue) =>
@@ -262,8 +245,8 @@ namespace DepictionEngine
         [Json]
         public float width
         {
-            get { return _width; }
-            set { SetValue(nameof(width), value, ref _width); }
+            get => _width;
+            set => SetValue(nameof(width), value, ref _width);
         }
 
         /// <summary>
@@ -272,8 +255,8 @@ namespace DepictionEngine
         [Json]
         public float height
         {
-            get { return _height; }
-            set { SetValue(nameof(height), value, ref _height); }
+            get => _height;
+            set => SetValue(nameof(height), value, ref _height);
         }
 
         /// <summary>
@@ -282,8 +265,8 @@ namespace DepictionEngine
         [Json]
         public bool useEndCoordinate
         {
-            get { return _useEndCoordinate; }
-            set { SetValue(nameof(useEndCoordinate), value, ref _useEndCoordinate); }
+            get => _useEndCoordinate;
+            set => SetValue(nameof(useEndCoordinate), value, ref _useEndCoordinate);
         }
 
         /// <summary>
@@ -292,8 +275,8 @@ namespace DepictionEngine
         [Json]
         public Vector3Double endCoordinate
         {
-            get { return _endCoordinate; }
-            set { SetValue(nameof(endCoordinate), value, ref _endCoordinate); }
+            get => _endCoordinate;
+            set => SetValue(nameof(endCoordinate), value, ref _endCoordinate);
         }
 
         /// <summary>
@@ -302,30 +285,28 @@ namespace DepictionEngine
         [Json]
         public List<Vector3Double> textCurve
         {
-            get { return _textCurve; }
-            set { SetValue(nameof(textCurve), value, ref _textCurve); }
+            get => _textCurve;
+            set => SetValue(nameof(textCurve), value, ref _textCurve);
         }
 
-        protected override bool SetAlpha(float value)
+        protected override void ColorChanged(Color newValue, Color oldValue)
         {
-            if (base.SetAlpha(value))
-            {
-                UpdateUILabelColor();
+            base.ColorChanged(newValue, oldValue);
 
-                return true;
-            }
-            return false;
+            UpdateUILabelColor();
         }
 
-        protected override bool SetPopupT(float value)
+        protected void UpdateUILabelColor()
         {
-            if (base.SetPopupT(value))
+            if (initialized)
             {
-                UpdateUILabelColor();
+                transform.IterateOverChildren<UILabel>((uiLabel) =>
+                {
+                    uiLabel.color = color;
 
-                return true;
+                    return true;
+                });
             }
-            return false;
         }
 
         protected override UIVisual CreateUIVisual(Type visualType, bool useCollider)
@@ -413,19 +394,6 @@ namespace DepictionEngine
 
                 return true;
             });
-        }
-
-        private void UpdateUILabelColor()
-        {
-            if (initialized)
-            {
-                transform.IterateOverChildren<UILabel>((uiLabel) =>
-                {
-                    uiLabel.color = color.SetAlpha(GetCurrentAlpha());
-
-                    return true;
-                });
-            }
         }
 
         private void UpdateUILabelText()

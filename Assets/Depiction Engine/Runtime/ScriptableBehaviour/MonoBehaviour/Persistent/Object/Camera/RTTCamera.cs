@@ -39,11 +39,16 @@ namespace DepictionEngine
         {
             return true;
         }
-       
-        public RenderTexture RenderToCubemap(Camera camera, RenderTexture cubemap, Action<UnityEngine.Camera, Camera> applyPropertiesToUnityCamera = null, Action<UnityEngine.Camera> resetUnityCamera = null, int faceMask = 63)
+
+        public override bool IsReflectionObject()
         {
-            ApplyPropertiesToRTTUnityCamera(camera, applyPropertiesToUnityCamera);
-            
+            return false;
+        }
+
+        public RenderTexture RenderToCubemap(CameraClearFlags clearFlags, Color backgroundColor, Material skyboxMaterial, int cullingMask, float nearClipPlane, float farClipPlane, Vector3 unityCameraPosition, Quaternion unityCameraRotation, RenderTexture cubemap, Action<UnityEngine.Camera> applyPropertiesToUnityCamera = null, Action<UnityEngine.Camera> resetUnityCamera = null, int faceMask = 63)
+        {
+            ApplyPropertiesToRTTUnityCamera(clearFlags, backgroundColor, skyboxMaterial, cullingMask, nearClipPlane, farClipPlane, unityCameraPosition, unityCameraRotation, applyPropertiesToUnityCamera);
+
             unityCamera.RenderToCubemap(cubemap, faceMask);
            
             ResetUnityCamera(resetUnityCamera);
@@ -51,46 +56,43 @@ namespace DepictionEngine
             return cubemap;
         }
 
-        public RenderTexture RenderToTexture(Camera camera, ScriptableRenderContext context, RenderTexture texture, Action<UnityEngine.Camera, Camera> applyPropertiesToUnityCamera = null, Action<UnityEngine.Camera> resetUnityCamera = null)
+        public RenderTexture RenderToTexture(CameraClearFlags clearFlags, Color backgroundColor, Material skyboxMaterial, int cullingMask, float nearClipPlane, float farClipPlane, Vector3 unityCameraPosition, Quaternion unityCameraRotation, ScriptableRenderContext context, RenderTexture texture, Action<UnityEngine.Camera> applyPropertiesToUnityCamera = null, Action<UnityEngine.Camera> resetUnityCamera = null)
         {
-            if (camera.activeAndEnabled)
-            {
-                unityCamera.targetTexture = texture;
+            unityCamera.targetTexture = texture;
 
-                ApplyPropertiesToRTTUnityCamera(camera, applyPropertiesToUnityCamera);
+            ApplyPropertiesToRTTUnityCamera(clearFlags, backgroundColor, skyboxMaterial, cullingMask, nearClipPlane, farClipPlane, unityCameraPosition, unityCameraRotation, applyPropertiesToUnityCamera);
 
 #pragma warning disable CS0618 // Type or member is obsolete
-                UnityEngine.Rendering.Universal.UniversalRenderPipeline.RenderSingleCamera(context, unityCamera);
+            UnityEngine.Rendering.Universal.UniversalRenderPipeline.RenderSingleCamera(context, unityCamera);
 #pragma warning restore CS0618 // Type or member is obsolete
 
-                ResetUnityCamera(resetUnityCamera);
+            ResetUnityCamera(resetUnityCamera);
 
-                unityCamera.targetTexture = null;
-            }
+            unityCamera.targetTexture = null;
 
             return texture;
         }
 
-        private void ApplyPropertiesToRTTUnityCamera(Camera camera, Action<UnityEngine.Camera, Camera> applyPropertiesToUnityCamera)
+        private void ApplyPropertiesToRTTUnityCamera(CameraClearFlags clearFlags, Color backgroundColor, Material skyboxMaterial, int cullingMask, float nearClipPlane, float farClipPlane, Vector3 unityCameraPosition, Quaternion unityCameraRotation, Action<UnityEngine.Camera> applyPropertiesToUnityCamera)
         {
             unityCamera.enabled = true;
 
-            unityCamera.clearFlags = camera.clearFlags;
-            unityCamera.backgroundColor = camera.backgroundColor;
-            skybox.material = camera.skybox.material;
+            unityCamera.clearFlags = clearFlags;
+            unityCamera.backgroundColor = backgroundColor;
+            skybox.material = skyboxMaterial;
 
-            unityCamera.cullingMask = camera.cullingMask;
+            unityCamera.cullingMask = cullingMask;
 
-            Camera.ApplyClipPlanePropertiesToUnityCamera(unityCamera, 0, camera.nearClipPlane, camera.farClipPlane);
+            Camera.ApplyClipPlanePropertiesToUnityCamera(unityCamera, 0, nearClipPlane, farClipPlane);
+         
+            unityCamera.transform.SetPositionAndRotation(unityCameraPosition, unityCameraRotation);
 
-            unityCamera.transform.SetPositionAndRotation(camera.unityCamera.transform.position, camera.unityCamera.transform.rotation);
-
-            applyPropertiesToUnityCamera?.Invoke(unityCamera, camera);
+            applyPropertiesToUnityCamera?.Invoke(unityCamera);
 
             transform.InitLastTransformFields();
         }
 
-        public static void ModifyClipPlanesToIncludeAtmosphere(GeoAstroObject geoAstroObject, Camera camera, ref float far)
+        public static void ModifyClipPlanesToIncludeAtmosphere(GeoAstroObject geoAstroObject, Vector3Double position, ref float far)
         {
             if (geoAstroObject != Disposable.NULL)
             {
@@ -106,7 +108,7 @@ namespace DepictionEngine
                 }
                 if (atmosphereEffect != Disposable.NULL)
                 {
-                    double atmosphereDistance = (geoAstroObject.GetGeoCoordinateFromPoint(camera.transform.position).altitude + atmosphereEffect.GetAtmosphereAltitude()) * geoAstroObject.GetScale();
+                    double atmosphereDistance = (geoAstroObject.GetGeoCoordinateFromPoint(position).altitude + atmosphereEffect.GetAtmosphereAltitude()) * geoAstroObject.GetScale();
                     far = (float)atmosphereDistance;
                 }
                 else

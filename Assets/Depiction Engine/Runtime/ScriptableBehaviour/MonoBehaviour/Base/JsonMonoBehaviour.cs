@@ -88,7 +88,7 @@ namespace DepictionEngine
         /// </summary>
         public virtual bool DetectUserGameObjectChanges()
         {
-            if (IsDisposing())
+            if (!initialized || IsDisposing())
                 return false;
 
             if (_lastEnabled != enabled)

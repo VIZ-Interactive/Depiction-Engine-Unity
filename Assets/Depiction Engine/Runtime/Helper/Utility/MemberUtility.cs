@@ -202,6 +202,8 @@ namespace DepictionEngine
                         types.Add(createComponent.createComponent2);
                     if (createComponent.createComponent3 != null)
                         types.Add(createComponent.createComponent3);
+                    if (createComponent.createComponent4 != null)
+                        types.Add(createComponent.createComponent4);
                 }
             }
         }

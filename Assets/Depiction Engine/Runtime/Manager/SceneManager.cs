@@ -1440,8 +1440,8 @@ namespace DepictionEngine
                 BeginCameraRendering(camera, context);
 
 #if UNITY_EDITOR
-                if (camera is Editor.SceneCamera)
-                    (camera as Editor.SceneCamera).RenderDistancePass(context);
+                if (camera is Editor.SceneCamera sceneCamera)
+                    sceneCamera.RenderDistancePass(context);
 #endif
             }
             else
@@ -1483,9 +1483,6 @@ namespace DepictionEngine
             //Update AstroObject Controllers
             UpdateAstroObjects(camera);
 
-            //Update the reflection probe Transform
-            renderingManager.UpdateReflectionProbeTransform(camera);
-         
             //Apply all the latest Transform changes
             TransformDouble.ApplyOriginShifting(camera.GetOrigin());
 
@@ -1499,22 +1496,7 @@ namespace DepictionEngine
                 star.UpdateStar(camera);
 
             //Generate Reflection/ReflectionProbe renders and assign the resulting textures to the Shaders/RenderSettings
-            if (context.HasValue)
-            {
-                renderingManager.ApplyEnvironmentAndReflectionToRenderSettings(camera);
-                InstanceManager instanceManager = this.instanceManager;
-                instanceManager.IterateOverInstances<AstroObject>((astroObject) => 
-                {
-                    if (astroObject is GeoAstroObject geoAstroObject)
-                        geoAstroObject.UpdateReflectionProbe(camera, context);
-                    return true;
-                });
-                instanceManager.IterateOverInstances<VisualObject>((visualObject) =>
-                {
-                    visualObject.UpdateReflectionMaterial(camera, context);
-                    return true;
-                });
-            }
+            renderingManager.BeginCameraRendering(camera, context);
         }
 
         public void UpdateAstroObjects(Camera camera)

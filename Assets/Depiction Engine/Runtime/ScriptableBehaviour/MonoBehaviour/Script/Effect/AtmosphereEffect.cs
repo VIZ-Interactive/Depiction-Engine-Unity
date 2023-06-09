@@ -75,11 +75,11 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
 
             InitValue(value => sunBrightness = value, 200.0f, initializingContext);
-            InitValue(value => rayleighScattering = value, 0.001f, initializingContext);
-            InitValue(value => mieScattering = value, 0.008f, initializingContext);
+            InitValue(value => rayleighScattering = value, 0.005f, initializingContext);
+            InitValue(value => mieScattering = value, 0.002f, initializingContext);
             InitValue(value => miePhaseAsymmetryFactor = value, -0.999f, initializingContext);
-            InitValue(value => scaleDepth = value, 0.17f, initializingContext);
-            InitValue(value => waveLength = value, new Color(0.8679245f, 0.7108141f, 0.5287087f), initializingContext);
+            InitValue(value => scaleDepth = value, 0.1f, initializingContext);
+            InitValue(value => waveLength = value, new Color(1.0f, 0.8407589f, 0.6469002f), initializingContext);
         }
 
         private GlobalLoader atmosphereGlobalLoader

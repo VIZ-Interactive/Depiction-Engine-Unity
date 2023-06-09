@@ -179,9 +179,15 @@ namespace DepictionEngine
         public bool GetHasMinLevel(int index) => _hasMinLevel[index];
         public int GetMinLevel(int index) => _minLevel[index];
 
-        public Color GetWallColor(int index, Color defaultColor) => _hasWallColor[index] ? _wallColor[index] : defaultColor;
+        public Color GetWallColor(int index, Color defaultColor, Color overrideColor)
+        {
+            return Color.Lerp(_hasWallColor[index] ? _wallColor[index] : defaultColor, overrideColor, overrideColor.a);
+        }
 
-        public Color GetRoofColor(int index, Color defaultColor) => _hasRoofColor[index] ? _roofColor[index] : defaultColor;
+        public Color GetRoofColor(int index, Color defaultColor, Color overrideColor)
+        {
+            return Color.Lerp(_hasRoofColor[index] ? _roofColor[index] : defaultColor, overrideColor, overrideColor.a);
+        }
 
         protected override JSONObject GetDataJson()
         {

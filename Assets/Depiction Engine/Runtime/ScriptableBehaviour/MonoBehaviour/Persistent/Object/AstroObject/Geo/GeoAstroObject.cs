@@ -36,13 +36,6 @@ namespace DepictionEngine
 #endif
         private bool _spherical;
 
-        [BeginFoldout("Rendering")]
-        [SerializeField, Tooltip("Whether the reflection probe should be activated or not."), EndFoldout]
-#if UNITY_EDITOR
-        [ConditionalShow(nameof(GetEnableReflectionProbe))]
-#endif
-        private bool _reflectionProbe;
-
         [SerializeField, HideInInspector]
         private float _sphericalRatio;
 
@@ -74,11 +67,6 @@ namespace DepictionEngine
 
 #if UNITY_EDITOR
         protected virtual bool GetEnableSpherical()
-        {
-            return true;
-        }
-
-        protected virtual bool GetEnableReflectionProbe()
         {
             return true;
         }
@@ -125,40 +113,11 @@ namespace DepictionEngine
             InitValue(value => size = value, DEFAULT_SIZE, initializingContext);
             InitValue(value => sphericalDuration = value, 0.0f, initializingContext);
             InitValue(value => spherical = value, true, initializingContext);
-            InitValue(value => reflectionProbe = value, GetDefaultReflectionProbe(), initializingContext);
         }
 
         private void InitGrid2DIndexTerrainGridMeshObjects()
         {
             _grid2DIndexTerrainGridMeshObjects ??= new Grid2DIndexTerrainGridMeshObjectDictionary[31];
-        }
-
-        protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
-        {
-            base.CreateAndInitializeDependencies(initializingContext);
-
-            InitReflectionProbeObject(initializingContext);
-        }
-
-        protected virtual void InitReflectionProbeObject(InitializationContext initializingContext)
-        {
-            string reflectionProbeName = GetReflectionProbeName();
-
-            ReflectionProbe reflectionProbeObject;
-
-            Transform reflectionProbeTransform = gameObject.transform.Find(reflectionProbeName);
-
-            if (reflectionProbeTransform != null)
-                reflectionProbeObject = reflectionProbeTransform.GetComponent<ReflectionProbe>();
-            else
-            {
-                reflectionProbeObject = CreateChild<ReflectionProbe>(reflectionProbeName, null, initializingContext);
-                reflectionProbeObject.reflectionProbeType = ReflectionProbeMode.Custom;
-                reflectionProbeObject.importance = 0;
-            }
-
-            if (reflectionProbeObject != Disposable.NULL)
-                reflectionProbeObject.isHiddenInHierarchy = true;
         }
 
         protected override bool UpdateAllDelegates()
@@ -475,7 +434,7 @@ namespace DepictionEngine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ContainsInitializedTerraingGridMeshObject()
+        public bool ContainsInitializedTerrainGridMeshObject()
         {
             foreach (Grid2DIndexTerrainGridMeshObjectDictionary grid2DIndexTerrainGridMeshObjectsDictionary  in  _grid2DIndexTerrainGridMeshObjects)
             {
@@ -490,11 +449,6 @@ namespace DepictionEngine
             }
 
             return false;
-        }
-
-        protected virtual bool GetDefaultReflectionProbe()
-        {
-            return true;
         }
 
         public double GetScaledRadius()
@@ -568,16 +522,6 @@ namespace DepictionEngine
             });
         }
 
-        /// <summary>
-        /// Whether the reflection probe should be enabled or not. When enabled the reflectionProbe will reflect the environment cubemap updated according to <see cref="DepictionEngine.RenderingManager.dynamicEnvironment"/> and <see cref="DepictionEngine.RenderingManager.dynamicEnvironmentUpdateInterval"/>.
-        /// </summary>
-        [Json]
-        public bool reflectionProbe
-        {
-            get => _reflectionProbe;
-            set => SetValue(nameof(reflectionProbe), value, ref _reflectionProbe);
-        }
-
         public float sphericalRatio
         {
             get => _sphericalRatio;
@@ -645,14 +589,14 @@ namespace DepictionEngine
             return MathPlus.GetGeoCoordinateFromLocalPoint(localPoint, sphericalRatio, radius, size);
         }
 
-        public Vector3Double GetPointFromGeoCoordinate(GeoCoordinate3Double coord)
+        public Vector3Double GetPointFromGeoCoordinate(GeoCoordinate3Double geoCoordinate)
         {
-            return transform.TransformPoint(GetLocalPointFromGeoCoordinate(coord));
+            return transform.TransformPoint(GetLocalPointFromGeoCoordinate(geoCoordinate));
         }
 
-        public Vector3Double GetLocalPointFromGeoCoordinate(GeoCoordinate3Double coord)
+        public Vector3Double GetLocalPointFromGeoCoordinate(GeoCoordinate3Double geoCoordinate)
         {
-            return MathPlus.GetLocalPointFromGeoCoordinate(coord, sphericalRatio, radius, size);
+            return MathPlus.GetLocalPointFromGeoCoordinate(geoCoordinate, sphericalRatio, radius, size);
         }
 
         public Vector3Double GetSurfacePointFromPoint(Vector3Double point, bool clamp = true)
@@ -670,9 +614,9 @@ namespace DepictionEngine
             return GetUpVectorFromGeoCoordinate(GetGeoCoordinateFromPoint(point));
         }
 
-        public QuaternionDouble GetUpVectorFromGeoCoordinate(GeoCoordinate2Double coord)
+        public QuaternionDouble GetUpVectorFromGeoCoordinate(GeoCoordinate2Double geoCoordinate)
         {
-            return transform.rotation * MathPlus.GetUpVectorFromGeoCoordinate(coord, sphericalRatio);
+            return transform.rotation * MathPlus.GetUpVectorFromGeoCoordinate(geoCoordinate, sphericalRatio);
         }
 
         public override Vector3 GetGravitationalForce(Object objectBase)
@@ -788,61 +732,6 @@ namespace DepictionEngine
         public double GetDefaultRaycastMaxDistance()
         {
             return radius * 0.01d;
-        }
-
-        private string GetReflectionProbeName()
-        {
-            return typeof(GeoAstroObject).Name + "" + typeof(ReflectionProbe).Name;
-        }
-
-        public void UpdateReflectionProbeTransform(Camera camera)
-        {
-            transform.IterateOverChildrenObject<ReflectionProbe>((reflectionProbe) =>
-            {
-                if (reflectionProbe.name == GetReflectionProbeName())
-                {
-                    GeoCoordinate3Double geoCoordinate = GetGeoCoordinateFromLocalPoint(camera.transform.position);
-
-                    double maxAltitude = GetScaledAtmosphereThickness();
-                    if (geoCoordinate.altitude > maxAltitude)
-                        geoCoordinate.altitude = maxAltitude;
-
-                    reflectionProbe.transform.position = GetPointFromGeoCoordinate(geoCoordinate);
-                }
-                return true;
-            });
-        }
-
-        public void UpdateReflectionProbe(Camera camera, ScriptableRenderContext? context)
-        {
-            transform.IterateOverChildrenObject<ReflectionProbe>((probe) =>
-            {
-                if (probe.name == GetReflectionProbeName())
-                {
-                    bool dynamicEnvironment = IsValidSphericalRatio() && reflectionProbe;
-
-                    if (dynamicEnvironment)
-                    {
-                        RenderingManager renderingManager = RenderingManager.Instance(false);
-                        if (renderingManager != Disposable.NULL)
-                            dynamicEnvironment = renderingManager.dynamicEnvironment;
-                    }
-
-                    probe.intensity = dynamicEnvironment ? (float)GetAtmosphereAltitudeRatio(GetScaledAtmosphereThickness(), camera.transform.position) : 0.0f;
-
-                    if (probe.intensity != 0.0f)
-                    {
-                        if (probe.boxSize.x != size)
-                            probe.boxSize = Vector3.one * (float)size;
-                        probe.boxOffset = transform.position - probe.transform.position;
-
-                        RenderTexture environmentCubeMap = context.HasValue && reflectionProbe ? camera.GetEnvironmentCubeMap() : null;
-                        if (probe.reflectionProbe.customBakedTexture != environmentCubeMap)
-                            probe.reflectionProbe.customBakedTexture = environmentCubeMap;
-                    }
-                }
-                return true;
-            });
         }
 
         private int _updateCount;

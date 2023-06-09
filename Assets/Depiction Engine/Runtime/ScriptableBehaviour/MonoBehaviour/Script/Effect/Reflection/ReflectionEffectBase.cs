@@ -10,7 +10,7 @@ namespace DepictionEngine
     {
         [BeginFoldout("Reflection")]
         [SerializeField, Tooltip("The width and height of the reflection texture.")]
-        private Vector2Int _reflectionTextureSize;
+        private int _reflectionTextureSize;
         [SerializeField, Tooltip("When enabled shadows are included in the reflection render.")]
         private bool _renderShadows;
         [SerializeField, Mask, Tooltip("The objects within the ignoreLayers will be excluded from the reflection render."), EndFoldout]
@@ -28,7 +28,7 @@ namespace DepictionEngine
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
                 _reflectionTexture = null;
 
-            InitValue(value => reflectionTextureSize = value, new Vector2Int(512, 512), initializingContext);
+            InitValue(value => reflectionTextureSize = value, 512, initializingContext);
             InitValue(value => renderShadows = value, false, initializingContext);
             InitValue(value => ignoreLayers = value, LayerMask.GetMask(new string[] { typeof(UIBase).Name, typeof(Star).Name, typeof(TerrainEdgeMeshRendererVisual).Name, typeof(TerrainGridMeshObject).Name, typeof(TerrainGridMeshObject).Name + InstanceManager.GLOBAL_LAYER, typeof(AtmosphereGridMeshObject).Name, "Ignore Render", "Ignore Raycast" }), initializingContext);
         }
@@ -42,17 +42,10 @@ namespace DepictionEngine
         /// The width and height of the reflection texture.
         /// </summary>
         [Json]
-        public Vector2Int reflectionTextureSize
+        public int reflectionTextureSize
         {
             get => _reflectionTextureSize;
-            set 
-            {
-                if (value.x < 2)
-                    value.x = 2;
-                if (value.y < 2)
-                    value.y = 2;
-                SetValue(nameof(reflectionTextureSize), value, ref _reflectionTextureSize); 
-            }
+            set => SetValue(nameof(reflectionTextureSize),Mathf.Clamp(value, 2, 2048), ref _reflectionTextureSize); 
         }
 
         /// <summary>
@@ -93,7 +86,7 @@ namespace DepictionEngine
         protected override void ModifyClipPlanes(Camera camera, ref float near, ref float far)
         {
             near = 0.1f;
-            RTTCamera.ModifyClipPlanesToIncludeAtmosphere(geoAstroObject, camera, ref far);
+            RTTCamera.ModifyClipPlanesToIncludeAtmosphere(geoAstroObject, camera.transform.position, ref far);
         }
 
         protected override void ApplyBackgroundToRTTUnityCamera(UnityEngine.Camera unityCamera, Camera copyFromCamera)
@@ -102,11 +95,11 @@ namespace DepictionEngine
             unityCamera.backgroundColor = Color.black;
         }
 
-        protected override bool ApplyPropertiesToRTTUnityCamera(UnityEngine.Camera unityCamera, Camera copyFromCamera, int cullingMask)
+        protected override bool ApplyPropertiesToRTTUnityCamera(UnityEngine.Camera rttUnityCamera, Camera copyFromCamera, int cullingMask)
         {
-            if (base.ApplyPropertiesToRTTUnityCamera(unityCamera, copyFromCamera, cullingMask))
+            if (base.ApplyPropertiesToRTTUnityCamera(rttUnityCamera, copyFromCamera, cullingMask))
             {
-                UniversalAdditionalCameraData additionalData = unityCamera.GetUniversalAdditionalCameraData();
+                UniversalAdditionalCameraData additionalData = rttUnityCamera.GetUniversalAdditionalCameraData();
                 additionalData.renderShadows = renderShadows;
                 additionalData.requiresColorOption = CameraOverrideOption.On;
                 return true;
@@ -116,9 +109,10 @@ namespace DepictionEngine
 
         public RenderTexture GetTexture(RTTCamera rttCamera, Camera camera, ScriptableRenderContext context)
         {
-            if (reflectionTexture == null || reflectionTexture.width != reflectionTextureSize.x || reflectionTexture.height != reflectionTextureSize.y)
+            int textureSize = Mathf.ClosestPowerOfTwo(reflectionTextureSize);
+            if (reflectionTexture == null || reflectionTexture.width != textureSize || reflectionTexture.height != textureSize)
             {
-                reflectionTexture = new RenderTexture(reflectionTextureSize.x, reflectionTextureSize.y, 16, RenderTextureFormat.ARGB32, 0);
+                reflectionTexture = new RenderTexture(textureSize, textureSize, 16, RenderTextureFormat.ARGB32, 0);
                 reflectionTexture.useMipMap = false;
                 reflectionTexture.name = GetTextureName() + id;
                 reflectionTexture.isPowerOfTwo = true;
