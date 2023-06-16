@@ -271,6 +271,11 @@ namespace DepictionEngine
             return Input.GetKey(key);
         }
 
+        public bool GetMouseButton(int button)
+        {
+            return Input.GetMouseButton(button);
+        }
+
         public float GetDistanceDelta()
         {
             float distanceDelta = 0.0f;
@@ -280,13 +285,17 @@ namespace DepictionEngine
                 distanceDelta = -pinchDelta;
             else
             {
-                float scrollDelta = inputManager.GetScrollDelta();
                 if (GetKeyDown(KeyCode.Equals) || GetKeyDown(KeyCode.Minus))
                     distanceDelta = GetKey(KeyCode.Equals) ? -0.1f : 0.1f;
-                else if (scrollDelta != 0.0f && GetMouseIsInScreen())
-                    distanceDelta = -scrollDelta;
-                else if (GetTapClickCount() == 2)
-                    distanceDelta = -0.2f;
+                else
+                {
+                    float scrollDelta = inputManager.GetScrollDelta();
+                    bool mouseButtonDown = GetMouseButton(0) || GetMouseButton(1) || GetMouseButton(2);
+                    if (scrollDelta != 0.0f && GetMouseIsInScreen() && !mouseButtonDown)
+                        distanceDelta = -scrollDelta;
+                    else if (GetTapClickCount() == 2)
+                        distanceDelta = -0.2f;
+                }
             }
 
             return distanceDelta;

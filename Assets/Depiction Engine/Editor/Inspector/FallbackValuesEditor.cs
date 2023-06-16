@@ -9,8 +9,8 @@ using UnityEngine;
 
 namespace DepictionEngine.Editor
 {
-    [CustomEditor(typeof(FallbackValues), true)]
     [CanEditMultipleObjects]
+    [CustomEditor(typeof(FallbackValues), true)]
     public class FallbackValuesEditor : InspectorBase
     {
         private static string[] _instanceTypes;

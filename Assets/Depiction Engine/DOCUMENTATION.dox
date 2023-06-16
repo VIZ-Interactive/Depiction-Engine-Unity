@@ -82,9 +82,6 @@
  *
  * - __Updating__ \n 
  * \n 
- *   + **HierarchicalFixedUpdate**: . \n 
- *     `DepictionEngine.PropertyMonoBehaviour.HierarchicalFixedUpdate` \n 
- * \n 
  *   + **PreHierarchicalUpdate**: . \n 
  *     `DepictionEngine.PropertyMonoBehaviour.PreHierarchicalUpdate`
  *   + **HierarchicalUpdate**: . \n 

@@ -249,7 +249,7 @@ namespace DepictionEngine
 
         private Vector2Int GetGrid2DIndex(Vector2Int grid2DDimensions)
         {
-            return transform != Disposable.NULL ? GetGrid2DIndex(transform.GetGeoCoordinate(), grid2DDimensions) : Vector2Int.minusOne;
+            return transform != Disposable.NULL ? GetGrid2DIndex(transform.GetGeoCoordinate(), grid2DDimensions) : new Vector2Int(-1, -1);
         }
 
         public GeoCoordinate3Double GetSnapToGridIndexGeoCoordinate(GeoCoordinate2Double geoCoordinate)
@@ -260,8 +260,11 @@ namespace DepictionEngine
         private Vector2Int GetGrid2DIndex(GeoCoordinate2Double geoCoordinate, Vector2Int grid2DDimensions)
         {
             if (transform.GetParentGeoAstroObject() != Disposable.NULL)
-                return MathPlus.GetIndexFromGeoCoordinate(geoCoordinate, grid2DDimensions);
-            return Vector2Int.minusOne;
+            {
+                Vector2Double grid2DIndex = MathPlus.GetIndexFromGeoCoordinate(geoCoordinate, grid2DDimensions);
+                return new Vector2Int((int)grid2DIndex.x, (int)grid2DIndex.y);
+            }
+            return new Vector2Int(-1,-1);
         }
 
         public Vector2Double GetGrid2DIndexFromGeoCoordinate(GeoCoordinate3Double geoCoordinate)
@@ -605,7 +608,7 @@ namespace DepictionEngine
             {
                 _size = size;
                 _grid2DDimensions = grid2DDimensions;
-                _grid2DIndex = grid2DIndex != Vector2Int.minusOne ? grid2DIndex : Vector2Int.zero;
+                _grid2DIndex = (grid2DIndex.x != -1 || grid2DIndex.y != -1) ? grid2DIndex : Vector2Int.zero;
                 _sphericalRatio = sphericalRatio;
 
                 _normalizedRadiusSize = MathPlus.DOUBLE_RADIUS * _grid2DDimensions.y;

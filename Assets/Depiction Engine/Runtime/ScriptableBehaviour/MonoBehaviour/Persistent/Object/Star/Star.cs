@@ -69,7 +69,7 @@ namespace DepictionEngine
             InitValue(value => lensFlareScale = value, 1.3f, initializingContext);
             InitValue(value => intensity = value, 1.3f, initializingContext);
             InitValue(value => range = value, 1000000.0f, initializingContext);
-            InitValue(value => shadows = value, LightShadows.Soft, initializingContext);
+            InitValue(value => shadows = value, LightShadows.Hard, initializingContext);
             InitValue(value => useOcclusion = value, true, initializingContext);
             InitValue(value => occlusionRadius = value, 0.05f, initializingContext);
             InitValue(value => occlusionSampleCount = value, (uint)6, initializingContext);

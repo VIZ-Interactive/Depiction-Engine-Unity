@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace DepictionEngine
 {
@@ -35,6 +34,10 @@ namespace DepictionEngine
         [ConditionalShow(nameof(GetEnableSpherical))]
 #endif
         private bool _spherical;
+
+        [BeginFoldout("Material")]
+        [SerializeField, EndFoldout]
+        private float _seaLevel;
 
         [SerializeField, HideInInspector]
         private float _sphericalRatio;
@@ -113,6 +116,7 @@ namespace DepictionEngine
             InitValue(value => size = value, DEFAULT_SIZE, initializingContext);
             InitValue(value => sphericalDuration = value, 0.0f, initializingContext);
             InitValue(value => spherical = value, true, initializingContext);
+            InitValue(value => seaLevel = value, -1000.0f, initializingContext);
         }
 
         private void InitGrid2DIndexTerrainGridMeshObjects()
@@ -560,6 +564,16 @@ namespace DepictionEngine
         public bool IsFlat()
         {
             return GetSphericalRatio() == 0.0f;
+        }
+
+        /// <summary>
+        /// The amount of time required for the <see cref="DepictionEngine.GeoAstroObject"/> to transition from spherical to flat.
+        /// </summary>
+        [Json]
+        public float seaLevel
+        {
+            get => _seaLevel;
+            set => SetValue(nameof(seaLevel), value, ref _seaLevel);
         }
 
         public double GetScaledAtmosphereThickness()

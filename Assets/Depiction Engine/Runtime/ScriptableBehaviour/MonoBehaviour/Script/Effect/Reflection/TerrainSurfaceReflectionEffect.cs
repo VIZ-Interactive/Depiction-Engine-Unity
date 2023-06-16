@@ -321,7 +321,8 @@ namespace DepictionEngine
                 if (grid2DIndexTerrainGridMeshObject != Disposable.NULL)
                 {
                     GeoCoordinate3Double geoCoordinate = GetGeoCoordinate();
-                    if (grid2DIndex == (Vector2Int)MathPlus.GetIndexFromGeoCoordinate(geoCoordinate, grid2DDimensions))
+                    Vector2Double grid2DIndexDouble = MathPlus.GetIndexFromGeoCoordinate(geoCoordinate, grid2DDimensions);
+                    if (grid2DIndex.x == (int)grid2DIndexDouble.x && grid2DIndex.y == (int)grid2DIndexDouble.y)
                         UpdateElevation(grid2DIndexTerrainGridMeshObject, geoCoordinate);
                 }
             }

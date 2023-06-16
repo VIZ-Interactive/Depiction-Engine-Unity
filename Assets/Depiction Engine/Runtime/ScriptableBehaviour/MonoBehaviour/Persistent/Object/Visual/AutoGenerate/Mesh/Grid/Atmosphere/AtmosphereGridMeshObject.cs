@@ -93,7 +93,7 @@ namespace DepictionEngine
 
         protected override float GetSunBrightness(float sunBrightness, float atmosphereAltitudeRatio)
         {
-            return Mathf.Lerp(sunBrightness * 0.05f, base.GetAtmosphereAlpha(sunBrightness * 0.2f, atmosphereAltitudeRatio), atmosphereAltitudeRatio);
+            return Mathf.Lerp(sunBrightness * 0.01f, base.GetAtmosphereAlpha(sunBrightness * 0.2f, atmosphereAltitudeRatio), atmosphereAltitudeRatio);
         }
 
         protected override void UpdateAltitudeOffset()

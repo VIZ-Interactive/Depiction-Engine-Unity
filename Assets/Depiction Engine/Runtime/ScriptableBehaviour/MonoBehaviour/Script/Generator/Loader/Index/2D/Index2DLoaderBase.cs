@@ -270,7 +270,7 @@ namespace DepictionEngine
             loadScope = null;
 
             Grid2DIndex loadScopeGrid2DIndex = (Grid2DIndex)loadScopeKey;
-            if (loadScopeGrid2DIndex.index != Vector2Int.minusOne)
+            if (loadScopeGrid2DIndex.index.x != -1 || loadScopeGrid2DIndex.index.y != -1)
             {
                 int zoom = MathPlus.GetZoomFromGrid2DDimensions(loadScopeGrid2DIndex.dimensions);
                 if (IsValidZoom(zoom))

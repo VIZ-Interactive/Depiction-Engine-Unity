@@ -10,7 +10,7 @@ namespace DepictionEngine
     [RequireComponent(typeof(GeoAstroObject))]
     public class AtmosphereEffect : EffectBase
     {
-        public const double ATMOPSHERE_ALTITUDE_FACTOR = 1.025d; // Difference between inner and outer geoAstroObjectRadius. Must be 2.5%
+        public const double ATMOPSHERE_ALTITUDE_FACTOR = 1.01d; // Difference between inner and outer geoAstroObjectRadius. Must be 2.5%
 
         [BeginFoldout("Atmosphere")]
         [SerializeField, Tooltip("The amount of light reflected by the atmosphere.")]
@@ -79,7 +79,7 @@ namespace DepictionEngine
             InitValue(value => mieScattering = value, 0.002f, initializingContext);
             InitValue(value => miePhaseAsymmetryFactor = value, -0.999f, initializingContext);
             InitValue(value => scaleDepth = value, 0.1f, initializingContext);
-            InitValue(value => waveLength = value, new Color(1.0f, 0.8407589f, 0.6469002f), initializingContext);
+            InitValue(value => waveLength = value, new Color(1.0f, 0.8578641f, 0.6846361f), initializingContext);
         }
 
         private GlobalLoader atmosphereGlobalLoader
@@ -131,14 +131,7 @@ namespace DepictionEngine
         public float miePhaseAsymmetryFactor
         {
             get => _miePhaseAsymmetryFactor;
-            set 
-            {
-                if (value < -0.999f)
-                    value = -0.0999f;
-                if (value > 0.999f)
-                    value = 0.0999f;
-                SetValue(nameof(miePhaseAsymmetryFactor), value, ref _miePhaseAsymmetryFactor); 
-            }
+            set => SetValue(nameof(miePhaseAsymmetryFactor), Mathf.Clamp(value, -0.999f, 0.999f), ref _miePhaseAsymmetryFactor); 
         }
 
         /// <summary>

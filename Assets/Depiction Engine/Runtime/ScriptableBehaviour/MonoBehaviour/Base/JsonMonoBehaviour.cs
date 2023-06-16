@@ -93,8 +93,10 @@ namespace DepictionEngine
 
             if (_lastEnabled != enabled)
             {
+                ignoreGameObjectActiveChange = true;
                 bool newValue = enabled;
                 (this as MonoBehaviour).enabled = _lastEnabled;
+                ignoreGameObjectActiveChange = false;
                 enabled = newValue;
             }
 

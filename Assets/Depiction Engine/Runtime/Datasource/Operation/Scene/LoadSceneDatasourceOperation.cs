@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace DepictionEngine
 {
@@ -52,9 +53,9 @@ namespace DepictionEngine
         {
             get 
             {
-                if (JsonUtility.FromJson(out Vector2Int grid2DDimensions, _jsonFallback[nameof(AssetBase.grid2DDimensions)]) && grid2DDimensions != Vector2Int.minusOne)
+                if (JsonUtility.FromJson(out Vector2Int grid2DDimensions, _jsonFallback[nameof(AssetBase.grid2DDimensions)]) && (grid2DDimensions.x != -1 || grid2DDimensions.y != -1))
                     return grid2DDimensions;
-                return Vector2Int.minusOne;
+                return new Vector2Int(-1, -1);
             }
         }
 
@@ -62,9 +63,9 @@ namespace DepictionEngine
         {
             get
             {
-                if (JsonUtility.FromJson(out Vector2Int grid2DIndex, _jsonFallback[nameof(AssetBase.grid2DIndex)]) && grid2DIndex != Vector2Int.minusOne)
+                if (JsonUtility.FromJson(out Vector2Int grid2DIndex, _jsonFallback[nameof(AssetBase.grid2DIndex)]) && (grid2DIndex.x != -1 || grid2DIndex.y != -1))
                     return grid2DIndex;
-                return Vector2Int.minusOne;
+                return new Vector2Int(-1, -1);
             }
         }
 
@@ -87,7 +88,7 @@ namespace DepictionEngine
             if (IsProcedural())
             {
                 Type proceduralDataProcessorParametersType = typeof(PropertyModifierParameters);
-                if (_jsonFallback != null && grid2DDimensions != Vector2Int.minusOne && grid2DIndex != Vector2Int.minusOne)
+                if (_jsonFallback != null && (grid2DDimensions.x != -1 || grid2DDimensions.y != -1) && (grid2DIndex.x != -1 || grid2DIndex.y != -1))
                     proceduralDataProcessorParametersType = typeof(PropertyModifierIndex2DParameters);
 
                 InstanceManager instanceManager = InstanceManager.Instance(false);

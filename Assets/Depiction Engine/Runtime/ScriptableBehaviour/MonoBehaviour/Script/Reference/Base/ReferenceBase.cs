@@ -14,10 +14,10 @@ namespace DepictionEngine
         [SerializeField, ComponentReference, Tooltip("The id of the loader containing the referenced data.")]
         private SerializableGuid _loaderId;
 
-        [SerializeField, Tooltip("An id key used to retreive the data from an "+nameof(IdLoader)+".")]
+        [SerializeField, Tooltip("An id key used to retrieve the data from an "+nameof(IdLoader)+".")]
         private SerializableGuid _dataId;
 
-        [SerializeField, Tooltip("A 2D grid index key used to retreive the data from an "+nameof(Index2DLoaderBase)+".")]
+        [SerializeField, Tooltip("A 2D grid index key used to retrieve the data from an "+nameof(Index2DLoaderBase)+".")]
         private Grid2DIndex _dataIndex2D;
 
         [Space]
@@ -78,7 +78,7 @@ namespace DepictionEngine
 
         private bool GetEnableLoad()
         {
-            return loadScope == Disposable.NULL;
+            return !isFallbackValues && loadScope == Disposable.NULL;
         }
 
         private void LoadBtn()
@@ -355,7 +355,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// An id key used to retreive the data from an <see cref="DepictionEngine.IdLoader"/>.
+        /// An id key used to retrieve the data from an <see cref="DepictionEngine.IdLoader"/>.
         /// </summary>
         [Json]
         public SerializableGuid dataId
@@ -377,7 +377,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// A 2D grid index key used to retreive the data from an <see cref="DepictionEngine.Index2DLoaderBase"/>.
+        /// A 2D grid index key used to retrieve the data from an <see cref="DepictionEngine.Index2DLoaderBase"/>.
         /// </summary>
         [Json]
         public Grid2DIndex dataIndex2D

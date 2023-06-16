@@ -153,7 +153,8 @@ namespace DepictionEngine
                 {
                     grid?.IterateOverIndexes((grid, geoCenter, index, dimensions) =>
                         {
-                            callback(index, dimensions, MathPlus.GetIndexFromGeoCoordinate(geoCenter, dimensions, false));
+                            Vector2Double grid2DIndex = MathPlus.GetIndexFromGeoCoordinate(geoCenter, dimensions, false);
+                            callback(index, dimensions, new Vector2Int((int)grid2DIndex.x, (int)grid2DIndex.y));
                         });
                 }
             }

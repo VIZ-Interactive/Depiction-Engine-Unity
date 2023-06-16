@@ -31,7 +31,7 @@ MonoBehaviour:
     autoRotate: 0
     flareType: 1
     modulateByLightColor: 1
-    isFoldOpened: 0
+    isFoldOpened: 1
     distribution: 0
     lengthSpread: 0
     positionCurve:
@@ -693,7 +693,7 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-  - visible: 1
+  - visible: 0
     position: 0
     positionOffset: {x: 0, y: 0}
     angularOffset: 0
@@ -854,7 +854,7 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-  - visible: 1
+  - visible: 0
     position: 0
     positionOffset: {x: 0, y: 0}
     angularOffset: 0

@@ -171,8 +171,12 @@ namespace DepictionEngine
 
         private void TerrainGridMeshObjectChanged(Grid2DIndexTerrainGridMeshObjects grid2DIndexTerrainGridMeshObject)
         {
-            if (transform != Disposable.NULL && !forceUpdateTransformPending.localPositionChanged && grid2DIndexTerrainGridMeshObject.grid2DIndex == (Vector2Int)MathPlus.GetIndexFromGeoCoordinate(transform.GetGeoCoordinate(), grid2DIndexTerrainGridMeshObject.grid2DDimensions))
-                ForceUpdateTransformPending(true);
+            if (transform != Disposable.NULL && !forceUpdateTransformPending.localPositionChanged)
+            {
+                Vector2Double grid2DIndex = MathPlus.GetIndexFromGeoCoordinate(transform.GetGeoCoordinate(), grid2DIndexTerrainGridMeshObject.grid2DDimensions);
+                if (grid2DIndexTerrainGridMeshObject.grid2DIndex.x == (int)grid2DIndex.x && grid2DIndexTerrainGridMeshObject.grid2DIndex.y == (int)grid2DIndex.y)
+                    ForceUpdateTransformPending(true);
+            }
         }
 
         protected override bool TransformPropertyAssigned(IProperty property, string name, object newValue, object oldValue)

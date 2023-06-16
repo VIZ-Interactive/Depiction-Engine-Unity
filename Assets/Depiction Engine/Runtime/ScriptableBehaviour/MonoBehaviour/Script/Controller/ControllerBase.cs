@@ -48,23 +48,7 @@ namespace DepictionEngine
 
 		protected virtual bool TransformControllerCallback(LocalPositionParam localPositionParam, LocalRotationParam localRotationParam, LocalScaleParam localScaleParam, Camera camera = null)
 		{
-			bool isActive = initialized;
-
-			if (isActive)
-			{
-				//The try catch is necessary because the controller might have been destroyed as a result of an undo or redo and we wont yet know at this point.
-				try
-				{
-					if (isActiveAndEnabled)
-						isActive = true;
-				}
-				catch (MissingReferenceException)
-				{
-					isActive = false;
-				}
-			}
-
-            return isActive;
+            return initialized && activeAndEnabled;
 		}
 
 		protected override void ActiveAndEnabledChanged(bool newValue, bool oldValue)

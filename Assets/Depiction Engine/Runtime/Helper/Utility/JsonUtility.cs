@@ -184,11 +184,32 @@ namespace DepictionEngine
 
                         if (type == typeof(string))
                             parsedValue = jsonStr;
-                        else if (type.IsSubclassOf(typeof(UnityEngine.Object)) || type == typeof(UnityEngine.Object) || type == typeof(Vector2) || type == typeof(Vector2Double) || type == typeof(Vector2Int) || type == typeof(Vector4) || type == typeof(Vector4Double) || type == typeof(Vector3) || type == typeof(Vector3Int) || type == typeof(Vector3Double) || type == typeof(GeoCoordinate3) || type == typeof(GeoCoordinate3Double) || type == typeof(GeoCoordinate2) || type == typeof(GeoCoordinate2Double) || type == typeof(Color) || type == typeof(Quaternion) || type == typeof(QuaternionDouble) || type == typeof(Grid2DIndex) || type == typeof(GeoCoordinateGeometries) || type == typeof(GeoCoordinateGeometry) || type == typeof(GeoCoordinatePolygon) || type == typeof(Disposable) || type.IsSubclassOf(typeof(Disposable)))
+                        else if (type.IsSubclassOf(typeof(UnityEngine.Object)) || type == typeof(UnityEngine.Object) || type == typeof(Vector2) || type == typeof(Vector2Double) || type == typeof(Vector4) || type == typeof(Vector4Double) || type == typeof(Vector3) || type == typeof(Vector3Double) || type == typeof(GeoCoordinate3) || type == typeof(GeoCoordinate3Double) || type == typeof(GeoCoordinate2) || type == typeof(GeoCoordinate2Double) || type == typeof(Color) || type == typeof(Quaternion) || type == typeof(QuaternionDouble) || type == typeof(Grid2DIndex) || type == typeof(GeoCoordinateGeometries) || type == typeof(GeoCoordinateGeometry) || type == typeof(GeoCoordinatePolygon) || type == typeof(Disposable) || type.IsSubclassOf(typeof(Disposable)))
                         {
                             if (!string.IsNullOrEmpty(jsonStr))
                             {
                                 parsedValue = UnityEngine.JsonUtility.FromJson(jsonStr, type);
+                                if (parsedValue is Disposable)
+                                    InstanceManager.Initialize(parsedValue as Disposable);
+                            }
+                            else
+                                success = false;
+                        }
+                        else if (type == typeof(Vector2Int) || type == typeof(Vector3Int))
+                        {
+                            if (!string.IsNullOrEmpty(jsonStr))
+                            {
+                                //UnityEngine.JsonUtility.ToJson does not support Vector2Int and Vector3Int for some reason
+                                if (type == typeof(Vector2Int))
+                                {
+                                    Vector2 vector2 = (Vector2)UnityEngine.JsonUtility.FromJson(jsonStr, typeof(Vector2));
+                                    parsedValue = new Vector2Int((int)vector2.x, (int)vector2.y);
+                                }
+                                else
+                                {
+                                    Vector3 vector3 = (Vector3)UnityEngine.JsonUtility.FromJson(jsonStr, typeof(Vector3));
+                                    parsedValue = new Vector3Int((int)vector3.x, (int)vector3.y, (int)vector3.z);
+                                }
                                 if (parsedValue is Disposable)
                                     InstanceManager.Initialize(parsedValue as Disposable);
                             }
@@ -284,8 +305,23 @@ namespace DepictionEngine
                         json = new JSONString(type1.FullName);
                     else if (obj is IJson iJson)
                         json = GetObjectJson(iJson);
-                    else if (obj is UnityEngine.Object || obj is Vector2 || obj is Vector2Double || obj is Vector2Int || obj is Vector4 || obj is Vector4Double || obj is Vector3 || obj is Vector3Int || obj is Vector3Double || obj is GeoCoordinate3 || obj is GeoCoordinate3Double || obj is GeoCoordinate2 || obj is GeoCoordinate2Double || obj is Color || obj is Quaternion || obj is QuaternionDouble || obj is Grid2DIndex || obj is GeoCoordinateGeometries || obj is GeoCoordinateGeometry || obj is GeoCoordinatePolygon || obj is Disposable || type.IsSubclassOf(typeof(Disposable)))
-                        json = JSONObject.Parse(UnityEngine.JsonUtility.ToJson(obj));
+                    else
+                    {
+                        //UnityEngine.JsonUtility.ToJson does not support Vector2Int and Vector3Int for some reason
+                        if (obj is Vector2Int)
+                        {
+                            Vector2Int vector2Int = (Vector2Int)obj;
+                            obj = new Vector2(vector2Int.x, vector2Int.y);
+                        }
+                        else if (obj is Vector3Int)
+                        {
+                            Vector3Int vector3Int = (Vector3Int)obj;
+                            obj = new Vector2(vector3Int.x, vector3Int.y);
+                        }
+
+                        if (obj is UnityEngine.Object || obj is Vector2 || obj is Vector2Double || obj is Vector4 || obj is Vector4Double || obj is Vector3 || obj is Vector3Double || obj is GeoCoordinate3 || obj is GeoCoordinate3Double || obj is GeoCoordinate2 || obj is GeoCoordinate2Double || obj is Color || obj is Quaternion || obj is QuaternionDouble || obj is Grid2DIndex || obj is GeoCoordinateGeometries || obj is GeoCoordinateGeometry || obj is GeoCoordinatePolygon || obj is Disposable || type.IsSubclassOf(typeof(Disposable)))
+                            json = JSONObject.Parse(UnityEngine.JsonUtility.ToJson(obj));
+                    }
 
                     if (json == null)
                         Debug.LogError("Object of type '" + (type != null ? type.Name : "Null") + "' is not supported");

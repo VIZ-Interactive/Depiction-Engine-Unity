@@ -108,7 +108,10 @@ namespace DepictionEngine
             base.InitializeSerializedFields(initializingContext);
 
             if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
-                UpdateChildMeshRenderer(out int added, out int removed);
+            {
+                if (managedMeshRenderers.Count != 0)
+                    UpdateChildMeshRenderer(out int added, out int removed);
+            }
 
             if (initializingContext == InitializationContext.Existing)
                 RemoveNullManagedMeshRenderers();
@@ -301,7 +304,7 @@ namespace DepictionEngine
 
             List<MeshRenderer> newManagedMeshRenderers = new();
             gameObject.GetComponentsInChildren(true, newManagedMeshRenderers);
-            for (int i = managedMeshRenderers.Count - 1; i <= 0; i--)
+            for (int i = managedMeshRenderers.Count - 1; i >= 0; i--)
             {
                 MeshRenderer meshRenderer = managedMeshRenderers[i];
                 if (!newManagedMeshRenderers.Contains(meshRenderer) && RemoveMeshRenderer(meshRenderer))
@@ -707,19 +710,22 @@ namespace DepictionEngine
                         //Fix: We add an offset to the geoAstroObjectRadius consisting of the lowest point we think the camera will have to go below sea level
                         //In this case we use a variable offset which goes from 0.0f to 10000.0d as we get closer to sea level
                         double geoAstroObjectRadius = closestGeoAstroObject.GetScaledRadius();
-                        geoAstroObjectRadius -= cameraAtmosphereAltitudeRatio * (11000.0d * (geoAstroObjectRadius / EARTH_RADIUS));
-                        double atmosphereRadius = AtmosphereEffect.ATMOPSHERE_ALTITUDE_FACTOR * geoAstroObjectRadius;
+                        geoAstroObjectRadius -= cameraAtmosphereAltitudeRatio * (11000.0f * (geoAstroObjectRadius / EARTH_RADIUS));
+                        
+                        float outerRadius = (float)(AtmosphereEffect.ATMOPSHERE_ALTITUDE_FACTOR * geoAstroObjectRadius);
+                        SetFloatToMaterial("_OuterRadius", outerRadius, material, materialPropertyBlock);
+                        SetFloatToMaterial("_OuterRadius2", outerRadius * outerRadius, material, materialPropertyBlock);
 
-                        SetFloatToMaterial("_OuterRadius", (float)atmosphereRadius, material, materialPropertyBlock);
-                        SetFloatToMaterial("_OuterRadius2", (float)atmosphereRadius * (float)atmosphereRadius, material, materialPropertyBlock);
-                        SetFloatToMaterial("_InnerRadius", (float)geoAstroObjectRadius, material, materialPropertyBlock);
-                        SetFloatToMaterial("_InnerRadius2", (float)geoAstroObjectRadius * (float)geoAstroObjectRadius, material, materialPropertyBlock);
+                        float innerRadius = (float)geoAstroObjectRadius;
+                        SetFloatToMaterial("_InnerRadius", innerRadius, material, materialPropertyBlock);
+                        SetFloatToMaterial("_InnerRadius2", innerRadius * innerRadius, material, materialPropertyBlock);
 
                         Vector3 invWaveLength4 = new(1.0f / Mathf.Pow(effect.waveLength.r, 4.0f), 1.0f / Mathf.Pow(effect.waveLength.g, 4.0f), 1.0f / Mathf.Pow(effect.waveLength.b, 4.0f));
                         SetVectorToMaterial("_InvWavelength", invWaveLength4, material, materialPropertyBlock);
 
-                        float atmosphereScale = (float)(1.0d / effect.GetAtmosphereAltitude());
-                        SetFloatToMaterial("_Scale", atmosphereScale, material, materialPropertyBlock);
+                        float scale = (float)(1.0d / effect.GetAtmosphereAltitude());
+                        SetFloatToMaterial("_Scale", scale, material, materialPropertyBlock);
+
                         SetFloatToMaterial("_ScaleDepth", effect.scaleDepth, material, materialPropertyBlock);
 
                         float sunBrightness = GetSunBrightness(effect.sunBrightness * (star != Disposable.NULL ? star.intensity : 1.0f), (float)cameraAtmosphereAltitudeRatio);

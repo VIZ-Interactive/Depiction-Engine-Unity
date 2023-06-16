@@ -346,9 +346,9 @@ namespace DepictionEngine
             InitValue(value => dynamicEnvironment = value, true, initializingContext);
             InitValue(value => dynamicEnvironmentUpdateInterval = value, 5.0f, initializingContext);
             InitValue(value => originShifting = value, true, initializingContext);
-            InitValue(value => highlightColor = value, new Color(0.0f, 1.0f, 1.0f, 0.75f), initializingContext);
             InitValue(value => labelOutlineColor = value, Color.black, initializingContext);
             InitValue(value => labelOutlineWidth = value, 0.25f, initializingContext);
+            InitValue(value => highlightColor = value, new Color(0.0f, 1.0f, 1.0f, 0.75f), initializingContext);
             InitValue(value => dynamicFocusDistance = value, true, initializingContext);
             InitValue(value => minMaxFocusDistance = value, new Vector2(0.0f, 500.0f), initializingContext);
         }

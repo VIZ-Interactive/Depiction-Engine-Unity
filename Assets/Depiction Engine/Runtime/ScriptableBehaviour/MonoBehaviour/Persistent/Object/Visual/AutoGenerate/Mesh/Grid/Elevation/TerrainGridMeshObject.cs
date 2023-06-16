@@ -516,6 +516,8 @@ namespace DepictionEngine
         {
             base.ApplyPropertiesToMaterial(meshRenderer, material, materialPropertyBlock, cameraAtmosphereAltitudeRatio, camera, closestGeoAstroObject, star);
 
+            SetFloatToMaterial("_SeaLevel", closestGeoAstroObject.seaLevel, material, materialPropertyBlock);
+
             SetTextureToMaterial("_SurfaceTypeMap", surfaceTypeMap, Texture2D.whiteTexture, material, materialPropertyBlock);
 
             SetIntToMaterial("_Subdivision", subdivision, material, materialPropertyBlock);

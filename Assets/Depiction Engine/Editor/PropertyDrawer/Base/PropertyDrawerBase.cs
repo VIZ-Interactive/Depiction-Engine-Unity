@@ -39,37 +39,37 @@ namespace DepictionEngine.Editor
                 bool lastEnabled = GUI.enabled;
                 GUI.enabled = InspectorBase.GetConditionalEnableAttributeMethodValue(customAttributes, serializedProperty);
 
-                bool propertyFieldsOverrided = false;
+                bool propertyFieldsOverridden = false;
 
                 switch (serializedProperty.type)
                 {
                     case nameof(Vector3): case nameof(Vector3Int): case nameof(Vector3Double):
-                        propertyFieldsOverrided = AddVectorPropertyFields(position, serializedProperty, label, true);
+                        propertyFieldsOverridden = AddVectorPropertyFields(position, serializedProperty, label, true);
                         break;
                     case nameof(Vector2): case nameof(Vector2Int): case nameof(Vector2Double):
-                        propertyFieldsOverrided = AddVectorPropertyFields(position, serializedProperty, label);
+                        propertyFieldsOverridden = AddVectorPropertyFields(position, serializedProperty, label);
                         break;
                     case nameof(GeoCoordinate3): case nameof(GeoCoordinate3Double):
-                        propertyFieldsOverrided = AddGeoCoordinatePropertyFields(position, serializedProperty, label, true);
+                        propertyFieldsOverridden = AddGeoCoordinatePropertyFields(position, serializedProperty, label, true);
                         break;
                     case nameof(GeoCoordinate2): case nameof(GeoCoordinate2Double):
-                        propertyFieldsOverrided = AddGeoCoordinatePropertyFields(position, serializedProperty, label);
+                        propertyFieldsOverridden = AddGeoCoordinatePropertyFields(position, serializedProperty, label);
                         break;
                     case nameof(SerializableGuid):
-                        propertyFieldsOverrided = AddSerializableGuidPropertyField(position, serializedProperty, label, customAttributes);
+                        propertyFieldsOverridden = AddSerializableGuidPropertyField(position, serializedProperty, label, customAttributes);
                         break;
                     case nameof(Datasource):
-                        propertyFieldsOverrided = AddDatasourcePropertyField(position, serializedProperty, label);
+                        propertyFieldsOverridden = AddDatasourcePropertyField(position, serializedProperty, label);
                         break;
                     case "bool":
-                        propertyFieldsOverrided = AddBoolPropertyFields(position, serializedProperty, label);
+                        propertyFieldsOverridden = AddBoolPropertyFields(position, serializedProperty, label);
                         break;
                     case "int":
-                        propertyFieldsOverrided = AddIntPropertyFields(position, serializedProperty, label);
+                        propertyFieldsOverridden = AddIntPropertyFields(position, serializedProperty, label);
                         break;
                 }
 
-                if (!propertyFieldsOverrided)
+                if (!propertyFieldsOverridden)
                     AddPropertyField(position, serializedProperty, label);
              
                 GUI.enabled = lastEnabled;
@@ -205,14 +205,11 @@ namespace DepictionEngine.Editor
                 properties = new[] { serializedProperty.FindPropertyRelative("latitude"), serializedProperty.FindPropertyRelative("longitude")};
             }
 
-            //Used to assign focus to the first field in the GeoCoordinatePopup(MenuItems)
-            GUI.SetNextControlName("GeoCoordinate_Lat");
-
-            AddMultipleHorizontalPropertyFields(contentRect, labels, properties);
-            if (EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck() || pasted)
             {
                 SerializedProperty latitude = serializedProperty.FindPropertyRelative("latitude");
                 SerializedProperty longitude = serializedProperty.FindPropertyRelative("longitude");
+                
                 if (pasted)
                 {
                     string[] latitudeLongitudeAltitude = EditorGUIUtility.systemCopyBuffer.Split(',');
@@ -253,20 +250,25 @@ namespace DepictionEngine.Editor
                         }
                     }
                 }
+                
+                if (serializedProperty.GetType() == typeof(GeoCoordinate3))
+                {
+                    latitude.floatValue = GeoCoordinate3.ValidateLatitude(latitude.floatValue);
+                    longitude.floatValue = GeoCoordinate3.ValidateLongitude(longitude.floatValue);
+                }
                 else
                 {
-                    if (serializedProperty.GetType() == typeof(GeoCoordinate3))
-                    {
-                        latitude.floatValue = GeoCoordinate3.ValidateLatitude(latitude.floatValue);
-                        longitude.floatValue = GeoCoordinate3.ValidateLongitude(longitude.floatValue);
-                    }
-                    else
-                    {
-                        latitude.doubleValue = GeoCoordinate3Double.ValidateLatitude(latitude.doubleValue);
-                        longitude.doubleValue = GeoCoordinate3Double.ValidateLongitude(longitude.doubleValue);
-                    }
+                    latitude.doubleValue = GeoCoordinate3Double.ValidateLatitude(latitude.doubleValue);
+                    longitude.doubleValue = GeoCoordinate3Double.ValidateLongitude(longitude.doubleValue);
                 }
+
+                serializedProperty.serializedObject.ApplyModifiedProperties();
             }
+
+            //Used to assign focus to the first field in the GeoCoordinatePopup(MenuItems)
+            GUI.SetNextControlName("GeoCoordinate_Lat");
+
+            AddMultipleHorizontalPropertyFields(contentRect, labels, properties);
 
             return true;
         }
