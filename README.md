@@ -7,7 +7,7 @@
 
 [Project page](https://vizinteractive.io/depiction-engine/)
 
-[Forum](https://vizinteractive.io/community/depiction-engine/)
+[Forum](https://vizinteractive.io/forum/depiction-engine/)
 
 ## Unity Specific Features
 - Transform
