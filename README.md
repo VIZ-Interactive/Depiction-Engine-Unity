@@ -1,8 +1,13 @@
+![divider](https://github.com/VIZ-Interactive/Depiction-Engine-Unity/assets/1084857/0c45072b-4a37-4b99-9f8c-df9847e0dbd5)
+
+
 # Depiction Engine For Unity
 
 ![Presentation]()
 
 [Project page](https://vizinteractive.io/depiction-engine/)
+
+[Forum](https://vizinteractive.io/community/depiction-engine/)
 
 ## Unity Specific Features
 - Transform
