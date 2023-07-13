@@ -3,11 +3,9 @@
 
 # Depiction Engine For Unity
 
-![Presentation]()
+![Presentation](https://vizinteractive.io/depiction-engine)
 
-[Project page](https://vizinteractive.io/depiction-engine/)
-
-[General forum](https://vizinteractive.io/forum/depiction-engine/)
+[Project page](https://vizinteractive.io/depiction-engine)
 
 ## Unity Specific Features
 - Transform
@@ -28,7 +26,7 @@
 
 ## Documentation
 
-[Documentation](https://vizinteractive.io/docs/2022.0/depiction-engine-unity/)
+[Documentation](https://vizinteractive.io/docs/2022.0/depiction-engine-unity)
 
 ## Roadmap
 
