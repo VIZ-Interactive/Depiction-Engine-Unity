@@ -7,6 +7,8 @@
 
 [Project page](https://vizinteractive.io/depiction-engine)
 
+[General forum](https://vizinteractive.io/forum/depiction-engine/)
+
 ## Unity Specific Features
 - Transform
 	- Position objects at far greater distance from the world's origin with double (64bit) precision transforms and origin shifting, allowing you to create much larger projects.
