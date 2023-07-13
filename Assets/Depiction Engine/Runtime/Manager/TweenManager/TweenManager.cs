@@ -17,6 +17,8 @@ namespace DepictionEngine
     {
         private List<Tween> _tweens;
 
+        private float _lastCurrentTime;
+
         private static TweenManager _instance;
         /// <summary>
         /// Get a singleton of the manager.
@@ -29,6 +31,13 @@ namespace DepictionEngine
             if (_instance == Disposable.NULL)
                 _instance = GetManagerComponent<TweenManager>(createIfMissing);
             return _instance;
+        }
+
+        protected override void InitializeFields(InitializationContext initializingContext)
+        {
+            base.InitializeFields(initializingContext);
+
+            UpdateLastCurrentTime();
         }
 
         protected override bool UpdateAllDelegates()
@@ -121,11 +130,18 @@ namespace DepictionEngine
         {
             if (base.PreHierarchicalUpdate())
             {
-                IterateOverTweens((tween) => { tween.Update(); });
+                IterateOverTweens((tween) => { tween.UpdateLerpTime(Time.realtimeSinceStartup - _lastCurrentTime); });
+
+                UpdateLastCurrentTime();
 
                 return true;
             }
             return false;
+        }
+
+        private void UpdateLastCurrentTime()
+        {
+            _lastCurrentTime = Time.realtimeSinceStartup;
         }
 
         private List<Tween> _tweenIterator;
@@ -141,7 +157,7 @@ namespace DepictionEngine
                 {
                     Tween tween = _tweenIterator[i];
                     if (tween != Disposable.NULL)
-                        callback(_tweenIterator[i]);
+                        callback(tween);
                 }
 
                 _tweenIterator.Clear();

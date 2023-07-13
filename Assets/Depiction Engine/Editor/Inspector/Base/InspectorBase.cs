@@ -239,7 +239,7 @@ namespace DepictionEngine.Editor
 
                                 UnityEngine.Object firstTargetObject = targetObjects[0];
 
-                                if (MemberUtility.GetMemberInfoFromMemberName<PropertyInfo>(firstTargetObject.GetType(), GetName(serializedProperty.propertyPath), out PropertyInfo propertyInfo) && propertyInfo.PropertyType != typeof(Datasource))
+                                if (MemberUtility.GetMemberInfoFromMemberName(firstTargetObject.GetType(), GetName(serializedProperty.propertyPath), out PropertyInfo propertyInfo) && propertyInfo.PropertyType != typeof(Datasource))
                                 {
                                     if (propertyInfo.CanWrite)
                                     {

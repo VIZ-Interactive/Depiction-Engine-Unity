@@ -325,7 +325,7 @@ namespace DepictionEngine
         }
 
         public Vector3 GetScreenCenter()
-        {
+        {            
             return LeanTouch.Fingers.Count > 0 ? LeanGesture.GetScreenCenter() : Input.mousePosition;
         }
 
@@ -354,7 +354,7 @@ namespace DepictionEngine
             if (Application.isPlaying && camera == Camera.main)
             {
                 RaycastHitDouble closestHit = null;
-
+           
                 Camera mouseOverWindowCamera = cameraManager.GetMouseOverWindowCamera();
                 if (mouseOverWindowCamera == camera)
                 {
@@ -362,7 +362,7 @@ namespace DepictionEngine
                     //Fix: We use Raycasting and call the mouseDown/mouseUp if we identify a mouse event
                     //TODO: Consider perhaps origin shifting will fix this naturally?
                     RaycastHitDouble[]  hits = PhysicsDouble.TerrainFiltered(PhysicsDouble.CameraRaycastAll(camera, GetScreenCenter(), camera.GetFarDistanceClipPlane()), camera);
-         
+       
                     if (hits.Length != 0)
                     {
                         closestHit = PhysicsDouble.GetClosestHit(camera, hits);

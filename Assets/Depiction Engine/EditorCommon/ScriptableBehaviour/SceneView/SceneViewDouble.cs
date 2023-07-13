@@ -130,6 +130,9 @@ namespace DepictionEngine.Editor
                 pivot = sceneView.pivot;
                 rotation = sceneView.rotation;
                 cameraDistance = GetCameraDistanceFromSize(sceneView.size);
+                sceneView.cameraSettings.dynamicClip = false;
+                sceneView.cameraSettings.nearClip = Camera.DEFAULT_NEAR_CLIP;
+                sceneView.cameraSettings.farClip = Camera.DEFAULT_FAR_CLIP;
             }
 
             return this;
@@ -1429,6 +1432,8 @@ namespace DepictionEngine.Editor
                 sceneCamera.skyboxMaterialPath = cameraManager.skyboxMaterialPath;
                 sceneCamera.backgroundColor = cameraManager.backgroundColor;
                 sceneCamera.environmentTextureSize = cameraManager.environmentTextureSize;
+
+                sceneCamera.distancePass = cameraManager.distancePass;
 
                 sceneCamera.orthographic = unitySceneCamera.orthographic;
                 sceneCamera.orthographicSize = unitySceneCamera.orthographicSize;

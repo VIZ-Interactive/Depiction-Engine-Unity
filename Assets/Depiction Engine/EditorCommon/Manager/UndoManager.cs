@@ -49,10 +49,10 @@ namespace DepictionEngine.Editor
         private static void UndoRedoPerformed()
         {
             //Object.FindObjectsOfType does not include objects with hideFlags 'dontSave'
-            MonoBehaviourDisposable[] monoBehaviourDisposables = Object.FindObjectsOfType<MonoBehaviourDisposable>(true);
+            MonoBehaviourDisposable[] monoBehaviourDisposables = Object.FindObjectsByType<MonoBehaviourDisposable>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (MonoBehaviourDisposable monoBehaviourDisposable in monoBehaviourDisposables)
                 monoBehaviourDisposable.UndoRedoPerformed();
-            ScriptableObjectDisposable[] scriptableObjectDisposables = Object.FindObjectsOfType<ScriptableObjectDisposable>(true);
+            ScriptableObjectDisposable[] scriptableObjectDisposables = Object.FindObjectsByType<ScriptableObjectDisposable>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (ScriptableObjectDisposable scriptableObjectDisposable in scriptableObjectDisposables)
                 scriptableObjectDisposable.UndoRedoPerformed();
 

@@ -1,21 +1,8 @@
 # Depiction Engine For Unity
 
-![Presentation]()
+![Presentation](https://vizinteractive.io/depiction-engine)
 
-[Project page](https://vizinteractive.io/depiction-engine/)
-
-## Unity Specific Features
-- Transform
-	- Position objects at far greater distance from the world's origin with double (64bit) precision transforms and origin shifting, allowing you to create much larger projects.
-- Shader
-	- Shader Graph integration.
-- Editor integration
-    - Scene camera navigation around spherical planet.
-    - Move to View / Align with View / Align View to Selected, all supported by double precision transforms.
-    - Double click navigation in the hierarchy works even for double precision transforms.
-    - Origin shifting supports multi camera layout (Although at significant performance cost).
-	- Undo and Redo are automatically managed for things like object Creation / Destroy / Duplicate.
-	- Initialization and Dipose states are provided to help identify the context under which the operation was requested. Search for InitializationContext and DisposeContext in the Documentation for more information.
+[Project page](https://vizinteractive.io/depiction-engine)
 
 ## Latest Release
 
@@ -23,7 +10,7 @@
 
 ## Documentation
 
-[Documentation](https://vizinteractive.io/docs/2022.0/depiction-engine-unity/)
+[Documentation](https://vizinteractive.io/docs/2022.0/depiction-engine-unity)
 
 ## Roadmap
 

@@ -160,12 +160,11 @@ namespace DepictionEngine.Editor
 
         public void RenderDistancePass(ScriptableRenderContext context)
         {
-            int distancePass = GetDefaultDistancePass();
             for (int i = distancePass; i > 0; i--)
             {
                 ApplyClipPlanePropertiesToUnityCamera(unityCamera, i);
 
-                renderingManager.BeginCameraDistancePassRendering(this, unityCamera);
+                renderingManager.BeginCameraDistancePassRendering(this, unityCamera, i);
 
                 bool lastPostProcessing = postProcessing;
                 postProcessing = false;

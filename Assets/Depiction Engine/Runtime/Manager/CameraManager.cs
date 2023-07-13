@@ -17,8 +17,6 @@ namespace DepictionEngine
     {
         public static readonly string IGNORE_RENDER_LAYER_NAME = "Ignore Render";
 
-        private const int MAX_DISTANCE_PASS = 8;
-
         public const double MAX_CAMERA_DISTANCE = 1900000000000.0d;
                                                  
         public const string SCENECAMERA_NAME = "SceneCamera";
@@ -33,7 +31,7 @@ namespace DepictionEngine
         private Color _backgroundColor;
         [SerializeField, Tooltip(Camera.SKYBOX_MATERIAL_PATH_TOOLTIP)]
         private string _skyboxMaterialPath;
-        [SerializeField, Range(0.0f, MAX_DISTANCE_PASS), Tooltip("The number of distance pass the renderer should do in order to draw distant objects.")]
+        [SerializeField, Range(0.0f, Camera.MAX_DISTANCE_PASS), Tooltip("The number of distance pass the renderer should do in order to draw distant objects.")]
         private int _distancePass;
         [SerializeField, Tooltip(Camera.ENVIRONMENT_TEXTURE_SIZE_TOOLTIP), EndFoldout]
         private int _environmentTextureSize;
@@ -108,7 +106,7 @@ namespace DepictionEngine
         public int distancePass
         {
             get => _distancePass;
-            set => SetValue(nameof(distancePass), (int)Mathf.Clamp(value, 0.0f, MAX_DISTANCE_PASS), ref _distancePass);
+            set => SetValue(nameof(distancePass), (int)Mathf.Clamp(value, 0.0f, Camera.MAX_DISTANCE_PASS), ref _distancePass);
         }
 
         /// <summary>

@@ -8,6 +8,7 @@ using System.IO;
 using UnityEngine.Rendering.Universal;
 using System.Runtime.CompilerServices;
 using System.Linq;
+using System.Reflection;
 
 namespace DepictionEngine
 {
@@ -46,7 +47,7 @@ namespace DepictionEngine
 #endif
 
         [BeginFoldout("Environment")]
-        [SerializeField, Tooltip("When enabled, a realtime environment cubemap will be generated for each camera and be made available for Global Illumination (GI) and reflection. Disable 'Recalculate Environment Lighting' in 'Project Settings > Editor' or 'Lighting Window > Workflow' to avoid GI flashing.")]
+        [SerializeField, Tooltip("When enabled, a realtime environment cubemap will be generated for each camera and be made available for Global Illumination (GI) and reflection.")]
         private bool _dynamicEnvironment;
         [SerializeField, Tooltip("The interval (in seconds) at which we call the '"+nameof(UpdateEnvironmentCubemap)+"' function to update the environment cubemap."), EndFoldout]
         private float _dynamicEnvironmentUpdateInterval;
@@ -166,6 +167,7 @@ namespace DepictionEngine
                         }
                     }
                 }
+
                 _listRequest = null;
             }
 
@@ -183,7 +185,7 @@ namespace DepictionEngine
 
         private void PatchEmbeddedURPFiles(string embeddedURPPackageResolvedPath)
         {
-            PatchResult patchedResult = PatchResult.Failed;
+            PatchResult lightingPatchedResult = PatchResult.Failed;
 
             string path = embeddedURPPackageResolvedPath + "/ShaderLibrary/Lighting.hlsl";
 
@@ -226,11 +228,38 @@ namespace DepictionEngine
                 writer.Write(lightingContent);
                 writer.Close();
 
-                patchedResult = lineChangeResult;
+                lightingPatchedResult = lineChangeResult;
+            }
+
+            PatchResult shadowsPatchedResult = PatchResult.Failed;
+
+            path = embeddedURPPackageResolvedPath + "/ShaderLibrary/Shadows.hlsl";
+
+            string shadowsContent;
+            using (StreamReader reader = new(path))
+            {
+                shadowsContent = reader.ReadToEnd();
+                reader.Close();
+            }
+
+            if (!string.IsNullOrEmpty(shadowsContent))
+            {
+                using StreamWriter writer = new(path);
+                PatchResult lineChangeResult = PatchResult.AlreadyPatched;
+
+                lineChangeResult = AddBeforeLine(ref shadowsContent,
+                    "float3 camToPixel = positionWS - _WorldSpaceCameraPos;",
+                    "return 0.0f;" + StringUtility.NewLine, lineChangeResult);
+
+                writer.Write(shadowsContent);
+                writer.Close();
+
+                shadowsPatchedResult = lineChangeResult;
             }
 
             if (_displayPatchedResultInDialog)
             {
+                PatchResult patchedResult = lightingPatchedResult == PatchResult.Failed || shadowsPatchedResult == PatchResult.Failed ? PatchResult.Failed : lightingPatchedResult == PatchResult.AlreadyPatched && shadowsPatchedResult == PatchResult.AlreadyPatched ? PatchResult.AlreadyPatched : PatchResult.Success;
                 switch (patchedResult)
                 {
                     case PatchResult.Failed:
@@ -618,7 +647,7 @@ namespace DepictionEngine
         }
 
         /// <summary>
-        /// When enabled, a realtime environment cubemap will be generated for each camera and be made available for Global Illumination (GI) and reflection. Disable 'Recalculate Environment Lighting' in 'Project Settings > Editor' or 'Lighting Window > Workflow' to avoid GI flashing.
+        /// When enabled, a realtime environment cubemap will be generated for each camera and be made available for Global Illumination (GI) and reflection.
         /// </summary>
         [Json]
         public bool dynamicEnvironment
@@ -1309,7 +1338,7 @@ namespace DepictionEngine
                     if (depthOfField != null)
                     {
                         Camera mainCamera = Camera.main;
-                        if (dynamicFocusDistance && mainCamera != Disposable.NULL && mainCamera.controller is TargetControllerBase mainCameraTargetController)
+                        if (dynamicFocusDistance && mainCamera != Disposable.NULL && mainCamera.isActiveAndEnabled && mainCamera.controller is TargetControllerBase mainCameraTargetController)
                             depthOfField.focusDistance.value = Mathf.Clamp((float)mainCameraTargetController.distance, minMaxFocusDistance.x, minMaxFocusDistance.y);
                     }
                 }
@@ -1323,7 +1352,10 @@ namespace DepictionEngine
         private float _fogStartDistance;
         private float _fogEndDistance;
         private float[][] _layersCustomEffectComputeBufferData;
-        public void BeginCameraDistancePassRendering(Camera camera, UnityEngine.Camera unityCamera)
+        private object _ssaoSettings;
+        private FieldInfo _ssaoSettingsRadiusFieldInfo;
+        private float _ssaoRadius;
+        public void BeginCameraDistancePassRendering(Camera camera, UnityEngine.Camera unityCamera, int passIndex)
         {
             //Fog
             _fogDensity = RenderSettings.fogDensity;
@@ -1339,6 +1371,30 @@ namespace DepictionEngine
                         RenderSettings.fogStartDistance -= nearClipPlaneOffset;
                         RenderSettings.fogEndDistance -= nearClipPlaneOffset;
                         break;
+                }
+            }
+
+            //SSAO
+            if (ambientOcclusionRendererFeature is not null)
+            { 
+                if (_ssaoSettingsRadiusFieldInfo is null)
+                {
+                    try
+                    {
+                        Type ssaoFeatureType = Type.GetType("UnityEngine.Rendering.Universal.ScreenSpaceAmbientOcclusion, Unity.RenderPipelines.Universal.Runtime", true);
+                        _ssaoSettings = ssaoFeatureType.GetField("m_Settings", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(ambientOcclusionRendererFeature);
+                        _ssaoSettingsRadiusFieldInfo = _ssaoSettings.GetType().GetField("Radius", BindingFlags.Instance | BindingFlags.NonPublic);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError(e.Message);
+                    }
+                }
+
+                if (_ssaoSettingsRadiusFieldInfo is not null)
+                {
+                    _ssaoRadius = (float)_ssaoSettingsRadiusFieldInfo.GetValue(_ssaoSettings);
+                    _ssaoSettingsRadiusFieldInfo.SetValue(_ssaoSettings, _ssaoRadius + Mathf.Pow(passIndex - 1, 5));
                 }
             }
 
@@ -1435,6 +1491,9 @@ namespace DepictionEngine
             RenderSettings.fogDensity = _fogDensity;
             RenderSettings.fogStartDistance = _fogStartDistance;
             RenderSettings.fogEndDistance = _fogEndDistance;
+
+            if (ambientOcclusionRendererFeature is not null && _ssaoSettingsRadiusFieldInfo is not null)
+                _ssaoSettingsRadiusFieldInfo.SetValue(_ssaoSettings, _ssaoRadius);
         }
 
         public override bool PreHierarchicalUpdate()
@@ -1517,13 +1576,7 @@ namespace DepictionEngine
                             });
 
                             foreach (Object reflectionProbeObject in renderReflectionObjects)
-                            {
-                                reflectionProbeObject.IterateOverReflectionProbes((reflectionProbe) =>
-                                {
-                                    if (reflectionProbe != null)
-                                        reflectionProbe.customBakedTexture = reflectionProbeObject.reflectionCustomBakedTexture;
-                                });
-                            }
+                                UpdateReflectionProbeCustomBakedTexture(reflectionProbeObject);
 
                             camera.transform.RevertUnityLocalPosition();
                             sceneManager.EndCameraRendering(camera);
@@ -1538,6 +1591,15 @@ namespace DepictionEngine
                 return true;
             }
             return false;
+        }
+
+        private void UpdateReflectionProbeCustomBakedTexture(Object reflectionProbeObject)
+        {
+            reflectionProbeObject.IterateOverReflectionProbes((reflectionProbe) =>
+            {
+                if (reflectionProbe != null)
+                    reflectionProbe.customBakedTexture = reflectionProbeObject.reflectionCustomBakedTexture;
+            });
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1634,10 +1696,20 @@ namespace DepictionEngine
                             (float, UnityEngine.Texture)  lastReflectionProbeValue = _lastReflectionProbesValues[index];
                             reflectionProbe.intensity = lastReflectionProbeValue.Item1;
                             reflectionProbe.customBakedTexture = lastReflectionProbeValue.Item2;
+                            index++;
                         }
                     });
                 });
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void EndCameraRendering(Camera camera)
+        {
+            IterateOverReflectionObjects((reflectionProbeObject) =>
+            {
+                UpdateReflectionProbeCustomBakedTexture(reflectionProbeObject);
+            });
         }
 
         public static Material LoadMaterial(string path)

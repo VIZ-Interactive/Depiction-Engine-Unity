@@ -1,6 +1,5 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
-using Lean.Touch;
 using System;
 using UnityEngine;
 
@@ -74,7 +73,7 @@ namespace DepictionEngine
 
             InitValue(value => snapDistanceToZoom = value, false, initializingContext);
             InitValue(value => useInertia = value, true, initializingContext);
-            InitValue(value => dynamicClippingPlanes = value, true, initializingContext);
+            InitValue(value => dynamicClippingPlanes = value, false, initializingContext);
             InitValue(value => clippingDistanceMultiplier = value, 5.0f, initializingContext);
             InitValue(value => minMaxFarClippingDistance = value, new Vector2(2000.0f, 15000.0f), initializingContext);
             InitValue(value => tiltLimit = value, new Vector2(0.0f, 1.5f), initializingContext);

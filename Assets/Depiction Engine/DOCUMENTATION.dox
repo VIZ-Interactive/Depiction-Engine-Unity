@@ -1,11 +1,13 @@
 /**
  * @mainpage
  *
- * # Support
+ * # Officially Supported versions
  *
  * - __Unity (Windows, Android, WebGL)__ \n 
  * \n 
  *   + 2022.x
+ * \n 
+ *   + 2023.x
  * .
  *
  *
@@ -31,7 +33,7 @@
  *
  * - __Patching Universal Rendering Pipeline__ \n 
  * \n 
- *   + Some important `ShaderGraph` nodes require the rendering pipeline to be modified to function properly. The patching should be performed automatically when the `DepictionEngine.RenderingManager` is created however you can also trigger it manually in your Scene `DepictionEngine.RenderingManager` by pressing the `Patch Universal Rendering Pipeline` button.
+ *   + Some important `Shader Graph` nodes require the rendering pipeline to be modified to function properly. The patching should be performed automatically when the `DepictionEngine.RenderingManager` is created however you can also trigger it manually in your Scene `DepictionEngine.RenderingManager` by pressing the `Patch Universal Rendering Pipeline` button.
  *    @warning You might have to restart Unity after the Universal Rendering Pipeline as been patched.
  * .
  *
@@ -68,71 +70,47 @@
  * .
  *
  *
- * ## Order of execution
- *
- * - __Instancing__ \n 
- * \n 
- *   + **Recycle**: \n 
- *     `DepictionEngine.IDisposable.Recycle`
- *   + **Initialize**: \n 
- *     `DepictionEngine.IDisposable.Initialize`
- *   + **Initialized**: \n 
- *     `DepictionEngine.IDisposable.Initialized`
- * .
- *
- * - __Updating__ \n 
- * \n 
- *   + **PreHierarchicalUpdate**: . \n 
- *     `DepictionEngine.PropertyMonoBehaviour.PreHierarchicalUpdate`
- *   + **HierarchicalUpdate**: . \n 
- *     `DepictionEngine.PropertyMonoBehaviour.HierarchicalUpdate`
- *   + **PostHierarchicalUpdate**: . \n 
- *     `DepictionEngine.PropertyMonoBehaviour.PostHierarchicalUpdate` \n 
- * \n 
- *   + **HierarchicalBeginCameraRendering**: . \n 
- *     `DepictionEngine.PropertyMonoBehaviour.HierarchicalBeginCameraRendering`
- *   + **HierarchicalEndCameraRendering**: . \n 
- *     `DepictionEngine.PropertyMonoBehaviour.HierarchicalEndCameraRendering`
- * .
- *
- * - __Disposing / Destroying__ \n 
- * \n 
- *    Whether pooled or destroyed OnDisposing and OnDispose will always be called. \n 
- * \n 
- *   + **OnDispose**: \n 
- *     `DepictionEngine.IDisposable.OnDispose` \n 
- * .
- *
- *
  * ## Instancing / Disposing
  *
  * - __Instancing__ \n 
  * \n 
- *   + Objects implementing `DepictionEngine.IDisposable` should be instanced using the `DepictionEngine.InstanceManager`. If `DepictionEngine.PoolManager.enablePooling` is true when instanced, `DepictionEngine.IDisposable` objects will be recycled from the pool if an instance already exists. \n 
+ *   + Objects implementing `DepictionEngine.IDisposable` should be instanced using the `DepictionEngine.InstanceManager`. If `DepictionEngine.PoolManager.enablePooling` is true when instanced, `DepictionEngine.IDisposable` objects will be recycled from the pool, if an instance already exists, and its `DepictionEngine.IDisposable.Recycle` method will be called before initialization. \n 
  *	 ~~~~~~~~~~~~~{.cs}
- *	 InstanceManager.CreateInstance(type);
+ *	 InstanceManager.CreateInstance(type, ..., initializingContext);
  *	 ~~~~~~~~~~~~~
+ * \n 
+ *   + A `DepictionEngine.InitializationContext` will be supplied as a parameter to the `DepictionEngine.IScriptableBehaviour.Initialized` method(which acts as a constructor) and provides you with some context as to how the object was created. \n 
+ * \n 
+ *   + Depending on the context supplied to `DepictionEngine.IScriptableBehaviour.Initialized`, undo operations will be automatically recorded for unity objects such as `DepictionEngine.IScriptableBehaviour`.
+ * .
+ *
  * - __Disposing__ \n 
  * \n 
  *   + Objects implementing `DepictionEngine.IDisposable` need to be disposed with the `DepictionEngine.DisposeManager`. If `DepictionEngine.PoolManager.enablePooling` is true when disposed, `DepictionEngine.IDisposable` objects will be automatically added back to the pool unless a disposeContext is provided in which case they may be destroyed or go to the pool depending on context. \n 
  *	 ~~~~~~~~~~~~~{.cs}
- *	 DisposeManager.Dispose(object, disposeContext);
+ *	 DisposeManager.Destroy(object, disposeContext);
  *	 ~~~~~~~~~~~~~
  * \n 
  *   + Objects which do not implement `DepictionEngine.IDisposable` can also be disposed with the `DepictionEngine.DisposeManager`. Disposing using the `DepictionEngine.DisposeManager.Destroy` will automatically call `GameObject.Destroy` or `GameObject.DestroyImmediate` depending on whether we are in the Editor or not. \n 
  *	 ~~~~~~~~~~~~~{.cs}
- *	 DisposeManager.Destroy(object);
+ *	 DisposeManager.Dispose(object, disposeContext);
  *	 ~~~~~~~~~~~~~
+ * \n 
+ *   + Whether pooled or destroyed `DepictionEngine.IDisposable.OnDispose` will always be called and a `DepictionEngine.DisposeContext` will be supplied as a parameter to provide some context as to how the object was disposed. \n 
+ * \n 
+ *   + Depending on the context supplied to `DepictionEngine.IDisposable.OnDispose`, undo operations will be automatically recorded if the `DepictionEngine.IDisposable` contains dependencies that need to be Destroyed.
  * .
- * 
- * 
+ *
+ *
  * ## Double precision
  *
  * - __Origin Shifting__ \n 
  * \n 
- *   + Origin Shifting allows for the positioning of objects and rendering on a very large scale. It can be enabled under `DepictionEngine.RenderingManager.originShifting` and will be `true` by default. \n 
+ *   + Position objects at far greater distance from the world's origin with double (64bit) precision transforms and origin shifting, allowing you to create much larger projects than normally possible in Unity. It can be enabled under `DepictionEngine.RenderingManager.originShifting` and will be `true` by default. \n 
  * \n 
- *   + For performance reason empty `DepictionEngine.Object`'s will be automatically origin shifted only while they are selected in the Editor to allow for the manipulation tools(Move, Rotate, Scale...) to be displayed correctly while `DepictionEngine.VisualObject`'s will always be origin shifted as they are expected to have rendered visuals as childs. `DepictionEngine.Object`'s that do not require positioning will always be positioned at zero(origin) with no rotation(identity). If required this behaviour can be modified by any class which extends `DepictionEngine.Object` and overrides its `DepictionEngine.Object.RequiresPositioning` method to return `true`.
+ *   + For performance reason empty `DepictionEngine.Object`'s will be automatically origin shifted only while they are selected in the Editor to allow for the manipulation tools(Move, Rotate, Scale...) to be displayed correctly while `DepictionEngine.VisualObject`'s will always be origin shifted as they are expected to have rendered visuals as childs. `DepictionEngine.Object`'s that do not require positioning will always be positioned at zero(origin) with no rotation(identity). If required this behaviour can be modified by any class which extends `DepictionEngine.Object` and overrides its `DepictionEngine.Object.RequiresPositioning` method to return `true`. \n 
+ * \n 
+ *   + Multiple Scene camera layout in the Editor are possible although at significant performance cost since the GameObjects will have to be moved for every camera render.
  * .
  * 
  *
@@ -140,7 +118,7 @@
  *
  * - __Saving__ \n 
  * \n 
- *   + Only properties that have been marked as 'Out of Synch' will be pushed to the `DepictionEngine.Datasource` when a save operation is performed. Properties modified through the Editor should be automatically marked as 'Out of Synch' however, if need be, properties can also be marked manually using the `DepictionEngine.IScriptableBehaviour.IsUserChange` method. For properties to be persisted they need to have the `DepictionEngine.JsonAttribute`.
+ *   + Only properties that have been marked as 'Out of Synch' will be pushed to the `DepictionEngine.Datasource` when a save operation is performed. Properties modified through the Editor should be automatically marked as 'Out of Synch' however, if need be, properties can also be marked manually using the `DepictionEngine.SceneManager.StartUserContext` / `DepictionEngine.SceneManager.EndUserContext` method. For properties to be persisted they need to have the `DepictionEngine.JsonAttribute`.
  *   ~~~~~~~~~~~~~{.cs}
  *   object.IsUserChange(
  * 		() => { 
@@ -149,6 +127,13 @@
  *   ~~~~~~~~~~~~~
  * .
  *
+ *
+ * ## Shader
+ *
+ * - __Shader Graph integration__ \n 
+ * \n 
+ *   + All built-in shaders can be edited using Shader Graph.
+ * .
  *
  * ## Post Processing {#postProcessingId}
  *

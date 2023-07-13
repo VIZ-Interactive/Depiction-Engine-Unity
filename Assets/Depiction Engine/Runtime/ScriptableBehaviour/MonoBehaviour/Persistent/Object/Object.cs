@@ -196,6 +196,9 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
+            if (initializingContext == InitializationContext.Editor_Duplicate || initializingContext == InitializationContext.Programmatically_Duplicate)
+                _reflectionCustomBakedTexture = null;
+
             if (isFallbackValues)
                 InitValue(value => objectAdditionalFallbackValues = value, CreateOptionalProperties<ObjectAdditionalFallbackValues>(initializingContext), initializingContext);
 
@@ -2526,8 +2529,6 @@ namespace DepictionEngine
         {
             if (base.OnDispose(disposeContext))
             {
-                DisposeManager.Dispose(rigidbodyInternal, disposeContext);
-
                 RegisterWithPhysicsManager();
 
                 DisposeManager.Dispose(_objectAdditionalFallbackValues, disposeContext);

@@ -181,6 +181,7 @@ namespace DepictionEngine.Editor
         private bool AddGeoCoordinatePropertyFields(Rect position, SerializedProperty serializedProperty, GUIContent label, bool includeAltitude = false)
         {
             bool pasted = false;
+
             Event e = Event.current;
             if (e.type == EventType.ValidateCommand || e.type == EventType.ExecuteCommand || e.type == EventType.KeyDown)
             {
@@ -189,6 +190,7 @@ namespace DepictionEngine.Editor
             }
 
             EditorGUI.BeginChangeCheck();
+
             var contentRect = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), label);
 
             GUIContent[] labels; 
@@ -205,32 +207,29 @@ namespace DepictionEngine.Editor
                 properties = new[] { serializedProperty.FindPropertyRelative("latitude"), serializedProperty.FindPropertyRelative("longitude")};
             }
 
-            if (EditorGUI.EndChangeCheck() || pasted)
+            SerializedProperty latitude = serializedProperty.FindPropertyRelative("latitude");
+            SerializedProperty longitude = serializedProperty.FindPropertyRelative("longitude");
+
+            if (pasted)
             {
-                SerializedProperty latitude = serializedProperty.FindPropertyRelative("latitude");
-                SerializedProperty longitude = serializedProperty.FindPropertyRelative("longitude");
-                
-                if (pasted)
+                string[] latitudeLongitudeAltitude = EditorGUIUtility.systemCopyBuffer.Split(',');
+
+                if (latitudeLongitudeAltitude.Length >= 2)
                 {
-                    string[] latitudeLongitudeAltitude = EditorGUIUtility.systemCopyBuffer.Split(',');
-                    
-                    if (latitudeLongitudeAltitude.Length == 2)
+                    if (serializedProperty.GetType() == typeof(GeoCoordinate3))
                     {
-                        if (serializedProperty.GetType() == typeof(GeoCoordinate3))
+                        if (latitudeLongitudeAltitude[0].Length != 0 && latitudeLongitudeAltitude[1].Length != 0 && float.TryParse(latitudeLongitudeAltitude[0], out float latitudeParsed) && float.TryParse(latitudeLongitudeAltitude[1], out float longitudeParsed))
                         {
-                            if (latitudeLongitudeAltitude[0].Length != 0 && latitudeLongitudeAltitude[1].Length != 0 && float.TryParse(latitudeLongitudeAltitude[0], out float latitudeParsed) && float.TryParse(latitudeLongitudeAltitude[1], out float longitudeParsed))
-                            {
-                                latitude.floatValue = GeoCoordinate3.ValidateLatitude(latitudeParsed);
-                                longitude.floatValue = GeoCoordinate3.ValidateLongitude(longitudeParsed);
-                            }
+                            latitude.floatValue = GeoCoordinate3.ValidateLatitude(latitudeParsed);
+                            longitude.floatValue = GeoCoordinate3.ValidateLongitude(longitudeParsed);
                         }
-                        else
+                    }
+                    else
+                    {
+                        if (latitudeLongitudeAltitude[0].Length != 0 && latitudeLongitudeAltitude[1].Length != 0 && double.TryParse(latitudeLongitudeAltitude[0], out double latitudeParsed) && double.TryParse(latitudeLongitudeAltitude[1], out double longitudeParsed))
                         {
-                            if (latitudeLongitudeAltitude[0].Length != 0 && latitudeLongitudeAltitude[1].Length != 0 && double.TryParse(latitudeLongitudeAltitude[0], out double latitudeParsed) && double.TryParse(latitudeLongitudeAltitude[1], out double longitudeParsed))
-                            {
-                                latitude.doubleValue = GeoCoordinate3Double.ValidateLatitude(latitudeParsed);
-                                longitude.doubleValue = GeoCoordinate3Double.ValidateLongitude(longitudeParsed);
-                            }
+                            latitude.doubleValue = GeoCoordinate3Double.ValidateLatitude(latitudeParsed);
+                            longitude.doubleValue = GeoCoordinate3Double.ValidateLongitude(longitudeParsed);
                         }
                     }
 
@@ -250,7 +249,12 @@ namespace DepictionEngine.Editor
                         }
                     }
                 }
-                
+
+                GUI.changed = true;
+            }
+
+            if (EditorGUI.EndChangeCheck())
+            {
                 if (serializedProperty.GetType() == typeof(GeoCoordinate3))
                 {
                     latitude.floatValue = GeoCoordinate3.ValidateLatitude(latitude.floatValue);
@@ -261,8 +265,6 @@ namespace DepictionEngine.Editor
                     latitude.doubleValue = GeoCoordinate3Double.ValidateLatitude(latitude.doubleValue);
                     longitude.doubleValue = GeoCoordinate3Double.ValidateLongitude(longitude.doubleValue);
                 }
-
-                serializedProperty.serializedObject.ApplyModifiedProperties();
             }
 
             //Used to assign focus to the first field in the GeoCoordinatePopup(MenuItems)

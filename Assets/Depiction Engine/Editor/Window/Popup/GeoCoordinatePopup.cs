@@ -13,20 +13,20 @@ namespace DepictionEngine.Editor
 
         public void FocusOnLatControl()
         {
-            _focusOnLatConttrol = true;
+            _focusOnLatControl = true;
         }
 
-        bool _focusOnLatConttrol;
+        bool _focusOnLatControl;
         void OnGUI()
         {
             EditorGUILayout.BeginHorizontal();
             SerializedObject serializedObject = new SerializedObject(this);
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_geoCoordinate"), true);
-            if (_focusOnLatConttrol)
+            if (_focusOnLatControl)
             {
                 EditorGUI.FocusTextInControl("GeoCoordinate_Lat");
-                _focusOnLatConttrol = false;
+                _focusOnLatControl = false;
             }
 
             serializedObject.ApplyModifiedProperties();

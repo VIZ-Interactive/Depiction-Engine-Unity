@@ -2003,10 +2003,10 @@
                 "m_Id": "187594e81c154da5967757af258bf3fa"
             },
             {
-                "m_Id": "060c3bb3b95e4bb5bdee033ad95eae1f"
+                "m_Id": "46543053deef4ff69080950990e8443c"
             },
             {
-                "m_Id": "46543053deef4ff69080950990e8443c"
+                "m_Id": "060c3bb3b95e4bb5bdee033ad95eae1f"
             },
             {
                 "m_Id": "f702c970d5864631820f487ac11d5ddc"
@@ -4334,7 +4334,7 @@
     "m_Hidden": false,
     "m_ShaderOutputName": "AlphaClipThreshold",
     "m_StageCapability": 2,
-    "m_Value": 0.5,
+    "m_Value": 0.0,
     "m_DefaultValue": 0.5,
     "m_Labels": []
 }
@@ -5031,10 +5031,10 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 15.428511619567871,
-            "y": 353.1428527832031,
-            "width": 200.00006103515626,
-            "height": 42.285736083984378
+            "x": 10.285778999328614,
+            "y": 258.85711669921877,
+            "width": 199.9998779296875,
+            "height": 42.285675048828128
         }
     },
     "m_Slots": [
@@ -5137,7 +5137,7 @@
     "m_Hidden": false,
     "m_ShaderOutputName": "Alpha",
     "m_StageCapability": 2,
-    "m_Value": 1.0,
+    "m_Value": 0.10000000149011612,
     "m_DefaultValue": 1.0,
     "m_Labels": []
 }
@@ -11981,7 +11981,7 @@
     "m_SurfaceType": 0,
     "m_ZTestMode": 4,
     "m_ZWriteControl": 0,
-    "m_AlphaMode": 0,
+    "m_AlphaMode": 1,
     "m_RenderFace": 2,
     "m_AlphaClip": true,
     "m_CastShadows": true,

@@ -218,7 +218,6 @@ namespace DepictionEngine
         }
     }
 
-
     public class RaycastHitDouble
     {
         public Vector3Double point;

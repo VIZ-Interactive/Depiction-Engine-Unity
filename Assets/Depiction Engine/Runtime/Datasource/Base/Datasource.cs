@@ -96,7 +96,7 @@ namespace DepictionEngine
             this.datasourceWrapper = datasourceWrapper;
 
             //When undoing a Destroy the loaders might not be initialized yet therefore we cannot find them in the instanceManager yet, so we use UnityEngine.Object.FindObjectsOfType instead.
-            UnityEngine.Object[] loaders = UnityEngine.Object.FindObjectsOfType(typeof(LoaderBase), true);
+            UnityEngine.Object[] loaders = UnityEngine.Object.FindObjectsByType<LoaderBase>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (LoaderBase loader in loaders.Cast<LoaderBase>())
             {
                 if ((this.datasourceWrapper as IDatasource).IsIdMatching(loader.datasourceId))
@@ -420,7 +420,7 @@ namespace DepictionEngine
                     switch (name)
                     {
                         case nameof(TransformDouble.localPosition):
-                            allowAutoDispose = MathPlus.Approximately((Vector3Double)newValue, (Vector3Double)oldValue, 0.0000001d);
+                            allowAutoDispose = MathPlus.Approximately((Vector3Double)newValue, (Vector3Double)oldValue, 0.0005d);
                             break;
 
                         case nameof(TransformDouble.localRotation):
@@ -542,6 +542,8 @@ namespace DepictionEngine
         public static void EndAllowAutoDisposeOnOutOfSynchProperty()
         {
             _allowAutoDispose--;
+            if (_allowAutoDispose < 0)
+                _allowAutoDispose = 0;
         }
 
         public static void ResetAllowAutoDispose()

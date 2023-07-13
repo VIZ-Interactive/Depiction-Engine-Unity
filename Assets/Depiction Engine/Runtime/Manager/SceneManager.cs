@@ -186,7 +186,7 @@ namespace DepictionEngine
         {
             base.CreateAndInitializeDependencies(initializingContext);
 
-            ScriptableObjectDisposable[] scriptableObjectDisposables = Object.FindObjectsOfType<ScriptableObjectDisposable>(true);
+            ScriptableObjectDisposable[] scriptableObjectDisposables = FindObjectsByType<ScriptableObjectDisposable>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (ScriptableObjectDisposable scriptableObjectDisposable in scriptableObjectDisposables)
                 InstanceManager.Initialize(scriptableObjectDisposable);
         }
@@ -349,7 +349,7 @@ namespace DepictionEngine
             {
                 CameraGrid2DLoader cameraGrid2DLoader = value.GetComponent<CameraGrid2DLoader>();
                 string label = "(Loading: " + cameraGrid2DLoader.loadingCount + "/" + (cameraGrid2DLoader.loadingCount + cameraGrid2DLoader.loadedCount) + ")";
-                float width = label.Length * 6.0f;
+                float width = label.Length * 6.0f + 1.0f;
                 GUI.Label(new Rect(selectionRect.xMax - width, selectionRect.y, width, selectionRect.height), label);
             }
         }
@@ -411,13 +411,7 @@ namespace DepictionEngine
         public static UnityEditor.PlayModeStateChange playModeState
         {
             get => _playModeState;
-            set
-            {
-                if (_playModeState == value)
-                    return;
-
-                _playModeState = value;
-            }
+            set => _playModeState = value;
         }
 
         private static bool _saving;
@@ -434,12 +428,7 @@ namespace DepictionEngine
         private static bool saving
         {
             get => _saving;
-            set
-            {
-                if (_saving == value)
-                    return;
-                _saving = value;
-            }
+            set =>_saving = value;
         }
 
         private static bool _assembling;
@@ -965,7 +954,7 @@ namespace DepictionEngine
                 scene.GetRootGameObjects(_rootGameObjects);
             else
             {
-                foreach (GameObject go in Object.FindObjectsOfType<GameObject>(true))
+                foreach (GameObject go in FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 {
                     if (go.transform.parent == null && !go.hideFlags.HasFlag(HideFlags.DontSave))
                         _rootGameObjects.Add(go);
@@ -1418,6 +1407,7 @@ namespace DepictionEngine
         }
 
         private int _stackedCameraCount;
+        private int test;
         private void BeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera unityCamera)
         {
             if (IsDisposing())
@@ -1437,6 +1427,8 @@ namespace DepictionEngine
                     }
                 }
 
+                test = _stackedCameraCount;
+
                 BeginCameraRendering(camera, context);
 
 #if UNITY_EDITOR
@@ -1448,7 +1440,10 @@ namespace DepictionEngine
             {
                 Camera parentCamera = unityCamera.GetComponentInParent<Camera>();
                 if ((parentCamera is not RTTCamera) && parentCamera != Disposable.NULL)
-                    renderingManager.BeginCameraDistancePassRendering(parentCamera, unityCamera);
+                {
+                    renderingManager.BeginCameraDistancePassRendering(parentCamera, unityCamera, test);
+                    test--;
+                }
             }
         }
 
@@ -1544,6 +1539,8 @@ namespace DepictionEngine
         public void EndCameraRendering(Camera camera)
         {
             HierarchicalEndCameraRendering(camera);
+
+            renderingManager.EndCameraRendering(camera);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

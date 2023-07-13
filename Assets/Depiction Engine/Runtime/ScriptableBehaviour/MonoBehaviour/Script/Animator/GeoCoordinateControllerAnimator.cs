@@ -9,20 +9,20 @@ namespace DepictionEngine
     [RequireComponent(typeof(GeoCoordinateController))]
     public class GeoCoordinateControllerAnimator : AnimatorBase
     {
-        [SerializeField, Tooltip("The distance to the ground that should be reached by the end of the animation.")]
-		private double _toGroundSnapOffset;
+        [SerializeField, Tooltip("The distance to the surface that should be reached by the end of the animation.")]
+		private double _toSurfaceSnapOffset;
 
 #if UNITY_EDITOR
-        [SerializeField, Button(nameof(StartGroundSnapOffsetAnimationBtn)), ConditionalShow(nameof(IsNotFallbackValues)), Tooltip("Start moving the transform.")]
-		private bool _startGroundSnapOffsetAnimation;
+        [SerializeField, Button(nameof(StartSurfaceSnapOffsetAnimationBtn)), ConditionalShow(nameof(IsNotFallbackValues)), Tooltip("Start moving the transform.")]
+		private bool _startSurfaceSnapOffsetAnimation;
 #endif
 
-        private Tween _groundSnapOffsetTween;
+        private Tween _surfaceSnapOffsetTween;
 
 #if UNITY_EDITOR
-        private void StartGroundSnapOffsetAnimationBtn()
+        private void StartSurfaceSnapOffsetAnimationBtn()
 		{
-			SetGroundSnapOffset(toGroundSnapOffset);
+			SetSurfaceSnapOffset(_toSurfaceSnapOffset, easing);
 		}
 #endif
 
@@ -30,7 +30,7 @@ namespace DepictionEngine
         {
             base.InitializeSerializedFields(initializingContext);
 
-            InitValue(value => toGroundSnapOffset = value, GeoCoordinateController.DEFAULT_SURFACE_SNAP_OFFSET_VALUE, initializingContext);
+            InitValue(value => toSurfaceSnapOffset = value, GeoCoordinateController.DEFAULT_SURFACE_SNAP_OFFSET_VALUE, initializingContext);
         }
 
         protected override float GetDefaultDuration()
@@ -38,28 +38,28 @@ namespace DepictionEngine
             return 0.3f;
         }
 
-        private Tween groundSnapOffsetTween
+        private Tween surfaceSnapOffsetTween
         {
-            get { return _groundSnapOffsetTween; }
+            get => _surfaceSnapOffsetTween;
             set
             {
-                if (Object.ReferenceEquals(_groundSnapOffsetTween, value))
+                if (Object.ReferenceEquals(_surfaceSnapOffsetTween, value))
                     return;
 
-                DisposeManager.Dispose(_groundSnapOffsetTween);
+                DisposeManager.Dispose(_surfaceSnapOffsetTween);
 
-                _groundSnapOffsetTween = value;
+                _surfaceSnapOffsetTween = value;
             }
         }
 
         /// <summary>
-        /// The distance to the ground that should be reached by the end of the animation.
+        /// The distance to the surface that should be reached by the end of the animation.
         /// </summary>
         [Json]
-        private double toGroundSnapOffset
+        private double toSurfaceSnapOffset
         {
-            get { return _toGroundSnapOffset; }
-            set { SetValue(nameof(toGroundSnapOffset), value, ref _toGroundSnapOffset); }
+            get => _toSurfaceSnapOffset;
+            set => SetValue(nameof(toSurfaceSnapOffset), value, ref _toSurfaceSnapOffset);
         }
 
         /// <summary>
@@ -67,9 +67,9 @@ namespace DepictionEngine
         /// </summary>
         /// <param name="value"></param>
         /// <param name="easing"></param>
-        public void SetGroundSnapOffset(double value, EasingType easing = EasingType.QuartEaseOut)
+        public void SetSurfaceSnapOffset(double value, EasingType easing = EasingType.QuartEaseOut)
         {
-            SetGroundSnapOffset(value, duration, easing);
+            SetSurfaceSnapOffset(value, duration, easing);
         }
 
         /// <summary>
@@ -78,9 +78,9 @@ namespace DepictionEngine
         /// <param name="value"></param>
         /// <param name="duration"></param>
         /// <param name="easing"></param>
-        public void SetGroundSnapOffset(double value, float duration, EasingType easing = EasingType.QuartEaseOut)
+        public void SetSurfaceSnapOffset(double value, float duration, EasingType easing = EasingType.QuartEaseOut)
         {
-            SetGroundSnapOffset(value, duration, (t) => { return t; }, easing);
+            SetSurfaceSnapOffset(value, duration, (t) => { return t; }, easing);
         }
 
         /// <summary>
@@ -88,9 +88,9 @@ namespace DepictionEngine
         /// </summary>
         /// <param name="value"></param>
         /// <param name="curve"></param>
-        public void SetGroundSnapOffset(double value, AnimationCurve curve)
+        public void SetSurfaceSnapOffset(double value, AnimationCurve curve)
         {
-            SetGroundSnapOffset(value, duration, curve);
+            SetSurfaceSnapOffset(value, duration, curve);
         }
 
         /// <summary>
@@ -99,19 +99,19 @@ namespace DepictionEngine
         /// <param name="value"></param>
         /// <param name="duration"></param>
         /// <param name="curve"></param>
-        public void SetGroundSnapOffset(double value, float duration, AnimationCurve curve)
+        public void SetSurfaceSnapOffset(double value, float duration, AnimationCurve curve)
         {
-            SetGroundSnapOffset(value, duration, (t) => { return curve.Evaluate(t); });
+            SetSurfaceSnapOffset(value, duration, (t) => { return curve.Evaluate(t); });
         }
 
-        private double _fromGroundSnapOffset;
-        private void SetGroundSnapOffset(double value, float duration, Func<float, float> TCallback, EasingType easing = EasingType.Linear)
+        private double _fromSurfaceSnapOffset;
+        private void SetSurfaceSnapOffset(double value, float duration, Func<float, float> TCallback, EasingType easing = EasingType.Linear)
         {
             GeoCoordinateController controller = objectBase.controller as GeoCoordinateController;
             if (controller != Disposable.NULL)
             {
-                _fromGroundSnapOffset = controller.surfaceSnapOffset;
-                groundSnapOffsetTween = tweenManager.To(0.0f, 1.0f, duration, (t) => { controller.surfaceSnapOffset = _fromGroundSnapOffset + (TCallback(t) * (value - _fromGroundSnapOffset)); }, null, () => { groundSnapOffsetTween = null; }, easing);
+                _fromSurfaceSnapOffset = controller.surfaceSnapOffset;
+                surfaceSnapOffsetTween = tweenManager.To(0.0f, 1.0f, duration, (t) => { controller.surfaceSnapOffset = _fromSurfaceSnapOffset + (TCallback(t) * (value - _fromSurfaceSnapOffset)); }, null, () => { surfaceSnapOffsetTween = null; }, easing);
             }
         }
 
@@ -119,7 +119,7 @@ namespace DepictionEngine
         {
             base.StopAllAnimations();
 
-            groundSnapOffsetTween = null;
+            surfaceSnapOffsetTween = null;
         }
     }
 }

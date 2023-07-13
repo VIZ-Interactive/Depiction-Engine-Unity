@@ -15,7 +15,11 @@ namespace DepictionEngine
     [CreateComponent(typeof(Skybox), typeof(UnityEngine.Camera), typeof(UniversalAdditionalCameraData))]
     public class Camera : Object
     {
-        public const int DEFAULT_DISTANCE_PASS = 2;
+        public const int MAX_DISTANCE_PASS = 30;
+
+        public const int DEFAULT_DISTANCE_PASS = 5;
+        public const float DEFAULT_NEAR_CLIP = 0.01f;
+        public const float DEFAULT_FAR_CLIP = 50.0f;
 
         public const int DEFAULT_ENVIRONMENT_TEXTURE_SIZE = 512;
         public const string CLEAR_FLAGS_TOOLTIP = "How the camera clears the background.";
@@ -52,8 +56,10 @@ namespace DepictionEngine
         private DepthTextureMode _depthTextureMode;
         [SerializeField, Tooltip("A mask used to render parts of the Scene selectively."), Mask]
         private int _cullingMask;
-        [SerializeField, Tooltip("Whether or not the Camera will use occlusion culling during rendering."), EndFoldout]
+        [SerializeField, Tooltip("Whether or not the Camera will use occlusion culling during rendering.")]
         private bool _useOcclusionCulling;
+        [SerializeField, Range(0.0f, Camera.MAX_DISTANCE_PASS), Tooltip("The number of distance pass the renderer should do in order to draw distant objects."), EndFoldout]
+        private int _distancePass;
 
         [BeginFoldout("Output")]
         [SerializeField, Tooltip("High dynamic range rendering."), EndFoldout]
@@ -69,7 +75,7 @@ namespace DepictionEngine
         public override void Recycle()
         {
             base.Recycle();
-
+       
             UniversalAdditionalCameraData universalAdditionalCameraData = GetUniversalAdditionalCameraData();
 
             if (universalAdditionalCameraData != null)
@@ -88,30 +94,17 @@ namespace DepictionEngine
             InitValue(value => orthographic = value, false, initializingContext);
             InitValue(value => orthographicSize = value, 5.0f, initializingContext);
             InitValue(value => fieldOfView = value, 60.0f, initializingContext);
-            InitValue(value => nearClipPlane = value, 0.3f, initializingContext);
-            InitValue(value => farClipPlane = value, 5000.0f, initializingContext);
+            InitValue(value => nearClipPlane = value, DEFAULT_NEAR_CLIP, initializingContext);
+            InitValue(value => farClipPlane = value, DEFAULT_FAR_CLIP, initializingContext);
 
             InitValue(value => postProcessing = value, GetDefaultPostProcessing(), initializingContext);
             InitValue(value => depthTextureMode = value, DepthTextureMode.None, initializingContext);
             InitValue(value => cullingMask = value, -65537, initializingContext);
             InitValue(value => useOcclusionCulling = value, true, initializingContext);
-
+            InitValue(value => distancePass = value, GetDefaultDistancePass(), initializingContext);
+            
             InitValue(value => allowHDR = value, true, initializingContext);
         }
-
-#if UNITY_EDITOR
-        //Ugly hack to force a Refresh in the 'UniversalRenderPipelineSerializedCamera' and prevent it from spamming 'Index out of bound exception' when a new camera is created and selected in the Editor
-        //This creates a new Undo operation so we need to execute it after the RegisterCreatedObjectUndo
-        //TODO: A ticket(Case 1425719) as been opened with Unity to fix this bug, remove this hack once the bug is fixed
-        public void PreventCameraStackBug()
-        {
-            if (stackCount == 0 && Editor.Selection.activeTransform == transform)
-            {
-                //Breaks Undo/redo by adding an additional "Move Component(s)" action.
-                //UnityEditorInternal.ComponentUtility.MoveComponentUp(GetUniversalAdditionalCameraData());
-            }
-        }
-#endif
 
         protected override void CreateAndInitializeDependencies(InitializationContext initializingContext)
         {
@@ -144,12 +137,12 @@ namespace DepictionEngine
             }
         }
 
+        private static string STACK_NAME = "Stack";
         protected virtual bool InitializeStack(InitializationContext initializingContext)
         {
-            string stackName = "Stack";
-            if (gameObject.transform.Find(stackName) == null)
+            if (gameObject.transform.Find(STACK_NAME) == null)
             {
-                GameObject stackGO = new(stackName);
+                GameObject stackGO = new(STACK_NAME);
                 stackGO.transform.SetParent(gameObject.transform, false);
 #if UNITY_EDITOR
                 Editor.UndoManager.QueueRegisterCreatedObjectUndo(stackGO, initializingContext);
@@ -166,7 +159,6 @@ namespace DepictionEngine
 
                 UniversalAdditionalCameraData universalAdditionalCameraData = GetUniversalAdditionalCameraData();
 
-                int distancePass = GetDefaultDistancePass();
                 for (int i = distancePass - 1; i >= 0; i--)
                 {
                     GameObject distancePassCameraGO = new("DistancePass_" + (i + 1));
@@ -621,6 +613,35 @@ namespace DepictionEngine
         }
 
         /// <summary>
+        /// The number of distance pass the renderer should do in order to draw distant objects.
+        /// </summary>
+        [Json]
+        public int distancePass
+        {
+            get => _distancePass;
+            set
+            {
+                SetValue(nameof(distancePass), (int)Mathf.Clamp(value, 0.0f, Camera.MAX_DISTANCE_PASS), ref _distancePass, (newValue, oldValue) => 
+                {
+                    if (initialized)
+                    {
+                        bool isUserChange = SceneManager.GetIsUserChangeContext();
+
+                        UniversalAdditionalCameraData universalAdditionalCameraData = GetUniversalAdditionalCameraData();
+                        if (universalAdditionalCameraData != null)
+                            universalAdditionalCameraData.cameraStack.Clear();
+
+                        Transform stack = gameObject.transform.Find(STACK_NAME);
+                        if (stack != null)
+                            DisposeManager.Dispose(stack.gameObject, isUserChange ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Destroy);
+                        
+                        InitializeStack(isUserChange ? InitializationContext.Editor : InitializationContext.Programmatically);
+                    }
+                });
+            }
+        }
+
+        /// <summary>
         /// High dynamic range rendering.
         /// </summary>
         [Json]
@@ -716,7 +737,8 @@ namespace DepictionEngine
         public RayDouble ScreenPointToRay(Vector3 pos)
         {
             Ray ray = unityCamera.ScreenPointToRaySafe(pos);
-            return new RayDouble(transform.position + ray.direction * pos.z, ray.direction);
+            Vector3 offset = ray.origin - unityCamera.transform.position;
+            return new RayDouble(transform.position + offset, ray.direction);
         }
 
         public static RayDouble ScreenPointToRay(Vector2 pos, Vector3[] frustumCorners, Vector3Double position, QuaternionDouble rotation, float pixelWidth, float pixelHeight, bool orthographic, float orthographicSize, float aspect)
@@ -921,12 +943,12 @@ namespace DepictionEngine
         public static void ApplyClipPlanePropertiesToUnityCamera(UnityEngine.Camera unityCamera, int i, float nearClipPlane, float farClipPlane)
         {
             unityCamera.farClipPlane = GetFarClipPlane(i, farClipPlane);
-            unityCamera.nearClipPlane = i == 0 ? nearClipPlane : Mathf.Pow(10000.0f, i - 1.0f) * farClipPlane;
+            unityCamera.nearClipPlane = i == 0 ? nearClipPlane : GetFarClipPlane(i - 1, farClipPlane);
         }
 
         public static float GetFarClipPlane(int i, float farClipPlane)
         {
-            return Mathf.Pow(10000.0f, i) * farClipPlane;
+            return Mathf.Pow(farClipPlane, i + 1);
         }
 
         public void IterateOverCameraStack(Action<UnityEngine.Camera, int, Stack> callback)
@@ -978,12 +1000,25 @@ namespace DepictionEngine
         {
             int cullingMask = 1 << LayerUtility.GetLayer(typeof(TerrainGridMeshObject).Name) | 1 << LayerUtility.GetLayer(typeof(AtmosphereGridMeshObject).Name);
 
-            float farClipPlane = Camera.GetFarClipPlane(1, this.farClipPlane);
+            float farClipPlane = Mathf.Clamp(Camera.GetFarClipPlane(distancePass, this.farClipPlane), 5000000.0f, 155662040916.9f);
 
-            if (farClipPlane > 155662040916.9f)
-                farClipPlane = 155662040916.9f;
+            Vector3 position = gameObject.transform.position;
 
-            rttCamera.RenderToCubemap(clearFlags, backgroundColor, camera.skybox.material, cullingMask, nearClipPlane, farClipPlane, gameObject.transform.position, gameObject.transform.rotation, reflectionCustomBakedTexture);
+            GeoAstroObject closestGeoAstroObject = GeoAstroObject.GetClosestGeoAstroObject(transform.position);
+            if (closestGeoAstroObject != Disposable.NULL)
+            {
+                GeoCoordinate3Double geoCoordinate = closestGeoAstroObject.GetGeoCoordinateFromPoint(transform.position);
+                
+                double altitude = 0.0d;
+                if (geoCoordinate.altitude < altitude)
+                {
+                    geoCoordinate.altitude = altitude;
+
+                    position += (Vector3)(closestGeoAstroObject.GetPointFromGeoCoordinate(geoCoordinate) - transform.position);
+                }
+            }
+
+            rttCamera.RenderToCubemap(clearFlags, backgroundColor, camera.skybox.material, cullingMask, 1.0f, farClipPlane, position, gameObject.transform.rotation, reflectionCustomBakedTexture);
         }
 
         public override bool OnDispose(DisposeContext disposeContext)

@@ -28,12 +28,12 @@ namespace DepictionEngine
 #if UNITY_EDITOR
         private void StartForwardVectorAnimationBtn()
 		{
-			SetForwardVector(_toForwardVector);
+			SetForwardVector(_toForwardVector, easing);
 		}
 
         private void StartDistanceAnimationBtn()
 		{
-			SetDistance(_toDistance);
+			SetDistance(_toDistance, easing);
 		}
 #endif
 

@@ -8,6 +8,7 @@ namespace DepictionEngine.Editor
 {
     public class MenuItems
     {
+        //These keys should be used for demonstration purpose only!
         private const string MAPBOX_DEMO_KEY = "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA";
         private const string MAPTILER_DEMO_KEY = "eIgS48TpQ70m77qKYrsx&mtsid=64dd8e20-30f3-4fb5-88d7-8f2f83ffc077";
         private const string OSMBUILDINGS_DEMO_KEY = "dixw8kmb";
@@ -209,8 +210,6 @@ namespace DepictionEngine.Editor
             Camera camera = CreateObject<Camera>(GetContextTransform(menuCommand), name);
 
             InitMainCamera(camera);
-
-            camera.PreventCameraStackBug();
         }
 
         [MenuItem("GameObject/Depiction Engine/Camera/Target Camera", false, 48)]
@@ -223,8 +222,6 @@ namespace DepictionEngine.Editor
             InitMainCamera(camera);
 
             SelectObject((camera.controller as CameraController).target);
-
-            camera.PreventCameraStackBug();
         }
 
         private static void InitMainCamera(Camera camera)
@@ -350,7 +347,13 @@ namespace DepictionEngine.Editor
 
             CreateStarIfMissing(parent);
 
-            DatasourceBase arcgisDatasource = GetRestDatasource("https://services.arcgisonline.com/");
+            DatasourceBase mapboxDatasource = GetRestDatasource("https://api.mapbox.com/");
+
+            List<string> mapboxHeaders = new();
+            //Forcing a different Referer spams warnings but it is only meant to be used as an Editor demo, A real development key should be used.
+            mapboxHeaders.Add("Referer#https://www.mapbox.com/");
+
+            //DatasourceBase arcgisDatasource = GetRestDatasource("https://services.arcgisonline.com/");
 
             DatasourceBase buildingFeatureDatasource = GetRestDatasource(
             "https://a-data.3dbuildings.com/",
@@ -364,10 +367,13 @@ namespace DepictionEngine.Editor
             //Add Earth -> Color Texture Index2DLoader
             JSONArray colorTextureLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(Texture));
             string colorTextureLoaderId = colorTextureLoaderJson[0][nameof(Index2DLoader.id)];
-            colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(arcgisDatasource.id);
+            colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(mapboxDatasource.id);
+            //colorTextureLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(arcgisDatasource.id);
             colorTextureLoaderJson[0][nameof(Index2DLoader.minMaxZoom)] = JsonUtility.ToJson(new Vector2Int(0, 30));
             colorTextureLoaderJson[0][nameof(Index2DLoader.dataType)] = JsonUtility.ToJson(LoaderBase.DataType.TexturePngJpg);
-            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "arcgis/rest/services/World_Topo_Map/MapServer/tile/{0}/{2}/{1}";
+            colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "styles/v1/mapbox/streets-v11/tiles/{0}/{1}/{2}?access_token="+MAPBOX_DEMO_KEY;
+            //colorTextureLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "arcgis/rest/services/World_Topo_Map/MapServer/tile/{0}/{2}/{1}";
+            colorTextureLoaderJson[0][nameof(LoaderBase.headers)] = JsonUtility.ToJson(mapboxHeaders);
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(colorTextureLoaderJson, earthJson);
 

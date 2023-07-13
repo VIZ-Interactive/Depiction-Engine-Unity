@@ -49,20 +49,20 @@ namespace DepictionEngine
             if (transform != Disposable.NULL)
             {
                 if (!transform.isGeoCoordinateTransform)
-                    SetLocalPosition(_toLocalPosition);
+                    SetLocalPosition(_toLocalPosition, easing);
                 else
-                    SetGeoCoordinate(_toGeoCoordinate);
+                    SetGeoCoordinate(_toGeoCoordinate, easing);
             }
         }
 
         private void StartLocalRotationAnimationBtn()
         {
-            SetLocalRotation(QuaternionDouble.Euler(_toLocalRotation));
+            SetLocalRotation(QuaternionDouble.Euler(_toLocalRotation), easing);
         }
 
         private void StartLocalScaleAnimationBtn()
         {
-            SetLocalScale(_toLocalScale);
+            SetLocalScale(_toLocalScale, easing);
         }
 
         private bool GetShowLocalPosition()
@@ -108,8 +108,8 @@ namespace DepictionEngine
         [Json]
 		private Vector3Double toLocalPosition
 		{
-			get { return _toLocalPosition; }
-			set { SetValue(nameof(toLocalPosition), value, ref _toLocalPosition); }
+			get => _toLocalPosition;
+			set => SetValue(nameof(toLocalPosition), value, ref _toLocalPosition);
 		}
 
         /// <summary>
@@ -118,8 +118,8 @@ namespace DepictionEngine
         [Json]
 		private GeoCoordinate3Double toGeoCoordinate
 		{
-			get { return _toGeoCoordinate; }
-			set { SetValue(nameof(toGeoCoordinate), value, ref _toGeoCoordinate); }
+			get => _toGeoCoordinate;
+			set => SetValue(nameof(toGeoCoordinate), value, ref _toGeoCoordinate);
 		}
 
         /// <summary>
@@ -128,8 +128,8 @@ namespace DepictionEngine
         [Json]
 		private Vector3Double toLocalRotation
 		{
-			get { return _toLocalRotation; }
-			set { SetValue(nameof(toLocalRotation), value, ref _toLocalRotation); }
+			get => _toLocalRotation;
+			set => SetValue(nameof(toLocalRotation), value, ref _toLocalRotation);
 		}
 
         /// <summary>
@@ -138,13 +138,13 @@ namespace DepictionEngine
         [Json]
 		private Vector3Double toLocalScale
 		{
-			get { return _toLocalScale; }
-			set { SetValue(nameof(toLocalScale), value, ref _toLocalScale); }
+			get => _toLocalScale;
+			set => SetValue(nameof(toLocalScale), value, ref _toLocalScale);
 		}
 
         private Tween localPositionTween
 		{
-            get { return _localPositionTween; }
+            get => _localPositionTween;
 			set
 			{
 				if (Object.ReferenceEquals(_localPositionTween, value))

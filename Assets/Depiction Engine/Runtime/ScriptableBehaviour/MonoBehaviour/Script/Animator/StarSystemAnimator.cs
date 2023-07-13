@@ -52,7 +52,12 @@ namespace DepictionEngine
 			return false;
 		}
 
-		protected bool GetEnableCustomTimeFields()
+        protected override bool GetShowEasing()
+        {
+            return false;
+        }
+
+        protected bool GetEnableCustomTimeFields()
         {
 			return !infinity;
 		}

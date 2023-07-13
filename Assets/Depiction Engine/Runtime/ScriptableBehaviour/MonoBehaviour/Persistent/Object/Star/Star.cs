@@ -11,6 +11,7 @@ namespace DepictionEngine
     /// A light source, and lens flare effect, emitting light in all directions.
     /// </summary>
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/Astro/" + nameof(Star))]
+    [RequireComponent(typeof(LensFlareComponentSRP))]
     [SelectionBase]
     public class Star : GeoAstroObject
     {
@@ -69,7 +70,7 @@ namespace DepictionEngine
             InitValue(value => lensFlareScale = value, 1.3f, initializingContext);
             InitValue(value => intensity = value, 1.3f, initializingContext);
             InitValue(value => range = value, 1000000.0f, initializingContext);
-            InitValue(value => shadows = value, LightShadows.Hard, initializingContext);
+            InitValue(value => shadows = value, LightShadows.Soft, initializingContext);
             InitValue(value => useOcclusion = value, true, initializingContext);
             InitValue(value => occlusionRadius = value, 0.05f, initializingContext);
             InitValue(value => occlusionSampleCount = value, (uint)6, initializingContext);
@@ -84,13 +85,10 @@ namespace DepictionEngine
         {
             if (!isFallbackValues)
             {
-                if (_lightInternal == null || _lensFlare == null)
-                {
+                if (_lightInternal is null)
                     _lightInternal = gameObject.GetComponentInChildren<Light>(true);
-                    _lensFlare = gameObject.GetComponentInChildren<LensFlareComponentSRP>(true);
-                }
 
-                if (_lightInternal == null)
+                if (_lightInternal is null)
                 {
                     GameObject go = new("Light");
                     go.transform.SetParent(gameObject.transform, false);
@@ -103,9 +101,18 @@ namespace DepictionEngine
                     _lightInternal.type = LightType.Directional;
 
                     go.AddComponentInitialized<UniversalAdditionalLightData>(initializingContext);
+                }
 
-                    _lensFlare = go.AddComponentInitialized<LensFlareComponentSRP>(initializingContext);
+                if (_lensFlare is null)
+                {
+                    _lensFlare = gameObject.GetComponent<LensFlareComponentSRP>();
                     _lensFlare.lensFlareData = Resources.Load("LensFlare/Sun Lens Flare (SRP)") as LensFlareDataSRP;
+                    _lensFlare.maxAttenuationDistance = float.MaxValue;
+                    _lensFlare.maxAttenuationScale = float.MaxValue;
+                    _lensFlare.radialScreenAttenuationCurve.ClearKeys();
+                    _lensFlare.radialScreenAttenuationCurve.AddKey(new Keyframe(0.99f, 1.0f));
+                    _lensFlare.radialScreenAttenuationCurve.AddKey(new Keyframe(1.01f, 0.0f));
+                    _lensFlare.allowOffScreen = true;
                 }
             }
         }
@@ -164,7 +171,7 @@ namespace DepictionEngine
         public float lensFlareScale
         {
             get => _lensFlareScale;
-            set { SetValue(nameof(lensFlareScale), value, ref _lensFlareScale); }
+            set => SetValue(nameof(lensFlareScale), value, ref _lensFlareScale);
         }
 
         /// <summary>

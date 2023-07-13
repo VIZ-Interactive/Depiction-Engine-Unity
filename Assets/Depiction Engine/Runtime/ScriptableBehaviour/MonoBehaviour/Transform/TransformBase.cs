@@ -959,22 +959,24 @@ namespace DepictionEngine
 
             Component changedComponents = Component.None;
 
-            if (name == nameof(GeoAstroObject.sphericalRatio) || name == nameof(GeoAstroObject.size))
+            bool isSphericalRatio = name == nameof(GeoAstroObject.sphericalRatio);
+            if (isSphericalRatio || name == nameof(GeoAstroObject.size))
                 changedComponents |= Component.Position;
-            if (name == nameof(GeoAstroObject.sphericalRatio))
+            if (isSphericalRatio)
                 changedComponents |= Component.Rotation;
 
             if (changedComponents != Component.None)
             {
+                Datasource.StartAllowAutoDisposeOnOutOfSynchProperty();
+
                 IterateOverChildren(
                     (child) =>
                     {
-                        if (child is TransformBase transform)
-                        {
-                            if (transform.initialized)
-                                transform.ParentChanged(changedComponents, Component.None, this);
-                        }
+                        if (child is TransformBase transform && transform.initialized)
+                            transform.ParentChanged(changedComponents, Component.None, this);
                     });
+
+                Datasource.EndAllowAutoDisposeOnOutOfSynchProperty();
             }
         }
 

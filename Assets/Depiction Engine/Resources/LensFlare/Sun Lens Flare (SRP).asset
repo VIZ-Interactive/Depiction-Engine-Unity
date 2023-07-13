@@ -26,7 +26,7 @@ MonoBehaviour:
     m_Count: 2
     preserveAspectRatio: 0
     rotation: 0
-    tint: {r: 1, g: 0.92544436, b: 0.81671154, a: 1}
+    tint: {r: 1, g: 0.7763481, b: 0.627451, a: 1}
     blendMode: 0
     autoRotate: 0
     flareType: 1

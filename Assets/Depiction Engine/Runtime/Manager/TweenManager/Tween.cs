@@ -45,17 +45,17 @@ namespace DepictionEngine
 
         public float from
         {
-            get { return _from; }
+            get => _from;
         }
 
         public float to
         {
-            get { return _to; }
+            get => _to;
         }
 
         public float progress
         {
-            get { return _progress; }
+            get => _progress;
             private set
             {
                 if (_progress == value)
@@ -76,17 +76,17 @@ namespace DepictionEngine
 
         public float currentValue
         {
-            get { return _from + (_to - _from) * _progress; }
+            get => _from + (_to - _from) * _progress;
         }
 
         public float duration
         {
-            get { return _duration; }
+            get => _duration;
         }
 
         public bool playing
         {
-            get { return _playing; }
+            get => _playing;
         }
 
         public Tween Play()
@@ -102,14 +102,14 @@ namespace DepictionEngine
             return this;
         }
 
-        public void Update()
+        public void UpdateLerpTime(float deltaTime)
         {
             if (IsDisposing())
                 return;
-
+         
             if (_playing)
             {
-                _currentLerpTime += Time.deltaTime;
+                _currentLerpTime += deltaTime;
                 UpdateProgress();
             }
         }
