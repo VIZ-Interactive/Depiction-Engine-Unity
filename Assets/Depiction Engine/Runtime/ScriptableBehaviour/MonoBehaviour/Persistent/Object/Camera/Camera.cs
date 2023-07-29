@@ -114,7 +114,7 @@ namespace DepictionEngine
 
             InitializeCamera(initializingContext);
 
-            InitializeStack(initializingContext);
+            InitializeStack(initializingContext, GetDefaultDistancePass());
         }
 
         protected virtual void InitializeCamera(InitializationContext initializingContext)
@@ -138,7 +138,7 @@ namespace DepictionEngine
         }
 
         private static string STACK_NAME = "Stack";
-        protected virtual bool InitializeStack(InitializationContext initializingContext)
+        protected virtual bool InitializeStack(InitializationContext initializingContext, int distancePass)
         {
             if (gameObject.transform.Find(STACK_NAME) == null)
             {
@@ -635,7 +635,7 @@ namespace DepictionEngine
                         if (stack != null)
                             DisposeManager.Dispose(stack.gameObject, isUserChange ? DisposeContext.Editor_Destroy : DisposeContext.Programmatically_Destroy);
                         
-                        InitializeStack(isUserChange ? InitializationContext.Editor : InitializationContext.Programmatically);
+                        InitializeStack(isUserChange ? InitializationContext.Editor : InitializationContext.Programmatically, newValue);
                     }
                 });
             }

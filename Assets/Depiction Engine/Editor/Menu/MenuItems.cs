@@ -715,20 +715,12 @@ namespace DepictionEngine.Editor
 
                 if (sceneViewDouble.alignViewToGeoAstroObject == Disposable.NULL)
                 {
-                    Object selectedObject = null;
                     if (UnityEditor.Selection.activeGameObject != null)
                     {
-                        GameObject activeGameObject = UnityEditor.Selection.activeGameObject;
-                        selectedObject = GetSafeComponent<Object>(activeGameObject);
-                        if (selectedObject == Disposable.NULL)
-                        {
-                            MeshRendererVisual meshRendererVisual = GetSafeComponent<MeshRendererVisual>(activeGameObject);
-                            if (meshRendererVisual != Disposable.NULL)
-                                selectedObject = meshRendererVisual.visualObject;
-                        }
+                        GeoAstroObject geoAstroObject = UnityEditor.Selection.activeGameObject.GetComponentInParent<GeoAstroObject>(true);
+                        if (geoAstroObject != Disposable.NULL)
+                            selectedGeoAstroObject = geoAstroObject;
                     }
-                    if (selectedObject != Disposable.NULL)
-                        selectedGeoAstroObject = (selectedObject is GeoAstroObject ? selectedObject : selectedObject.transform.parentGeoAstroObject) as GeoAstroObject;
                 }
 
                 SetAlignViewToGeoAstroObject(sceneViewDouble, sceneViewDouble.camera, selectedGeoAstroObject);
@@ -783,7 +775,7 @@ namespace DepictionEngine.Editor
                     if (sceneViewDouble.alignViewToGeoAstroObject != Disposable.NULL)
                         sceneViewDouble.alignViewToGeoAstroObject = null;
                     else
-                        Debug.Log("No selected "+typeof(GeoAstroObject).Name+"!");
+                        Debug.Log("Please selected a "+typeof(GeoAstroObject).Name+ "(or one of its children) to align the scene camera against.");
                 }
             }
         }

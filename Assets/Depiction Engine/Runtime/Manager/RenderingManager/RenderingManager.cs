@@ -1615,7 +1615,7 @@ namespace DepictionEngine
                         return true;
                     });
                 });
-
+               
                 if (dynamicEnvironment)
                 {
                     DefaultReflectionMode defaultReflectionMode = DefaultReflectionMode.Custom;
@@ -1680,7 +1680,11 @@ namespace DepictionEngine
                     });
                 });
 
-                callback();
+                try
+                {
+                    callback();
+                }catch(Exception e)
+                { Debug.Log(e.Message); }
 
                 RenderSettings.ambientIntensity = lastAmbientIntensity;
                 RenderSettings.reflectionIntensity = lastReflectionIntensity;

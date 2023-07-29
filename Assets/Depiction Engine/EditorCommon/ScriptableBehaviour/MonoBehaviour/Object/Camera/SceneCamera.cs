@@ -10,7 +10,7 @@ namespace DepictionEngine.Editor
 {
     public class SceneCamera : Camera
     {
-        protected override bool InitializeStack(InitializationContext initializingContext)
+        protected override bool InitializeStack(InitializationContext initializingContext, int distancePass)
         {
             return false;
         }
