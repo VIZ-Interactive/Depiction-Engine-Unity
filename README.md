@@ -3,7 +3,7 @@
 
 # Depiction Engine For Unity
 
-![Presentation](https://vizinteractive.io/depiction-engine)
+![Presentation](https://vizinteractive.io/media/video/DepictionEngine_Earth_ZoomIn.gif)
 
 [Project page](https://vizinteractive.io/depiction-engine)
 
