@@ -9,12 +9,6 @@
 
 [Forum](https://vizinteractive.io/forum/depiction-engine/)
 
-## Latest Release
-
-[UnityPackage](https://github.com/VIZ-Interactive/Depiction-Engine-Unity/releases/download/2022.0a/DepictionEngine.unitypackage)
-
-## Documentation
-
 [Documentation](https://vizinteractive.io/docs/2022.0/depiction-engine-unity)
 
 ## Unity Specific Features
