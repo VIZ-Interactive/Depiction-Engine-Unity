@@ -5,8 +5,6 @@
 
 ![Presentation](https://github.com/VIZ-Interactive/Depiction-Engine-Unity/assets/1084857/0c10a4d5-f7c1-4736-8cfa-275528f2d2e2)
 
-[Project page](https://vizinteractive.io/depiction-engine)
-
 [Forum](https://vizinteractive.io/forum/depiction-engine/)
 
 [Documentation](https://vizinteractive.io/docs/2022.0/depiction-engine-unity)
