@@ -88,6 +88,19 @@ namespace DepictionEngine.Editor
             RenderingManager renderingManager = RenderingManager.Instance(false);
             if (renderingManager != Disposable.NULL && renderingManager.originShifting)
             {
+                if (GetTransformDoubleSelectionCount() > 0)
+                {
+                    List<TransformDouble> transformDoubles = GetTransforms();
+                    foreach (TransformDouble transformDouble in transformDoubles)
+                    {
+                        if (transformDouble.objectBase != Disposable.NULL && !transformDouble.objectBase.RequiresPositioning())
+                        {
+                            isValidPoint = false;
+                            break;
+                        }
+                    }
+                }
+
                 int recursiveCount = 0;
                 while (!isValidPoint && recursiveCount < 10)
                 {

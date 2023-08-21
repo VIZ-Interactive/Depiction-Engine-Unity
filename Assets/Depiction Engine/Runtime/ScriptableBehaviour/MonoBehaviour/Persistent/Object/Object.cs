@@ -10,7 +10,7 @@ using UnityEngine.Rendering;
 namespace DepictionEngine
 {
     /// <summary>
-    /// Main component used to interface with the GameObject / Scripts and children. Only one per GameObject supported.
+    /// Main component used to interface with the GameObject / Scripts and children. Only one per GameObject supported. Objects are usually not origin shifted, use <see cref="DepictionEngine.VisualObject"/> if you are looking for a container to use with MeshRenderers.
     /// </summary>
     [DisallowMultipleComponent]
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/" + nameof(Object))]

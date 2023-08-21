@@ -718,14 +718,16 @@ namespace DepictionEngine
         public GeoAstroObject parentGeoAstroObject
         {
             get => _parentGeoAstroObject;
-            private set 
+            private set => SetParentGeoAstroObject(value);
+        }
+
+        private bool SetParentGeoAstroObject(GeoAstroObject value)
+        {
+            return SetValue(nameof(parentGeoAstroObject), value, ref _parentGeoAstroObject, (newValue, oldValue) =>
             {
-                SetValue(nameof(parentGeoAstroObject), value, ref _parentGeoAstroObject, (newValue, oldValue) =>
-                {
-                    if (!IsDisposing())
-                        UpdateIsGeoCoordinateTransform();
-                });
-            }
+                if (!IsDisposing())
+                    UpdateIsGeoCoordinateTransform();
+            });
         }
 
         protected void UpdateParentObject()
@@ -735,7 +737,7 @@ namespace DepictionEngine
 
         protected bool UpdateParentGeoAstroObject()
         {
-            return parentGeoAstroObject = FindParentGeoAstroObject();
+            return SetParentGeoAstroObject(FindParentGeoAstroObject());
         }
 
         private Object FindParentObject()

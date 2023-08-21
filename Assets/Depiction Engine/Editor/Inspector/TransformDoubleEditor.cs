@@ -36,9 +36,7 @@ namespace DepictionEngine.Editor
                             {
                                 if (Selection.ApplyOriginShifting(sceneCamera.GetOrigin()))
                                 {
-                                    Vector3 handlePosition;
-
-                                    if (Tools.GetHandlePosition(out handlePosition))
+                                    if (Tools.GetHandlePosition(out Vector3 handlePosition))
                                     {
                                         Quaternion handleRotation = Tools.handleRotation;
 

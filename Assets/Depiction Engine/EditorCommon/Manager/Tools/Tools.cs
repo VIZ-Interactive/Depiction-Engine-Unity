@@ -89,8 +89,7 @@ namespace DepictionEngine.Editor
 
             bool isValidHandlePosition = Selection.MoveOriginCloserToPoint(GetHandlePosition, (position) =>
             {
-                if (originShiftSnapshot == null)
-                    originShiftSnapshot = TransformDouble.GetOriginShiftSnapshot();
+                originShiftSnapshot = TransformDouble.GetOriginShiftSnapshot();
 
                 return GetMostPreciseHandle(position);
             });

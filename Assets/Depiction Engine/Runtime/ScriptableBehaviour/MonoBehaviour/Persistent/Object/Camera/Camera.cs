@@ -539,9 +539,7 @@ namespace DepictionEngine
             get => _farClipPlane;
             set 
             {
-                if (value > 10000000000.0f)
-                    value = 10000000000.0f;
-                SetValue(nameof(farClipPlane), value, ref _farClipPlane, (newValue, oldValue) =>
+                SetValue(nameof(farClipPlane), Mathf.Clamp(value, 0.001f, 10000000000.0f), ref _farClipPlane, (newValue, oldValue) =>
                 {
                     if (unityCamera != null && unityCamera.farClipPlane != newValue)
                         unityCamera.farClipPlane = newValue;

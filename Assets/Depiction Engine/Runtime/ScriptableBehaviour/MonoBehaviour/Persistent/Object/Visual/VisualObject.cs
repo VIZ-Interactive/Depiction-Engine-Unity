@@ -1,6 +1,5 @@
 ﻿// Copyright (C) 2023 by VIZ Interactive Media Inc. https://github.com/VIZ-Interactive | Licensed under MIT license (see LICENSE.md for details)
 
-using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,7 +8,7 @@ using UnityEngine.Rendering;
 namespace DepictionEngine
 {
     /// <summary>
-    /// A base class for any object which needs to have a visual representation in the scene.
+    /// An origin shifted container for MeshRenderers.
     /// </summary>
     [SelectionBase]
     [AddComponentMenu(SceneManager.NAMESPACE + "/Object/" + nameof(VisualObject))]

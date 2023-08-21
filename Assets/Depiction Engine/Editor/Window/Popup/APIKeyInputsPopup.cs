@@ -38,10 +38,10 @@ namespace DepictionEngine.Editor
             GUIStyle style = new GUIStyle(GUI.skin.label);
             style.fontSize = 10;
             style.alignment = TextAnchor.LowerCenter;
-            EditorGUILayout.LabelField("The default keys are for experimental purpose only.", style);
+            EditorGUILayout.LabelField("The default keys are for EXPERIMENTAL NON-COMMERCIAL use ONLY.", style);
 
             serializedObject.ApplyModifiedProperties();
-            if (GUILayout.Button("Create", GUILayout.Width(100.0f)))
+            if (GUILayout.Button("I Understand", GUILayout.Width(100.0f)))
                 ClosePopup(DialogCloseState.Ok, inputs);
             if (GUILayout.Button("Cancel", GUILayout.Width(100.0f)))
                 ClosePopup(DialogCloseState.Cancel, inputs);
