@@ -7,7 +7,7 @@
 
 [Forum](https://vizinteractive.io/forum/depiction-engine/)
 
-[Documentation](https://vizinteractive.io/docs/2022.0/depiction-engine-unity)
+[Documentation](https://vizinteractive.io/docs/2023.0/depiction-engine-unity)
 
 ## Unity Specific Features
 - Transform
@@ -21,6 +21,3 @@
     - Origin shifting supports multi camera layout (Although at significant performance cost).
 	- Undo and Redo are automatically managed for things like object Creation / Destroy / Duplicate.
 	- Initialization and Dipose states are provided to help identify the context under which the operation was requested. Search for InitializationContext and DisposeContext in the Documentation for more information.
-
-## Roadmap
-
