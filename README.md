@@ -3,11 +3,11 @@
 
 # Depiction Engine For Unity
 
-![Presentation](https://vizinteractive.io/depiction-engine)
-
-[Project page](https://vizinteractive.io/depiction-engine)
+![Presentation](https://github.com/VIZ-Interactive/Depiction-Engine-Unity/assets/1084857/0c10a4d5-f7c1-4736-8cfa-275528f2d2e2)
 
 [Forum](https://vizinteractive.io/forum/depiction-engine/)
+
+[Documentation](https://vizinteractive.io/docs/2022.0/depiction-engine-unity)
 
 ## Unity Specific Features
 - Transform
@@ -22,16 +22,5 @@
 	- Undo and Redo are automatically managed for things like object Creation / Destroy / Duplicate.
 	- Initialization and Dipose states are provided to help identify the context under which the operation was requested. Search for InitializationContext and DisposeContext in the Documentation for more information.
 
-## Latest Release
-
-[UnityPackage](https://github.com/VIZ-Interactive/Depiction-Engine-Unity/releases/download/2022.0a/DepictionEngine.unitypackage)
-
-## Documentation
-
-[Documentation](https://vizinteractive.io/docs/2022.0/depiction-engine-unity)
-
 ## Roadmap
 
-## License
-
-[MIT](https://en.wikipedia.org/wiki/MIT_License)
