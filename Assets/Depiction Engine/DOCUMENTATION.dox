@@ -16,6 +16,8 @@
  * - __Creating a Project__ \n
  *
  * \n 
+ *   + Make sure you have .NET 7 or higher installed. \n 
+ * \n 
  *   + Import `Universal RP` from the `Package Manager` under "Windows -> Package Manager". \n 
  *     Create and assign a `Universal Render Pipeline Asset` to "Edit -> Project Settings -> Quality -> Render Pipeline Asset". \n 
  *    @note Only Universal Rendering Pipeline(URP) projects are officially supported for the moment.
