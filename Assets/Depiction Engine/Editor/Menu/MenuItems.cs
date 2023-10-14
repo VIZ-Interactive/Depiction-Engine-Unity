@@ -11,7 +11,7 @@ namespace DepictionEngine.Editor
         //These keys should be used for demonstration purpose only!
         private const string MAPBOX_DEMO_KEY = "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA";
         private const string MAPTILER_DEMO_KEY = "eIgS48TpQ70m77qKYrsx&mtsid=64dd8e20-30f3-4fb5-88d7-8f2f83ffc077";
-        private const string OSMBUILDINGS_DEMO_KEY = "dixw8kmb";
+        private const string OSMBUILDINGS_DEMO_KEY = "";
         private const string ARCGIS_DEMO_KEY = "WQ9KVmV6xGGMnCiQ";
 
         //Tip: If context menu order changes do not immediately show up in the editor, change the MenuItem itemName for changes to take effect
@@ -355,11 +355,7 @@ namespace DepictionEngine.Editor
 
             //DatasourceBase arcgisDatasource = GetRestDatasource("https://services.arcgisonline.com/");
 
-            DatasourceBase buildingFeatureDatasource = GetRestDatasource(
-            "https://a-data.3dbuildings.com/",
-            "https://b-data.3dbuildings.com/",
-            "https://c-data.3dbuildings.com/",
-            "https://d-data.3dbuildings.com/");
+            DatasourceBase buildingFeatureDatasource = GetRestDatasource("https://b.data.osmbuildings.org/");
 
             //Add Earth
             JSONObject earthJson = new();
@@ -381,7 +377,7 @@ namespace DepictionEngine.Editor
             JSONArray buildingFeatureDataLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(BuildingFeature));
             string buildingFeatureDataLoaderId = buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.id)];
             buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(buildingFeatureDatasource.id);
-            buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tile/{0}/{1}/{2}.json?token=" + osmBuildingsKey;
+            buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "0.2/ph2apjye/tile/{0}/{1}/{2}.json" + osmBuildingsKey;
 
             InstanceUtility.MergeComponentsToObjectInitializationJson(buildingFeatureDataLoaderJson, earthJson);
 
@@ -442,11 +438,7 @@ namespace DepictionEngine.Editor
 
             DatasourceBase mapTilerDatasource = GetRestDatasource("https://api.maptiler.com/");
 
-            DatasourceBase buildingFeatureDatasource = GetRestDatasource(
-            "https://a-data.3dbuildings.com/",
-            "https://b-data.3dbuildings.com/",
-            "https://c-data.3dbuildings.com/",
-            "https://d-data.3dbuildings.com/");
+            DatasourceBase buildingFeatureDatasource = GetRestDatasource("https://b.data.osmbuildings.org/");
 
             //Add Earth
             JSONObject earthJson = new();
@@ -503,7 +495,7 @@ namespace DepictionEngine.Editor
                 JSONArray buildingFeatureDataLoaderJson = InstanceUtility.GetLoaderJson(typeof(Index2DLoader), typeof(BuildingFeature));
                 buildingFeatureDataLoaderId = buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.id)];
                 buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.datasourceId)] = JsonUtility.ToJson(buildingFeatureDatasource.id);
-                buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "tile/{0}/{1}/{2}.json?token=" + osmBuildingsKey;
+                buildingFeatureDataLoaderJson[0][nameof(Index2DLoader.loadEndpoint)] = "0.2/ph2apjye/tile/{0}/{1}/{2}.json";
 
                 InstanceUtility.MergeComponentsToObjectInitializationJson(buildingFeatureDataLoaderJson, earthJson);
             }

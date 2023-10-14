@@ -584,7 +584,7 @@ namespace DepictionEngine
                         break;
                 }
 
-                FeatureMeshModifier featureMeshModifier = meshObjectProcessorOutput.currentMeshRendererVisualModifier.meshModifier as FeatureMeshModifier;
+                FeatureMeshModifier featureMeshModifier = meshObjectProcessorOutput.currentMeshRendererVisualModifier != Disposable.NULL ? meshObjectProcessorOutput.currentMeshRendererVisualModifier.meshModifier as FeatureMeshModifier : null;
                 if (featureMeshModifier != Disposable.NULL)
                     featureMeshModifier.FeatureComplete();
             }

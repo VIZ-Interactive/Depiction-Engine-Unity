@@ -135,7 +135,15 @@ namespace DepictionEngine
                 {
                     string[] headerNameValuePair = header.Split('#');
                     if (headerNameValuePair.Length == 2)
-                        request.SetRequestHeader(headerNameValuePair[0], headerNameValuePair[1]);
+                    {
+                        try
+                        {
+                            request.SetRequestHeader(headerNameValuePair[0], headerNameValuePair[1]);
+                        }catch(InvalidOperationException e)
+                        {
+                            Debug.LogError(e.Message);
+                        }
+                    }
                 }
             }
 
