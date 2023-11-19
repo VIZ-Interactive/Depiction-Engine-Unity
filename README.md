@@ -21,7 +21,7 @@
     - Double click navigation in the hierarchy works even for double precision transforms.
     - Origin shifting supports multi camera layout (Although at significant performance cost).
 	- Undo and Redo are automatically managed for things like object Creation / Destroy / Duplicate.
-	- Initialization and Dipose states are provided to help identify the context under which the operation was requested. Search for InitializationContext and DisposeContext in the Documentation for more information.
+	- Initialization and Dispose states are provided to help identify the context under which the operation was requested. Search for InitializationContext and DisposeContext in the Documentation for more information.
 
 ## Screenshots
 ![editor](https://github.com/VIZ-Interactive/Depiction-Engine-Unity/assets/1084857/c2c9b661-7d5b-4fe5-a7b2-702be5a60d00)
