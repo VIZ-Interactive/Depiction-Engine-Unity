@@ -8,6 +8,8 @@
 
 [Forum](https://vizinteractive.io/forum/depiction-engine/)
 
+[Discord](https://discord.gg/Wdk7aCnTTg)
+
 [Documentation](https://vizinteractive.io/docs/2023.0/depiction-engine-unity)
 
 ## Unity Specific Features
