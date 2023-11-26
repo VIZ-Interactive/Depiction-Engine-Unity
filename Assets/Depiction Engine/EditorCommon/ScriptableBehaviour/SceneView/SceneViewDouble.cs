@@ -249,6 +249,7 @@ namespace DepictionEngine.Editor
         }
 
         private static Material _handleArcMaterial;
+        private static Shader _handleCircularArcShader;
         private static void PatchedPostSetupArcMaterial(ref Material __result)
         {
             RenderingManager renderingManager = RenderingManager.Instance(false);
@@ -258,6 +259,11 @@ namespace DepictionEngine.Editor
                 {
                     if (_handleArcMaterial == null)
                         _handleArcMaterial = Resources.Load<Material>("Material/Editor/SceneView/CircularArc");
+
+                    if (_handleCircularArcShader == null)
+                        _handleCircularArcShader = RenderingManager.LoadShader(RenderingManager.SHADER_BASE_PATH + "Editor/SceneView/CircularArc");
+
+                    _handleArcMaterial.shader = _handleCircularArcShader;
 
                     Material mat = _handleArcMaterial;
 
