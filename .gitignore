@@ -353,31 +353,10 @@ healthchecksdb
 /Temp
 
 # Asset Folders
-/Assets/Settings
-/Assets/TextMesh Pro
 *.unitypackage
-/Assets/Smart Turret Template
-/Assets/test.unity
-/Assets/test2.unity
-/Assets/TheTalesFactory/Photoscanned MoutainsRocks PBR
-/Assets/test3.unity
-/Assets/Depiction Engine/Resources/Shader/New Shader Graph.shadergraph
-/Assets/Depiction Engine/Resources/Shader/New Material.mat
-/Assets/Depiction Engine/Resources/Shader/SubGraph/ObjectSpaceTriplanarNormal.shadersubgraph
-/Assets/Depiction Engine/Resources/Shader/SubGraph/ObjectSpaceTriplanarNormal 2.shadersubgraph
-/Assets/Depiction Engine/Resources/Shader/SubGraph/ObjectSpaceTriplanarNormal 1.shadersubgraph
-/Assets/Depiction Engine/Resources/Shader/SubGraph/GeoAstroObjectTriplanar.shadersubgraph
-/Assets/Depiction Engine/Resources/Demo
-/Assets/Physics.unity
-/Assets/Moon.unity
-/Assets/Mars.unity
-/Assets/Dark Map.unity
-/Assets/Car.unity
-/Assets/colonization-ship-uei-opportunity
-/Assets/DefaultVolumeProfile.asset
-/Assets/Flyby.unity
-/Assets/test7.unity
+/Assets/Settings
+/Assets/Settings.meta
+/Assets/TextMesh Pro
+/Assets/TextMesh Pro.meta
 /Assets/Demo
 /Assets/Demo.meta
-/Assets/Settings.meta
-/Assets/TextMesh Pro.meta
